@@ -1,0 +1,39 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "anaconda-mcp"
+version = "0.1.0"
+description = "Anaconda MCP"
+readme = "README.md"
+license = { text = "Apache-2.0" }
+requires-python = ">=3.10,<3.14"
+authors = [{ name = "Anaconda, Inc." }]
+
+dependencies = [
+    "anaconda-mcp-server",
+    "mcp-compose",
+    "anaconda-auth>=0.8.6",
+    "anaconda-opentelemetry",
+    "click"
+]
+
+[project.scripts]
+anaconda-mcp = "anaconda_mcp.cli:main"
+
+[tool.hatch.build]
+artifacts = [
+    "src/anaconda_mcp/mcp_compose.toml"
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/anaconda_mcp"]
+force-include = { "src/anaconda_mcp/mcp_compose.toml" = "anaconda_mcp/mcp_compose.toml" }
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "src/anaconda_mcp",
+    "pyproject.toml",
+    "README.md",
+]
