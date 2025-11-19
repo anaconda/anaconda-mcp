@@ -1,0 +1,37 @@
+{% set name = "anaconda-mcp" %}
+{% set version = "0.1.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  path: ..
+
+build:
+  number: 0
+  noarch: python
+  script: python -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python >=3.10,<3.14
+    - pip
+    - hatchling >=1.25
+  run:
+    - python >=3.10,<3.14
+    - conda-mcp-server
+    - mcp-compose
+    - anaconda-auth >=0.8.6
+    - anaconda-opentelemetry
+    - click
+about:
+  summary: Anaconda MCP
+  home: https://github.com/anaconda/anaconda-mcp
+  dev_url: https://github.com/anaconda/anaconda-mcp
+  doc_url: https://github.com/anaconda/anaconda-mcp
+  license: Apache-2.0
+
+extra:
+  recipe-maintainers:
+    - Anaconda

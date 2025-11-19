@@ -1,0 +1,94 @@
+# MCP Compose Configuration Example
+# This file demonstrates all available configuration options
+
+# ============================================================================
+# Composer Settings
+# ============================================================================
+[composer]
+name = "anaconda-mcp"
+conflict_resolution = "prefix"  # prefix, suffix, ignore, error, override, custom
+log_level = "INFO"
+port = 8888
+
+# ============================================================================
+# Transport Configuration
+# ============================================================================
+[transport]
+stdio_enabled = true
+sse_enabled = true
+sse_path = "/sse"
+sse_cors_enabled = true
+
+# ============================================================================
+# Authentication Configuration (Optional)
+# ============================================================================
+[authentication]
+enabled = true
+providers = ["anaconda"]
+default_provider = "anaconda"
+
+[authentication.anaconda]
+domain = "anaconda.com"
+
+# ============================================================================
+# Embedded MCP Servers
+# ============================================================================
+
+# ============================================================================
+# Proxied STDIO MCP Servers
+# ============================================================================
+[[servers.proxied.stdio]]
+name = "environments_mcp"
+command = ["conda-mcp-server", "start"]
+restart_policy = "never"
+
+# ============================================================================
+# Proxied SSE MCP Servers
+# ============================================================================
+# [[servers.proxied.sse]]
+# name = "remote-analytics-server"
+# url = "https://analytics.example.com/mcp/sse"
+# auth_token = "${REMOTE_SERVER_TOKEN}"
+# timeout = 30
+# retry_interval = 5
+# keep_alive = true
+# reconnect_on_failure = true
+# max_reconnect_attempts = 10
+# health_check_enabled = true
+# health_check_interval = 60
+# health_check_endpoint = "/health"
+# mode = "proxy"  # proxy or translator
+
+# ============================================================================
+# Tool Manager Configuration
+# ============================================================================
+[tool_manager]
+conflict_resolution = "prefix"
+
+[tool_manager.custom_template]
+template = "{server_name}_{tool_name}"
+
+# Tool aliasing
+# [tool_manager.aliases]
+# jupyter_create = "create_notebook"
+# fs_read = "read_file"
+
+[tool_manager.versioning]
+enabled = false
+allow_multiple_versions = false
+version_suffix_format = "_v{version}"
+
+# ============================================================================
+# REST API Configuration
+# ============================================================================
+[api]
+enabled = true
+path_prefix = "/api/v1"
+host = "0.0.0.0"
+port = 8888
+cors_enabled = true
+cors_origins = ["http://localhost:3000"]
+cors_methods = ["GET", "POST", "PUT", "DELETE"]
+docs_enabled = true
+docs_path = "/docs"
+openapi_path = "/openapi.json"
