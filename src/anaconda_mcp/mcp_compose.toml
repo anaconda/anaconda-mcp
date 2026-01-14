@@ -39,7 +39,7 @@ domain = "anaconda.com"
 # ============================================================================
 [[servers.proxied.stdio]]
 name = "environments_mcp"
-command = ["conda-mcp-server", "start"]
+command = ["environments-mcp-server", "start"]
 restart_policy = "never"
 
 # ============================================================================
