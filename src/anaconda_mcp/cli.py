@@ -1,5 +1,5 @@
+import argparse
 import sys
-import types
 from pathlib import Path
 
 import click
@@ -12,10 +12,12 @@ from mcp_compose.cli import (
 )
 from mcp_compose.composer import ConflictResolution
 
+from anaconda_mcp.auth import start_login
+
 
 def _ns(**kwargs):
     """Small helper to create an argparse-like namespace."""
-    return types.SimpleNamespace(**kwargs)
+    return argparse.Namespace(**kwargs)
 
 
 @click.group(context_settings=dict(help_option_names=["-h", "--help"]))
@@ -49,7 +51,7 @@ def serve(ctx, config, host, port):
                 err=True,
             )
             sys.exit(1)
-    
+    start_login(lambda x: x)
     ns = _ns(verbose=ctx.obj["verbose"], config=config, host=host, port=port)
     sys.exit(_serve(ns))
 
@@ -122,6 +124,8 @@ def discover(ctx, pyproject, output_format):
     code = _discover(ns)
     sys.exit(code)
 
-
 def main():
     cli(obj={})  # entry point
+
+if __name__ == "__main__":
+    main()
