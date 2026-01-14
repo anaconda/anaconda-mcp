@@ -18,9 +18,10 @@ requirements:
     - python >=3.10,<3.14
     - pip
     - hatchling >=1.25
+    - hatch-vcs >=0.4
   run:
     - python >=3.10,<3.14
-    - conda-mcp-server
+    - environments-mcp-server
     - mcp-compose
     - anaconda-auth >=0.8.6
     - anaconda-opentelemetry
