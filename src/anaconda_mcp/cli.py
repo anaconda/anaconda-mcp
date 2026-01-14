@@ -1,4 +1,5 @@
 import sys
+import os
 import types
 from pathlib import Path
 
@@ -37,21 +38,44 @@ def cli(ctx, verbose: bool):
 )
 @click.option("--host", default="0.0.0.0", show_default=True, help="Host to bind to.")
 @click.option("--port", default=8000, show_default=True, type=int, help="Port to bind to.")
+@click.option(
+    "--enable-auth-token-fallback/--no-enable-auth-token-fallback",
+    default=True,
+    show_default=True,
+    help="Fallback to the local auth token",
+)
 @click.pass_context
-def serve(ctx, config, host, port):
+def serve(ctx, config, host, port, enable_auth_token_fallback):
     if not config:
         default_path = Path(__file__).resolve().parent / "mcp_compose.toml"
         if default_path.exists():
             config = str(default_path)
         else:
             click.echo(
-                f"⚠️  No configuration file found. Expected at {default_path} or provide --config.",
+                f"⚠️ No configuration file found. Expected at {default_path} or provide --config.",
                 err=True,
             )
             sys.exit(1)
     
     ns = _ns(verbose=ctx.obj["verbose"], config=config, host=host, port=port)
-    sys.exit(_serve(ns))
+    
+    env_var = "MCP_COMPOSE_ANACONDA_TOKEN"
+    had_value = env_var in os.environ
+    old_value = os.environ.get(env_var)
+    
+    if enable_auth_token_fallback:
+        os.environ[env_var] = "fallback"
+    
+    try:
+        exit_code = _serve(ns)
+    finally:
+        if enable_auth_token_fallback:
+            if had_value:
+                os.environ[env_var] = old_value
+            else:
+                os.environ.pop(env_var, None)
+    
+    sys.exit(exit_code)
 
 
 @click.option(
