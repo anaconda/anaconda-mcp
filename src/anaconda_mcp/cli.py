@@ -12,6 +12,8 @@ from mcp_compose.cli import (
 )
 from mcp_compose.composer import ConflictResolution
 
+from src.anaconda_mcp.auth import login
+
 
 def _ns(**kwargs):
     """Small helper to create an argparse-like namespace."""
@@ -49,7 +51,7 @@ def serve(ctx, config, host, port):
                 err=True,
             )
             sys.exit(1)
-    
+    login()
     ns = _ns(verbose=ctx.obj["verbose"], config=config, host=host, port=port)
     sys.exit(_serve(ns))
 
