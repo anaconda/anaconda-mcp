@@ -23,7 +23,7 @@ sse_cors_enabled = true
 # Authentication Configuration (Optional)
 # ============================================================================
 [authentication]
-enabled = true
+enabled = false
 providers = ["anaconda"]
 default_provider = "anaconda"
 
@@ -37,10 +37,27 @@ domain = "anaconda.com"
 # ============================================================================
 # Proxied STDIO MCP Servers
 # ============================================================================
-[[servers.proxied.stdio]]
-name = "environments_mcp"
-command = ["environments-mcp-server", "start"]
-restart_policy = "never"
+#[[servers.proxied.stdio]]
+#name = "environments_mcp"
+#command = ["environments-mcp-server", "start"]
+#restart_policy = "never"
+
+# ============================================================================
+# Proxied Streamable HTTP MCP Servers
+# ============================================================================
+[[servers.proxied.streamable-http]]
+name = "conda_environments"
+url = "http://localhost:4041/mcp"
+timeout = 30
+keep_alive = true
+reconnect_on_failure = true
+max_reconnect_attempts = 10
+health_check_enabled = false
+mode = "proxy"
+# Auto-start configuration
+auto_start = true
+command = ["environments-mcp-server", "start", "--transport", "streamable-http"]
+startup_delay = 3
 
 # ============================================================================
 # Proxied SSE MCP Servers
