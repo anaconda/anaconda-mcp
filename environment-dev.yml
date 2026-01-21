@@ -1,0 +1,15 @@
+name: anaconda-mcp-dev
+dependencies:
+  - python>=3.13,<=3.14
+  - click>=8.1,<9.0
+  - anaconda-auth>=0.8.6
+  - environments-mcp-server
+  - anaconda-opentelemetry
+  - mcp-compose
+  # Dev Deps
+  - pytest>=7.0
+  - pytest-asyncio>=0.21
+  - pytest-cov>=4.0
+  - ruff>=0.1.0
+  - mypy>=1.0.0
+  - pre-commit>=3.0.0
