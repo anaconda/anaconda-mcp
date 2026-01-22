@@ -1,7 +1,7 @@
 import logging
 import threading
 import time
-from typing import Callable
+from collections.abc import Callable
 
 from anaconda_auth import login as anaconda_login
 from anaconda_auth.exceptions import TokenNotFoundError
