@@ -2,10 +2,11 @@ from unittest import mock
 
 import pytest
 
+MOCKED_TOKEN = "mocked_token"
 
 @pytest.fixture
 def mocked_token():
-    return "mocked_token"
+    return MOCKED_TOKEN
 
 
 @pytest.fixture

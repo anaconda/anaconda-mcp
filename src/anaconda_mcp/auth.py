@@ -90,7 +90,7 @@ def start_login(
         while True:
             if get_auth_token():
                 logger.info("Token detected; initializing telemetry")
-                # TODO: Init telemetry
+                # TODO: Init telemetry (anaconda OTEL)
                 return
 
             if max_wait_sec is not None and (time.time() - start) >= max_wait_sec:
