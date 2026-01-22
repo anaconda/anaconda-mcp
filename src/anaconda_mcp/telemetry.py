@@ -23,7 +23,7 @@ class MetricData(BaseModel):
     service_id: str = settings.SERVICE_NAME
     user_environment: str = settings.ENVIRONMENT
 
-
+# TODO: Introduce Anaconda OpenTelemetry when auth is compatible with api-keys or we have a solution in anaconda-auth
 class SnakeEyes:
     """Snake eyes client - Sends metrics/logs to Anaconda Snake Eyes"""
 
