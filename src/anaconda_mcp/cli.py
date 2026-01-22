@@ -3,12 +3,17 @@ import sys
 from pathlib import Path
 
 import click
-
+from mcp_compose.cli import (
+    compose_command as _compose,
+)
+from mcp_compose.cli import (
+    discover_command as _discover,
+)
+from mcp_compose.cli import (
+    serve_command as _serve,
+)
 from mcp_compose.cli import (
     setup_logging,
-    compose_command as _compose,
-    discover_command as _discover,
-    serve_command as _serve,
 )
 from mcp_compose.composer import ConflictResolution
 
@@ -20,7 +25,7 @@ def _ns(**kwargs):
     return argparse.Namespace(**kwargs)
 
 
-@click.group(context_settings=dict(help_option_names=["-h", "--help"]))
+@click.group(context_settings={"help_option_names": ["-h", "--help"]})
 @click.option("-v", "--verbose", is_flag=True, help="Enable verbose logging.")
 @click.pass_context
 def cli(ctx, verbose: bool):
@@ -57,32 +62,25 @@ def serve(ctx, config, host, port):
 
 
 @click.option(
-    "-p", "--pyproject",
+    "-p",
+    "--pyproject",
     type=click.Path(exists=True, dir_okay=False),
-    help="Path to pyproject.toml (default: ./pyproject.toml)"
+    help="Path to pyproject.toml (default: ./pyproject.toml)",
 )
+@click.option("-n", "--name", default="composed-mcp-server", show_default=True, help="Name for the composed server.")
 @click.option(
-    "-n", "--name",
-    default="composed-mcp-server",
-    show_default=True,
-    help="Name for the composed server."
-)
-@click.option(
-    "-c", "--conflict-resolution",
+    "-c",
+    "--conflict-resolution",
     type=click.Choice([cr.value for cr in ConflictResolution]),
     default=ConflictResolution.PREFIX.value,
     show_default=True,
-    help="Naming conflict strategy."
+    help="Naming conflict strategy.",
 )
 @click.option("--include", multiple=True, help="Include only specified servers (repeatable).")
 @click.option("--exclude", multiple=True, help="Exclude specified servers (repeatable).")
 @click.option("-o", "--output", type=click.Path(dir_okay=False), help="Write composed server metadata to a file.")
 @click.option(
-    "--output-format",
-    type=click.Choice(["text", "json"]),
-    default="text",
-    show_default=True,
-    help="Output format."
+    "--output-format", type=click.Choice(["text", "json"]), default="text", show_default=True, help="Output format."
 )
 @click.pass_context
 @cli.command(help="Compose MCP servers from dependencies.")
@@ -103,16 +101,13 @@ def compose(ctx, pyproject, name, conflict_resolution, include, exclude, output,
 
 @cli.command(help="Discover MCP servers from dependencies.")
 @click.option(
-    "-p", "--pyproject",
+    "-p",
+    "--pyproject",
     type=click.Path(exists=True, dir_okay=False),
-    help="Path to pyproject.toml (default: ./pyproject.toml)"
+    help="Path to pyproject.toml (default: ./pyproject.toml)",
 )
 @click.option(
-    "--output-format",
-    type=click.Choice(["text", "json"]),
-    default="text",
-    show_default=True,
-    help="Output format."
+    "--output-format", type=click.Choice(["text", "json"]), default="text", show_default=True, help="Output format."
 )
 @click.pass_context
 def discover(ctx, pyproject, output_format):
@@ -124,8 +119,10 @@ def discover(ctx, pyproject, output_format):
     code = _discover(ns)
     sys.exit(code)
 
+
 def main():
     cli(obj={})  # entry point
+
 
 if __name__ == "__main__":
     main()
