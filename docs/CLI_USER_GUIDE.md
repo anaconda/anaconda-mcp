@@ -10,7 +10,7 @@ The Anaconda MCP CLI is a command-line interface for managing and composing Mode
   - [serve](#serve-command)
   - [compose](#compose-command)
   - [discover](#discover-command)
-- [Configuration](#configuration)
+- [Configuration File](#configuration)
 - [Common Use Cases](#common-use-cases)
 - [Troubleshooting](#troubleshooting)
 
@@ -145,7 +145,7 @@ anaconda-mcp -v serve --port 9000
 
 #### Configuration File
 
-The `serve` command requires a `mcp_compose.toml` configuration file. See [Configuration](#configuration) section for details.
+The `serve` command requires a `mcp_compose.toml` configuration file. See [Configuration](./CONFIGURATION_GUIDE.md) section for details.
 
 ---
 
@@ -320,8 +320,10 @@ Discovered MCP Servers:
 ---
 
 ## Configuration
-
 The Anaconda MCP uses a `mcp_compose.toml` file for configuration. This file defines how servers are composed, connected, and exposed.
+
+Checkout the [configuration documentation](./CONFIGURATION_GUIDE.md) for details.
+
 
 ### Configuration File Location
 
@@ -335,121 +337,6 @@ You can specify a custom location with the `--config` flag:
 anaconda-mcp serve --config /path/to/custom_config.toml
 ```
 
-### Configuration Structure
-
-#### Basic Configuration
-
-```toml
-[composer]
-name = "anaconda-mcp"
-conflict_resolution = "prefix"
-log_level = "INFO"
-port = 8888
-```
-
-#### Transport Configuration
-
-```toml
-[transport]
-stdio_enabled = true
-sse_enabled = true
-sse_path = "/sse"
-sse_cors_enabled = true
-```
-
-#### Authentication (Optional)
-
-```toml
-[authentication]
-enabled = true
-providers = ["anaconda"]
-default_provider = "anaconda"
-
-[authentication.anaconda]
-domain = "anaconda.com"
-```
-
-#### Server Configuration
-
-**Streamable HTTP Server:**
-```toml
-[[servers.proxied.streamable-http]]
-name = "conda_environments"
-url = "http://localhost:4041/mcp"
-timeout = 30
-keep_alive = true
-reconnect_on_failure = true
-max_reconnect_attempts = 10
-auto_start = true
-command = ["environments-mcp-server", "start", "--transport", "streamable-http"]
-startup_delay = 3
-```
-
-**STDIO Server:**
-```toml
-[[servers.proxied.stdio]]
-name = "local_tools"
-command = ["my-mcp-server", "start"]
-restart_policy = "never"
-```
-
-**SSE Server:**
-```toml
-[[servers.proxied.sse]]
-name = "remote_server"
-url = "https://remote.example.com/mcp/sse"
-auth_token = "${REMOTE_SERVER_TOKEN}"
-timeout = 30
-reconnect_on_failure = true
-```
-
-#### Tool Manager Configuration
-
-```toml
-[tool_manager]
-conflict_resolution = "prefix"
-
-[tool_manager.custom_template]
-template = "{server_name}_{tool_name}"
-
-[tool_manager.aliases]
-create_env = "conda_create_environment"
-list_envs = "conda_list_environments"
-```
-
-#### REST API Configuration
-
-```toml
-[api]
-enabled = true
-path_prefix = "/api/v1"
-host = "0.0.0.0"
-port = 8888
-cors_enabled = true
-cors_origins = ["http://localhost:3000"]
-docs_enabled = true
-docs_path = "/docs"
-```
-
-### Configuration Options Reference
-
-| Section | Option | Description | Default |
-|---------|--------|-------------|---------|
-| `[composer]` | `name` | Name of the composed server | `anaconda-mcp` |
-| | `conflict_resolution` | Naming conflict strategy | `prefix` |
-| | `log_level` | Logging level | `INFO` |
-| | `port` | Server port | `8888` |
-| `[transport]` | `stdio_enabled` | Enable STDIO transport | `true` |
-| | `sse_enabled` | Enable SSE transport | `true` |
-| | `sse_cors_enabled` | Enable CORS for SSE | `true` |
-| `[authentication]` | `enabled` | Enable authentication | `false` |
-| | `providers` | Authentication providers | `["anaconda"]` |
-| `[api]` | `enabled` | Enable REST API | `true` |
-| | `cors_enabled` | Enable CORS | `true` |
-| | `docs_enabled` | Enable API documentation | `true` |
-
----
-
 ## Common Use Cases
 
 ### Local Development
@@ -460,7 +347,6 @@ Start a local MCP server for development:
 # Start with default config and verbose logging
 anaconda-mcp -v serve --host 127.0.0.1 --port 8000
 ```
-
 
 ---
 
