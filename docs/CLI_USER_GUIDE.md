@@ -4,7 +4,6 @@ The Anaconda MCP CLI is a command-line interface for managing and composing Mode
 
 ## Table of Contents
 
-- [Installation](#installation)
 - [Quick Start](#quick-start)
 - [Commands Overview](#commands-overview)
 - [Command Reference](#command-reference)
@@ -15,50 +14,7 @@ The Anaconda MCP CLI is a command-line interface for managing and composing Mode
 - [Common Use Cases](#common-use-cases)
 - [Troubleshooting](#troubleshooting)
 
----
 
-## Installation
-
-### Using pip
-
-```bash
-# Install the package
-pip install anaconda-mcp
-
-# Or install in development mode
-pip install -e ".[dev]"
-```
-
-### Using conda
-
-```bash
-# Create environment from file
-conda env create -f environment.yml
-
-# Activate the environment
-conda activate anaconda-mcp
-
-# Or use the development environment
-conda env create -f environment-dev.yml
-conda activate anaconda-mcp-dev
-```
-
-### Using Make (for developers)
-
-```bash
-# Setup development environment
-make setup
-
-# Install in development mode
-make install-dev
-```
-
-### Verify Installation
-
-```bash
-# Check that the CLI is installed
-anaconda-mcp --help
-```
 
 ---
 
@@ -240,12 +196,7 @@ anaconda-mcp compose --name my-unified-server
 
 **Include only specific servers:**
 ```bash
-anaconda-mcp compose --include conda_environments --include jupyter_server
-```
-
-**Exclude certain servers:**
-```bash
-anaconda-mcp compose --exclude legacy_server --exclude deprecated_tools
+anaconda-mcp compose --include conda_environments --include environments-mcp-server
 ```
 
 **Use suffix for conflict resolution:**
@@ -501,7 +452,7 @@ docs_path = "/docs"
 
 ## Common Use Cases
 
-### Use Case 1: Local Development
+### Local Development
 
 Start a local MCP server for development:
 
@@ -510,95 +461,6 @@ Start a local MCP server for development:
 anaconda-mcp -v serve --host 127.0.0.1 --port 8000
 ```
 
-### Use Case 2: Production Deployment
-
-Deploy MCP servers in production:
-
-```bash
-# Use production config with proper host binding
-anaconda-mcp serve \
-  --config /etc/anaconda-mcp/production.toml \
-  --host 0.0.0.0 \
-  --port 8888
-```
-
-### Use Case 3: Discover Available Tools
-
-Find out what MCP servers are available:
-
-```bash
-# List all available servers
-anaconda-mcp discover
-
-# Export to JSON for processing
-anaconda-mcp discover --output-format json > available_servers.json
-```
-
-### Use Case 4: Selective Server Composition
-
-Compose only specific servers:
-
-```bash
-# Only include conda and jupyter servers
-anaconda-mcp compose \
-  --include conda_environments \
-  --include jupyter_server \
-  --name data-science-mcp
-```
-
-### Use Case 5: Exclude Problematic Servers
-
-Exclude servers that are causing issues:
-
-```bash
-# Exclude legacy or broken servers
-anaconda-mcp compose \
-  --exclude old_server \
-  --exclude deprecated_tools \
-  --conflict-resolution prefix
-```
-
-### Use Case 6: Testing New Configuration
-
-Test a new configuration before deploying:
-
-```bash
-# Use a test configuration file
-anaconda-mcp -v serve \
-  --config ./test_config.toml \
-  --port 9999
-```
-
-### Use Case 7: Multi-Environment Setup
-
-Run different configurations for different environments:
-
-```bash
-# Development
-anaconda-mcp serve --config dev_config.toml --port 8000
-
-# Staging
-anaconda-mcp serve --config staging_config.toml --port 8001
-
-# Production
-anaconda-mcp serve --config prod_config.toml --port 8888
-```
-
-### Use Case 8: CI/CD Pipeline Integration
-
-Use in automated pipelines:
-
-```bash
-#!/bin/bash
-# Discover and validate servers
-if anaconda-mcp discover --output-format json | jq -e '.servers | length > 0'; then
-  echo "MCP servers found"
-  anaconda-mcp compose --output composition.json --output-format json
-else
-  echo "No MCP servers found"
-  exit 1
-fi
-```
 
 ---
 
@@ -633,7 +495,7 @@ fi
 **Solutions**:
 1. Ensure you're logged into Anaconda:
    ```bash
-   anaconda login
+   anaconda auth whoami
    ```
 
 2. Check your authentication configuration in `mcp_compose.toml`
@@ -647,7 +509,7 @@ fi
 **Solutions**:
 1. Verify MCP server packages are installed:
    ```bash
-   pip list | grep mcp
+   conda list | grep mcp
    ```
 
 2. Check your `pyproject.toml` has the dependencies listed:
@@ -701,82 +563,3 @@ fi
    health_check_enabled = true
    health_check_interval = 30
    ```
-
-### High Memory Usage
-
-**Problem**: Server consumes too much memory.
-
-**Solutions**:
-1. Reduce the number of proxied servers
-
-2. Adjust reconnection attempts:
-   ```toml
-   max_reconnect_attempts = 3  # Instead of 10
-   ```
-
-3. Disable keep-alive for inactive connections:
-   ```toml
-   keep_alive = false
-   ```
-
-### Logs Not Appearing
-
-**Problem**: Cannot see log output.
-
-**Solutions**:
-1. Enable verbose logging:
-   ```bash
-   anaconda-mcp -v serve
-   ```
-
-2. Check log level in configuration:
-   ```toml
-   [composer]
-   log_level = "DEBUG"  # Instead of INFO
-   ```
-
-3. Ensure logs aren't being redirected:
-   ```bash
-   anaconda-mcp serve 2>&1 | tee server.log
-   ```
-
----
-
-## Additional Resources
-
-- **Project Repository**: [https://github.com/anaconda/anaconda-mcp](https://github.com/anaconda/anaconda-mcp)
-- **Issue Tracker**: [https://github.com/anaconda/anaconda-mcp/issues](https://github.com/anaconda/anaconda-mcp/issues)
-- **MCP Specification**: [Model Context Protocol Documentation](https://modelcontextprotocol.io)
-- **Anaconda Documentation**: [https://docs.anaconda.com](https://docs.anaconda.com)
-
----
-
-## Getting Help
-
-If you encounter issues not covered in this guide:
-
-1. **Check verbose output**: Run commands with `-v` flag for detailed logs
-2. **Search existing issues**: Check the GitHub issue tracker
-3. **Ask the community**: Join the Anaconda community forums
-4. **Report bugs**: Create a detailed issue report with:
-   - Command you ran
-   - Expected behavior
-   - Actual behavior
-   - Configuration file (sanitized)
-   - Log output with `-v` flag
-
----
-
-## Version Information
-
-To check your installed version:
-
-```bash
-pip show anaconda-mcp
-```
-
-Or:
-
-```bash
-conda list anaconda-mcp
-```

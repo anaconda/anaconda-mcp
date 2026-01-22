@@ -2,16 +2,7 @@
 
 ## Installation & Usage
 
-### For pip users:
-```bash
-# Install with dev dependencies
-pip install -e ".[dev]"
-
-# Or using uv
-uv pip install -e ".[dev]"
-```
-
-### For conda users:
+### Using Conda:
 ```bash
 # Create/update development environment
 conda env create -f environment-dev.yml
@@ -21,8 +12,19 @@ conda env update -f environment-dev.yml --prune
 
 # Activate
 conda activate anaconda-mcp-dev
+````
+
+### Using Pip and UV:
+```bash
+# Install with dev dependencies
+pip install -e ".[dev]"
+
+# Or using uv
+uv pip install -e ".[dev]"
 ```
 
+
+```
 ### Using the Makefile:
 ```bash
 # Setup conda dev environment
