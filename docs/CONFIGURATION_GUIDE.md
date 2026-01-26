@@ -160,8 +160,6 @@ port = 8000
 
 [transport]
 stdio_enabled = true
-streamable_http_enabled = true
-streamable_http_path = "/mcp"
 
 [authentication]
 enabled = false
