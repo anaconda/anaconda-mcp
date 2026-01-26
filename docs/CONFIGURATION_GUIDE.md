@@ -66,7 +66,7 @@ Use STDIO for local development with Claude Desktop or VS Code. Use Streamable H
 
 ## Authentication
 
-The `[authentication]` section protects your MCP endpoint. Anaconda MCP supports Anaconda token authentication out of the box, validating bearer tokens against the Anaconda.org API.
+The `[authentication]` section protects your MCP endpoint. Anaconda MCP supports Anaconda token authentication out of the box, validating bearer tokens against the Anaconda API.
 
 ```toml
 [authentication]
@@ -78,10 +78,17 @@ default_provider = "anaconda"
 domain = "anaconda.com"
 ```
 
+When the authentication is turned ON (`enabled = true), the tool calls will fail unless the two points are satisfied:
+
+- User is authenticated
+- MCP_COMPOSE_ANACONDA_TOKEN env var is set to "fallback"
+
 Clients authenticate by including their Anaconda token in the Authorization header:
 ```
 Authorization: Bearer <your_anaconda_token>
 ```
+
+> Implementation Notes: At the moment, we are not passing the token in the header but instead relying on the keyring to fetch the token. For now, we turn off the authentication by default so users are not forced to log in to use the Anaconda MCP Server.
 
 For local development, set `MCP_COMPOSE_ANACONDA_TOKEN="fallback"` to use your locally stored Anaconda credentials from `anaconda login`.
 
