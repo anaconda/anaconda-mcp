@@ -10,11 +10,11 @@ fi
 
 echo "Verifying uninstall at: $CONFIG_PATH"
 
-python << EOF
+CONFIG_PATH="$CONFIG_PATH" python << 'EOF'
 import json
-import sys
+import os
 
-config_path = '$CONFIG_PATH'
+config_path = os.environ['CONFIG_PATH']
 with open(config_path) as f:
     config = json.load(f)
 
