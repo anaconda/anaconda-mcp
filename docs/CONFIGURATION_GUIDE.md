@@ -1,6 +1,6 @@
 # Anaconda MCP Configuration Guide
 
-This guide provides detailed information about configuring the Anaconda MCP using the `mcp_compose.toml` file.
+Anaconda MCP is built on [MCP Compose](https://mcp-compose.datalayer.tech), a unified control plane for composing multiple MCP servers. This guide provides an overview of the configuration options. For the complete reference, see the [MCP Compose Configuration Documentation](https://mcp-compose.datalayer.tech/configuration/).
 
 ## Table of Contents
 
@@ -10,243 +10,181 @@ This guide provides detailed information about configuring the Anaconda MCP usin
 - [Authentication](#authentication)
 - [Server Configuration](#server-configuration)
 - [Tool Manager](#tool-manager)
-- [Complete Examples](#complete-examples)
+- [Example Configuration](#example-configuration)
 
 ---
 
 ## Configuration File Overview
 
-The Anaconda MCP uses a TOML configuration file (`mcp_compose.toml`) to define:
-- Server composition settings
-- Transport protocols
-- Authentication providers
-- Individual MCP server configurations
-- Tool naming and conflict resolution
+Anaconda MCP uses a TOML configuration file (`mcp_compose.toml`) to define server composition, transport protocols, authentication, and tool management.
 
-### File Location
-
-**Default location:**
-```
-src/anaconda_mcp/mcp_compose.toml
-```
+**Default location:** `src/anaconda_mcp/mcp_compose.toml`
 
 **Custom location:**
 ```bash
 anaconda-mcp serve --config /path/to/custom_config.toml
 ```
 
+📖 **Reference:** [Configuration File Location](https://mcp-compose.datalayer.tech/configuration/#configuration-file-location)
+
 ---
 
 ## Composer Settings
 
-The `[composer]` section defines global settings for the composed MCP server.
-
-### Configuration
-
-
-
-### Options
-
-### Conflict Resolution Strategies
-
-
-### Example
+The `[composer]` section defines the identity and behavior of your unified MCP server. Set the server name, choose how to handle tool name conflicts when multiple servers expose tools with the same name, and configure logging verbosity.
 
 ```toml
 [composer]
-name = "production-mcp-server"
+name = "anaconda-mcp"
 conflict_resolution = "prefix"
-log_level = "WARNING"
+log_level = "INFO"
 port = 8080
 ```
+
+The `prefix` conflict resolution strategy is recommended—it prefixes tool names with the server name (e.g., `conda_create_environment`) to avoid collisions.
+
+📖 **Reference:** [Composer Section](https://mcp-compose.datalayer.tech/configuration/#composer-section)
 
 ---
 
 ## Transport Configuration
 
-The `[transport]` section configures communication protocols.
-
-### Configuration
+The `[transport]` section configures how MCP clients connect to your server. Choose between STDIO (subprocess communication) and Streamable HTTP (network-based). SSE is deprecated.
 
 ```toml
 [transport]
 stdio_enabled = true
-sse_enabled = true
-sse_path = "/sse"
-sse_cors_enabled = true
+streamable_http_enabled = true
+streamable_http_path = "/mcp"
 ```
 
-### Options
+Use STDIO for local development with Claude Desktop or VS Code. Use Streamable HTTP when running as a shared network service.
 
-| Option | Type | Description | Default |
-|--------|------|-------------|---------|
-| `stdio_enabled` | boolean | Enable standard input/output transport | `true` |
-| `sse_enabled` | boolean | Enable Server-Sent Events transport | `true` |
-| `sse_path` | string | URL path for SSE endpoint | `"/sse"` |
-| `sse_cors_enabled` | boolean | Enable CORS for SSE | `true` |
-
-### Transport Types
-
-**STDIO** - Standard input/output
-
-**SSE** - Server-Sent Events
-
-**HTTP Streamable **
-
-### Example
-
-```toml
-[transport]
-stdio_enabled = false
-sse_enabled = true
-sse_path = "/api/events"
-sse_cors_enabled = true
-```
+📖 **Reference:** [Transport Section](https://mcp-compose.datalayer.tech/configuration/#transport-section)
 
 ---
 
 ## Authentication
 
+The `[authentication]` section protects your MCP endpoint. Anaconda MCP supports Anaconda token authentication out of the box, validating bearer tokens against the Anaconda API.
 
+```toml
+[authentication]
+enabled = true
+providers = ["anaconda"]
+default_provider = "anaconda"
 
-### Anaconda Provider
+[authentication.anaconda]
+domain = "anaconda.com"
+```
 
+When the authentication is turned ON (`enabled = true), the tool calls will fail unless the two points are satisfied:
 
-### Options
+- User is authenticated
+- MCP_COMPOSE_ANACONDA_TOKEN env var is set to "fallback"
 
-| Option | Type | Description | Default |
-|--------|------|-------------|---------|
-| `enabled` | boolean | Enable authentication | `false` |
-| `providers` | array | List of authentication providers | `["anaconda"]` |
-| `default_provider` | string | Default provider to use | `"anaconda"` |
+Clients authenticate by including their Anaconda token in the Authorization header:
+```
+Authorization: Bearer <your_anaconda_token>
+```
 
+> Implementation Notes: At the moment, we are not passing the token in the header but instead relying on the keyring to fetch the token. For now, we turn off the authentication by default so users are not forced to log in to use the Anaconda MCP Server.
 
-### Environment Variables
+For local development, set `MCP_COMPOSE_ANACONDA_TOKEN="fallback"` to use your locally stored Anaconda credentials from `anaconda login`.
 
+📖 **Reference:** [Authentication Section](https://mcp-compose.datalayer.tech/configuration/#authentication-section) and [Anaconda Authentication](https://mcp-compose.datalayer.tech/configuration/#anaconda-authentication)
 
 ---
 
 ## Server Configuration
 
-
-### Streamable HTTP Servers
-
-
-#### Options
-
+The `[servers]` section defines the downstream MCP servers that Anaconda MCP composes. Each server's tools become available through the single unified endpoint.
 
 ### STDIO Servers
 
+STDIO servers run as subprocesses, providing process isolation. This is the most common pattern.
 
-#### Restart Policies
+```toml
+[[servers.proxied.stdio]]
+name = "environments"
+command = ["environments-mcp-server", "start", "--transport", "stdio"]
+restart_policy = "on-failure"
+```
 
-- `never` - Never restart
-- `on-failure` - Restart only on failure
-- `always` - Always restart
+### Streamable HTTP Servers
 
-### SSE Servers
+Connect to MCP servers running as standalone HTTP services.
+
+```toml
+[[servers.proxied.http]]
+name = "jupyter"
+url = "http://localhost:8888/mcp"
+protocol = "streamable-http"
+timeout = 30
+reconnect_on_failure = true
+```
+
+📖 **Reference:** [Servers Section](https://mcp-compose.datalayer.tech/configuration/#servers-section)
 
 ---
 
 ## Tool Manager
 
-The `[tool_manager]` section configures how tools from different servers are named and managed.
-
-### Configuration
+The `[tool_manager]` section fine-tunes how tools are named and organized. Create aliases for friendlier tool names or customize the naming template.
 
 ```toml
 [tool_manager]
 conflict_resolution = "prefix"
 
-[tool_manager.custom_template]
-template = "{server_name}_{tool_name}"
-
 [tool_manager.aliases]
-create_env = "conda_create_environment"
-list_envs = "conda_list_environments"
-delete_env = "conda_delete_environment"
-
-[tool_manager.versioning]
-enabled = false
-allow_multiple_versions = false
-version_suffix_format = "_v{version}"
-```
-
-### Options
-
-| Option | Type | Description | Default |
-|--------|------|-------------|---------|
-| `conflict_resolution` | string | Naming strategy | `"prefix"` |
-| `custom_template.template` | string | Custom naming template | `null` |
-| `aliases` | table | Tool name aliases | `{}` |
-| `versioning.enabled` | boolean | Enable tool versioning | `false` |
-| `versioning.allow_multiple_versions` | boolean | Allow multiple versions | `false` |
-| `versioning.version_suffix_format` | string | Version suffix format | `"_v{version}"` |
-
-### Custom Templates
-
-Available variables:
-- `{server_name}` - Name of the server
-- `{tool_name}` - Original tool name
-- `{version}` - Tool version (if available)
-
-**Examples:**
-
-
-### Aliases
-
-Create friendly names for tools:
-
-```toml
-[tool_manager.aliases]
-# alias = "actual_tool_name"
 create_env = "conda_environments_create_environment"
 list_envs = "conda_environments_list_environments"
-notebook = "jupyter_server_create_notebook"
 ```
 
-Usage:
-```bash
-# Instead of: conda_environments_create_environment
-# Use: create_env
-```
+Aliases let you expose tools under shorter, more intuitive names without modifying the underlying servers.
+
+📖 **Reference:** [Tool Manager Section](https://mcp-compose.datalayer.tech/configuration/#tool-manager-section)
 
 ---
 
-## Complete Examples
+## Example Configuration
 
-### Development Configuration
+A typical Anaconda MCP development configuration:
 
 ```toml
 [composer]
-name = "dev-mcp"
+name = "anaconda-mcp"
 conflict_resolution = "prefix"
 log_level = "DEBUG"
 port = 8000
 
 [transport]
 stdio_enabled = true
-sse_enabled = true
-sse_cors_enabled = true
 
 [authentication]
 enabled = false
 
-[[servers.proxied.streamable-http]]
-name = "conda_environments"
-url = "http://localhost:4041/mcp"
-auto_start = true
-command = ["environments-mcp-server", "start", "--transport", "streamable-http"]
-startup_delay = 2
+[[servers.proxied.stdio]]
+name = "environments"
+command = ["environments-mcp-server", "start", "--transport", "stdio"]
+restart_policy = "on-failure"
+
+[[servers.proxied.http]]
+name = "jupyter"
+url = "http://localhost:8888/mcp"
+protocol = "streamable-http"
+timeout = 30
 
 [tool_manager]
 conflict_resolution = "prefix"
 
-[api]
-enabled = true
-host = "127.0.0.1"
-port = 8000
-cors_enabled = true
-cors_origins = ["http://localhost:3000"]
-docs_enabled = true
+[tool_manager.aliases]
+create_env = "conda_environments_create_environment"
+list_envs = "conda_environments_list_environments"
 ```
+
+---
+
+## Further Reading
+
+For complete configuration options including authorization, monitoring, REST API, and Web UI settings, see the [MCP Compose Configuration Documentation](https://mcp-compose.datalayer.tech/configuration/).
