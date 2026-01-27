@@ -8,7 +8,6 @@ across Linux, macOS, and Windows platforms.
 import json
 import os
 import platform
-import tempfile
 from pathlib import Path
 from unittest import mock
 
