@@ -188,5 +188,3 @@ list_envs = "conda_environments_list_environments"
 ## Further Reading
 
 For complete configuration options including authorization, monitoring, REST API, and Web UI settings, see the [MCP Compose Configuration Documentation](https://mcp-compose.datalayer.tech/configuration/).
-docs_enabled = true
-```
