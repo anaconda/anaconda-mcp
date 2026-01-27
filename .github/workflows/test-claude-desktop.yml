@@ -100,13 +100,13 @@ jobs:
           TEMP_CONFIG=$(python -c "import tempfile, os; print(os.path.join(tempfile.gettempdir(), 'test_claude_config.json'))")
           anaconda-mcp claude install --config "$TEMP_CONFIG" --no-backup
           
-          # Verify config was created
-          python -c "
-          import json
-          import os
+            # Verify config was created
+            TEMP_CONFIG="$TEMP_CONFIG" python -c "
+            import json
+            import os
 
-          config_path = '$TEMP_CONFIG'
-          with open(config_path) as f:
+            config_path = os.environ['TEMP_CONFIG']
+            with open(config_path) as f:
               config = json.load(f)
 
           assert 'mcpServers' in config, 'mcpServers not in config'
@@ -141,10 +141,11 @@ jobs:
             --port 9999 \
             --no-backup
           
-          python -c "
-          import json
+            TEMP_CONFIG="$TEMP_CONFIG" python -c "
+            import json
+            import os
 
-          with open('$TEMP_CONFIG') as f:
+            with open(os.environ['TEMP_CONFIG']) as f:
               config = json.load(f)
 
           server_config = config['mcpServers']['anaconda-mcp']
@@ -205,9 +206,10 @@ jobs:
           echo "=== Test 4: Uninstall ==="
           anaconda-mcp claude uninstall --config "$CONFIG_PATH" --no-backup
           
-          python -c "
-          import json
-          with open('$CONFIG_PATH') as f:
+            CONFIG_PATH="$CONFIG_PATH" python -c "
+            import json
+            import os
+            with open(os.environ['CONFIG_PATH']) as f:
               config = json.load(f)
           assert 'anaconda-mcp' not in config.get('mcpServers', {}), 'Server not removed'
           print('[PASS] Uninstall successful')
