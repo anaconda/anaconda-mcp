@@ -129,7 +129,7 @@ graph LR
         T2[list_environments]
         T3[delete_environment]
         T4[install_packages]
-        T5[export_environment]
+        T5[remove_packages]
     end
     
     subgraph "Composed Tools (prefix strategy)"
@@ -137,6 +137,7 @@ graph LR
         CT2[conda_environments_list_environments]
         CT3[conda_environments_delete_environment]
         CT4[conda_environments_install_packages]
+        CT5[conda_environments_remove_packages]
     end
     
     T1 --> CT1
