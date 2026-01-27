@@ -52,7 +52,7 @@ Anaconda MCP has clearly defined responsibilities that complement the underlying
 
 | Responsibility | Description |
 |----------------|-------------|
-| **Anaconda Authentication** | Validates Anaconda bearer tokens against the Anaconda.org API |
+| **Anaconda Authentication** | Validates Anaconda bearer tokens against the Anaconda API |
 | **Login Flow** | Provides non-blocking browser-based login via `anaconda-auth` |
 | **Default Configuration** | Ships with pre-configured downstream servers for Anaconda tools |
 | **CLI Wrapper** | Exposes `anaconda-mcp serve` command with sensible defaults |
@@ -137,7 +137,6 @@ graph LR
         CT2[conda_environments_list_environments]
         CT3[conda_environments_delete_environment]
         CT4[conda_environments_install_packages]
-        CT5[conda_environments_export_environment]
     end
     
     T1 --> CT1
@@ -147,7 +146,7 @@ graph LR
     T5 --> CT5
 ```
 
-The Environments MCP server runs as a standalone HTTP service on port 4041. Anaconda MCP connects to it via Streamable HTTP transport and auto-starts it if configured.
+The Environments MCP server runs as a standalone HTTP service on port 4041. Anaconda MCP connects to it via STDIO or Streamable HTTP transport (see details in the [CONFIGURATION_GUIDE](./CONFIGURATION_GUIDE.md) and auto-starts it if configured.
 
 ### Future Servers
 
@@ -164,43 +163,73 @@ The architecture supports adding additional MCP servers:
 
 ## Authentication Flow
 
-Anaconda MCP supports two authentication modes:
+Anaconda MCP handles authentication at startup, not per-request. The server initiates the authentication flow and stores credentials securely in the system keyring using the `anaconda-auth` library.
 
-### Bearer Token Authentication
+### Browser-Based Login Flow
 
-Clients provide an Anaconda API token in the Authorization header. The token is validated against the Anaconda.org API.
+When Anaconda MCP starts, it checks for an existing API token in the system keyring (managed by `anaconda-auth`). If no token is found, it initiates a browser-based OAuth login flow. The user authenticates via the Anaconda website, and the token is securely stored in the keyring for subsequent requests.
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Anaconda as Anaconda MCP Server
+    participant Composer as MCP Composer Server
+    participant ENV as Environments MCP Server
+    participant Keyring as System Keyring
+    participant Browser
+    participant API as Anaconda API
+
+    User->>Anaconda: anaconda-mcp serve
+    Anaconda->>Keyring: Check for API token
+    
+    alt Token exists in keyring
+        Keyring-->>Anaconda: Token found
+        Anaconda->>API: Validate token
+        API-->>Anaconda: Token valid
+        Anaconda->>Anaconda: Initialize telemetry
+    else No token in keyring
+        Anaconda->>Browser: Open login page (background)
+        User->>Browser: Authenticate
+        Browser->>API: OAuth flow
+        API-->>Browser: Token issued
+        Browser->>Keyring: Store token (via anaconda-auth)
+        Anaconda->>Keyring: Poll for token
+        Keyring-->>Anaconda: Token available
+        Anaconda->>Anaconda: Initialize telemetry
+    end
+    
+    Anaconda->>Composer: Initialize MCP Compose
+    Composer->>ENV: Start/Connect to server
+    ENV-->>Composer: Ready
+    Composer-->>Anaconda: Composition ready
+    Anaconda-->>User: Server ready
+```
+
+Once authenticated, the token is persisted in the system keyring. Subsequent server starts will retrieve the stored token without requiring re-authentication. Users can also manually authenticate using `anaconda login` before starting the server.
+
+### Token Retrieval for Requests
+
+After startup, Anaconda MCP retrieves the token from the system keyring as needed for external API calls.
 
 ```mermaid
 sequenceDiagram
     participant Client as MCP Client
-    participant Gateway as Anaconda MCP
-    participant Anaconda as Anaconda.org API
-    participant Server as Environments MCP
+    participant Anaconda as Anaconda MCP Server
+    participant Composer as MCP Composer Server
+    participant ENV as Environments MCP Server
+    participant Keyring as System Keyring
 
-    Client->>Gateway: tools/call<br/>Authorization: Bearer <token>
-    Gateway->>Anaconda: Validate token
-    Anaconda-->>Gateway: Token valid (user info)
-    Gateway->>Server: tools/call (no auth)
-    Server-->>Gateway: Result
-    Gateway-->>Client: Result
+    Client->>Anaconda: tools/call
+    Anaconda->>Keyring: Get stored token
+    Keyring-->>Anaconda: Token
+    Anaconda->>Composer: Route tool call
+    Composer->>ENV: tools/call (no auth required)
+    ENV-->>Composer: Result
+    Composer-->>Anaconda: Result
+    Anaconda-->>Client: Result
 ```
 
-### Fallback Mode (Local Development)
-
-For local development, set `MCP_COMPOSE_ANACONDA_TOKEN="fallback"` to use locally stored credentials from `anaconda login`.
-
-```mermaid
-sequenceDiagram
-    participant Client as MCP Client
-    participant Gateway as Anaconda MCP
-    participant Local as Local anaconda-auth
-
-    Client->>Gateway: tools/call (no token)
-    Gateway->>Local: Get stored token
-    Local-->>Gateway: Token from anaconda login
-    Gateway->>Gateway: Validate token
-    Gateway-->>Client: Proceed with request
-```
+Note: Downstream MCP servers (like Environments MCP) don't require authentication—they're accessed only through the Anaconda MCP gateway which has already authenticated the user at startup.
 
 ---
 
@@ -211,34 +240,34 @@ When `anaconda-mcp serve` is executed:
 ```mermaid
 sequenceDiagram
     participant User
-    participant CLI as anaconda-mcp CLI
-    participant Auth as Auth Module
-    participant Compose as MCP Compose
-    participant ENV as Environments MCP
+    participant Anaconda as Anaconda MCP Server
+    participant Composer as MCP Composer Server
+    participant ENV as Environments MCP Server
 
-    User->>CLI: anaconda-mcp serve
-    CLI->>Auth: start_login()
+    User->>Anaconda: anaconda-mcp serve
+    Anaconda->>Anaconda: start_login()
     
     alt Token exists
-        Auth->>Auth: Initialize telemetry
+        Anaconda->>Anaconda: Initialize telemetry
     else No token
-        Auth->>Auth: Start browser login (background)
-        Auth->>Auth: Watch for token (background)
+        Anaconda->>Anaconda: Start browser login (background)
+        Anaconda->>Anaconda: Watch for token (background)
     end
     
-    CLI->>Compose: serve(config)
-    Compose->>Compose: Load mcp_compose.toml
+    Anaconda->>Composer: serve(config)
+    Composer->>Composer: Load mcp_compose.toml
     
     loop For each server with auto_start=true
-        Compose->>ENV: Start subprocess
-        ENV-->>Compose: HTTP server ready on :4041
+        Composer->>ENV: Start subprocess
+        ENV-->>Composer: HTTP server ready on :4041
     end
     
-    Compose->>ENV: Connect via Streamable HTTP
-    Compose->>ENV: Discover tools
-    ENV-->>Compose: Tool list
-    Compose->>Compose: Apply prefix strategy
-    Compose-->>User: Server ready (N tools)
+    Composer->>ENV: Connect via Streamable HTTP
+    Composer->>ENV: Discover tools
+    ENV-->>Composer: Tool list
+    Composer->>Composer: Apply prefix strategy
+    Composer-->>Anaconda: Composition ready
+    Anaconda-->>User: Server ready (N tools)
 ```
 
 Key points:
@@ -260,7 +289,7 @@ conflict_resolution = "prefix"
 port = 8888
 
 [authentication]
-enabled = false  # Enable for production
+enabled = true
 providers = ["anaconda"]
 default_provider = "anaconda"
 
@@ -280,6 +309,9 @@ For full configuration options, see the [Configuration Guide](./CONFIGURATION_GU
 ---
 
 ## Extensibility
+
+Anaconda MCP Serve support additional STDIO or Streamable HTTP transport (see details in the [CONFIGURATION_GUIDE](./CONFIGURATION_GUIDE.md) and auto-starts thems if configured.
+
 
 ### Adding a New Downstream Server
 
