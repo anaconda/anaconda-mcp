@@ -238,28 +238,28 @@ def claude_install(config_path, server_name, transport, host, port, no_backup, f
             click.echo(json.dumps(output, indent=2))
         else:
             if result["created"]:
-                click.echo(f"✅ Created Claude Desktop config: {result['config_path']}")
+                click.echo(f"[OK] Created Claude Desktop config: {result['config_path']}")
             elif result["updated"]:
-                click.echo(f"✅ Updated '{server_name}' in: {result['config_path']}")
+                click.echo(f"[OK] Updated '{server_name}' in: {result['config_path']}")
             else:
-                click.echo(f"✅ Added '{server_name}' to: {result['config_path']}")
+                click.echo(f"[OK] Added '{server_name}' to: {result['config_path']}")
 
             if result["backup_path"]:
-                click.echo(f"📦 Backup saved to: {result['backup_path']}")
+                click.echo(f"[Backup] Saved to: {result['backup_path']}")
 
-            click.echo(f"\n🔧 Transport: {transport}")
+            click.echo(f"\n[Transport] {transport}")
             if transport == "stdio":
                 click.echo("   Claude Desktop will start anaconda-mcp automatically.")
             else:
                 click.echo(f"   Start the server manually: anaconda-mcp serve --port {port}")
 
-            click.echo("\n🔄 Restart Claude Desktop to apply changes.")
+            click.echo("\n[Note] Restart Claude Desktop to apply changes.")
 
     except FileExistsError as e:
-        click.echo(f"❌ {e}", err=True)
+        click.echo(f"[Error] {e}", err=True)
         sys.exit(1)
     except Exception as e:
-        click.echo(f"❌ Error: {e}", err=True)
+        click.echo(f"[Error] {e}", err=True)
         sys.exit(1)
 
 
@@ -320,19 +320,19 @@ def claude_uninstall(config_path, server_name, no_backup, output_json):
         if output_json:
             click.echo(json.dumps(output, indent=2))
         else:
-            click.echo(f"✅ Removed '{server_name}' from: {result['config_path']}")
+            click.echo(f"[OK] Removed '{server_name}' from: {result['config_path']}")
             if result["backup_path"]:
-                click.echo(f"📦 Backup saved to: {result['backup_path']}")
-            click.echo("\n🔄 Restart Claude Desktop to apply changes.")
+                click.echo(f"[Backup] Saved to: {result['backup_path']}")
+            click.echo("\n[Note] Restart Claude Desktop to apply changes.")
 
     except FileNotFoundError as e:
-        click.echo(f"❌ {e}", err=True)
+        click.echo(f"[Error] {e}", err=True)
         sys.exit(1)
     except KeyError as e:
-        click.echo(f"❌ {e}", err=True)
+        click.echo(f"[Error] {e}", err=True)
         sys.exit(1)
     except Exception as e:
-        click.echo(f"❌ Error: {e}", err=True)
+        click.echo(f"[Error] {e}", err=True)
         sys.exit(1)
 
 
@@ -386,19 +386,19 @@ def claude_show(config_path, server_name, output_json):
             }
             click.echo(json.dumps(output, indent=2))
         else:
-            click.echo(f"📁 Config path: {result['config_path']}")
-            click.echo(f"📄 Exists: {'Yes' if result['exists'] else 'No'}")
+            click.echo(f"[Config path] {result['config_path']}")
+            click.echo(f"[Exists] {'Yes' if result['exists'] else 'No'}")
 
             if result["exists"] and result["config"] is not None:
-                click.echo("\n📋 Configuration:")
+                click.echo("\n[Configuration]")
                 click.echo(json.dumps(result["config"], indent=2))
             elif result["exists"] and server_name:
-                click.echo(f"\n⚠️  Server '{server_name}' not found in configuration.")
+                click.echo(f"\n[Warning] Server '{server_name}' not found in configuration.")
             elif not result["exists"]:
-                click.echo("\n💡 Run 'anaconda-mcp claude install' to create the configuration.")
+                click.echo("\n[Tip] Run 'anaconda-mcp claude install' to create the configuration.")
 
     except Exception as e:
-        click.echo(f"❌ Error: {e}", err=True)
+        click.echo(f"[Error] {e}", err=True)
         sys.exit(1)
 
 
@@ -414,7 +414,7 @@ def claude_path():
         config_path = get_claude_desktop_config_path()
         click.echo(str(config_path))
     except RuntimeError as e:
-        click.echo(f"❌ {e}", err=True)
+        click.echo(f"[Error] {e}", err=True)
         sys.exit(1)
 
 
