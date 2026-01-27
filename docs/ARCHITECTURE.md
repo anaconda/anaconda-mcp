@@ -205,7 +205,7 @@ sequenceDiagram
     Anaconda-->>User: Server ready
 ```
 
-Once authenticated, the token is persisted in the system keyring. Subsequent server starts will retrieve the stored token without requiring re-authentication. Users can also manually authenticate using `anaconda login` before starting the server.
+Once authenticated, the token is persisted in the system keyring. Subsequent server starts will retrieve the stored token without requiring re-authentication. Users can also manually authenticate using `anaconda auth login` before starting the server.
 
 ### Token Retrieval for Requests
 
