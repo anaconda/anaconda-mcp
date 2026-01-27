@@ -97,7 +97,7 @@ graph TD
     
     subgraph "Downstream Servers"
         ENV[Environments MCP<br/>:4041]
-        JUP[Jupyter MCP<br/>:8888]
+        JUP[Jupyter MCP<br/>:8889]
     end
     
     Client --> Transport
@@ -184,8 +184,8 @@ sequenceDiagram
     
     alt Token exists in keyring
         Keyring-->>Anaconda: Token found
-        Anaconda->>API: Validate token
-        API-->>Anaconda: Token valid
+        Anaconda->>Anaconda: Use token from keyring (no pre-validation)
+        Note over Anaconda,API: Future enhancement: validate token via Anaconda API before use
         Anaconda->>Anaconda: Initialize telemetry
     else No token in keyring
         Anaconda->>Browser: Open login page (background)
@@ -289,7 +289,7 @@ conflict_resolution = "prefix"
 port = 8888
 
 [authentication]
-enabled = true
+enabled = false
 providers = ["anaconda"]
 default_provider = "anaconda"
 
@@ -310,7 +310,7 @@ For full configuration options, see the [Configuration Guide](./CONFIGURATION_GU
 
 ## Extensibility
 
-Anaconda MCP Serve support additional STDIO or Streamable HTTP transport (see details in the [CONFIGURATION_GUIDE](./CONFIGURATION_GUIDE.md) and auto-starts thems if configured.
+The `anaconda-mcp serve` command supports additional STDIO and Streamable HTTP transports (see details in the [CONFIGURATION_GUIDE](./CONFIGURATION_GUIDE.md)) and can auto-start them if configured.
 
 
 ### Adding a New Downstream Server
