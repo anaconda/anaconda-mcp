@@ -82,7 +82,7 @@ jobs:
               path_str = str(path).lower()
               assert 'appdata' in path_str or 'roaming' in path_str, f'Expected AppData in Windows path: {path}'
 
-          print('✅ Path detection test passed!')
+          print('[PASS] Path detection test passed!')
           "
 
       - name: Test CLI commands
@@ -118,7 +118,7 @@ jobs:
           assert 'env' in server_config, 'env not in server config'
           assert 'MCP_COMPOSE_CONFIG_DIR' in server_config['env'], 'MCP_COMPOSE_CONFIG_DIR not in env'
 
-          print('✅ CLI install test passed!')
+          print('[PASS] CLI install test passed!')
           "
           
           # Test show command
@@ -127,7 +127,7 @@ jobs:
           # Test uninstall command
           anaconda-mcp claude uninstall --config "$TEMP_CONFIG" --no-backup
           
-          echo "✅ All CLI tests passed!"
+          echo "[PASS] All CLI tests passed!"
 
       - name: Test streamable-http transport
         shell: bash
@@ -152,7 +152,7 @@ jobs:
           assert '127.0.0.1' in server_config['url'], 'Wrong host in URL'
           assert '9999' in server_config['url'], 'Wrong port in URL'
 
-          print('✅ Streamable HTTP transport test passed!')
+          print('[PASS] Streamable HTTP transport test passed!')
           "
 
   integration:
@@ -195,9 +195,9 @@ jobs:
           
           BACKUP_COUNT=$(ls "$TEMP_DIR"/*.backup.json 2>/dev/null | wc -l)
           if [ "$BACKUP_COUNT" -ge 1 ]; then
-            echo "✅ Backup file created"
+            echo "[PASS] Backup file created"
           else
-            echo "❌ No backup file found"
+            echo "[FAIL] No backup file found"
             exit 1
           fi
           
@@ -210,7 +210,7 @@ jobs:
           with open('$CONFIG_PATH') as f:
               config = json.load(f)
           assert 'anaconda-mcp' not in config.get('mcpServers', {}), 'Server not removed'
-          print('✅ Uninstall successful')
+          print('[PASS] Uninstall successful')
           "
           
           echo ""
@@ -222,4 +222,4 @@ jobs:
           rm -rf "$TEMP_DIR"
           
           echo ""
-          echo "✅ All integration tests passed!"
+          echo "[PASS] All integration tests passed!"
