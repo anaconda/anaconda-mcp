@@ -100,26 +100,26 @@ jobs:
           TEMP_CONFIG=$(python -c "import tempfile, os; print(os.path.join(tempfile.gettempdir(), 'test_claude_config.json'))")
           anaconda-mcp claude install --config "$TEMP_CONFIG" --no-backup
           
-              # Verify config was created
-              TEMP_CONFIG="$TEMP_CONFIG" python - <<'PY'
-        import json
-        import os
+            # Verify config was created
+            TEMP_CONFIG="$TEMP_CONFIG" python -c "
+            import json
+            import os
 
-        config_path = os.environ['TEMP_CONFIG']
-        with open(config_path) as f:
-          config = json.load(f)
+            config_path = os.environ['TEMP_CONFIG']
+            with open(config_path) as f:
+              config = json.load(f)
 
-        assert 'mcpServers' in config, 'mcpServers not in config'
-        assert 'anaconda-mcp' in config['mcpServers'], 'anaconda-mcp not in config'
+          assert 'mcpServers' in config, 'mcpServers not in config'
+          assert 'anaconda-mcp' in config['mcpServers'], 'anaconda-mcp not in config'
 
-        server_config = config['mcpServers']['anaconda-mcp']
-        assert 'command' in server_config, 'command not in server config'
-        assert 'args' in server_config, 'args not in server config'
-        assert 'env' in server_config, 'env not in server config'
-        assert 'MCP_COMPOSE_CONFIG_DIR' in server_config['env'], 'MCP_COMPOSE_CONFIG_DIR not in env'
+          server_config = config['mcpServers']['anaconda-mcp']
+          assert 'command' in server_config, 'command not in server config'
+          assert 'args' in server_config, 'args not in server config'
+          assert 'env' in server_config, 'env not in server config'
+          assert 'MCP_COMPOSE_CONFIG_DIR' in server_config['env'], 'MCP_COMPOSE_CONFIG_DIR not in env'
 
-        print('[PASS] CLI install test passed!')
-        PY
+          print('[PASS] CLI install test passed!')
+          "
           
           # Test show command
           anaconda-mcp claude show --config "$TEMP_CONFIG"
@@ -141,20 +141,20 @@ jobs:
             --port 9999 \
             --no-backup
           
-              TEMP_CONFIG="$TEMP_CONFIG" python - <<'PY'
-        import json
-        import os
+            TEMP_CONFIG="$TEMP_CONFIG" python -c "
+            import json
+            import os
 
-        with open(os.environ['TEMP_CONFIG']) as f:
-          config = json.load(f)
+            with open(os.environ['TEMP_CONFIG']) as f:
+              config = json.load(f)
 
-        server_config = config['mcpServers']['anaconda-mcp']
-        assert server_config['transport'] == 'streamable-http', 'Wrong transport'
-        assert '127.0.0.1' in server_config['url'], 'Wrong host in URL'
-        assert '9999' in server_config['url'], 'Wrong port in URL'
+          server_config = config['mcpServers']['anaconda-mcp']
+          assert server_config['transport'] == 'streamable-http', 'Wrong transport'
+          assert '127.0.0.1' in server_config['url'], 'Wrong host in URL'
+          assert '9999' in server_config['url'], 'Wrong port in URL'
 
-        print('[PASS] Streamable HTTP transport test passed!')
-        PY
+          print('[PASS] Streamable HTTP transport test passed!')
+          "
 
   integration:
     name: Integration Tests
@@ -206,15 +206,14 @@ jobs:
           echo "=== Test 4: Uninstall ==="
           anaconda-mcp claude uninstall --config "$CONFIG_PATH" --no-backup
           
-              CONFIG_PATH="$CONFIG_PATH" python - <<'PY'
-        import json
-        import os
-
-        with open(os.environ['CONFIG_PATH']) as f:
-          config = json.load(f)
-        assert 'anaconda-mcp' not in config.get('mcpServers', {}), 'Server not removed'
-        print('[PASS] Uninstall successful')
-        PY
+            CONFIG_PATH="$CONFIG_PATH" python -c "
+            import json
+            import os
+            with open(os.environ['CONFIG_PATH']) as f:
+              config = json.load(f)
+          assert 'anaconda-mcp' not in config.get('mcpServers', {}), 'Server not removed'
+          print('[PASS] Uninstall successful')
+          "
           
           echo ""
           echo "=== Test 5: JSON output ==="
