@@ -101,8 +101,8 @@ def load_config(config_path: Path) -> dict[str, Any]:
     try:
         with open(config_path, "r", encoding="utf-8") as f:
             return json.load(f)
-    except json.JSONDecodeError:
-        # Return empty config if file is corrupted
+    except (json.JSONDecodeError, OSError):
+        # Return empty config if file is corrupted or cannot be read
         return {}
 
 
