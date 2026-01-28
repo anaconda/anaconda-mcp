@@ -14,8 +14,8 @@ port = 2391
 # Transport Configuration
 # ============================================================================
 [transport]
-stdio_enabled = false
-streamable_http_enabled = true
+stdio_enabled = true
+streamable_http_enabled = false
 sse_enabled = false
 
 # ============================================================================
