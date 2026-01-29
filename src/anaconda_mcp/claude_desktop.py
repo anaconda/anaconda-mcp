@@ -142,7 +142,7 @@ def build_stdio_config(server_name: str = "anaconda-mcp") -> dict[str, Any]:
     """
     Build the STDIO MCP server configuration for Claude Desktop.
 
-    Uses MCP_COMPOSE_CONFIG_DIR special variable for portable configuration.
+    Uses MCP_COMPOSE_CONFIG_DIR and ANACONDA_MCP_PYTHON_EXECUTABLE for portable configuration.
 
     Args:
         server_name: Name for the MCP server in Claude Desktop
@@ -152,12 +152,12 @@ def build_stdio_config(server_name: str = "anaconda-mcp") -> dict[str, Any]:
     """
     python_exe = get_python_executable()
     config_dir = get_anaconda_mcp_config_dir()
-    config_file = config_dir / "mcp_compose.toml"
 
     return {
         "command": python_exe,
-        "args": ["-m", "anaconda_mcp", "serve", "--config", str(config_file)],
+        "args": ["-m", "anaconda_mcp", "serve"],
         "env": {
+            "ANACONDA_MCP_PYTHON_EXECUTABLE": python_exe,
             "MCP_COMPOSE_CONFIG_DIR": str(config_dir),
         },
     }

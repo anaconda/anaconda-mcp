@@ -208,20 +208,22 @@ class TestBuildStdioConfig:
         assert "-m" in config["args"]
         assert "anaconda_mcp" in config["args"]
         assert "serve" in config["args"]
+        assert config["args"] == ["-m", "anaconda_mcp", "serve"]
+        assert "ANACONDA_MCP_PYTHON_EXECUTABLE" in config["env"]
         assert "MCP_COMPOSE_CONFIG_DIR" in config["env"]
 
-    def test_config_points_to_mcp_compose_toml(self):
-        """Test that config points to mcp_compose.toml in package directory."""
+    def test_env_vars_point_to_package_directory(self):
+        """Test that environment variables point to package directory."""
         config = build_stdio_config()
 
-        # Find the --config argument value
-        args = config["args"]
-        config_idx = args.index("--config")
-        config_path = Path(args[config_idx + 1])
-
-        assert config_path.name == "mcp_compose.toml"
-        # Path should be in the anaconda_mcp package directory
-        assert config_path.parent.name == "anaconda_mcp"
+        # Check MCP_COMPOSE_CONFIG_DIR points to package directory
+        config_dir = Path(config["env"]["MCP_COMPOSE_CONFIG_DIR"])
+        assert config_dir.name == "anaconda_mcp"
+        assert (config_dir / "__init__.py").exists()
+        
+        # Check ANACONDA_MCP_PYTHON_EXECUTABLE is set to current Python
+        python_exe = config["env"]["ANACONDA_MCP_PYTHON_EXECUTABLE"]
+        assert python_exe == sys.executable
 
 
 class TestBuildStreamableHttpConfig:
