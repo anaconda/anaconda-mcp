@@ -1,7 +1,7 @@
 import sys
 import tempfile
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import patch, PropertyMock
 
 import pytest
 
@@ -68,9 +68,9 @@ def test_render_template_with_env_var(sample_template, monkeypatch):
     """Test that environment variable takes precedence."""
     custom_python = "/custom/path/to/python"
     
-    # Mock the settings object
+    # Mock the settings object with proper attribute
     with patch('anaconda_mcp.utils.settings') as mock_settings:
-        mock_settings.ANACONDA_MCP_PYTHON_EXECUTABLE = custom_python
+        mock_settings.configure_mock(PYTHON_EXECUTABLE=custom_python)
         
         rendered_path = _render_config_template(sample_template)
         
@@ -88,8 +88,8 @@ def test_render_template_with_env_var(sample_template, monkeypatch):
 def test_render_fallback_to_sys_executable(sample_template):
     """Test that sys.executable is used when no env var is set."""
     with patch('anaconda_mcp.utils.settings') as mock_settings:
-        mock_settings.ANACONDA_MCP_PYTHON_EXECUTABLE = None
-        
+        mock_settings.configure_mock(PYTHON_EXECUTABLE=None)
+    
         rendered_path = _render_config_template(sample_template)
         
         try:
