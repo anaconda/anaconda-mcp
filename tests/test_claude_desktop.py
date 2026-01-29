@@ -104,14 +104,16 @@ class TestGetClaudeDesktopConfigPath:
 class TestGetAnacondaMcpConfigDir:
     """Tests for get_anaconda_mcp_config_dir function."""
 
-    def test_returns_etc_directory_based_on_python_prefix(self):
-        """Test that it returns the etc directory based on Python prefix."""
+    def test_returns_package_directory(self):
+        """Test that it returns the anaconda_mcp package installation directory."""
         config_dir = get_anaconda_mcp_config_dir()
-        # Should return {sys.prefix}/etc
-        expected = Path(sys.prefix) / "etc"
-        assert config_dir == expected
-        # The directory should exist in most environments
-        assert config_dir.exists() or not config_dir.exists()  # May or may not exist
+        # Should return the directory where anaconda_mcp is installed
+        # This will be something like .../site-packages/anaconda_mcp/
+        assert config_dir.exists()
+        assert config_dir.name == "anaconda_mcp"
+        # Verify it's the directory containing the module files
+        assert (config_dir / "__init__.py").exists()
+        assert (config_dir / "claude_desktop.py").exists()
 
 
 class TestBackupConfigFile:
@@ -209,7 +211,7 @@ class TestBuildStdioConfig:
         assert "MCP_COMPOSE_CONFIG_DIR" in config["env"]
 
     def test_config_points_to_mcp_compose_toml(self):
-        """Test that config points to mcp_compose.toml in etc directory."""
+        """Test that config points to mcp_compose.toml in package directory."""
         config = build_stdio_config()
 
         # Find the --config argument value
@@ -218,8 +220,8 @@ class TestBuildStdioConfig:
         config_path = Path(args[config_idx + 1])
 
         assert config_path.name == "mcp_compose.toml"
-        # Path should be in etc directory based on Python prefix
-        assert config_path.parent.name == "etc"
+        # Path should be in the anaconda_mcp package directory
+        assert config_path.parent.name == "anaconda_mcp"
 
 
 class TestBuildStreamableHttpConfig:

@@ -60,20 +60,16 @@ def get_anaconda_mcp_config_dir() -> Path:
     This returns the path to the directory containing mcp_compose.toml,
     which is used as MCP_COMPOSE_CONFIG_DIR for STDIO transport.
 
-    The path is computed from the Python executable location:
-    - If Python is at /path/to/env/bin/python, returns /path/to/env/etc
-    - Uses sys.prefix to get the environment root
-    - Returns {prefix}/etc regardless of whether the file exists
+    The path is dynamically determined by finding where the anaconda_mcp
+    package is installed. This ensures the config file location matches
+    the package installation location.
 
     Returns:
-        Path to the etc directory
+        Path to the anaconda_mcp package directory
     """
-    # Get the Python prefix (environment root) from the executable
-    # sys.prefix is the directory containing the Python installation
-    prefix = Path(sys.prefix)
-    
-    # Return the etc directory based on the Python environment
-    return prefix / "etc"
+    # Return the directory where this module (anaconda_mcp) is installed
+    # This will be something like: .../site-packages/anaconda_mcp/
+    return Path(__file__).resolve().parent
 
 
 def backup_config_file(config_path: Path) -> Path | None:
