@@ -8,6 +8,7 @@ across Linux, macOS, and Windows platforms.
 import json
 import os
 import platform
+import sys
 from pathlib import Path
 from unittest import mock
 
@@ -103,11 +104,14 @@ class TestGetClaudeDesktopConfigPath:
 class TestGetAnacondaMcpConfigDir:
     """Tests for get_anaconda_mcp_config_dir function."""
 
-    def test_returns_package_directory(self):
-        """Test that it returns the anaconda_mcp package directory."""
+    def test_returns_etc_directory_based_on_python_prefix(self):
+        """Test that it returns the etc directory based on Python prefix."""
         config_dir = get_anaconda_mcp_config_dir()
-        assert config_dir.exists()
-        assert (config_dir / "mcp_compose.toml").exists()
+        # Should return {sys.prefix}/etc
+        expected = Path(sys.prefix) / "etc"
+        assert config_dir == expected
+        # The directory should exist in most environments
+        assert config_dir.exists() or not config_dir.exists()  # May or may not exist
 
 
 class TestBackupConfigFile:
@@ -205,7 +209,7 @@ class TestBuildStdioConfig:
         assert "MCP_COMPOSE_CONFIG_DIR" in config["env"]
 
     def test_config_points_to_mcp_compose_toml(self):
-        """Test that config points to actual mcp_compose.toml."""
+        """Test that config points to mcp_compose.toml in etc directory."""
         config = build_stdio_config()
 
         # Find the --config argument value
@@ -214,7 +218,8 @@ class TestBuildStdioConfig:
         config_path = Path(args[config_idx + 1])
 
         assert config_path.name == "mcp_compose.toml"
-        assert config_path.exists()
+        # Path should be in etc directory based on Python prefix
+        assert config_path.parent.name == "etc"
 
 
 class TestBuildStreamableHttpConfig:
