@@ -6,7 +6,7 @@ The `anaconda-mcp` package needs to spawn subprocess MCP servers (like `environm
 
 ### Environment Variable Handling
 
-The `ANACONDA_MCP_PYTHON_EXECUTABLE` environment variable is automatically loaded via Pydantic Settings with the `ANACONDA_MCP_` prefix. This means:
+The `PYTHON_EXECUTABLE` environment variable is automatically loaded via Pydantic Settings with the `ANACONDA_MCP_` prefix. This means:
 
 - **Direct usage:** `ANACONDA_MCP_PYTHON_EXECUTABLE=/path/to/python`
 - **Auto-prefixed:** The `Settings` class handles the prefix automatically

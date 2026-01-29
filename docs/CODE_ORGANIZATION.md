@@ -57,7 +57,7 @@ class Settings(BaseSettings):
 ```
 
 **How it works:**
-- Pydantic automatically reads `ANACONDA_MCP_ANACONDA_MCP_PYTHON_EXECUTABLE` from environment
+- Pydantic automatically reads `ANACONDA_MCP_PYTHON_EXECUTABLE` from environment
 - Returns `None` if not set (handled gracefully in utils.py)
 
 ## Template Rendering
@@ -71,7 +71,7 @@ def _render_config_template(config_path: str) -> str:
 ```
 
 **Priority logic:**
-1. Use `settings.ANACONDA_MCP_PYTHON_EXECUTABLE` if set
+1. Use `settings.PYTHON_EXECUTABLE` if set
 2. Fall back to `sys.executable`
 3. Handle Windows path escaping
 4. Write to temp file (thread-safe)
