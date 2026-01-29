@@ -132,13 +132,13 @@ def discover(ctx, pyproject, output_format):
 # ============================================================================
 
 
-@cli.group(help="Configure Claude Desktop integration.")
-def claude():
+@cli.group(name="claude-desktop", help="Configure Claude Desktop integration.")
+def claude_desktop():
     """Manage Claude Desktop configuration for Anaconda MCP."""
     pass
 
 
-@claude.command(name="configure", help="Add Anaconda MCP to Claude Desktop configuration.")
+@claude_desktop.command(name="setup-config", help="Add Anaconda MCP to Claude Desktop configuration.")
 @click.option(
     "-c",
     "--config",
@@ -201,16 +201,16 @@ def claude_configure(config_path, server_name, transport, host, port, no_backup,
     \b
     Examples:
         # Add with default STDIO transport
-        anaconda-mcp claude configure
+        anaconda-mcp claude-desktop setup-config
 
         # Add with Streamable HTTP transport
-        anaconda-mcp claude configure --transport streamable-http
+        anaconda-mcp claude-desktop setup-config --transport streamable-http
 
         # Use custom config path
-        anaconda-mcp claude configure --config ~/my-claude-config.json
+        anaconda-mcp claude-desktop setup-config --config ~/my-claude-config.json
 
         # Overwrite existing configuration
-        anaconda-mcp claude configure --force
+        anaconda-mcp claude-desktop setup-config --force
     """
     try:
         path = Path(config_path) if config_path else None
@@ -247,6 +247,24 @@ def claude_configure(config_path, server_name, transport, host, port, no_backup,
             if result["backup_path"]:
                 click.echo(f"[Backup] Saved to: {result['backup_path']}")
 
+            # Show diff
+            click.echo("\n[Changes]")
+            old_server = result.get("old_config", {}).get("mcpServers", {}).get(server_name)
+            new_server = result.get("new_config", {}).get("mcpServers", {}).get(server_name)
+            
+            if old_server is None:
+                click.echo(f"  + Added server '{server_name}'")
+            elif old_server != new_server:
+                click.echo(f"  ~ Updated server '{server_name}'")
+            
+            # Show the specific server config
+            click.echo(f"\n[Server Configuration: {server_name}]")
+            click.echo(json.dumps(new_server, indent=2))
+
+            # Show complete config file
+            click.echo("\n[Complete Configuration File]")
+            click.echo(json.dumps(result.get("new_config", {}), indent=2))
+
             click.echo(f"\n[Transport] {transport}")
             if transport == "stdio":
                 click.echo("   Claude Desktop will start anaconda-mcp automatically.")
@@ -263,7 +281,7 @@ def claude_configure(config_path, server_name, transport, host, port, no_backup,
         sys.exit(1)
 
 
-@claude.command(name="uninstall", help="Remove Anaconda MCP from Claude Desktop configuration.")
+@claude_desktop.command(name="remove-config", help="Remove Anaconda MCP from Claude Desktop configuration.")
 @click.option(
     "-c",
     "--config",
@@ -290,16 +308,16 @@ def claude_configure(config_path, server_name, transport, host, port, no_backup,
     is_flag=True,
     help="Output result as JSON.",
 )
-def claude_uninstall(config_path, server_name, no_backup, output_json):
+def claude_remove_config(config_path, server_name, no_backup, output_json):
     """Remove Anaconda MCP server configuration from Claude Desktop.
 
     \b
     Examples:
         # Remove with default name
-        anaconda-mcp claude uninstall
+        anaconda-mcp claude-desktop remove-config
 
         # Remove custom-named server
-        anaconda-mcp claude uninstall --name my-anaconda-server
+        anaconda-mcp claude-desktop remove-config --name my-anaconda-server
     """
     try:
         path = Path(config_path) if config_path else None
@@ -336,7 +354,7 @@ def claude_uninstall(config_path, server_name, no_backup, output_json):
         sys.exit(1)
 
 
-@claude.command(name="show", help="Show current Claude Desktop configuration.")
+@claude_desktop.command(name="show", help="Show current Claude Desktop configuration.")
 @click.option(
     "-c",
     "--config",
@@ -363,13 +381,13 @@ def claude_show(config_path, server_name, output_json):
     \b
     Examples:
         # Show full configuration
-        anaconda-mcp claude show
+        anaconda-mcp claude-desktop show
 
         # Show specific server
-        anaconda-mcp claude show --name anaconda-mcp
+        anaconda-mcp claude-desktop show --name anaconda-mcp
 
         # Output as JSON
-        anaconda-mcp claude show --json
+        anaconda-mcp claude-desktop show --json
     """
     try:
         path = Path(config_path) if config_path else None
@@ -395,20 +413,20 @@ def claude_show(config_path, server_name, output_json):
             elif result["exists"] and server_name:
                 click.echo(f"\n[Warning] Server '{server_name}' not found in configuration.")
             elif not result["exists"]:
-                click.echo("\n[Tip] Run 'anaconda-mcp claude configure' to create the configuration.")
+                click.echo("\n[Tip] Run 'anaconda-mcp claude-desktop setup-config' to create the configuration.")
 
     except Exception as e:
         click.echo(f"[Error] {e}", err=True)
         sys.exit(1)
 
 
-@claude.command(name="path", help="Show the default Claude Desktop config path.")
+@claude_desktop.command(name="path", help="Show the default Claude Desktop config path.")
 def claude_path():
     """Show the default Claude Desktop configuration file path for this OS.
 
     \b
     Examples:
-        anaconda-mcp claude path
+        anaconda-mcp claude-desktop path
     """
     try:
         config_path = get_claude_desktop_config_path()

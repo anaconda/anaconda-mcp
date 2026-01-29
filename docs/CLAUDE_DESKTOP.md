@@ -6,7 +6,7 @@ Anaconda MCP provides built-in CLI commands to configure [Claude Desktop](https:
 
 ```bash
 # Add Anaconda MCP to Claude Desktop
-anaconda-mcp claude configure
+anaconda-mcp claude-desktop setup-config
 
 # Restart Claude Desktop to apply changes
 ```
@@ -17,12 +17,12 @@ That's it! Claude Desktop will now have access to Anaconda MCP tools.
 
 ## CLI Commands
 
-### `anaconda-mcp claude configure`
+### `anaconda-mcp claude-desktop setup-config`
 
 Add Anaconda MCP server configuration to Claude Desktop.
 
 ```bash
-anaconda-mcp claude configure [OPTIONS]
+anaconda-mcp claude-desktop setup-config [OPTIONS]
 ```
 
 **Options:**
@@ -42,29 +42,29 @@ anaconda-mcp claude configure [OPTIONS]
 
 ```bash
 # Configure with default STDIO transport (recommended)
-anaconda-mcp claude configure
+anaconda-mcp claude-desktop setup-config
 
 # Configure with custom server name
-anaconda-mcp claude configure --name my-anaconda-server
+anaconda-mcp claude-desktop setup-config --name my-anaconda-server
 
 # Configure with Streamable HTTP transport
-anaconda-mcp claude configure --transport streamable-http --port 9000
+anaconda-mcp claude-desktop setup-config --transport streamable-http --port 9000
 
 # Overwrite existing configuration
-anaconda-mcp claude configure --force
+anaconda-mcp claude-desktop setup-config --force
 
 # Use custom config file location
-anaconda-mcp claude configure --config ~/my-claude-config.json
+anaconda-mcp claude-desktop setup-config --config ~/my-claude-config.json
 ```
 
 ---
 
-### `anaconda-mcp claude uninstall`
+### `anaconda-mcp claude-desktop remove-config`
 
 Remove Anaconda MCP server configuration from Claude Desktop.
 
 ```bash
-anaconda-mcp claude uninstall [OPTIONS]
+anaconda-mcp claude-desktop remove-config [OPTIONS]
 ```
 
 **Options:**
@@ -80,20 +80,20 @@ anaconda-mcp claude uninstall [OPTIONS]
 
 ```bash
 # Remove default anaconda-mcp entry
-anaconda-mcp claude uninstall
+anaconda-mcp claude-desktop remove-config
 
 # Remove custom-named server
-anaconda-mcp claude uninstall --name my-anaconda-server
+anaconda-mcp claude-desktop remove-config --name my-anaconda-server
 ```
 
 ---
 
-### `anaconda-mcp claude show`
+### `anaconda-mcp claude-desktop show`
 
 Display the current Claude Desktop configuration.
 
 ```bash
-anaconda-mcp claude show [OPTIONS]
+anaconda-mcp claude-desktop show [OPTIONS]
 ```
 
 **Options:**
@@ -108,23 +108,23 @@ anaconda-mcp claude show [OPTIONS]
 
 ```bash
 # Show full configuration
-anaconda-mcp claude show
+anaconda-mcp claude-desktop show
 
 # Show specific server configuration
-anaconda-mcp claude show --name anaconda-mcp
+anaconda-mcp claude-desktop show --name anaconda-mcp
 
 # Output as JSON (useful for scripting)
-anaconda-mcp claude show --json
+anaconda-mcp claude-desktop show --json
 ```
 
 ---
 
-### `anaconda-mcp claude path`
+### `anaconda-mcp claude-desktop path`
 
 Display the default Claude Desktop configuration file path for your operating system.
 
 ```bash
-anaconda-mcp claude path
+anaconda-mcp claude-desktop path
 ```
 
 **Output by OS:**
@@ -144,7 +144,7 @@ anaconda-mcp claude path
 With STDIO transport, Claude Desktop launches Anaconda MCP as a subprocess. This is the recommended approach for most users.
 
 ```bash
-anaconda-mcp claude configure --transport stdio
+anaconda-mcp claude-desktop setup-config --transport stdio
 ```
 
 **How it works:**
@@ -174,7 +174,7 @@ With Streamable HTTP transport, you run the server independently and Claude Desk
 
 ```bash
 # Configure with HTTP transport
-anaconda-mcp claude configure --transport streamable-http --port 8888
+anaconda-mcp claude-desktop setup-config --transport streamable-http --port 8888
 
 # Start the server separately (in another terminal)
 anaconda-mcp serve --port 8888
@@ -211,7 +211,7 @@ claude_desktop_config.20260127_143022.backup.json
 To skip backup creation:
 
 ```bash
-anaconda-mcp claude configure --no-backup
+anaconda-mcp claude-desktop setup-config --no-backup
 ```
 
 ---
@@ -228,11 +228,11 @@ If you get an error that the server already exists:
 
 ```bash
 # Either use --force to overwrite
-anaconda-mcp claude configure --force
+anaconda-mcp claude-desktop setup-config --force
 
 # Or uninstall first
-anaconda-mcp claude uninstall
-anaconda-mcp claude configure
+anaconda-mcp claude-desktop remove-config
+anaconda-mcp claude-desktop setup-config
 ```
 
 ### Changes not taking effect
@@ -248,7 +248,7 @@ Restart Claude Desktop after modifying the configuration:
 If you have a non-standard Claude Desktop installation:
 
 ```bash
-anaconda-mcp claude configure --config /custom/path/to/claude_desktop_config.json
+anaconda-mcp claude-desktop setup-config --config /custom/path/to/claude_desktop_config.json
 ```
 
 ### Verify configuration
@@ -256,7 +256,7 @@ anaconda-mcp claude configure --config /custom/path/to/claude_desktop_config.jso
 Check the current configuration:
 
 ```bash
-anaconda-mcp claude show
+anaconda-mcp claude-desktop show
 ```
 
 ---

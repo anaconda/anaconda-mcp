@@ -255,6 +255,7 @@ def configure_claude_desktop(
 
     # Load existing config
     config = load_config(config_path)
+    old_config = json.loads(json.dumps(config))  # Deep copy for comparison
 
     # Ensure mcpServers section exists
     if "mcpServers" not in config:
@@ -281,6 +282,10 @@ def configure_claude_desktop(
 
     # Save configuration
     save_config(config_path, config)
+
+    # Add configs for diff display
+    result["old_config"] = old_config
+    result["new_config"] = config
 
     return result
 

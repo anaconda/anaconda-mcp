@@ -419,7 +419,7 @@ class TestCLICommands:
 
         result = runner.invoke(
             cli,
-            ["claude", "configure", "--config", str(config_file), "--no-backup"],
+            ["claude-desktop", "setup-config", "--config", str(config_file), "--no-backup"],
         )
 
         assert result.exit_code == 0
@@ -427,14 +427,14 @@ class TestCLICommands:
         assert "anaconda-mcp" in config_file.read_text()
 
     def test_claude_configure_streamable_http(self, runner, tmp_path):
-        """Test 'anaconda-mcp claude configure' with Streamable HTTP."""
+        """Test 'anaconda-mcp claude-desktop setup-config' with Streamable HTTP."""
         config_file = tmp_path / "config.json"
 
         result = runner.invoke(
             cli,
             [
-                "claude",
-                "configure",
+                "claude-desktop",
+                "setup-config",
                 "--config",
                 str(config_file),
                 "--transport",
@@ -458,7 +458,7 @@ class TestCLICommands:
 
         result = runner.invoke(
             cli,
-            ["claude", "configure", "--config", str(config_file), "--no-backup"],
+            ["claude-desktop", "setup-config", "--config", str(config_file), "--no-backup"],
         )
 
         assert result.exit_code == 1
@@ -471,7 +471,7 @@ class TestCLICommands:
 
         result = runner.invoke(
             cli,
-            ["claude", "configure", "--config", str(config_file), "--no-backup", "--force"],
+            ["claude-desktop", "setup-config", "--config", str(config_file), "--no-backup", "--force"],
         )
 
         assert result.exit_code == 0
@@ -485,7 +485,7 @@ class TestCLICommands:
 
         result = runner.invoke(
             cli,
-            ["claude", "uninstall", "--config", str(config_file), "--no-backup"],
+            ["claude-desktop", "remove-config", "--config", str(config_file), "--no-backup"],
         )
 
         assert result.exit_code == 0
@@ -499,7 +499,7 @@ class TestCLICommands:
 
         result = runner.invoke(
             cli,
-            ["claude", "show", "--config", str(config_file)],
+            ["claude-desktop", "show", "--config", str(config_file)],
         )
 
         assert result.exit_code == 0
@@ -512,7 +512,7 @@ class TestCLICommands:
 
         result = runner.invoke(
             cli,
-            ["claude", "show", "--config", str(config_file), "--json"],
+            ["claude-desktop", "show", "--config", str(config_file), "--json"],
         )
 
         assert result.exit_code == 0
@@ -521,7 +521,7 @@ class TestCLICommands:
 
     def test_claude_path_shows_path(self, runner):
         """Test 'anaconda-mcp claude path' shows default path."""
-        result = runner.invoke(cli, ["claude", "path"])
+        result = runner.invoke(cli, ["claude-desktop", "path"])
 
         # Should succeed on Linux, macOS, Windows
         if result.exit_code == 0:

@@ -12,7 +12,7 @@ else
     TEMP_CONFIG=$(python -c "import tempfile, os; print(os.path.join(tempfile.gettempdir(), 'test_http_config.json'))")
 fi
 
-anaconda-mcp claude configure \
+anaconda-mcp claude-desktop setup-config \
   --config "$TEMP_CONFIG" \
   --transport streamable-http \
   --host 127.0.0.1 \

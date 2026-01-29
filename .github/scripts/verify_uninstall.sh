@@ -8,7 +8,7 @@ if [ -z "$CONFIG_PATH" ]; then
     exit 1
 fi
 
-echo "Verifying uninstall at: $CONFIG_PATH"
+echo "Verifying remove-config at: $CONFIG_PATH"
 
 CONFIG_PATH="$CONFIG_PATH" python << 'EOF'
 import json
