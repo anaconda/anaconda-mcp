@@ -18,7 +18,7 @@ else
     TEMP_CONFIG=$(python -c "import tempfile, os; print(os.path.join(tempfile.gettempdir(), 'test_claude_config.json'))")
 fi
 
-anaconda-mcp claude install --config "$TEMP_CONFIG" --no-backup
+anaconda-mcp claude configure --config "$TEMP_CONFIG" --no-backup
 
 # Verify config was created
 chmod +x .github/scripts/verify_cli_config.sh

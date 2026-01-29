@@ -8,7 +8,7 @@ TEMP_DIR=$(mktemp -d)
 CONFIG_PATH="$TEMP_DIR/claude_desktop_config.json"
 
 echo "=== Test 1: Fresh install ==="
-anaconda-mcp claude install --config "$CONFIG_PATH"
+anaconda-mcp claude configure --config "$CONFIG_PATH"
 cat "$CONFIG_PATH"
 
 echo ""
@@ -17,7 +17,7 @@ anaconda-mcp claude show --config "$CONFIG_PATH"
 
 echo ""
 echo "=== Test 3: Verify backup was created ==="
-anaconda-mcp claude install --config "$CONFIG_PATH" --force
+anaconda-mcp claude configure --config "$CONFIG_PATH" --force
 ls -la "$TEMP_DIR"
 
 BACKUP_COUNT=$(ls "$TEMP_DIR"/*.backup.json 2>/dev/null | wc -l)
@@ -37,7 +37,7 @@ chmod +x .github/scripts/verify_uninstall.sh
 
 echo ""
 echo "=== Test 5: JSON output ==="
-anaconda-mcp claude install --config "$CONFIG_PATH" --no-backup
+anaconda-mcp claude configure --config "$CONFIG_PATH" --no-backup
 anaconda-mcp claude show --config "$CONFIG_PATH" --json | python -m json.tool
 
 # Cleanup

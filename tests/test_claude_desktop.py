@@ -413,28 +413,28 @@ class TestCLICommands:
         """Create a CLI test runner."""
         return CliRunner()
 
-    def test_claude_install_creates_config(self, runner, tmp_path):
-        """Test 'anaconda-mcp claude install' creates config."""
+    def test_claude_configure_creates_config(self, runner, tmp_path):
+        """Test 'anaconda-mcp claude configure' creates config."""
         config_file = tmp_path / "config.json"
 
         result = runner.invoke(
             cli,
-            ["claude", "install", "--config", str(config_file), "--no-backup"],
+            ["claude", "configure", "--config", str(config_file), "--no-backup"],
         )
 
         assert result.exit_code == 0
         assert config_file.exists()
         assert "anaconda-mcp" in config_file.read_text()
 
-    def test_claude_install_with_streamable_http(self, runner, tmp_path):
-        """Test 'anaconda-mcp claude install' with streamable-http transport."""
+    def test_claude_configure_streamable_http(self, runner, tmp_path):
+        """Test 'anaconda-mcp claude configure' with Streamable HTTP."""
         config_file = tmp_path / "config.json"
 
         result = runner.invoke(
             cli,
             [
                 "claude",
-                "install",
+                "configure",
                 "--config",
                 str(config_file),
                 "--transport",
@@ -451,27 +451,27 @@ class TestCLICommands:
         assert server_config["transport"] == "streamable-http"
         assert "9000" in server_config["url"]
 
-    def test_claude_install_fails_without_force(self, runner, tmp_path):
-        """Test 'anaconda-mcp claude install' fails if server exists."""
+    def test_claude_configure_fails_without_force(self, runner, tmp_path):
+        """Test 'anaconda-mcp claude configure' fails if server exists."""
         config_file = tmp_path / "config.json"
         config_file.write_text('{"mcpServers": {"anaconda-mcp": {}}}')
 
         result = runner.invoke(
             cli,
-            ["claude", "install", "--config", str(config_file), "--no-backup"],
+            ["claude", "configure", "--config", str(config_file), "--no-backup"],
         )
 
         assert result.exit_code == 1
         assert "already exists" in result.output
 
-    def test_claude_install_with_force(self, runner, tmp_path):
-        """Test 'anaconda-mcp claude install --force' overwrites."""
+    def test_claude_configure_with_force(self, runner, tmp_path):
+        """Test 'anaconda-mcp claude configure --force' overwrites."""
         config_file = tmp_path / "config.json"
         config_file.write_text('{"mcpServers": {"anaconda-mcp": {"old": true}}}')
 
         result = runner.invoke(
             cli,
-            ["claude", "install", "--config", str(config_file), "--no-backup", "--force"],
+            ["claude", "configure", "--config", str(config_file), "--no-backup", "--force"],
         )
 
         assert result.exit_code == 0

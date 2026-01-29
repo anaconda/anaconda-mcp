@@ -138,7 +138,7 @@ def claude():
     pass
 
 
-@claude.command(name="install", help="Add Anaconda MCP to Claude Desktop configuration.")
+@claude.command(name="configure", help="Add Anaconda MCP to Claude Desktop configuration.")
 @click.option(
     "-c",
     "--config",
@@ -192,7 +192,7 @@ def claude():
     is_flag=True,
     help="Output result as JSON.",
 )
-def claude_install(config_path, server_name, transport, host, port, no_backup, force, output_json):
+def claude_configure(config_path, server_name, transport, host, port, no_backup, force, output_json):
     """Add Anaconda MCP server configuration to Claude Desktop.
 
     By default, uses STDIO transport which runs anaconda-mcp as a subprocess.
@@ -201,16 +201,16 @@ def claude_install(config_path, server_name, transport, host, port, no_backup, f
     \b
     Examples:
         # Add with default STDIO transport
-        anaconda-mcp claude install
+        anaconda-mcp claude configure
 
         # Add with Streamable HTTP transport
-        anaconda-mcp claude install --transport streamable-http
+        anaconda-mcp claude configure --transport streamable-http
 
         # Use custom config path
-        anaconda-mcp claude install --config ~/my-claude-config.json
+        anaconda-mcp claude configure --config ~/my-claude-config.json
 
         # Overwrite existing configuration
-        anaconda-mcp claude install --force
+        anaconda-mcp claude configure --force
     """
     try:
         path = Path(config_path) if config_path else None
@@ -395,7 +395,7 @@ def claude_show(config_path, server_name, output_json):
             elif result["exists"] and server_name:
                 click.echo(f"\n[Warning] Server '{server_name}' not found in configuration.")
             elif not result["exists"]:
-                click.echo("\n[Tip] Run 'anaconda-mcp claude install' to create the configuration.")
+                click.echo("\n[Tip] Run 'anaconda-mcp claude configure' to create the configuration.")
 
     except Exception as e:
         click.echo(f"[Error] {e}", err=True)

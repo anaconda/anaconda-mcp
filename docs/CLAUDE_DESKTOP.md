@@ -6,7 +6,7 @@ Anaconda MCP provides built-in CLI commands to configure [Claude Desktop](https:
 
 ```bash
 # Add Anaconda MCP to Claude Desktop
-anaconda-mcp claude install
+anaconda-mcp claude configure
 
 # Restart Claude Desktop to apply changes
 ```
@@ -17,12 +17,12 @@ That's it! Claude Desktop will now have access to Anaconda MCP tools.
 
 ## CLI Commands
 
-### `anaconda-mcp claude install`
+### `anaconda-mcp claude configure`
 
 Add Anaconda MCP server configuration to Claude Desktop.
 
 ```bash
-anaconda-mcp claude install [OPTIONS]
+anaconda-mcp claude configure [OPTIONS]
 ```
 
 **Options:**
@@ -41,20 +41,20 @@ anaconda-mcp claude install [OPTIONS]
 **Examples:**
 
 ```bash
-# Install with default STDIO transport (recommended)
-anaconda-mcp claude install
+# Configure with default STDIO transport (recommended)
+anaconda-mcp claude configure
 
-# Install with custom server name
-anaconda-mcp claude install --name my-anaconda-server
+# Configure with custom server name
+anaconda-mcp claude configure --name my-anaconda-server
 
-# Install with Streamable HTTP transport
-anaconda-mcp claude install --transport streamable-http --port 9000
+# Configure with Streamable HTTP transport
+anaconda-mcp claude configure --transport streamable-http --port 9000
 
 # Overwrite existing configuration
-anaconda-mcp claude install --force
+anaconda-mcp claude configure --force
 
 # Use custom config file location
-anaconda-mcp claude install --config ~/my-claude-config.json
+anaconda-mcp claude configure --config ~/my-claude-config.json
 ```
 
 ---
@@ -144,7 +144,7 @@ anaconda-mcp claude path
 With STDIO transport, Claude Desktop launches Anaconda MCP as a subprocess. This is the recommended approach for most users.
 
 ```bash
-anaconda-mcp claude install --transport stdio
+anaconda-mcp claude configure --transport stdio
 ```
 
 **How it works:**
@@ -173,8 +173,8 @@ anaconda-mcp claude install --transport stdio
 With Streamable HTTP transport, you run the server independently and Claude Desktop connects over HTTP.
 
 ```bash
-# Install with HTTP transport
-anaconda-mcp claude install --transport streamable-http --port 8888
+# Configure with HTTP transport
+anaconda-mcp claude configure --transport streamable-http --port 8888
 
 # Start the server separately (in another terminal)
 anaconda-mcp serve --port 8888
@@ -211,7 +211,7 @@ claude_desktop_config.20260127_143022.backup.json
 To skip backup creation:
 
 ```bash
-anaconda-mcp claude install --no-backup
+anaconda-mcp claude configure --no-backup
 ```
 
 ---
@@ -220,7 +220,7 @@ anaconda-mcp claude install --no-backup
 
 ### Config file not found
 
-If Claude Desktop hasn't been run before, the config file may not exist. The `install` command will create it automatically.
+If Claude Desktop hasn't been run before, the config file may not exist. The `configure` command will create it automatically.
 
 ### Server already exists
 
@@ -228,11 +228,11 @@ If you get an error that the server already exists:
 
 ```bash
 # Either use --force to overwrite
-anaconda-mcp claude install --force
+anaconda-mcp claude configure --force
 
 # Or uninstall first
 anaconda-mcp claude uninstall
-anaconda-mcp claude install
+anaconda-mcp claude configure
 ```
 
 ### Changes not taking effect
@@ -248,7 +248,7 @@ Restart Claude Desktop after modifying the configuration:
 If you have a non-standard Claude Desktop installation:
 
 ```bash
-anaconda-mcp claude install --config /custom/path/to/claude_desktop_config.json
+anaconda-mcp claude configure --config /custom/path/to/claude_desktop_config.json
 ```
 
 ### Verify configuration
