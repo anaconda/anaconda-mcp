@@ -1,4 +1,3 @@
-"""Tests for utils module."""
 import sys
 import tempfile
 from pathlib import Path
