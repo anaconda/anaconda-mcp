@@ -30,6 +30,7 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = "INFO"
     SERVICE_NAME: str = "anaconda-mcp"
     SEND_METRICS: bool = True
+    PYTHON_EXECUTABLE: str | None = None
 
     @field_validator("ANACONDA_DOMAIN", mode="before")
     @classmethod

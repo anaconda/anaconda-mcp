@@ -18,6 +18,7 @@ from mcp_compose.cli import (
 from mcp_compose.composer import ConflictResolution
 
 from anaconda_mcp.auth import start_login
+from anaconda_mcp.utils import _render_config_template
 
 
 def _ns(**kwargs):
@@ -56,8 +57,12 @@ def serve(ctx, config, host, port):
                 err=True,
             )
             sys.exit(1)
+    
+    # Render the config template with the correct Python executable
+    rendered_config = _render_config_template(config)
+    
     start_login(lambda x: x)
-    ns = _ns(verbose=ctx.obj["verbose"], config=config, host=host, port=port)
+    ns = _ns(verbose=ctx.obj["verbose"], config=rendered_config, host=host, port=port)
     sys.exit(_serve(ns))
 
 
