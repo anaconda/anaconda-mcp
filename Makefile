@@ -210,6 +210,30 @@ activate: ## Show activation command (must be run manually)
 	@echo "To activate the development environment, run:"
 	@echo "  conda activate $(ENV_NAME)"
 
+claude-desktop-setup-config: ## Configure Claude Desktop with Anaconda MCP (STDIO transport)
+	@echo "Configuring Claude Desktop with Anaconda MCP..."
+	$(PYTHON) -m anaconda_mcp.cli claude-desktop setup-config --force
+	@echo "Done. Restart Claude Desktop to apply changes."
+
+claude-desktop-setup-config-http: ## Configure Claude Desktop with Anaconda MCP (HTTP transport)
+	@echo "Configuring Claude Desktop with Anaconda MCP (HTTP transport)..."
+	$(PYTHON) -m anaconda_mcp.cli claude-desktop setup-config --transport streamable-http --force
+	@echo "Done. Restart Claude Desktop to apply changes."
+	@echo "Remember to start the server with: make serve"
+
+claude-desktop-show: ## Show current Claude Desktop configuration
+	@echo "Current Claude Desktop configuration:"
+	$(PYTHON) -m anaconda_mcp.cli claude-desktop show
+
+claude-desktop-remove-config: ## Remove Anaconda MCP from Claude Desktop configuration
+	@echo "Removing Anaconda MCP from Claude Desktop..."
+	$(PYTHON) -m anaconda_mcp.cli claude-desktop remove-config
+	@echo "Done."
+
+claude-desktop-path: ## Show Claude Desktop config file path
+	@echo "Claude Desktop config file path:"
+	$(PYTHON) -m anaconda_mcp.cli claude-desktop path
+
 help: ## List all options in the Makefile
 	@echo "Available targets:"
 	@awk 'BEGIN {FS = ":.*## "}; /^[a-zA-Z0-9_.-]+:.*## / {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)

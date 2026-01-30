@@ -1,0 +1,97 @@
+name: Claude Desktop Integration Tests
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'src/anaconda_mcp/claude_desktop.py'
+      - 'src/anaconda_mcp/cli.py'
+      - 'tests/test_claude_desktop.py'
+      - '.github/workflows/test-claude-desktop.yml'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'src/anaconda_mcp/claude_desktop.py'
+      - 'src/anaconda_mcp/cli.py'
+      - 'tests/test_claude_desktop.py'
+      - '.github/workflows/test-claude-desktop.yml'
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Test on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ['3.11']
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest pytest-cov click
+
+      - name: Install package in development mode
+        run: |
+          pip install -e ".[dev]"
+
+      - name: Run Claude Desktop tests
+        run: |
+          pytest tests/test_claude_desktop.py -v --tb=short
+
+      - name: Run Claude Desktop tests with coverage
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          pytest tests/test_claude_desktop.py -v --cov=anaconda_mcp.claude_desktop --cov-report=xml --cov-report=term
+
+      - name: Verify OS-specific path detection
+        shell: bash
+        run: |
+          chmod +x .github/scripts/verify_path_detection.sh
+          .github/scripts/verify_path_detection.sh
+
+      - name: Test CLI commands
+        shell: bash
+        run: |
+          chmod +x .github/scripts/test_cli.sh .github/scripts/verify_cli_config.sh
+          .github/scripts/test_cli.sh
+
+      - name: Test streamable-http transport
+        shell: bash
+        run: |
+          chmod +x .github/scripts/test_streamable_http.sh .github/scripts/verify_streamable_http.sh
+          .github/scripts/test_streamable_http.sh
+
+  integration:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Test full workflow
+        run: |
+          chmod +x .github/scripts/test_integration.sh .github/scripts/verify_uninstall.sh
+          .github/scripts/test_integration.sh
