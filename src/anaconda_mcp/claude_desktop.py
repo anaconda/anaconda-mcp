@@ -8,12 +8,13 @@ Linux, macOS, and Windows.
 
 import json
 import os
-import platform
 import shutil
 import sys
 from datetime import datetime
 from pathlib import Path
 from typing import Any
+
+from .consts import OSSystems, TransportTypes
 
 
 def get_claude_desktop_config_path() -> Path:
@@ -26,12 +27,12 @@ def get_claude_desktop_config_path() -> Path:
     Raises:
         RuntimeError: If the OS is not supported
     """
-    system = platform.system()
+    system = OSSystems.current()
 
-    if system == "Linux":
+    if system == OSSystems.LINUX:
         # Linux: ~/.config/Claude/claude_desktop_config.json
         return Path.home() / ".config" / "Claude" / "claude_desktop_config.json"
-    elif system == "Darwin":
+    elif system == OSSystems.DARWIN:
         # macOS: ~/Library/Application Support/Claude/claude_desktop_config.json
         return (
             Path.home()
@@ -40,7 +41,7 @@ def get_claude_desktop_config_path() -> Path:
             / "Claude"
             / "claude_desktop_config.json"
         )
-    elif system == "Windows":
+    elif system == OSSystems.WINDOWS:
         # Windows: %APPDATA%\Claude\claude_desktop_config.json
         appdata = os.environ.get("APPDATA")
         if appdata:
@@ -222,8 +223,9 @@ def configure_claude_desktop(
         ValueError: If transport is invalid
         FileExistsError: If server already exists and force=False
     """
-    if transport not in ("stdio", "streamable-http"):
-        raise ValueError(f"Invalid transport: {transport}. Must be 'stdio' or 'streamable-http'")
+    valid_transports = {t.value for t in TransportTypes}
+    if transport not in valid_transports:
+        raise ValueError(f"Invalid transport: {transport}. Must be one of {valid_transports}")
 
     if config_path is None:
         config_path = get_claude_desktop_config_path()
@@ -259,7 +261,7 @@ def configure_claude_desktop(
     if server_name in config["mcpServers"]:
         result["updated"] = True
 
-    # Build server configuration
+    # Build server cTransportTypes.STDIO.valueation
     if transport == "stdio":
         server_config = build_stdio_config(server_name)
     else:
