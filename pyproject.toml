@@ -34,12 +34,13 @@ anaconda-mcp = "anaconda_mcp.cli:main"
 
 [tool.hatch.build]
 artifacts = [
-    "src/anaconda_mcp/mcp_compose.toml"
+    "src/anaconda_mcp/mcp_compose.toml",
+    "src/anaconda_mcp/mcp_compose.toml.template"
 ]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/anaconda_mcp"]
-force-include = { "src/anaconda_mcp/mcp_compose.toml" = "anaconda_mcp/mcp_compose.toml" }
+force-include = {"src/anaconda_mcp/mcp_compose.toml" = "anaconda_mcp/mcp_compose.toml", "src/anaconda_mcp/mcp_compose.toml.template" = "anaconda_mcp/mcp_compose.toml.template"}
 
 [tool.hatch.build.targets.sdist]
 include = [

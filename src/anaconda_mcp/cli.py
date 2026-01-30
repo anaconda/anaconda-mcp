@@ -25,6 +25,7 @@ from anaconda_mcp.claude_desktop import (
     remove_claude_desktop_config,
     show_claude_desktop_config,
 )
+from anaconda_mcp.utils import _render_config_template
 
 
 def _ns(**kwargs):
@@ -63,8 +64,12 @@ def serve(ctx, config, host, port):
                 err=True,
             )
             sys.exit(1)
+    
+    # Render the config template with the correct Python executable
+    rendered_config = _render_config_template(config)
+    
     start_login(lambda x: x)
-    ns = _ns(verbose=ctx.obj["verbose"], config=config, host=host, port=port)
+    ns = _ns(verbose=ctx.obj["verbose"], config=rendered_config, host=host, port=port)
     sys.exit(_serve(ns))
 
 

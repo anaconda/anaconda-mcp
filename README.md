@@ -167,3 +167,9 @@ anaconda-mcp discover -p /path/to/pyproject.toml
 -h, --help          Show help
 -v, --verbose       Enable verbose logging
 ```
+
+# Custom configurations
+
+📖 **See [PYTHON_EXECUTABLE_CONFIG.md](docs/PYTHON_EXECUTABLE_CONFIG.md) for detailed configuration options.**
+
+📝 **Important**: To customize the configuration, edit `mcp_compose.toml.template` (not `mcp_compose.toml`). See [SERVER_CONFIG.md](docs/SERVER_CONFIGURATION.md) for details.
