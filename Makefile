@@ -180,9 +180,13 @@ conda-index: ## Index the local conda channel
 
 DOCKER_IMAGE ?= anaconda-mcp
 
-docker-build: ## Build the Docker image
+docker-build: ## Build the Docker image (requires ANACONDA_MCP_PACKAGE_TOKEN env var)
 	@echo "Building Docker image $(DOCKER_IMAGE)..."
-	docker build --build-arg ANACONDA_MCP_PACKAGE_TOKEN=$(ANACONDA_MCP_PACKAGE_TOKEN) -t $(DOCKER_IMAGE) .
+	ANACONDA_MCP_PACKAGE_TOKEN=$(ANACONDA_MCP_PACKAGE_TOKEN) \
+	  docker buildx build \
+	    --secret id=ANACONDA_MCP_PACKAGE_TOKEN,env=ANACONDA_MCP_PACKAGE_TOKEN \
+	    -t $(DOCKER_IMAGE) \
+	    --load .
 	@echo "Done."
 
 docker-run: ## Run the Docker container in stdio mode
