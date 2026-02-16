@@ -31,7 +31,7 @@ jobs:
           context: .
           push: false
           secrets: |
-            ANACONDA_MCP_PACKAGE_TOKEN=${{ secrets.ANACONDA_MCP_PACKAGE_TOKEN }}
+            ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN=${{ secrets.ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN }}
           tags: anaconda-mcp:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
