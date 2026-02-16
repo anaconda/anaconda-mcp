@@ -10,7 +10,7 @@ RUN --mount=type=secret,id=ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN \
         -c defaults \
         -c datalayer \
         -c anaconda-cloud \
-        -c https://conda.anaconda.org/t/${ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN}/anaconda-cloud/label/cko \
+        -c https://conda.anaconda.org/t/${ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN}/anaconda-cloud/label/dev \
         anaconda-mcp \
     && conda clean -afy
 
