@@ -189,9 +189,13 @@ docker-build: ## Build the Docker image (requires ANACONDA_ORG_ANACONDA_CLOUD_CH
 	    --load .
 	@echo "Done."
 
-docker-run: ## Run the Docker container in stdio mode
+docker-run: ## Run the Docker container in HTTP mode with port mapping
+	@echo "Running $(DOCKER_IMAGE) in HTTP mode on port 8000..."
+	docker run -p 8000:8000 --rm $(DOCKER_IMAGE)
+
+docker-run-stdio: ## Run the Docker container in stdio mode  
 	@echo "Running $(DOCKER_IMAGE) in stdio mode..."
-	docker run -i --rm $(DOCKER_IMAGE)
+	docker run -i --rm $(DOCKER_IMAGE) serve --stdio
 
 setup: ## Create or update the dev conda env from environment-dev.yml
 	@echo "Setting up Conda env: $(ENV_NAME)"
