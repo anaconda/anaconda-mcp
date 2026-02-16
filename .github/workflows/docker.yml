@@ -1,0 +1,37 @@
+name: Docker Build
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'Dockerfile'
+      - '.github/workflows/docker.yml'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'Dockerfile'
+      - '.github/workflows/docker.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build Docker image
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          build-args: |
+            ANACONDA_MCP_PACKAGE_TOKEN=${{ secrets.ANACONDA_MCP_PACKAGE_TOKEN }}
+          tags: anaconda-mcp:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

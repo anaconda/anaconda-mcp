@@ -30,7 +30,7 @@ CONDA_BUILD_DIR := build/conda
 CONDA_RECIPE_DIR := conda-build
 
 
-.PHONY: wheel install install-dev uninstall clean-artifacts clean-dist clean run help mypy mypy-install-types mypy-clean setup clean-setup setup-no-venv activate test test-pytest test-tox test-functional test-integration which-python conda-build conda-install
+.PHONY: wheel install install-dev uninstall clean-artifacts clean-dist clean run help mypy mypy-install-types mypy-clean setup clean-setup setup-no-venv activate test test-pytest test-tox test-functional test-integration which-python conda-build conda-install docker-build docker-run
 
 which-python: ## Show Python executable being used
 	@echo "PYTHON      = $(PYTHON)"
@@ -177,6 +177,17 @@ conda-index: ## Index the local conda channel
 	@echo "Indexing conda channel..."
 	$(CONDA) index $(CONDA_BUILD_DIR)
 	@echo "Done."
+
+DOCKER_IMAGE ?= anaconda-mcp
+
+docker-build: ## Build the Docker image
+	@echo "Building Docker image $(DOCKER_IMAGE)..."
+	docker build --build-arg ANACONDA_MCP_PACKAGE_TOKEN=$(ANACONDA_MCP_PACKAGE_TOKEN) -t $(DOCKER_IMAGE) .
+	@echo "Done."
+
+docker-run: ## Run the Docker container in stdio mode
+	@echo "Running $(DOCKER_IMAGE) in stdio mode..."
+	docker run -i --rm $(DOCKER_IMAGE)
 
 setup: ## Create or update the dev conda env from environment-dev.yml
 	@echo "Setting up Conda env: $(ENV_NAME)"
