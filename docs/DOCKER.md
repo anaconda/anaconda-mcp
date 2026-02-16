@@ -4,6 +4,8 @@
 
 Build the Docker image with Make or directly with Docker:
 
+### From Conda Channels (Default)
+
 ```bash
 # Using Make
 make docker-build
@@ -13,6 +15,23 @@ docker build -t anaconda-mcp .
 ```
 
 The image is based on `condaforge/miniforge3` and installs `anaconda-mcp` from the `datalayer` and `defaults` conda channels.
+
+### From Source
+
+To build the image from local source code instead of conda channels:
+
+```bash
+# Using Make with environment variable  
+DOCKER_FROM_SRC=true make docker-build
+
+# Or using the convenience target
+make docker-build-from-source
+
+# Or directly with build argument
+docker build --build-arg FROM_SOURCE=true -t anaconda-mcp .
+```
+
+This approach copies the local source code into the container and builds/installs using `make conda-install`. No external token is required for source builds.
 
 ## Running the Container
 

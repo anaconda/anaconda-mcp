@@ -14,6 +14,10 @@ MCP_SERVER_PORT   ?= 8888
 ENV_NAME ?= anaconda-mcp-dev
 CONDA    ?= conda
 
+# Docker settings
+DOCKER_IMAGE ?= anaconda-mcp
+DOCKER_FROM_SRC ?= false  # Set to 'true' to build from source instead of conda channels
+
 PRE_COMMIT ?= $(PYTHON) -m pre_commit
 RUFF       ?= $(PYTHON) -m ruff
 MYPY       ?= $(PYTHON) -m mypy
@@ -30,7 +34,7 @@ CONDA_BUILD_DIR := build/conda
 CONDA_RECIPE_DIR := conda-build
 
 
-.PHONY: wheel install install-dev uninstall clean-artifacts clean-dist clean run help mypy mypy-install-types mypy-clean setup clean-setup setup-no-venv activate test test-pytest test-tox test-functional test-integration which-python conda-build conda-install docker-build docker-run
+.PHONY: wheel install install-dev uninstall clean-artifacts clean-dist clean run help mypy mypy-install-types mypy-clean setup clean-setup setup-no-venv activate test test-pytest test-tox test-functional test-integration which-python conda-build conda-install docker-build docker-build-from-source docker-run docker-run-stdio
 
 which-python: ## Show Python executable being used
 	@echo "PYTHON      = $(PYTHON)"
@@ -178,16 +182,28 @@ conda-index: ## Index the local conda channel
 	$(CONDA) index $(CONDA_BUILD_DIR)
 	@echo "Done."
 
-DOCKER_IMAGE ?= anaconda-mcp
-
-docker-build: ## Build the Docker image (requires ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN env var)
+docker-build: ## Build the Docker image (requires ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN env var unless DOCKER_FROM_SRC=true)
 	@echo "Building Docker image $(DOCKER_IMAGE)..."
+ifeq ($(DOCKER_FROM_SRC),true)
+	@echo "Building from source..."
+	docker buildx build \
+		--build-arg FROM_SOURCE=true \
+		-t $(DOCKER_IMAGE) \
+		--load .
+else
+	@echo "Building from conda channels..."
 	ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN=$(ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN) \
 	  docker buildx build \
 	    --secret id=ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN,env=ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN \
+	    --build-arg FROM_SOURCE=false \
 	    -t $(DOCKER_IMAGE) \
 	    --load .
+endif
 	@echo "Done."
+
+docker-build-from-source: ## Build the Docker image from local source code
+	@echo "Building Docker image $(DOCKER_IMAGE) from source..."
+	$(MAKE) docker-build DOCKER_FROM_SRC=true
 
 docker-run: ## Run the Docker container in HTTP mode with port mapping
 	@echo "Running $(DOCKER_IMAGE) in HTTP mode on port 8000..."
