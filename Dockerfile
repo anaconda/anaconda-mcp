@@ -64,7 +64,10 @@ EXPOSE 8000
 # Run as non-root user
 USER mcp
 
-# The serve command reads its bundled mcp_compose.toml by default,
-# and binds to all interfaces for container accessibility.
+# The serve command reads its bundled mcp_compose.toml by default.
+# Additional CLI args are appended to the CMD and passed through to 'serve'.
+# Examples:
+#   HTTP mode:  docker run -p 8000:8000 anaconda-mcp  (default)
+#   Stdio mode: docker run -i anaconda-mcp serve --stdio
 ENTRYPOINT ["anaconda-mcp"]
 CMD ["serve", "--host", "0.0.0.0", "--port", "8000"]
