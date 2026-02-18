@@ -67,4 +67,4 @@ USER mcp
 # The serve command reads its bundled mcp_compose.toml by default,
 # and binds to all interfaces for container accessibility.
 ENTRYPOINT ["anaconda-mcp"]
-CMD ["serve", "--transport", "streamable-http", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["serve", "--host", "0.0.0.0", "--port", "8000"]
