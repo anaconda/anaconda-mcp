@@ -17,11 +17,11 @@
   "support": "https://github.com/anaconda/anaconda-mcp/issues",
   "license": "Apache-2.0",
   "server": {
-    "type": "uv",
-    "entry_point": "src/server.py",
+    "type": "binary",
+    "entry_point": "docker",
     "mcp_config": {
-      "command": "uv",
-      "args": ["run", "--project", "${__dirname}", "${__dirname}/src/server.py"],
+      "command": "docker",
+      "args": ["run", "-i", "--rm", "anaconda-mcp:latest"],
       "env": {}
     }
   },
