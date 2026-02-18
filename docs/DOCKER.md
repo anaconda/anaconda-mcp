@@ -63,7 +63,29 @@ docker run -it -p 8000:8000 --rm anaconda-mcp
 
 ## Claude Desktop Configuration
 
-To use the Dockerized Anaconda MCP Server with Claude Desktop, add the following to your `claude_desktop_config.json`:
+To use the Dockerized Anaconda MCP Server with Claude Desktop, add one of the following configurations to your `claude_desktop_config.json`:
+
+### STDIO Mode (Recommended for Docker)
+
+```json
+{
+  "mcpServers": {
+    "anaconda-mcp": {
+      "command": "docker",
+      "args": [
+        "run",
+        "--rm",
+        "-i",
+        "anaconda-mcp"
+      ]
+    }
+  }
+}
+```
+
+This configuration is **required for Docker** as it properly handles the subprocess communication between Claude Desktop and the containerized MCP server.
+
+### HTTP Mode (Alternative)
 
 ```json
 {
@@ -77,3 +99,5 @@ To use the Dockerized Anaconda MCP Server with Claude Desktop, add the following
   }
 }
 ```
+
+For HTTP mode, you must ensure the container is running in detached mode before starting Claude Desktop.
