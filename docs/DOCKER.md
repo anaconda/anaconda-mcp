@@ -1,5 +1,17 @@
 # Docker
 
+## Use Cases
+
+The Docker deployment of Anaconda MCP is **primarily intended for development and testing purposes**. 
+
+**Important**: All conda operations (environment creation, package installation, etc.) happen **inside the ephemeral container** and are **not persisted** to your host machine. When the container stops, all created environments and installed packages are lost. For persistent conda environments on your local machine, use the native installation method instead.
+
+This containerized approach is ideal for:
+- Testing anaconda-mcp functionality without affecting your system
+- Development environments where isolation is preferred  
+- CI/CD pipelines and automated testing
+- Demonstrations and temporary usage
+
 ## Prerequisites
 
 ### `ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN`
