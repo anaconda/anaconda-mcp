@@ -61,25 +61,9 @@ make docker-run
 docker run -it -p 8000:8000 --rm anaconda-mcp
 ```
 
-The container starts `anaconda-mcp serve --host 0.0.0.0 --port 8000` by default, serving over streamable HTTP on port 8000.
-
-### Stdio Mode
-
-```bash
-# Using Make
-make docker-run-stdio
-
-# Or directly
-docker run -i --rm anaconda-mcp serve --stdio
-```
-
-In stdio mode, the container communicates over stdin/stdout instead of HTTP.
-
 ## Claude Desktop Configuration
 
 To use the Dockerized Anaconda MCP Server with Claude Desktop, add the following to your `claude_desktop_config.json`:
-
-### Streamable HTTP Mode
 
 ```json
 {
@@ -93,18 +77,3 @@ To use the Dockerized Anaconda MCP Server with Claude Desktop, add the following
   }
 }
 ```
-
-### Stdio Mode
-
-```json
-{
-  "mcpServers": {
-    "anaconda-mcp": {
-      "command": "docker",
-      "args": ["run", "-i", "--rm", "anaconda-mcp", "serve", "--stdio"]
-    }
-  }
-}
-```
-
-Make sure the image has been built locally before starting Claude Desktop.

@@ -39,7 +39,7 @@ CONDA_BUILD_DIR := build/conda
 CONDA_RECIPE_DIR := conda-build
 
 
-.PHONY: wheel install install-dev uninstall clean-artifacts clean-dist clean run help mypy mypy-install-types mypy-clean setup clean-setup setup-no-venv activate test test-pytest test-tox test-functional test-integration which-python conda-build conda-install docker-build docker-build-from-source docker-run docker-run-stdio _check-docker-token
+.PHONY: wheel install install-dev uninstall clean-artifacts clean-dist clean run help mypy mypy-install-types mypy-clean setup clean-setup setup-no-venv activate test test-pytest test-tox test-functional test-integration which-python conda-build conda-install docker-build docker-build-from-source docker-run _check-docker-token
 
 which-python: ## Show Python executable being used
 	@echo "PYTHON      = $(PYTHON)"
@@ -233,10 +233,6 @@ docker-build-from-source: ## Build the Docker image from local source code
 docker-run: ## Run the Docker container in streamable-http mode with port mapping
 	@echo "Running $(DOCKER_IMAGE) in streamable-http mode on port 8000..."
 	docker run -it -p 8000:8000 --rm $(DOCKER_IMAGE)
-
-docker-run-stdio: ## Run the Docker container in stdio mode
-	@echo "Running $(DOCKER_IMAGE) in stdio mode..."
-	docker run -i --rm $(DOCKER_IMAGE) serve --stdio
 
 setup: ## Create or update the dev conda env from environment-dev.yml
 	@echo "Setting up Conda env: $(ENV_NAME)"
