@@ -51,9 +51,16 @@ jobs:
       - name: Smoke test - verify HTTP server starts
         run: |
           docker run -d --name mcp-smoke -p 8000:8000 anaconda-mcp:${{ github.sha }}
-          # Give the server a few seconds to start
-          sleep 5
+          # Give the server time to start
+          sleep 10
+          # Dump logs for debugging regardless of outcome
+          echo "=== Container logs ==="
+          docker logs mcp-smoke
+          echo "=== End logs ==="
           # Check the container is still running (not crashed)
-          docker inspect --format='{{.State.Running}}' mcp-smoke | grep -q true
+          if ! docker inspect --format='{{.State.Running}}' mcp-smoke | grep -q true; then
+            echo "::error::Container exited unexpectedly"
+            exit 1
+          fi
           # Clean up
           docker stop mcp-smoke
