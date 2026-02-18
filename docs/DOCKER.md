@@ -14,7 +14,7 @@ make docker-build
 docker build -t anaconda-mcp .
 ```
 
-The image is based on `condaforge/miniforge3` and installs `anaconda-mcp` from the `datalayer` and `defaults` conda channels.
+The image is based on `condaforge/miniforge3` and installs `anaconda-mcp` from the following conda channels: `defaults`, `datalayer`, `anaconda-cloud`, and a private token-based channel.
 
 ### From Source
 
