@@ -10,8 +10,10 @@ Build the Docker image with Make or directly with Docker:
 # Using Make
 make docker-build
 
-# Or directly
-docker build -t anaconda-mcp .
+# Or directly (requires ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN to be set)
+docker buildx build \
+  --secret id=ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN,env=ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN \
+  -t anaconda-mcp .
 ```
 
 The image is based on `condaforge/miniforge3` and installs `anaconda-mcp` from the following conda channels: `defaults`, `datalayer`, `anaconda-cloud`, and a private token-based channel.
