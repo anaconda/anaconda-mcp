@@ -67,7 +67,6 @@ USER mcp
 # The serve command reads its bundled mcp_compose.toml by default.
 # Additional CLI args are appended to the CMD and passed through to 'serve'.
 # Examples:
-#   HTTP mode:  docker run -p 8000:8000 anaconda-mcp  (default)
-#   Stdio mode: docker run -i anaconda-mcp serve --stdio
+#   Stdio mode (default): docker run -i anaconda-mcp serve
 ENTRYPOINT ["anaconda-mcp"]
 CMD ["serve", "--host", "0.0.0.0", "--port", "8000"]
