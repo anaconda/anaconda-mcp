@@ -1,5 +1,19 @@
 # Docker
 
+## Prerequisites
+
+### `ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN`
+
+Both build methods (from conda channels and from source) require the `ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN` environment variable to be set. This token grants access to the private Anaconda Cloud conda channel used to install dependencies.
+
+To obtain the token, request access from the Anaconda Cloud organization administrator, then export it in your shell before building:
+
+```bash
+export ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN=<your-token>
+```
+
+The token is passed to the Docker build as a [BuildKit secret](https://docs.docker.com/build/building/secrets/) and is **not** embedded in the final image.
+
 ## Building the Image
 
 Build the Docker image with Make or directly with Docker:
@@ -43,18 +57,13 @@ make docker-run
 
 # Or directly with port mapping
 docker run -p 8000:8000 --rm anaconda-mcp
-
-# For interactive stdio mode (if needed for testing)
-docker run -i --rm anaconda-mcp
 ```
 
-The container starts `anaconda-mcp serve` in HTTP mode by default, binding to `0.0.0.0:8000` for streamable-http communication.
+The container starts `anaconda-mcp serve --transport streamable-http` by default, binding to `0.0.0.0:8000`.
 
 ## Claude Desktop Configuration
 
 To use the Dockerized Anaconda MCP Server with Claude Desktop, add the following to your `claude_desktop_config.json`:
-
-### HTTP Mode (Recommended for Containers)
 
 ```json
 {
@@ -69,19 +78,4 @@ To use the Dockerized Anaconda MCP Server with Claude Desktop, add the following
 }
 ```
 
-### Stdio Mode (Alternative)
-
-For stdio communication, use:
-
-```json
-{
-  "mcpServers": {
-    "anaconda-mcp": {
-      "command": "docker",
-      "args": ["run", "-i", "--rm", "anaconda-mcp", "serve", "--stdio"]
-    }
-  }
-}
-```
-
-The HTTP mode is recommended for containerized deployments as it provides better isolation and networking. Make sure the image has been built locally before starting Claude Desktop.
+Make sure the image has been built locally before starting Claude Desktop.

@@ -1,5 +1,7 @@
 # syntax=docker/dockerfile:1
-FROM condaforge/miniforge3:latest
+# Pinned to an immutable digest for reproducible, tamper-proof builds.
+# To update, pull the desired tag and use: docker inspect --format='{{index .RepoDigests 0}}' condaforge/miniforge3:<tag>
+FROM condaforge/miniforge3@sha256:40c11cadd6fe3a0e4f60bd10438db470e1934dcc34e703add9796cf1cd7f7169
 
 # Build argument to determine installation method
 ARG FROM_SOURCE=false
@@ -52,10 +54,16 @@ RUN --mount=type=secret,id=ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN \
         conda clean -afy; \
     fi
 
+# Create a non-root user for runtime (principle of least privilege)
+RUN useradd -m -u 1000 mcp && chown -R mcp:mcp /opt/conda
+
 # Expose port for HTTP communication
 EXPOSE 8000
+
+# Run as non-root user
+USER mcp
 
 # The serve command reads its bundled mcp_compose.toml by default,
 # and binds to all interfaces for container accessibility.
 ENTRYPOINT ["anaconda-mcp"]
-CMD ["serve", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["serve", "--transport", "streamable-http", "--host", "0.0.0.0", "--port", "8000"]

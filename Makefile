@@ -18,6 +18,11 @@ CONDA    ?= conda
 DOCKER_IMAGE ?= anaconda-mcp
 DOCKER_FROM_SRC ?= false  # Set to 'true' to build from source instead of conda channels
 
+# Anaconda Cloud channel token (required for Docker builds).
+# Obtain from the Anaconda Cloud organization administrator.
+# Export before building: export ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN=<your-token>
+ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN ?=
+
 PRE_COMMIT ?= $(PYTHON) -m pre_commit
 RUFF       ?= $(PYTHON) -m ruff
 MYPY       ?= $(PYTHON) -m mypy
@@ -34,7 +39,7 @@ CONDA_BUILD_DIR := build/conda
 CONDA_RECIPE_DIR := conda-build
 
 
-.PHONY: wheel install install-dev uninstall clean-artifacts clean-dist clean run help mypy mypy-install-types mypy-clean setup clean-setup setup-no-venv activate test test-pytest test-tox test-functional test-integration which-python conda-build conda-install docker-build docker-build-from-source docker-run docker-run-stdio
+.PHONY: wheel install install-dev uninstall clean-artifacts clean-dist clean run help mypy mypy-install-types mypy-clean setup clean-setup setup-no-venv activate test test-pytest test-tox test-functional test-integration which-python conda-build conda-install docker-build docker-build-from-source docker-run _check-docker-token
 
 which-python: ## Show Python executable being used
 	@echo "PYTHON      = $(PYTHON)"
@@ -182,14 +187,16 @@ conda-index: ## Index the local conda channel
 	$(CONDA) index $(CONDA_BUILD_DIR)
 	@echo "Done."
 
-docker-build: ## Build the Docker image (requires ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN env var unless DOCKER_FROM_SRC=true)
+docker-build: _check-docker-token ## Build the Docker image (requires ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN env var)
 	@echo "Building Docker image $(DOCKER_IMAGE)..."
 ifeq ($(DOCKER_FROM_SRC),true)
 	@echo "Building from source..."
-	docker buildx build \
-		--build-arg FROM_SOURCE=true \
-		-t $(DOCKER_IMAGE) \
-		--load .
+	ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN=$(ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN) \
+	  docker buildx build \
+	    --secret id=ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN,env=ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN \
+	    --build-arg FROM_SOURCE=true \
+	    -t $(DOCKER_IMAGE) \
+	    --load .
 else
 	@echo "Building from conda channels..."
 	ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN=$(ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN) \
@@ -201,6 +208,24 @@ else
 endif
 	@echo "Done."
 
+_check-docker-token:
+	@if [ -z "$(ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN)" ]; then \
+		echo "" ; \
+		echo "ERROR: ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN is not set." ; \
+		echo "" ; \
+		echo "This token is required to access the private Anaconda Cloud conda channel." ; \
+		echo "Obtain it from the Anaconda Cloud organization administrator, then either:" ; \
+		echo "" ; \
+		echo "  export ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN=<your-token>" ; \
+		echo "  make docker-build" ; \
+		echo "" ; \
+		echo "Or pass it inline:" ; \
+		echo "" ; \
+		echo "  make docker-build ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN=<your-token>" ; \
+		echo "" ; \
+		exit 1 ; \
+	fi
+
 docker-build-from-source: ## Build the Docker image from local source code
 	@echo "Building Docker image $(DOCKER_IMAGE) from source..."
 	$(MAKE) docker-build DOCKER_FROM_SRC=true
@@ -208,10 +233,6 @@ docker-build-from-source: ## Build the Docker image from local source code
 docker-run: ## Run the Docker container in HTTP mode with port mapping
 	@echo "Running $(DOCKER_IMAGE) in HTTP mode on port 8000..."
 	docker run -p 8000:8000 --rm $(DOCKER_IMAGE)
-
-docker-run-stdio: ## Run the Docker container in stdio mode  
-	@echo "Running $(DOCKER_IMAGE) in stdio mode..."
-	docker run -i --rm $(DOCKER_IMAGE) serve --stdio
 
 setup: ## Create or update the dev conda env from environment-dev.yml
 	@echo "Setting up Conda env: $(ENV_NAME)"
