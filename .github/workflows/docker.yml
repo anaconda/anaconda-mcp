@@ -16,7 +16,7 @@ on:
 jobs:
   build:
     name: Build Docker image
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted-amd64-medium-privileged-on-demand]    
 
     steps:
       - name: Check required secrets
