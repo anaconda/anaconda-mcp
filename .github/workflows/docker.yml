@@ -19,6 +19,14 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Check required secrets
+        run: |
+          if [ -z "${{ secrets.ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN }}" ]; then
+            echo "::error::The ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN secret is not set."
+            echo "Go to Settings > Secrets and variables > Actions and add it."
+            exit 1
+          fi
+
       - name: Checkout repository
         uses: actions/checkout@v4
 

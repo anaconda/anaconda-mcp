@@ -55,7 +55,8 @@ RUN --mount=type=secret,id=ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN \
     fi
 
 # Create a non-root user for runtime (principle of least privilege)
-RUN useradd -m -u 1000 mcp && chown -R mcp:mcp /opt/conda
+# UID 1001 is used because UID 1000 is already taken by 'ubuntu' in the base image
+RUN useradd -m -u 1001 mcp && chown -R mcp:mcp /opt/conda
 
 # Expose port for HTTP communication
 EXPOSE 8000
