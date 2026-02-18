@@ -1,0 +1,37 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.egg-info
+.tox/
+.pytest_cache/
+.mypy_cache/
+
+# Build artifacts
+build/
+dist/
+*.tar.gz
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test coverage
+.coverage
+htmlcov/
+
+# Virtual environments
+venv/
+.venv/
+env/
+.env/
