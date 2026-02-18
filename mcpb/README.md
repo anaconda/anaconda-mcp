@@ -73,3 +73,12 @@ mcpb/
 | `install_packages` | Install packages into a conda environment |
 | `delete_packages` | Delete packages from a conda environment |
 | `remove_packages` | Remove packages from a conda environment (alias for delete) |
+
+## Future Improvements
+
+The server launch command currently requires the correct conda environment to be active. Areas for improvement include:
+
+- Add `conda` as a supported server type in MCPB (currently limited to `python`, `node`, `binary`, and `uv`).
+- Allow users to select or configure the conda environment via the Claude Desktop UI.
+- Support auto-discovery of existing conda installations and environments.
+- Automatically create and configure a dedicated conda environment during MCPB installation.
