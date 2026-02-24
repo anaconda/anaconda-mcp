@@ -4,7 +4,7 @@
   "display_name": "Anaconda MCP",
   "version": "0.1.0",
   "description": "Manage conda environments and packages from Claude Desktop — create, delete, and install with natural language",
-  "long_description": "Anaconda MCP brings conda environment management to Claude Desktop. Compose and proxy conda MCP tools so you can create environments, install packages, list environments, and remove packages — all through natural language.\n\n**Requirements:** You need a working conda installation (Anaconda or Miniconda) on your system.\n\n**What you can do:**\n- List all conda environments\n- Create new conda environments with specific packages\n- Delete/remove conda environments\n- Install packages into environments\n- Delete/remove packages from environments",
+  "long_description": "Anaconda MCP brings conda environment management to Claude Desktop. Compose and proxy conda MCP tools so you can create environments, install packages, list environments, and remove packages — all through natural language.\n\n**Requirements:**\n- A working conda installation (Anaconda or Miniconda) on your system with `conda init` configured.\n- A pre-existing conda environment named `anaconda-mcp` with the `anaconda-mcp` Python package installed.\n\n**What you can do:**\n- List all conda environments\n- Create new conda environments with specific packages\n- Delete/remove conda environments\n- Install packages into environments\n- Delete/remove packages from environments",
   "author": {
     "name": "Anaconda, Inc.",
     "url": "https://anaconda.com"
@@ -18,10 +18,10 @@
   "license": "Apache-2.0",
   "server": {
     "type": "binary",
-    "entry_point": "docker",
+    "entry_point": "src/run.sh",
     "mcp_config": {
-      "command": "docker",
-      "args": ["run", "-i", "--rm", "anaconda-mcp:latest"],
+      "command": "${__dirname}/src/run.sh",
+      "args": [],
       "env": {}
     }
   },
@@ -57,10 +57,7 @@
   ],
   "user_config": {},
   "compatibility": {
-    "platforms": ["darwin", "win32", "linux"],
-    "runtimes": {
-      "python": ">=3.10"
-    }
+    "platforms": ["darwin", "win32", "linux"]
   },
   "keywords": ["conda", "anaconda", "environment", "packages", "python", "data-science", "mcp"]
 }

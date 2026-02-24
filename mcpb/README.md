@@ -16,6 +16,15 @@ This directory contains the source files for building an MCPB (MCP Bundle) / DXT
 
 - [Node.js](https://nodejs.org/) (for the `mcpb` CLI tool)
 - A working conda installation (Anaconda or Miniconda)
+- A conda environment named `anaconda-mcp` with the `anaconda-mcp` package installed:
+
+  ```bash
+  conda create -n anaconda-mcp python>=3.10
+  conda activate anaconda-mcp
+  pip install anaconda-mcp
+  ```
+
+  The bundle includes a wrapper shell script that sources the user's shell profile to initialize conda automatically. No environment variables need to be set manually.
 
 ## Building the Bundle
 
@@ -37,15 +46,15 @@ This directory contains the source files for building an MCPB (MCP Bundle) / DXT
 ## Installing in Claude Desktop
 
 1. Double-click the `.mcpb` file, or drag it into Claude Desktop Settings
-2. The extension is ready to use — no additional configuration needed
+2. The extension is ready to use — the wrapper script automatically finds your conda installation
 
 ## How It Works
 
-This bundle uses the **UV runtime** type, which means:
+This bundle uses the **binary** server type with a shell wrapper script:
 
-- Claude Desktop automatically manages the Python environment
-- Dependencies (`anaconda-mcp`, `environments-mcp-server`, and their transitive dependencies) are installed via `uv` into an isolated virtual environment
-- No system-wide Python installation changes are made
+- The user must have a pre-existing conda environment named `anaconda-mcp` with the `anaconda-mcp` Python package installed
+- A wrapper script (`src/run.sh`) sources the user's shell profile (`~/.zshrc`, `~/.bashrc`, etc.) to initialize conda, since Claude Desktop as a GUI app does not inherit terminal environment variables
+- The script resolves `${CONDA_PREFIX}/envs/anaconda-mcp/bin/python` after conda initialization, making it robust across different installations and platforms
 - The server runs in **stdio** transport mode for direct communication with Claude Desktop
 
 The server uses `mcp-compose` under the hood to compose and proxy the conda environments MCP server, giving Claude access to conda environment and package management tools.
@@ -55,11 +64,12 @@ The server uses `mcp-compose` under the hood to compose and proxy the conda envi
 ```
 mcpb/
 ├── manifest.json      # Extension metadata, tools, and configuration
-├── pyproject.toml     # Python dependencies for UV runtime
+├── pyproject.toml     # Python dependencies
 ├── .mcpbignore        # Files to exclude from the bundle
 ├── README.md          # This file
 └── src/
-    └── server.py      # Thin entry point that launches the MCP server
+    ├── run.sh         # Shell wrapper that initializes conda and launches Python
+    └── server.py      # MCP server entry point
 ```
 
 ## Available Tools
