@@ -1,6 +1,6 @@
 # Anaconda MCP
 
-Anaconda MCP is a unified gateway that composes multiple [Model Context Protocol (MCP)](https://modelcontextprotocol.io) servers into a single endpoint. It lets AI assistants like Claude interact with your Anaconda environments and other tools through a consistent interface.
+Anaconda MCP is a unified gateway that composes multiple [Model Context Protocol (MCP)](https://modelcontextprotocol.io) servers into a single endpoint. It lets AI assistants like Claude Desktop interact with your Anaconda environments and other tools through a consistent interface.
 
 📖 **New to Anaconda MCP?** Start with the [User Guide](docs/USER_GUIDE.md).
 
