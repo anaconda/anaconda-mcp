@@ -1,31 +1,17 @@
-# anaconda-mcp
+# Anaconda MCP
 
-## Installation & Usage
+Anaconda MCP is a unified gateway that composes multiple [Model Context Protocol (MCP)](https://modelcontextprotocol.io) servers into a single endpoint. It lets AI assistants like Claude Desktop interact with your Anaconda environments and other tools through a consistent interface.
 
-### Using Conda:
-```bash
-# Create/update development environment
-conda env create -f environment-dev.yml
+📖 **New to Anaconda MCP?** Start with the [User Guide](docs/USER_GUIDE.md).
 
-# Or update existing environment
-conda env update -f environment-dev.yml --prune
+---
 
-# Activate
-conda activate anaconda-mcp-dev
-````
+# Development Workflow
 
-### Using Pip and UV:
-```bash
-# Install with dev dependencies
-pip install -e ".[dev]"
+## Setting Up The Development Environment
 
-# Or using uv
-uv pip install -e ".[dev]"
-```
+### Using The Makefile
 
-
-```
-### Using the Makefile:
 ```bash
 # Setup conda dev environment
 make setup
@@ -49,6 +35,31 @@ make mypy
 make pre-commit-all
 ```
 
+### Using Conda
+
+```bash
+# Create/update development environment
+conda env create -f environment-dev.yml
+
+# Or update existing environment
+conda env update -f environment-dev.yml --prune
+
+# Activate
+conda activate anaconda-mcp-dev
+```
+
+### Using Pip and UV
+
+```bash
+# Install with dev dependencies
+pip install -e ".[dev]"
+
+# Or using uv
+uv pip install -e ".[dev]"
+```
+
+---
+
 ## Pre-commit Workflow
 
 1. Install hooks:
@@ -56,7 +67,7 @@ make pre-commit-all
    make pre-commit-install
    ```
 
-2. Hooks will run automatically on `git commit`
+2. Hooks will run automatically on `git commit`.
 
 3. Run manually on all files:
    ```bash
@@ -67,6 +78,8 @@ make pre-commit-all
    ```bash
    make pre-commit-update
    ```
+
+---
 
 ## Testing Workflow
 
@@ -86,17 +99,19 @@ make pre-commit-all
    make test-integration
    ```
 
+---
+
 ## Code Quality Workflow
 
 1. Check code quality:
    ```bash
-   make lint         # Check with Ruff
-   make mypy         # Check types
+   make lint       # Check with Ruff
+   make mypy       # Check types
    ```
 
 2. Auto-fix issues:
    ```bash
-   make ruff-fix     # Fix and format
+   make ruff-fix   # Fix and format
    ```
 
 3. Format only:
@@ -104,12 +119,44 @@ make pre-commit-all
    make format
    ```
 
+---
+
 # CLI Quick Reference
 
-## Commands
+## Running From Source
 
-### serve
-Start MCP servers from configuration file.
+### `serve`
+
+```bash
+PYTHONPATH=src python -m anaconda_mcp serve [--config PATH] [--host HOST] [--port PORT]
+```
+
+**Examples:**
+```bash
+PYTHONPATH=src python -m anaconda_mcp serve
+PYTHONPATH=src python -m anaconda_mcp serve --port 8888
+PYTHONPATH=src python -m anaconda_mcp -v serve --config custom.toml
+```
+
+### `compose`
+
+```bash
+PYTHONPATH=src python -m anaconda_mcp compose [OPTIONS]
+```
+
+### `discover`
+
+```bash
+PYTHONPATH=src python -m anaconda_mcp discover [OPTIONS]
+```
+
+---
+
+## Running From Installed Package
+
+### `serve`
+
+Start MCP servers from a configuration file.
 
 ```bash
 anaconda-mcp serve [--config PATH] [--host HOST] [--port PORT]
@@ -122,7 +169,8 @@ anaconda-mcp serve --port 8888
 anaconda-mcp -v serve --config custom.toml
 ```
 
-### compose
+### `compose`
+
 Compose multiple MCP servers into one.
 
 ```bash
@@ -130,13 +178,13 @@ anaconda-mcp compose [OPTIONS]
 ```
 
 **Options:**
-- `-p, --pyproject PATH` - Path to pyproject.toml
-- `-n, --name NAME` - Name for composed server
-- `-c, --conflict-resolution STRATEGY` - Conflict strategy (prefix/suffix/ignore/error/override)
-- `--include SERVER` - Include specific servers (repeatable)
-- `--exclude SERVER` - Exclude specific servers (repeatable)
-- `-o, --output PATH` - Output file
-- `--output-format FORMAT` - Output format (text/json)
+- `-p, --pyproject PATH` — Path to pyproject.toml
+- `-n, --name NAME` — Name for the composed server
+- `-c, --conflict-resolution STRATEGY` — Conflict strategy (`prefix` / `suffix` / `ignore` / `error` / `override`)
+- `--include SERVER` — Include specific servers (repeatable)
+- `--exclude SERVER` — Exclude specific servers (repeatable)
+- `-o, --output PATH` — Output file
+- `--output-format FORMAT` — Output format (`text` / `json`)
 
 **Examples:**
 ```bash
@@ -147,7 +195,8 @@ anaconda-mcp compose --exclude legacy_server
 anaconda-mcp compose --conflict-resolution prefix --output composed.json --output-format json
 ```
 
-### discover
+### `discover`
+
 Discover available MCP servers.
 
 ```bash
@@ -161,15 +210,17 @@ anaconda-mcp discover --output-format json
 anaconda-mcp discover -p /path/to/pyproject.toml
 ```
 
-## Global Options
+### Global Options
 
 ```bash
--h, --help          Show help
--v, --verbose       Enable verbose logging
+-h, --help      Show help
+-v, --verbose   Enable verbose logging
 ```
 
-# Custom configurations
+---
 
-📖 **See [PYTHON_EXECUTABLE_CONFIG.md](docs/PYTHON_EXECUTABLE_CONFIG.md) for detailed configuration options.**
+# Custom Configurations
 
-📝 **Important**: To customize the configuration, edit `mcp_compose.toml.template` (not `mcp_compose.toml`). See [SERVER_CONFIG.md](docs/SERVER_CONFIGURATION.md) for details.
+📖 See [PYTHON_EXECUTABLE_CONFIG.md](docs/PYTHON_EXECUTABLE_CONFIG.md) for Python executable configuration options.
+
+📝 **Important:** To customize the server configuration, edit `mcp_compose.toml.template` — not `mcp_compose.toml`. See [SERVER_CONFIGURATION.md](docs/SERVER_CONFIGURATION.md) for details.
