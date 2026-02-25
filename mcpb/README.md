@@ -21,7 +21,7 @@ This directory contains the source files for building an MCPB (MCP Bundle) / DXT
   ```bash
   conda create -n anaconda-mcp python>=3.10
   conda activate anaconda-mcp
-  pip install anaconda-mcp
+  conda install anaconda-mcp
   ```
 
   The bundle includes a wrapper shell script that sources the user's shell profile to initialize conda automatically. No environment variables need to be set manually.
@@ -74,15 +74,7 @@ mcpb/
 
 ## Available Tools
 
-| Tool | Description |
-|------|-------------|
-| `list_environments` | List all installed conda environments |
-| `create_environment` | Create a new conda environment with optional packages |
-| `delete_environment` | Delete a conda environment by name or path |
-| `remove_environment` | Remove a conda environment (alias for delete) |
-| `install_packages` | Install packages into a conda environment |
-| `delete_packages` | Delete packages from a conda environment |
-| `remove_packages` | Remove packages from a conda environment (alias for delete) |
+The extension exposes tools for managing conda environments and packages — including creating, deleting, and listing environments, as well as installing and removing packages. See [manifest.json](manifest.json) for the full list.
 
 ## Future Improvements
 
