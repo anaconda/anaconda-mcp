@@ -38,10 +38,10 @@ This directory contains the source files for building an MCPB (MCP Bundle) / DXT
 
    ```bash
    cd mcpb
-   mcpb pack
+   make build
    ```
 
-   This creates `anaconda-mcp-0.1.0.mcpb` in the current directory.
+   This creates `anaconda-mcp.mcpb` in the current directory.
 
 ## Installing in Claude Desktop
 
