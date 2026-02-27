@@ -263,7 +263,7 @@ def configure_claude_desktop(
     if transport == "stdio":
         server_config = build_stdio_config(server_name)
     else:
-        server_config = build_streamable_http_config(server_name, host, port)
+        server_config = build_streamable_http_config(host, port)
 
     # Add/update server configuration
     config["mcpServers"][server_name] = server_config
