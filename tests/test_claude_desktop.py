@@ -208,7 +208,7 @@ class TestBuildStdioConfig:
         assert "-m" in config["args"]
         assert "anaconda_mcp" in config["args"]
         assert "serve" in config["args"]
-        assert config["args"] == ["-m", "anaconda_mcp", "serve"]
+        assert config["args"] == ["-m", "anaconda_mcp", "serve", "--delay", "5"]
         assert "ANACONDA_MCP_PYTHON_EXECUTABLE" in config["env"]
         assert "MCP_COMPOSE_CONFIG_DIR" in config["env"]
 

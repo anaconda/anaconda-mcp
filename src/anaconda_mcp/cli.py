@@ -1,6 +1,10 @@
 import argparse
 import json
+import logging
+import os
+import signal
 import sys
+import time
 from pathlib import Path
 
 import click
@@ -27,6 +31,8 @@ from anaconda_mcp.claude_desktop import (
 )
 from anaconda_mcp.utils import _render_config_template
 
+logger = logging.getLogger(__name__)
+
 
 def _ns(**kwargs):
     """Small helper to create an argparse-like namespace."""
@@ -52,8 +58,15 @@ def cli(ctx, verbose: bool):
 )
 @click.option("--host", default="0.0.0.0", show_default=True, help="Host to bind to.")
 @click.option("--port", default=8000, show_default=True, type=int, help="Port to bind to.")
+@click.option("--delay", default=0, show_default=True, type=int, help="Delay in seconds added before serving")
 @click.pass_context
-def serve(ctx, config, host, port):
+def serve(ctx, config, host, port, delay):
+    def _handle_sigterm(signum, frame):
+        logger.info("Received SIGTERM, shutting down...")
+        sys.exit(0)
+    
+    signal.signal(signal.SIGTERM, _handle_sigterm)
+    
     if not config:
         default_path = Path(__file__).resolve().parent / "mcp_compose.toml"
         if default_path.exists():
@@ -65,12 +78,15 @@ def serve(ctx, config, host, port):
             )
             sys.exit(1)
     
-    # Render the config template with the correct Python executable
     rendered_config = _render_config_template(config)
-    
+    time.sleep(delay)
     start_login(lambda x: x)
-    ns = _ns(verbose=ctx.obj["verbose"], config=rendered_config, host=host, port=port)
-    sys.exit(_serve(ns))
+    try:
+        ns = _ns(verbose=ctx.obj["verbose"], config=rendered_config, host=host, port=port)
+        sys.exit(_serve(ns))
+    except Exception:
+        logger.exception("MCP Composer returned an error. Exiting", exc_info=True)
+        sys.exit(1)
 
 
 @click.option(

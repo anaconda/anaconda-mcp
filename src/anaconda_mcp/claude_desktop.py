@@ -156,7 +156,7 @@ def build_stdio_config(server_name: str = "anaconda-mcp") -> dict[str, Any]:
 
     return {
         "command": python_exe,
-        "args": ["-m", "anaconda_mcp", "serve"],
+        "args": ["-m", "anaconda_mcp", "serve", "--delay", "5"],
         "env": {
             "ANACONDA_MCP_PYTHON_EXECUTABLE": python_exe,
             "MCP_COMPOSE_CONFIG_DIR": str(config_dir),
@@ -165,7 +165,6 @@ def build_stdio_config(server_name: str = "anaconda-mcp") -> dict[str, Any]:
 
 
 def build_streamable_http_config(
-    server_name: str = "anaconda-mcp",
     host: str = "localhost",
     port: int = 8888,
 ) -> dict[str, Any]:
@@ -176,7 +175,6 @@ def build_streamable_http_config(
     The server must be started separately with `anaconda-mcp serve`.
 
     Args:
-        server_name: Name for the MCP server in Claude Desktop
         host: Host where the server is running
         port: Port where the server is listening
 
@@ -265,7 +263,7 @@ def configure_claude_desktop(
     if transport == "stdio":
         server_config = build_stdio_config(server_name)
     else:
-        server_config = build_streamable_http_config(server_name, host, port)
+        server_config = build_streamable_http_config(host, port)
 
     # Add/update server configuration
     config["mcpServers"][server_name] = server_config
