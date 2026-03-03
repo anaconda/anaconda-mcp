@@ -1,5 +1,5 @@
 {% set name = "anaconda-mcp" %}
-{% set version = "0.1.0" %}
+{% set version = (GIT_DESCRIBE_TAG or "0.0.0").lstrip("v") %}
 
 package:
   name: {{ name|lower }}
@@ -21,11 +21,11 @@ requirements:
     - hatch-vcs >=0.4
   run:
     - python >=3.10,<3.14
-    - environments-mcp-server
-    - mcp-compose
-    - anaconda-auth >=0.8.6
-    - anaconda-opentelemetry
-    - click
+    - environments-mcp-server >=0.1.0,<0.2.0
+    - mcp-compose >=0.1.8,<2.0.0
+    - anaconda-auth >=0.8.6,<0.10.0
+    - anaconda-opentelemetry >=0.8.1,<1.2.0
+    - click >=8.1.0,<9.0.0
 about:
   summary: Anaconda MCP
   home: https://github.com/anaconda/anaconda-mcp
