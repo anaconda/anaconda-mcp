@@ -24,6 +24,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_prefix=f"{ENV_VAR_PREFIX}_",
         env_file=".env",
+        extra="allow",
     )
     ANACONDA_DOMAIN: str | None = None
     ENVIRONMENT: str = Environments.production.value
@@ -31,6 +32,7 @@ class Settings(BaseSettings):
     SERVICE_NAME: str = "anaconda-mcp"
     SEND_METRICS: bool = True
     PYTHON_EXECUTABLE: str | None = None
+    
 
     @field_validator("ANACONDA_DOMAIN", mode="before")
     @classmethod
