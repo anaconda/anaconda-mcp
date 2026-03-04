@@ -72,23 +72,3 @@
 | AUTH-002 | Anonymous Mode | Anonymous/public channel access | P1 |
 
 **Note**: Configuration testing (env vars, config files) covered in [CONFIG_TESTING_GUIDE.md](./CONFIG_TESTING_GUIDE.md).
-
----
-
-## Quick Reference: Flow to Feature Count
-
-| Flow | Feature Count |
-|------|---------------|
-| CORE-001 | 8 |
-| CORE-002 | 4 |
-| CORE-003 | 4 |
-| GUARD-001 | 5 |
-| REGRESS-001 | 6 |
-| CLI-001 | 3 |
-| CLI-002 | 4 |
-| AUTH-001 | 3 |
-| AUTH-002 | 1 |
-| CONFIG_TESTING_GUIDE | 4 |
-| **Total unique features** | **35** |
-
-Note: Some features covered by multiple flows. Configuration testing separated into CONFIG_TESTING_GUIDE.md.
