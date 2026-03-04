@@ -1,0 +1,171 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+-rc.[0-9]+"   # pre-release: v1.0.0-rc.1
+      - "v[0-9]+.[0-9]+.[0-9]+"              # full release: v1.0.0
+    branches-ignore:
+      - "**"
+
+jobs:
+  conda-build:
+    name: Build conda package
+    runs-on: [self-hosted-amd64-medium-privileged-on-demand]
+
+    defaults:
+      run:
+        shell: bash -el {0}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # required so GIT_DESCRIBE_TAG is resolved correctly
+
+      - name: Setup Miniconda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          auto-activate-base: true
+          use-mamba: true
+          conda-solver: libmamba
+
+      - name: Install conda-build
+        run: conda install -y conda-build
+
+      - name: Configure private conda channels
+        run: |
+          conda config --add channels conda-forge
+          conda config --add channels datalayer
+          conda config --add channels https://conda.anaconda.org/t/${{ secrets.ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN }}/anaconda-cloud
+          conda config --add channels https://conda.anaconda.org/t/${{ secrets.ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN }}/anaconda-cloud/label/dev
+          conda config --add channels https://conda.anaconda.org/t/${{ secrets.ANACONDA_CONNECTOR_TOKEN }}/anaconda-connector
+
+      - name: Build conda package
+        run: |
+          mkdir -p build/conda
+          conda build \
+            -c conda-forge \
+            -c datalayer \
+            -c https://conda.anaconda.org/t/${{ secrets.ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN }}/anaconda-cloud \
+            -c https://conda.anaconda.org/t/${{ secrets.ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN }}/anaconda-cloud/label/dev \
+            -c https://conda.anaconda.org/t/${{ secrets.ANACONDA_CONNECTOR_TOKEN }}/anaconda-connector \
+            --output-folder build/conda \
+            conda-build
+
+      - name: Show built package
+        run: ls -lh build/conda/**/*.conda || ls -lh build/conda/**/*.tar.bz2
+
+      - name: Upload conda artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: conda-package
+          path: build/conda/
+
+  publish:
+    name: Publish to Anaconda Cloud
+    needs: conda-build
+    runs-on: [self-hosted-amd64-medium-privileged-on-demand]
+
+    defaults:
+      run:
+        shell: bash -el {0}
+
+    steps:
+      - name: Download conda artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: conda-package
+          path: build/conda/
+
+      - name: Setup Miniconda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          auto-activate-base: true
+          use-mamba: true
+          conda-solver: libmamba
+
+      - name: Install anaconda-client
+        run: conda install -y anaconda-client
+
+      - name: Determine channel label
+        id: label
+        run: |
+          if [[ "${{ github.ref_name }}" == *"-rc."* ]]; then
+            echo "label=dev" >> $GITHUB_OUTPUT
+          else
+            echo "label=main" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Upload to Anaconda Cloud
+        run: |
+          anaconda \
+            --token ${{ secrets.ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN }} \
+            upload \
+            --user anaconda-cloud \
+            --label ${{ steps.label.outputs.label }} \
+            --force \
+            build/conda/**/*.conda
+
+  release:
+    name: Create GitHub Release
+    needs: publish
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download conda artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: conda-package
+          path: build/conda/
+
+      - name: Determine if pre-release
+        id: prerelease
+        run: |
+          if [[ "${{ github.ref_name }}" == *"-rc."* ]]; then
+            echo "is_prerelease=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_prerelease=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Generate release notes
+        id: release_notes
+        run: |
+          TAG="${{ github.ref_name }}"
+          if [[ "$TAG" == *"-rc."* ]]; then
+            VERSION="${TAG%%-rc.*}"
+            RC_NUM="${TAG##*-rc.}"
+            cat >> $GITHUB_OUTPUT << EOF
+          notes<<EON
+          ## Release Candidate ${RC_NUM} for ${VERSION}
+
+          > ⚠️ This is a pre-release. Not recommended for production use.
+
+          Please test and report any issues before the final \`${VERSION}\` release.
+          EON
+          EOF
+          else
+            cat >> $GITHUB_OUTPUT << EOF
+          notes<<EON
+          ## What's Changed
+
+          See [CHANGELOG](https://github.com/${{ github.repository }}/commits/${{ github.ref_name }}) for full details.
+          EON
+          EOF
+          fi
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
+          prerelease: ${{ steps.prerelease.outputs.is_prerelease }}
+          body: ${{ steps.release_notes.outputs.notes }}
+          files: build/conda/**/*.conda
+          generate_release_notes: true

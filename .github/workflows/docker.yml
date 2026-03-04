@@ -51,7 +51,7 @@ jobs:
       - name: Smoke test - verify HTTP server starts
         run: |
           # Start container in HTTP mode
-          docker run -d --name mcp-smoke -p 8000:8000 anaconda-mcp:${{ github.sha }}
+          docker run -d --name mcp-smoke -p 4041:4041 anaconda-mcp:${{ github.sha }}
           
           # Give the server time to start
           sleep 10
@@ -68,7 +68,7 @@ jobs:
           if [ "$RUNNING" = "true" ]; then
             echo "✓ Container is running - testing HTTP endpoint"
             # Try to make a basic HTTP request to verify server is responding
-            if curl -f --max-time 5 http://localhost:8000/ || curl -f --max-time 5 http://localhost:8000/health || echo "HTTP endpoint test completed"; then
+            if curl -f --max-time 5 http://localhost:4041/ || curl -f --max-time 5 http://localhost:4041/health || echo "HTTP endpoint test completed"; then
               echo "✓ HTTP server is responsive"  
             fi
             docker stop mcp-smoke

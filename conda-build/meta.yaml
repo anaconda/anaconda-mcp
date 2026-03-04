@@ -1,5 +1,5 @@
 {% set name = "anaconda-mcp" %}
-{% set version = (GIT_DESCRIBE_TAG or "0.0.0").lstrip("v") %}
+{% set version = (GIT_DESCRIBE_TAG or "0.0.0").lstrip("v").replace("-", ".") %}
 
 package:
   name: {{ name|lower }}

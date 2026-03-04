@@ -59,7 +59,7 @@ RUN --mount=type=secret,id=ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN \
 RUN useradd -m -u 1001 mcp && chown -R mcp:mcp /opt/conda
 
 # Expose port for HTTP communication
-EXPOSE 8000
+EXPOSE 4041
 
 # Run as non-root user
 USER mcp
@@ -69,4 +69,4 @@ USER mcp
 # Examples:
 #   Stdio mode (default): docker run -i anaconda-mcp serve
 ENTRYPOINT ["anaconda-mcp"]
-CMD ["serve", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["serve", "--host", "0.0.0.0", "--port", "4041"]
