@@ -59,8 +59,8 @@ jobs:
           name: conda-package
           path: build/conda/
 
-  docker:
-    name: Build & smoke-test Docker image
+  publish:
+    name: Publish to Anaconda Cloud
     needs: conda-build
     runs-on: [self-hosted-amd64-medium-privileged-on-demand]
 
@@ -69,38 +69,44 @@ jobs:
         shell: bash -el {0}
 
     steps:
-      - name: Check required secrets
+      - name: Download conda artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: conda-package
+          path: build/conda/
+
+      - name: Setup Miniconda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          auto-activate-base: true
+          use-mamba: true
+          conda-solver: libmamba
+
+      - name: Install anaconda-client
+        run: conda install -y anaconda-client
+
+      - name: Determine channel label
+        id: label
         run: |
-          if [ -z "${{ secrets.ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN }}" ]; then
-            echo "::error::ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN secret is not set."
-            exit 1
+          if [[ "${{ github.ref_name }}" == *"-rc."* ]]; then
+            echo "label=dev" >> $GITHUB_OUTPUT
+          else
+            echo "label=main" >> $GITHUB_OUTPUT
           fi
 
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          push: false
-          load: true
-          secrets: |
-            ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN=${{ secrets.ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN }}
-          tags: anaconda-mcp:${{ github.ref_name }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Smoke test
-        run: docker run --rm anaconda-mcp:${{ github.ref_name }} --help
+      - name: Upload to Anaconda Cloud
+        run: |
+          anaconda \
+            --token ${{ secrets.ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN }} \
+            upload \
+            --user anaconda-cloud \
+            --label ${{ steps.label.outputs.label }} \
+            --force \
+            build/conda/**/*.conda
 
   release:
     name: Create GitHub Release
-    needs: [conda-build, docker]
+    needs: publish
     runs-on: ubuntu-latest
 
     permissions:
