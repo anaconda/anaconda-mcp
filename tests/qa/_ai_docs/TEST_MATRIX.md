@@ -1,286 +1,157 @@
 # Test Matrix
 
-## Facts
+## Available Resources
 
-### What We Support
+| Resource | OS | Claude Desktop | Python |
+|----------|-----|----------------|--------|
+| QA Engineer 1 | macOS | Yes | Can install any |
+| QA Engineer 2 | macOS | Yes | Can install any |
+| QA Engineer 3 (?) | macOS | Yes | Can install any |
+| Win365 | Windows | No | Can install any |
+| GitHub Runners | Linux/Windows | No | CI matrix |
 
-| Dimension | Values | Source |
-|-----------|--------|--------|
-| **OS** | Linux, macOS, Windows | `pyproject.toml`, `consts.py` |
-| **Python** | 3.10, 3.11, 3.12, 3.13 | `pyproject.toml`: `>=3.10,<3.14` |
-| **Transport** | STDIO, HTTP | `claude_desktop.py` |
-| **Client** | Claude Desktop | Only supported client |
-| **Deployment** | Local, Shared Server, Docker | Documentation |
+## Supported Versions
 
-### What We Have
-
-| Environment | OS | Claude Desktop | Available |
-|-------------|-----|----------------|-----------|
-| QA Machine | macOS | Yes | Always |
-| GitHub Runner | Linux | No | CI |
-| GitHub Runner | Windows | No | CI |
-| Win365 | Windows | No | On request |
-
-### What Differs by OS
-
-| Component | OS-Specific? |
-|-----------|--------------|
-| Config path | **Yes** - different per OS |
-| Server logic | No |
-| MCP protocol | No |
-| Authentication | No |
-| Tools | No |
-
-**Outcome**: OS testing needed mainly for config path verification.
-
-### What Differs by Python Version
-
-| Concern | Risk |
-|---------|------|
-| 3.10 (minimum) | Boundary - must verify |
-| 3.11 | CI baseline - tested |
-| 3.12 | Middle - low risk |
-| 3.13 (maximum) | Boundary - must verify |
-
-**Outcome**: Test boundaries (3.10, 3.13) + CI baseline (3.11). Skip 3.12.
+| Dimension | Values |
+|-----------|--------|
+| Python | 3.10, 3.11, 3.12, 3.13 |
+| Transport | STDIO, HTTP |
+| OS | Linux, macOS, Windows |
 
 ---
 
-## Test Types
+## Phase 1: Manual Testing (2 QA Engineers)
 
-| Type | Document | Requires Claude | Automatable |
-|------|----------|-----------------|-------------|
-| E2E Claude | TESTS_E2E_CLAUDE.md | Yes | No |
-| CLI | TESTS_CLI.md | No | Yes |
-| Config | TESTS_CONFIG.md | No | Yes |
-| API Tools | TESTS_API_TOOLS.md | No | Yes |
+### E2E Claude Tests (macOS only)
 
-### API Tool Tests (New)
+Both QAs run E2E with different combinations:
 
-Direct API calls to each MCP tool - validates tool functionality without Claude Desktop.
+| QA | Python | Transport | Document |
+|----|--------|-----------|----------|
+| QA 1 | 3.10 | STDIO | TESTS_E2E_CLAUDE.md |
+| QA 2 | 3.11 | HTTP | TESTS_E2E_CLAUDE.md |
 
-**Setup**:
-```bash
-# Start server in dev mode
-anaconda-mcp serve --port 8888 &
-```
+**Coverage**: 2 Python versions + 2 transports
 
-**Test each tool via curl**:
-```bash
-# conda_list_environments
-curl -X POST http://localhost:8888/mcp \
-  -H "Content-Type: application/json" \
-  -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"conda_list_environments","arguments":{}}}'
+**Optional (if 3rd QA or time)**:
+| QA | Python | Transport |
+|----|--------|-----------|
+| QA 3 | 3.13 | STDIO |
 
-# conda_create_environment
-curl -X POST http://localhost:8888/mcp \
-  -H "Content-Type: application/json" \
-  -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"conda_create_environment","arguments":{"name":"api-test-env","python_version":"3.11"}}}'
+### CLI, Config, API-Tools Tests
 
-# conda_install_packages
-curl -X POST http://localhost:8888/mcp \
-  -H "Content-Type: application/json" \
-  -d '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"conda_install_packages","arguments":{"env_name":"api-test-env","packages":["numpy"]}}}'
+Split across platforms for OS coverage:
 
-# conda_remove_packages
-curl -X POST http://localhost:8888/mcp \
-  -H "Content-Type: application/json" \
-  -d '{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"conda_remove_packages","arguments":{"env_name":"api-test-env","packages":["numpy"]}}}'
+| QA | Platform | Python | Tests |
+|----|----------|--------|-------|
+| QA 1 | macOS | 3.10 | TESTS_CLI.md, TESTS_CONFIG.md |
+| QA 2 | Win365 | 3.11 | TESTS_CLI.md, TESTS_CONFIG.md, TESTS_API_TOOLS.md |
 
-# conda_delete_environment
-curl -X POST http://localhost:8888/mcp \
-  -H "Content-Type: application/json" \
-  -d '{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"conda_delete_environment","arguments":{"name":"api-test-env"}}}'
-```
+**Coverage**: 2 OS + 2 Python versions + all test types
 
 ---
 
-## Available Environments
+## Phase 1 Summary
 
-| Environment | OS | Claude Desktop | Use For |
-|-------------|-----|----------------|---------|
-| QA macOS | macOS | ✅ Yes | E2E Claude, CLI, Config, API Tools |
-| Win365 | Windows | ❌ No | CLI, Config, API Tools |
-| GitHub Runner | Linux/Windows | ❌ No | Automation (Phase 2) |
+| What | Who | Where | Python | Transport |
+|------|-----|-------|--------|-----------|
+| E2E STDIO | QA 1 | macOS | 3.10 | STDIO |
+| E2E HTTP | QA 2 | macOS | 3.11 | HTTP |
+| CLI + Config | QA 1 | macOS | 3.10 | - |
+| CLI + Config + API Tools | QA 2 | Win365 | 3.11 | - |
 
----
-
-## Test Strategy
-
-### Phase 1: Manual Testing (Priority 1)
-
-**Goal**: Validate all test flows work before automation.
-
-| Platform | Python | Test Types | Document |
-|----------|--------|------------|----------|
-| macOS | 3.11 | CLI, Config | TESTS_CLI.md, TESTS_CONFIG.md |
-| macOS | 3.11 | E2E Claude | TESTS_E2E_CLAUDE.md |
-| Win365 | 3.10 | CLI, Config, API Tools | TESTS_CLI.md, TESTS_CONFIG.md, TESTS_API_TOOLS.md |
-
-**Why different Python versions**:
-- macOS with 3.11 = CI baseline
-- Win365 with 3.10 = minimum boundary
-- Better coverage across platforms
-
-### Phase 2: Automation (If Time Allows)
-
-After manual validation passes:
-
-| Platform | Python | What to Automate |
-|----------|--------|------------------|
-| Linux runner | 3.11 | CLI, Config, API Tools |
-| Windows runner | 3.11 | CLI, Config, API Tools |
-| Linux runner | 3.13 | CLI (boundary check) |
-
-### Phase 3: Release Testing
-
-| Platform | Python | What |
-|----------|--------|------|
-| macOS | 3.11 | Full E2E Claude (manual) |
+**Total coverage from Phase 1**:
+- ✅ Python 3.10, 3.11
+- ✅ STDIO, HTTP transport
+- ✅ macOS, Windows
+- ✅ All test types
 
 ---
 
-## Efficient Test Matrix
+## Phase 2: Automation (If Time Allows)
 
-By distributing test types across platforms with different Python versions:
+After manual testing passes, automate on CI runners:
 
-| What | Where | Python | Coverage |
-|------|-------|--------|----------|
-| E2E Claude | macOS | 3.11 | Full AI integration |
-| API Tools | Win365 | 3.10 | Tool functionality + min Python |
-| CLI/Config | Both | 3.10, 3.11 | OS paths + Python versions |
+| Runner | Python | Tests |
+|--------|--------|-------|
+| Linux | 3.11 | CLI, Config, API-Tools |
+| Windows | 3.11 | CLI, Config, API-Tools |
+| Linux | 3.13 | CLI (boundary check) |
 
-**Result**:
-- 2 Python versions tested (3.10, 3.11)
-- 2 OS tested (macOS, Windows)
-- All tool functionality validated (via API on Win365)
-- AI integration validated (via Claude on macOS)
-
-### Optional (If Time)
-| What | Where | Python |
-|------|-------|--------|
-| API Tools | Linux runner | 3.13 |
-
-This adds Python 3.13 boundary without duplicating other tests.
-
----
-
-## Platform Capabilities
-
-| Test Type | macOS | Win365 | Linux CI | Windows CI |
-|-----------|-------|--------|----------|------------|
-| E2E Claude | ✅ | ❌ | ❌ | ❌ |
-| CLI | ✅ | ✅ | ✅ | ✅ |
-| Config | ✅ | ✅ | ✅ | ✅ |
-| API Tools | ✅ | ✅ | ✅ | ✅ |
-
----
-
-## Summary
-
-### Must Have (P0)
-
-| What | Where | Why |
-|------|-------|-----|
-| Full E2E flows | macOS | Only platform with Claude Desktop |
-| CLI smoke tests | All 3 OS | Verify OS-specific paths work |
-| Python 3.11 | CI | Current baseline |
-| STDIO transport | macOS E2E | Default user experience |
-| HTTP transport | macOS E2E | Alternative setup |
-
-### Nice to Have (P1)
-
-| What | Where | Why |
-|------|-------|-----|
-| Python 3.10 | Linux CI | Minimum boundary |
-| Python 3.13 | Linux CI | Maximum boundary |
-| Shared Server flow | macOS | Enterprise scenario |
-| Extended CLI tests | All 3 OS | More coverage |
-
-### Depends on Time / Ask Product (P2)
-
-| What | Question |
-|------|----------|
-| Docker deployment | Is this GA scope or dev-only? |
-| Python 3.12 | Skip if time limited (covered by 3.11) |
-| Multi-client testing | Enterprise priority? |
-
----
-
-## Recommended Matrix
-
-### Every PR (CI)
-
-| OS | Python | What to Run |
-|----|--------|-------------|
-| Linux | 3.11 | TESTS_CLI.md, TESTS_CONFIG.md |
-| Windows | 3.11 | TESTS_CLI.md, TESTS_CONFIG.md |
-| macOS | 3.11 | TESTS_CLI.md, TESTS_CONFIG.md |
-
-### Before Release (Manual)
-
-| OS | Python | What to Run |
-|----|--------|-------------|
-| macOS | 3.11 | TESTS_E2E_CLAUDE.md (all flows) |
-| Linux | 3.10 | TESTS_CLI.md (boundary check) |
-| Linux | 3.13 | TESTS_CLI.md (boundary check) |
-
-### If Time Permits
-
-| What | When |
-|------|------|
-| Shared Server flow | Release |
-| Docker flow | Major release |
-
----
-
-## CI Workflow
-
-```yaml
-# .github/workflows/tests.yml
-jobs:
-  cli-tests:
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        python: ['3.11']
-    steps:
-      - uses: conda-incubator/setup-miniconda@v3
-      - run: conda install anaconda-mcp environments-mcp-server -y
-      - run: |
-          anaconda-mcp --help
-          anaconda-mcp claude-desktop path
-          anaconda-mcp discover
-          anaconda-mcp serve --port 8888 &
-          sleep 10
-          curl -sf http://localhost:8888/mcp -X POST \
-            -H "Content-Type: application/json" \
-            -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}'
-
-  # Release only
-  boundary-tests:
-    if: github.ref == 'refs/heads/main'
-    strategy:
-      matrix:
-        python: ['3.10', '3.13']
-    runs-on: ubuntu-latest
-    steps:
-      - uses: conda-incubator/setup-miniconda@v3
-        with:
-          python-version: ${{ matrix.python }}
-      - run: conda install anaconda-mcp -y
-      - run: anaconda-mcp --help
-```
+**Additional coverage**:
+- ✅ Linux OS
+- ✅ Python 3.13 boundary
 
 ---
 
 ## Quick Reference
 
-| Question | Answer |
-|----------|--------|
-| Which OS for E2E? | macOS only |
-| Which OS for CLI? | All 3 |
-| Which Python versions? | 3.10, 3.11, 3.13 |
-| Skip Python 3.12? | Yes |
-| Test Docker? | Only if time permits |
-| Test Shared Server? | Release only |
+### Minimum (2 QAs, Phase 1 only)
+
+| Coverage | How |
+|----------|-----|
+| Python 3.10 | QA 1 on macOS |
+| Python 3.11 | QA 2 on macOS + Win365 |
+| STDIO | QA 1 E2E |
+| HTTP | QA 2 E2E |
+| macOS | QA 1 + QA 2 E2E |
+| Windows | QA 2 on Win365 |
+
+### Extended (Phase 2)
+
+| Coverage | How |
+|----------|-----|
+| Python 3.13 | Linux runner |
+| Linux | GitHub runner |
+
+### Skip
+
+| What | Why |
+|------|-----|
+| Python 3.12 | Between boundaries, covered by 3.11 |
+| macOS runner | Already tested manually |
+
+---
+
+## Test Assignment
+
+### QA 1 (macOS, Python 3.10)
+
+```
+1. Install Python 3.10
+2. Run TESTS_E2E_CLAUDE.md (STDIO transport)
+3. Run TESTS_CLI.md
+4. Run TESTS_CONFIG.md
+```
+
+### QA 2 (macOS + Win365, Python 3.11)
+
+```
+macOS:
+1. Install Python 3.11
+2. Run TESTS_E2E_CLAUDE.md (HTTP transport)
+
+Win365:
+3. Install Python 3.11
+4. Run TESTS_CLI.md
+5. Run TESTS_CONFIG.md
+6. Run TESTS_API_TOOLS.md
+```
+
+### Optional QA 3 (macOS, Python 3.13)
+
+```
+1. Install Python 3.13
+2. Run TESTS_E2E_CLAUDE.md (STDIO transport)
+```
+
+---
+
+## Outcome
+
+| Phase | Effort | Coverage |
+|-------|--------|----------|
+| Phase 1 | 2 QAs, ~1 day | Python 3.10-3.11, macOS+Windows, all transports |
+| Phase 2 | CI setup | +Linux, +Python 3.13 |
+
+**Minimum actions, maximum coverage**.
