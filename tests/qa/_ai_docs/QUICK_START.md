@@ -90,10 +90,38 @@ make test-coverage
 
 ## Verify Server Works
 
+### Option 1: STDIO Mode (default)
+
 ```bash
-# Start server
-anaconda-mcp serve --port 8888 &
-sleep 5
+# Start server in foreground - it reads JSON-RPC from stdin
+anaconda-mcp serve
+```
+
+Server will show available tools and wait for input. Press `Ctrl+C` to exit.
+
+### Option 2: HTTP Mode (for API testing)
+
+Use the test script:
+```bash
+./tests/qa/_ai_docs/scripts/test-http-server.sh 8888
+```
+
+Or manually:
+```bash
+# Create HTTP config
+cat > /tmp/http-config.toml << 'EOF'
+[composer]
+name = "anaconda-mcp"
+port = 8888
+
+[transport]
+stdio_enabled = false
+streamable_http_enabled = true
+EOF
+
+# Start server with HTTP enabled
+anaconda-mcp serve --config /tmp/http-config.toml &
+sleep 10
 
 # Test API
 curl -X POST http://localhost:8888/mcp \
@@ -104,7 +132,7 @@ curl -X POST http://localhost:8888/mcp \
 kill %1
 ```
 
-**Expected**: 5 tools listed (`conda_list_environments`, `conda_create_environment`, `conda_delete_environment`, `conda_install_packages`, `conda_remove_packages`).
+**Expected**: 6 tools listed (`conda_list_environments`, `conda_create_environment`, `conda_remove_environment`, `conda_install_packages`, `conda_remove_packages`, `conda_list_environment_packages`).
 
 ---
 

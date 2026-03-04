@@ -34,6 +34,11 @@ This documentation serves as the central knowledge base for QA testing of the An
 | [LOCAL_DEV_SETUP.md](./LOCAL_DEV_SETUP.md) | Full setup guide with troubleshooting | All QA |
 | [KNOWN_ISSUES.md](./KNOWN_ISSUES.md) | Known bugs and regression tests | All QA |
 
+### Scripts
+| Script | Description |
+|--------|-------------|
+| [scripts/test-http-server.sh](./scripts/test-http-server.sh) | Start HTTP server and test API |
+
 ## Source Documents
 
 Original requirements in `initial_docs/`:
