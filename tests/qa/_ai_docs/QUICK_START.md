@@ -90,19 +90,19 @@ make test-coverage
 
 ## Start Server
 
-### STDIO Mode (for Claude Desktop)
+### STDIO Mode
 
 ```bash
 anaconda-mcp serve
 ```
 
-Server runs in foreground. Configure Claude Desktop:
+Configure Claude Desktop for STDIO:
 ```bash
 anaconda-mcp claude-desktop setup-config
 # Restart Claude Desktop
 ```
 
-### HTTP Mode (for API testing)
+### HTTP Mode
 
 ```bash
 # Start server (runs in foreground)
