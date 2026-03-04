@@ -19,6 +19,9 @@ conda activate anaconda-mcp-testing
 
 # Verify
 anaconda-mcp --help
+
+# Check installed versions
+conda list | grep -E "anaconda-mcp|environments-mcp"
 ```
 
 To install a specific version, add version numbers to the command:
@@ -68,6 +71,9 @@ conda activate anaconda-mcp-dev
 
 # Verify
 anaconda-mcp --help
+
+# Check installed versions
+conda list | grep -E "anaconda-mcp|environments-mcp"
 ```
 
 ### Step 3: Run Tests (optional)
