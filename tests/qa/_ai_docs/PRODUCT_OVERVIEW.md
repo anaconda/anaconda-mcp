@@ -22,12 +22,128 @@ Data scientists and developers managing conda environments lack integration with
 
 ## Architecture
 
+### High-Level Overview
+
+```mermaid
+flowchart LR
+    subgraph CLIENT["MCP Client"]
+        CD[Claude Desktop]
+    end
+
+    subgraph GATEWAY["Anaconda MCP (Gateway)"]
+        direction TB
+        AM[anaconda-mcp<br>Port: 2391]
+        COMPOSE[mcp-compose<br>framework]
+        AM --> COMPOSE
+    end
+
+    subgraph DOWNSTREAM["Downstream Servers"]
+        ENV[environments-mcp-server<br>Port: 4041]
+        FUTURE[Future servers...]
+    end
+
+    CD -->|"STDIO or HTTP"| AM
+    COMPOSE -->|"HTTP :4041"| ENV
+    COMPOSE -.->|"Future"| FUTURE
 ```
-┌─────────────────┐     ┌──────────────────────┐     ┌─────────────────────┐
-│  Claude Desktop │────▶│    Anaconda MCP      │────▶│ Environments MCP    │
-│  (MCP Client)   │     │    (Composer)        │     │ Server (downstream) │
-└─────────────────┘     │  Port: 2391 (default)│     │ Port: 4041          │
-                        └──────────────────────┘     └─────────────────────┘
+
+### Component Relationship
+
+```mermaid
+flowchart TB
+    subgraph USER["User Interaction"]
+        U[User] -->|"Ask: List my environments"| CD[Claude Desktop]
+    end
+
+    subgraph ANACONDA_MCP["anaconda-mcp (Port 2391)"]
+        direction TB
+        CLI[CLI Entry Point]
+        AUTH[Authentication]
+        CONFIG[Configuration]
+        MCP_COMPOSE[mcp-compose]
+
+        CLI --> AUTH
+        CLI --> CONFIG
+        CLI --> MCP_COMPOSE
+    end
+
+    subgraph ENV_SERVER["environments-mcp-server (Port 4041)"]
+        direction TB
+        TOOLS[Tools]
+        CONDA[Conda Operations]
+
+        TOOLS --> CONDA
+
+        T1[list_environments]
+        T2[create_environment]
+        T3[delete_environment]
+        T4[install_packages]
+        T5[remove_packages]
+
+        TOOLS --- T1
+        TOOLS --- T2
+        TOOLS --- T3
+        TOOLS --- T4
+        TOOLS --- T5
+    end
+
+    CD -->|"MCP Protocol"| CLI
+    MCP_COMPOSE -->|"auto_start=true<br>HTTP localhost:4041"| TOOLS
+    CONDA -->|"conda CLI"| SYSTEM[System Conda]
+```
+
+### Startup Sequence
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Claude as Claude Desktop
+    participant AMCP as anaconda-mcp<br>(Port 2391)
+    participant ENV as environments-mcp-server<br>(Port 4041)
+    participant Conda as System Conda
+
+    User->>Claude: Start Claude Desktop
+    Claude->>AMCP: Spawn (STDIO) or Connect (HTTP)
+
+    Note over AMCP: auto_start = true
+    AMCP->>ENV: python -m environments_mcp_server<br>start --port 4041
+
+    Note over AMCP: startup_delay = 3s
+    AMCP-->>AMCP: Wait 3 seconds
+
+    AMCP->>ENV: Connect HTTP :4041
+    ENV-->>AMCP: Ready
+
+    User->>Claude: "List my conda environments"
+    Claude->>AMCP: tools/call conda_list_environments
+    AMCP->>ENV: tools/call list_environments
+    ENV->>Conda: conda env list
+    Conda-->>ENV: Environment list
+    ENV-->>AMCP: Result
+    AMCP-->>Claude: Result (with prefix)
+    Claude-->>User: "You have these environments..."
+```
+
+### Tool Name Prefixing
+
+```mermaid
+flowchart LR
+    subgraph DOWNSTREAM["environments-mcp-server"]
+        T1[list_environments]
+        T2[create_environment]
+    end
+
+    subgraph GATEWAY["anaconda-mcp"]
+        PREFIX["conflict_resolution = prefix<br>server name = conda"]
+    end
+
+    subgraph EXPOSED["Exposed to Claude"]
+        E1[conda_list_environments]
+        E2[conda_create_environment]
+    end
+
+    T1 --> PREFIX --> E1
+    T2 --> PREFIX --> E2
 ```
 
 ## Transport Modes
