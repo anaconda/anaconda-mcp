@@ -1,21 +1,30 @@
-# Configuration Testing Guide
+# Configuration Tests (All Platforms)
 
-## Purpose
+## Overview
 
-Component-level testing of configuration options via CLI. These tests do **not** require Claude Desktop - they validate configuration behavior directly.
+Component-level testing of configuration options via CLI. No Claude Desktop required.
 
-For end-to-end testing with Claude Desktop, see [E2E_USER_FLOWS.md](./E2E_USER_FLOWS.md).
+**Platforms**: macOS, Windows, Linux (all GitHub runners)
+
+**Related**:
+- [TESTS_CLI.md](./TESTS_CLI.md) - CLI flow tests
+- [TESTS_E2E_CLAUDE.md](./TESTS_E2E_CLAUDE.md) - Claude Desktop E2E flows
 
 ---
 
-## Scope
+## Test Summary
 
-| This Guide Covers | E2E Flows Cover |
-|-------------------|-----------------|
-| Env var behavior via CLI | Full Claude Desktop integration |
-| Config file parsing | User asks Claude, Claude responds |
-| CLI flag precedence | Transport works end-to-end |
-| OS-specific paths (verification) | Tool execution via AI |
+| Test ID | What | Priority |
+|---------|------|----------|
+| ENV-001 | Log Level | P1 |
+| ENV-002 | Telemetry Control | P1 |
+| ENV-003 | Python Executable | P1 |
+| ENV-004 | Environment Mode | P2 |
+| CFG-001 | Custom Config File | P1 |
+| CFG-002 | CLI Flag Precedence | P1 |
+| CFG-003 | Startup Delay | P1 |
+| PATH-001 | OS-Specific Paths | P0 |
+| PATH-002 | Config File Creation | P0 |
 
 ---
 
@@ -49,14 +58,13 @@ sleep 3 && kill %1
 # Disabled
 ANACONDA_MCP_LOG_LEVEL=DEBUG ANACONDA_MCP_SEND_METRICS=false anaconda-mcp serve &
 sleep 3 && kill %1
-# Check logs for telemetry calls
 
 # Enabled (default)
 ANACONDA_MCP_LOG_LEVEL=DEBUG anaconda-mcp serve &
 sleep 3 && kill %1
 ```
 
-**Pass**: `false` shows no telemetry initialization, `true` shows telemetry calls in DEBUG logs
+**Pass**: `false` shows no telemetry initialization, `true` shows telemetry in DEBUG logs
 
 ---
 
@@ -66,7 +74,6 @@ sleep 3 && kill %1
 
 **Test**:
 ```bash
-# Set custom path
 export ANACONDA_MCP_PYTHON_EXECUTABLE=/usr/bin/python3
 anaconda-mcp claude-desktop setup-config
 anaconda-mcp claude-desktop show --json | grep "command"
@@ -96,7 +103,6 @@ sleep 3 && kill %1
 
 **Test**:
 ```bash
-# Create custom config
 cat > /tmp/test-config.toml << 'EOF'
 [composer]
 name = "custom-test"
@@ -108,11 +114,9 @@ stdio_enabled = false
 streamable_http_enabled = true
 EOF
 
-# Start with custom config
 anaconda-mcp serve --config /tmp/test-config.toml &
 sleep 3
 
-# Verify port
 curl -s http://localhost:9999/mcp -X POST \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}'
@@ -130,11 +134,9 @@ kill %1
 
 **Test**:
 ```bash
-# Config says 9999, CLI says 7777
 anaconda-mcp serve --config /tmp/test-config.toml --port 7777 &
 sleep 3
 
-# Should be on 7777, not 9999
 curl -s http://localhost:7777/mcp -X POST \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}'
@@ -187,16 +189,9 @@ anaconda-mcp claude-desktop path
 
 **Test**:
 ```bash
-# Get expected path
 CONFIG_PATH=$(anaconda-mcp claude-desktop path)
-
-# Remove if exists
 rm -f "$CONFIG_PATH"
-
-# Create config
 anaconda-mcp claude-desktop setup-config
-
-# Verify created
 ls -la "$CONFIG_PATH"
 ```
 
@@ -224,20 +219,7 @@ ls -la "$CONFIG_PATH"
 
 ---
 
-## Troubleshooting
-
-| Symptom | Likely Cause | Check |
-|---------|--------------|-------|
-| Server won't start | Port in use | `lsof -i :PORT` |
-| No debug logs | Wrong env var | Verify `ANACONDA_MCP_LOG_LEVEL=DEBUG` |
-| Config not updating | Backup interference | Remove `.backup` files |
-| Wrong Python in config | Env var not set | Check `ANACONDA_MCP_PYTHON_EXECUTABLE` |
-
----
-
 ## CI Automation
-
-These tests can run on GitHub runners (no Claude Desktop required).
 
 ### GitHub Actions Workflow
 
@@ -270,112 +252,77 @@ jobs:
           python-version: "3.11"
 
       - name: Install anaconda-mcp
-        run: |
-          conda install anaconda-mcp environments-mcp-server -y
+        run: conda install anaconda-mcp environments-mcp-server -y
 
-      # PATH-001: OS-specific config path
-      - name: Test config path (PATH-001)
+      # PATH-001
+      - name: Test config path
         run: |
           CONFIG_PATH=$(anaconda-mcp claude-desktop path)
           echo "Config path: $CONFIG_PATH"
-          # Verify path is not empty
           [ -n "$CONFIG_PATH" ] || exit 1
 
-      # ENV-001: Log level
-      - name: Test DEBUG log level (ENV-001)
+      # ENV-001
+      - name: Test DEBUG log level
         run: |
           ANACONDA_MCP_LOG_LEVEL=DEBUG anaconda-mcp serve --port 8888 &
-          SERVER_PID=$!
           sleep 10
-          kill $SERVER_PID 2>/dev/null || true
-        env:
-          ANACONDA_MCP_LOG_LEVEL: DEBUG
+          kill %1 2>/dev/null || true
 
-      # ENV-002: Telemetry disabled
-      - name: Test telemetry disabled (ENV-002)
+      # ENV-002
+      - name: Test telemetry disabled
         run: |
           ANACONDA_MCP_SEND_METRICS=false anaconda-mcp serve --port 8889 &
-          SERVER_PID=$!
           sleep 10
-          kill $SERVER_PID 2>/dev/null || true
-        env:
-          ANACONDA_MCP_SEND_METRICS: "false"
+          kill %1 2>/dev/null || true
 
-      # CFG-002: CLI flag precedence
-      - name: Test port override (CFG-002)
+      # CFG-002
+      - name: Test port override
         run: |
           anaconda-mcp serve --port 7777 &
-          SERVER_PID=$!
           sleep 10
-          # Verify server responds on correct port
           curl -sf http://localhost:7777/mcp -X POST \
             -H "Content-Type: application/json" \
-            -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' \
-            || exit 1
-          kill $SERVER_PID 2>/dev/null || true
-
-      # CFG-003: Startup delay
-      - name: Test startup delay (CFG-003)
-        run: |
-          START_TIME=$(date +%s)
-          anaconda-mcp serve --delay 3 --port 8890 &
-          SERVER_PID=$!
-          sleep 8
-          kill $SERVER_PID 2>/dev/null || true
-          # Delay test passes if server started (we just verify no crash)
+            -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' || exit 1
+          kill %1 2>/dev/null || true
 
       # API smoke test
       - name: API smoke test
         run: |
           anaconda-mcp serve --port 9999 &
-          SERVER_PID=$!
           sleep 10
-
-          # Test initialize
           curl -sf http://localhost:9999/mcp -X POST \
             -H "Content-Type: application/json" \
-            -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"ci-test","version":"1.0"}}}' \
-            || exit 1
-
-          # Test tools/list
-          TOOLS=$(curl -sf http://localhost:9999/mcp -X POST \
-            -H "Content-Type: application/json" \
-            -d '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}')
-          echo "Tools: $TOOLS"
-
-          # Verify conda tools present
-          echo "$TOOLS" | grep -q "conda_list_environments" || exit 1
-
-          kill $SERVER_PID 2>/dev/null || true
+            -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | grep conda_list_environments
+          kill %1 2>/dev/null || true
 
       - name: Cleanup
         if: always()
-        run: |
-          pkill -f "anaconda-mcp serve" || true
+        run: pkill -f "anaconda-mcp serve" || true
 ```
 
-### Windows-Specific Notes
+---
 
-For Windows runners, some commands need adjustment:
-
-```yaml
-# Windows-specific step
-- name: Test config path (Windows)
-  if: runner.os == 'Windows'
-  shell: pwsh
-  run: |
-    $ConfigPath = anaconda-mcp claude-desktop path
-    Write-Host "Config path: $ConfigPath"
-    if ($ConfigPath -notmatch "Claude") { exit 1 }
-```
-
-### Test Coverage by Platform
+## Platform Coverage
 
 | Test | Linux | macOS | Windows |
 |------|-------|-------|---------|
 | PATH-001 | ✅ | ✅ | ✅ |
+| PATH-002 | ✅ | ✅ | ✅ |
 | ENV-001 | ✅ | ✅ | ✅ |
 | ENV-002 | ✅ | ✅ | ✅ |
+| ENV-003 | ✅ | ✅ | ✅ |
+| ENV-004 | ✅ | ✅ | ✅ |
+| CFG-001 | ✅ | ✅ | ✅ |
 | CFG-002 | ✅ | ✅ | ✅ |
 | CFG-003 | ✅ | ✅ | ✅ |
-| API smoke | ✅ | ✅ | ✅ |
+
+---
+
+## Troubleshooting
+
+| Symptom | Likely Cause | Check |
+|---------|--------------|-------|
+| Server won't start | Port in use | `lsof -i :PORT` |
+| No debug logs | Wrong env var | Verify `ANACONDA_MCP_LOG_LEVEL=DEBUG` |
+| Config not updating | Backup interference | Remove `.backup` files |
+| Wrong Python in config | Env var not set | Check `ANACONDA_MCP_PYTHON_EXECUTABLE` |

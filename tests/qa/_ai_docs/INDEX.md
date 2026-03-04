@@ -5,36 +5,75 @@ This documentation serves as the central knowledge base for QA testing of the An
 
 ## Document Structure
 
+### Product Documentation
 | Document | Description | Audience |
 |----------|-------------|----------|
 | [PRODUCT_OVERVIEW.md](./PRODUCT_OVERVIEW.md) | Product features, architecture, constraints | All QA |
-| [FEATURE_TREE.md](./FEATURE_TREE.md) | 3-level feature tree with mermaid diagrams | All QA |
-| [CONFIGURATION.md](./CONFIGURATION.md) | Configuration options reference (glossary) | All QA |
-| [CONFIG_TESTING_GUIDE.md](./CONFIG_TESTING_GUIDE.md) | What to test, why, pass/fail criteria | All QA |
-| [E2E_USER_FLOWS.md](./E2E_USER_FLOWS.md) | Real-world user scenarios and test flows | Manual/AI QA |
-| [E2E_COVERAGE_MAP.md](./E2E_COVERAGE_MAP.md) | E2E to feature mapping, gaps, optimized flows | QA leads |
-| [TEST_MATRIX.md](./TEST_MATRIX.md) | OS/Python/Transport pairwise test matrix | QA leads |
-| [KNOWN_ISSUES.md](./KNOWN_ISSUES.md) | Known bugs, quirks, and regression tests | All QA |
-| [TEST_COVERAGE_ANALYSIS.md](./TEST_COVERAGE_ANALYSIS.md) | Current test coverage, gaps, priorities | QA leads |
-| [LOCAL_DEV_SETUP.md](./LOCAL_DEV_SETUP.md) | Setting up local dev environment for testing | All QA |
+| [FEATURE_TREE.md](./FEATURE_TREE.md) | 3-level feature tree with diagrams | All QA |
+| [CONFIGURATION.md](./CONFIGURATION.md) | Configuration options reference | All QA |
+
+### Test Flows (TESTS_* prefix)
+| Document | Description | Platform |
+|----------|-------------|----------|
+| [TESTS_E2E_CLAUDE.md](./TESTS_E2E_CLAUDE.md) | E2E flows requiring Claude Desktop | macOS only |
+| [TESTS_CLI.md](./TESTS_CLI.md) | CLI-only flows (automatable) | All platforms |
+| [TESTS_CONFIG.md](./TESTS_CONFIG.md) | Configuration tests (automatable) | All platforms |
+
+### Test Planning
+| Document | Description | Audience |
+|----------|-------------|----------|
+| [E2E_COVERAGE_MAP.md](./E2E_COVERAGE_MAP.md) | Feature to test mapping | QA leads |
+| [TEST_MATRIX.md](./TEST_MATRIX.md) | OS/Python/Transport matrix | QA leads |
+| [TEST_COVERAGE_ANALYSIS.md](./TEST_COVERAGE_ANALYSIS.md) | Existing pytest coverage analysis | QA leads |
+
+### Reference
+| Document | Description | Audience |
+|----------|-------------|----------|
+| [KNOWN_ISSUES.md](./KNOWN_ISSUES.md) | Known bugs and regression tests | All QA |
+| [LOCAL_DEV_SETUP.md](./LOCAL_DEV_SETUP.md) | Local dev environment setup | All QA |
 
 ## Source Documents
 
-Original requirements and context in `initial_docs/`:
-- `epic_information.md` - Epic requirements (reference only)
-- `conversation.md` - Internal testing feedback and known issues
-- `Anaconda MCP-User Stories.pdf` - User stories document
+Original requirements in `initial_docs/`:
+- `epic_information.md` - Epic requirements
+- `conversation.md` - Internal testing feedback
+- `Anaconda MCP-User Stories.pdf` - User stories
 
 ## Quick Links
 
-- **Start Testing**: [LOCAL_DEV_SETUP.md](./LOCAL_DEV_SETUP.md)
-- **Test Scenarios**: [E2E_USER_FLOWS.md](./E2E_USER_FLOWS.md)
-- **Known Issues**: [KNOWN_ISSUES.md](./KNOWN_ISSUES.md)
-- **Test Matrix**: [TEST_MATRIX.md](./TEST_MATRIX.md)
+| Task | Document |
+|------|----------|
+| **Start Testing** | [LOCAL_DEV_SETUP.md](./LOCAL_DEV_SETUP.md) |
+| **E2E Tests (macOS)** | [TESTS_E2E_CLAUDE.md](./TESTS_E2E_CLAUDE.md) |
+| **CLI Tests (All Platforms)** | [TESTS_CLI.md](./TESTS_CLI.md) |
+| **Config Tests (All Platforms)** | [TESTS_CONFIG.md](./TESTS_CONFIG.md) |
+| **Known Issues** | [KNOWN_ISSUES.md](./KNOWN_ISSUES.md) |
+
+## Test Flow Organization
+
+```
+TESTS_E2E_CLAUDE.md   → macOS only (requires Claude Desktop)
+  ├── CORE-001: Full Setup & Tools
+  ├── CORE-002: HTTP Transport
+  ├── GUARD-001: Guardrails
+  ├── AUTH-002: Anonymous Mode
+  └── REGRESS-001: Known Issues
+
+TESTS_CLI.md          → All platforms (CI automatable)
+  ├── CLI-001: Server Discovery
+  ├── CLI-002: Advanced Options
+  ├── CLI-003: Config Management
+  ├── CLI-004: Regression CLI
+  └── CLI-005: Negative Scenarios
+
+TESTS_CONFIG.md       → All platforms (CI automatable)
+  ├── ENV-001 to ENV-004: Environment variables
+  ├── CFG-001 to CFG-003: Config file tests
+  └── PATH-001 to PATH-002: OS path tests
+```
 
 ## Conventions
 
-- All test IDs follow format: `{AREA}-{TYPE}-{NUMBER}` (e.g., `AUTH-E2E-001`)
-- Preconditions marked with `[PRE]`
-- Expected results marked with `[EXPECTED]`
-- AI-executable steps marked with `[AI]`
+- Test IDs: `{AREA}-{NUMBER}` (e.g., `CLI-001`, `ENV-002`)
+- Preconditions: `[PRE]`
+- Expected results: `[EXPECTED]`
