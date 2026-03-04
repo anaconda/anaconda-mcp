@@ -22,6 +22,7 @@
 | [TESTS_E2E_CLAUDE.md](./TESTS_E2E_CLAUDE.md) | macOS only | CORE-001, CORE-002, GUARD-001, AUTH-002, REGRESS-001 |
 | [TESTS_CLI.md](./TESTS_CLI.md) | All platforms | CLI-001 to CLI-005 |
 | [TESTS_CONFIG.md](./TESTS_CONFIG.md) | All platforms | ENV-001 to ENV-004, CFG-001 to CFG-003, PATH-001 to PATH-002 |
+| [TESTS_API_TOOLS.md](./TESTS_API_TOOLS.md) | Win365 first, then CI | TOOL-001 to TOOL-005, ERR-001 to ERR-003 |
 
 ---
 

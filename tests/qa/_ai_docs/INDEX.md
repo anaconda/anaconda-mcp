@@ -18,6 +18,7 @@ This documentation serves as the central knowledge base for QA testing of the An
 | [TESTS_E2E_CLAUDE.md](./TESTS_E2E_CLAUDE.md) | E2E flows requiring Claude Desktop | macOS only |
 | [TESTS_CLI.md](./TESTS_CLI.md) | CLI-only flows (automatable) | All platforms |
 | [TESTS_CONFIG.md](./TESTS_CONFIG.md) | Configuration tests (automatable) | All platforms |
+| [TESTS_API_TOOLS.md](./TESTS_API_TOOLS.md) | Direct API tool tests (automatable) | All platforms |
 
 ### Test Planning
 | Document | Description | Audience |
@@ -59,17 +60,21 @@ TESTS_E2E_CLAUDE.md   → macOS only (requires Claude Desktop)
   ├── AUTH-002: Anonymous Mode
   └── REGRESS-001: Known Issues
 
-TESTS_CLI.md          → All platforms (CI automatable)
+TESTS_CLI.md          → All platforms (manual first, then CI)
   ├── CLI-001: Server Discovery
   ├── CLI-002: Advanced Options
   ├── CLI-003: Config Management
   ├── CLI-004: Regression CLI
   └── CLI-005: Negative Scenarios
 
-TESTS_CONFIG.md       → All platforms (CI automatable)
+TESTS_CONFIG.md       → All platforms (manual first, then CI)
   ├── ENV-001 to ENV-004: Environment variables
   ├── CFG-001 to CFG-003: Config file tests
   └── PATH-001 to PATH-002: OS path tests
+
+TESTS_API_TOOLS.md    → Win365 manual first, then CI
+  ├── TOOL-001 to TOOL-005: Each MCP tool
+  └── ERR-001 to ERR-003: Error scenarios
 ```
 
 ## Conventions

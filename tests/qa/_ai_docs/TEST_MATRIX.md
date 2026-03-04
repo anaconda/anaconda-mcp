@@ -46,48 +46,133 @@
 
 ---
 
-## Test Strategy by Platform
+## Test Types
 
-### Phase 1: Manual Validation (macOS)
+| Type | Document | Requires Claude | Automatable |
+|------|----------|-----------------|-------------|
+| E2E Claude | TESTS_E2E_CLAUDE.md | Yes | No |
+| CLI | TESTS_CLI.md | No | Yes |
+| Config | TESTS_CONFIG.md | No | Yes |
+| API Tools | TESTS_API_TOOLS.md | No | Yes |
 
-Run all tests manually on macOS first to validate flows work:
+### API Tool Tests (New)
 
-| Step | What | Document |
-|------|------|----------|
-| 1 | Run CLI tests manually | TESTS_CLI.md |
-| 2 | Run Config tests manually | TESTS_CONFIG.md |
-| 3 | Fix/adjust flows if needed | Update docs |
-| 4 | Run E2E Claude tests | TESTS_E2E_CLAUDE.md |
+Direct API calls to each MCP tool - validates tool functionality without Claude Desktop.
 
-**Why macOS first**: Has Claude Desktop + can validate all flows before automation.
+**Setup**:
+```bash
+# Start server in dev mode
+anaconda-mcp serve --port 8888 &
+```
 
-### Phase 2: Automate CLI/Config (CI Runners)
+**Test each tool via curl**:
+```bash
+# conda_list_environments
+curl -X POST http://localhost:8888/mcp \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"conda_list_environments","arguments":{}}}'
 
-After manual validation passes, automate on CI:
+# conda_create_environment
+curl -X POST http://localhost:8888/mcp \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"conda_create_environment","arguments":{"name":"api-test-env","python_version":"3.11"}}}'
 
-| Platform | What to Automate |
-|----------|------------------|
-| Linux runner | TESTS_CLI.md, TESTS_CONFIG.md |
-| Windows runner | TESTS_CLI.md, TESTS_CONFIG.md |
-| macOS runner | TESTS_CLI.md, TESTS_CONFIG.md |
+# conda_install_packages
+curl -X POST http://localhost:8888/mcp \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"conda_install_packages","arguments":{"env_name":"api-test-env","packages":["numpy"]}}}'
 
-### Phase 3: Release Testing (macOS Manual)
+# conda_remove_packages
+curl -X POST http://localhost:8888/mcp \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"conda_remove_packages","arguments":{"env_name":"api-test-env","packages":["numpy"]}}}'
 
-Before release, run full E2E manually on macOS:
+# conda_delete_environment
+curl -X POST http://localhost:8888/mcp \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"conda_delete_environment","arguments":{"name":"api-test-env"}}}'
+```
 
-| What | Document |
-|------|----------|
-| Full E2E with Claude Desktop | TESTS_E2E_CLAUDE.md |
+---
 
-### Platform Capabilities
+## Available Environments
 
-| Platform | CLI Tests | Config Tests | E2E Claude |
-|----------|-----------|--------------|------------|
-| macOS (manual) | ✅ | ✅ | ✅ |
-| macOS (CI) | ✅ | ✅ | ❌ No Claude |
-| Linux (CI) | ✅ | ✅ | ❌ No Claude |
-| Windows (CI) | ✅ | ✅ | ❌ No Claude |
-| Win365 | ✅ | ✅ | ❌ No Claude |
+| Environment | OS | Claude Desktop | Use For |
+|-------------|-----|----------------|---------|
+| QA macOS | macOS | ✅ Yes | E2E Claude, CLI, Config, API Tools |
+| Win365 | Windows | ❌ No | CLI, Config, API Tools |
+| GitHub Runner | Linux/Windows | ❌ No | Automation (Phase 2) |
+
+---
+
+## Test Strategy
+
+### Phase 1: Manual Testing (Priority 1)
+
+**Goal**: Validate all test flows work before automation.
+
+| Platform | Python | Test Types | Document |
+|----------|--------|------------|----------|
+| macOS | 3.11 | CLI, Config | TESTS_CLI.md, TESTS_CONFIG.md |
+| macOS | 3.11 | E2E Claude | TESTS_E2E_CLAUDE.md |
+| Win365 | 3.10 | CLI, Config, API Tools | TESTS_CLI.md, TESTS_CONFIG.md, TESTS_API_TOOLS.md |
+
+**Why different Python versions**:
+- macOS with 3.11 = CI baseline
+- Win365 with 3.10 = minimum boundary
+- Better coverage across platforms
+
+### Phase 2: Automation (If Time Allows)
+
+After manual validation passes:
+
+| Platform | Python | What to Automate |
+|----------|--------|------------------|
+| Linux runner | 3.11 | CLI, Config, API Tools |
+| Windows runner | 3.11 | CLI, Config, API Tools |
+| Linux runner | 3.13 | CLI (boundary check) |
+
+### Phase 3: Release Testing
+
+| Platform | Python | What |
+|----------|--------|------|
+| macOS | 3.11 | Full E2E Claude (manual) |
+
+---
+
+## Efficient Test Matrix
+
+By distributing test types across platforms with different Python versions:
+
+| What | Where | Python | Coverage |
+|------|-------|--------|----------|
+| E2E Claude | macOS | 3.11 | Full AI integration |
+| API Tools | Win365 | 3.10 | Tool functionality + min Python |
+| CLI/Config | Both | 3.10, 3.11 | OS paths + Python versions |
+
+**Result**:
+- 2 Python versions tested (3.10, 3.11)
+- 2 OS tested (macOS, Windows)
+- All tool functionality validated (via API on Win365)
+- AI integration validated (via Claude on macOS)
+
+### Optional (If Time)
+| What | Where | Python |
+|------|-------|--------|
+| API Tools | Linux runner | 3.13 |
+
+This adds Python 3.13 boundary without duplicating other tests.
+
+---
+
+## Platform Capabilities
+
+| Test Type | macOS | Win365 | Linux CI | Windows CI |
+|-----------|-------|--------|----------|------------|
+| E2E Claude | ✅ | ❌ | ❌ | ❌ |
+| CLI | ✅ | ✅ | ✅ | ✅ |
+| Config | ✅ | ✅ | ✅ | ✅ |
+| API Tools | ✅ | ✅ | ✅ | ✅ |
 
 ---
 
