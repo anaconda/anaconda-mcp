@@ -1,0 +1,98 @@
+# CLI Flow Tests
+# Template for TESTS_CLI.md automation
+# Copy to .github/workflows/ when ready to implement
+
+name: CLI Flow Tests
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  cli-tests:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python: ['3.11']
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash -el {0}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Miniconda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          auto-activate-base: true
+          python-version: ${{ matrix.python }}
+
+      - name: Install anaconda-mcp
+        run: conda install anaconda-mcp environments-mcp-server -y
+
+      # CLI-001: Server Discovery
+      - name: Test discover command
+        run: |
+          anaconda-mcp discover
+          anaconda-mcp discover --output-format json
+
+      - name: Test compose command
+        run: |
+          anaconda-mcp compose
+          anaconda-mcp compose --output-format json
+
+      # CLI-002: Advanced Options
+      - name: Test custom config
+        run: |
+          cat > /tmp/custom-mcp.toml << 'EOF'
+          [composer]
+          name = "test-server"
+          port = 9876
+          [transport]
+          stdio_enabled = false
+          streamable_http_enabled = true
+          EOF
+
+          anaconda-mcp serve --config /tmp/custom-mcp.toml &
+          sleep 10
+          curl -sf http://localhost:9876/mcp -X POST \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' || exit 1
+          kill %1 || true
+
+      # CLI-003: Config Management
+      - name: Test config path
+        run: anaconda-mcp claude-desktop path
+
+      - name: Test config setup/show/remove
+        run: |
+          anaconda-mcp claude-desktop setup-config
+          anaconda-mcp claude-desktop show
+          anaconda-mcp claude-desktop show --json
+          anaconda-mcp claude-desktop remove-config
+
+      # CLI-004: Regression
+      - name: Test extra env vars (KI-004)
+        run: anaconda-mcp --help
+        env:
+          OPENAI_API_KEY: test123
+          RANDOM_VAR: value
+
+      # API Smoke Test
+      - name: API smoke test
+        run: |
+          anaconda-mcp serve --port 8888 &
+          sleep 10
+          curl -sf http://localhost:8888/mcp -X POST \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"ci","version":"1.0"}}}'
+          curl -sf http://localhost:8888/mcp -X POST \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}' | grep conda_list_environments
+          kill %1 || true
+
+      - name: Cleanup
+        if: always()
+        run: pkill -f "anaconda-mcp serve" || true

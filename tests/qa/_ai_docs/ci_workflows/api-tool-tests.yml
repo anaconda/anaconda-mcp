@@ -1,0 +1,89 @@
+# API Tool Tests
+# Template for TESTS_API_TOOLS.md automation
+# Copy to .github/workflows/ when ready to implement
+
+name: API Tool Tests
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  api-tool-tests:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python: ['3.11']
+        include:
+          # Boundary check
+          - os: ubuntu-latest
+            python: '3.13'
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash -el {0}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Miniconda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          auto-activate-base: true
+          python-version: ${{ matrix.python }}
+
+      - name: Install anaconda-mcp
+        run: conda install anaconda-mcp environments-mcp-server -y
+
+      - name: Start server
+        run: |
+          anaconda-mcp serve --port 8888 &
+          sleep 15
+
+      - name: Initialize session
+        run: |
+          curl -sf http://localhost:8888/mcp -X POST \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":0,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"ci-test","version":"1.0"}}}'
+
+      # TOOL-001: List environments
+      - name: Test list environments
+        run: |
+          curl -sf http://localhost:8888/mcp -X POST \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"conda_list_environments","arguments":{}}}' | grep -q "result"
+
+      # TOOL-002: Create environment
+      - name: Test create environment
+        run: |
+          curl -sf http://localhost:8888/mcp -X POST \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"conda_create_environment","arguments":{"name":"ci-test-env","python_version":"3.11"}}}'
+
+      # TOOL-003: Install packages
+      - name: Test install packages
+        run: |
+          curl -sf http://localhost:8888/mcp -X POST \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"conda_install_packages","arguments":{"env_name":"ci-test-env","packages":["numpy"]}}}'
+
+      # TOOL-004: Remove packages
+      - name: Test remove packages
+        run: |
+          curl -sf http://localhost:8888/mcp -X POST \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"conda_remove_packages","arguments":{"env_name":"ci-test-env","packages":["numpy"]}}}'
+
+      # TOOL-005: Delete environment
+      - name: Test delete environment
+        run: |
+          curl -sf http://localhost:8888/mcp -X POST \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"conda_delete_environment","arguments":{"name":"ci-test-env"}}}'
+
+      - name: Cleanup
+        if: always()
+        run: |
+          pkill -f "anaconda-mcp serve" || true
+          conda remove -n ci-test-env --all -y 2>/dev/null || true

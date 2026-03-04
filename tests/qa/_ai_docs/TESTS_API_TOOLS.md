@@ -233,34 +233,9 @@ echo -e "\n=== All tests passed ==="
 
 ## CI Automation (Phase 2)
 
-If time allows, add to CI workflow:
+Workflow template: [ci_workflows/api-tool-tests.yml](./ci_workflows/api-tool-tests.yml)
 
-```yaml
-# .github/workflows/api-tool-tests.yml
-name: API Tool Tests
-
-jobs:
-  api-tests:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: conda-incubator/setup-miniconda@v3
-        with:
-          python-version: '3.11'
-
-      - run: conda install anaconda-mcp environments-mcp-server -y
-
-      - name: Run API tool tests
-        run: |
-          anaconda-mcp serve --port 8888 &
-          sleep 15
-
-          # Test each tool
-          curl -sf http://localhost:8888/mcp -X POST \
-            -H "Content-Type: application/json" \
-            -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"conda_list_environments","arguments":{}}}' | grep -q "result"
-
-          echo "API tool tests passed"
-```
+Copy to `.github/workflows/` when ready to implement.
 
 ---
 

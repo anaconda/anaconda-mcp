@@ -215,86 +215,11 @@ ls -la "$CONFIG_PATH"
 
 ---
 
-## CI Automation
+## CI Automation (Phase 2)
 
-### GitHub Actions Workflow
+Workflow template: [ci_workflows/config-tests.yml](./ci_workflows/config-tests.yml)
 
-```yaml
-# .github/workflows/config-tests.yml
-name: Configuration Tests
-
-on:
-  pull_request:
-  push:
-    branches: [main]
-
-jobs:
-  config-tests:
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-    runs-on: ${{ matrix.os }}
-    defaults:
-      run:
-        shell: bash -el {0}
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Miniconda
-        uses: conda-incubator/setup-miniconda@v3
-        with:
-          auto-activate-base: true
-          python-version: "3.11"
-
-      - name: Install anaconda-mcp
-        run: conda install anaconda-mcp environments-mcp-server -y
-
-      # PATH-001
-      - name: Test config path
-        run: |
-          CONFIG_PATH=$(anaconda-mcp claude-desktop path)
-          echo "Config path: $CONFIG_PATH"
-          [ -n "$CONFIG_PATH" ] || exit 1
-
-      # ENV-001
-      - name: Test DEBUG log level
-        run: |
-          ANACONDA_MCP_LOG_LEVEL=DEBUG anaconda-mcp serve --port 8888 &
-          sleep 10
-          kill %1 2>/dev/null || true
-
-      # ENV-002
-      - name: Test telemetry disabled
-        run: |
-          ANACONDA_MCP_SEND_METRICS=false anaconda-mcp serve --port 8889 &
-          sleep 10
-          kill %1 2>/dev/null || true
-
-      # CFG-002
-      - name: Test port override
-        run: |
-          anaconda-mcp serve --port 7777 &
-          sleep 10
-          curl -sf http://localhost:7777/mcp -X POST \
-            -H "Content-Type: application/json" \
-            -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' || exit 1
-          kill %1 2>/dev/null || true
-
-      # API smoke test
-      - name: API smoke test
-        run: |
-          anaconda-mcp serve --port 9999 &
-          sleep 10
-          curl -sf http://localhost:9999/mcp -X POST \
-            -H "Content-Type: application/json" \
-            -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | grep conda_list_environments
-          kill %1 2>/dev/null || true
-
-      - name: Cleanup
-        if: always()
-        run: pkill -f "anaconda-mcp serve" || true
-```
+Copy to `.github/workflows/` when ready to implement.
 
 ---
 
