@@ -105,13 +105,8 @@ anaconda-mcp claude-desktop setup-config
 ### HTTP Mode
 
 ```bash
-# Start server (runs in foreground)
+# Start server on port 8888 (runs in foreground)
 ./tests/qa/_ai_docs/scripts/start-http-server.sh 8888
-```
-
-Or manually:
-```bash
-anaconda-mcp serve --config /tmp/http-config.toml
 ```
 
 Configure Claude Desktop for HTTP:
@@ -119,6 +114,8 @@ Configure Claude Desktop for HTTP:
 anaconda-mcp claude-desktop setup-config --transport streamable-http --port 8888
 # Restart Claude Desktop
 ```
+
+Port 8888 is default. Use different port if needed: `./start-http-server.sh 9999`
 
 ### Expected Output (both modes)
 
