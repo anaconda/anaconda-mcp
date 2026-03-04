@@ -79,6 +79,33 @@ Issues documented from internal testing conversations (Feb 2026).
 
 ---
 
+### KI-007: HTTP Transport Hangs or Fails to Connect
+
+**If you experience**:
+- Server hangs at "Connecting to Streamable HTTP server..."
+- Never shows "Discovered X tools"
+- Error: "address already in use"
+- Empty response from API calls
+
+**Then do**:
+```bash
+# Kill all zombie processes
+pkill -9 -f "anaconda-mcp"
+pkill -9 -f "environments_mcp"
+lsof -ti:8888 | xargs kill -9 2>/dev/null
+lsof -ti:4041 | xargs kill -9 2>/dev/null
+
+# Wait and retry
+sleep 2
+anaconda-mcp serve --config /tmp/http-config.toml
+```
+
+**Root cause**: Zombie processes from previous test runs hold ports 8888 or 4041, preventing new server from connecting to downstream.
+
+**Prevention**: Always cleanly stop servers with Ctrl+C. Use `pkill` cleanup before starting new tests.
+
+---
+
 ## Setup Quirks
 
 ### SQ-001: Claude Desktop Capability Setting

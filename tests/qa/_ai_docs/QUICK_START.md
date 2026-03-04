@@ -90,57 +90,36 @@ make test-coverage
 
 ## Verify Server Works
 
-### Option 1: STDIO Mode (default)
+### STDIO Mode (default - recommended)
 
 ```bash
-# Start server in foreground - it reads JSON-RPC from stdin
+# Start server - will auto-connect to downstream and show tools
 anaconda-mcp serve
 ```
 
-Server will show available tools and wait for input. Press `Ctrl+C` to exit.
+**Expected output**:
+```
+✓ All servers started successfully!
+📡 MCP Server Mode: STDIO
+Total tools: 6
 
-### Option 2: HTTP Mode (for API testing)
-
-Use the test script:
-```bash
-./tests/qa/_ai_docs/scripts/test-http-server.sh 8888
+🔧 Available Tools:
+  • conda_create_environment
+  • conda_install_packages
+  • conda_list_environment_packages
+  • conda_list_environments
+  • conda_remove_environment
+  • conda_remove_packages
 ```
 
-Or manually:
-```bash
-# Create HTTP config with downstream server
-cat > /tmp/http-config.toml << EOF
-[composer]
-name = "anaconda-mcp"
-port = 8888
+Press `Ctrl+C` to exit.
 
-[transport]
-stdio_enabled = false
-streamable_http_enabled = true
+### HTTP Mode (known issue)
 
-[[servers.proxied.streamable-http]]
-name = "conda"
-url = "http://localhost:4041/mcp"
-auto_start = true
-command = ["$(which python)", "-m", "environments_mcp_server", "start", "--transport", "streamable-http", "--port", "4041"]
-startup_delay = 3
-EOF
+> **Note**: HTTP transport mode may hang during downstream server connection.
+> This is being investigated. Use STDIO mode for Claude Desktop testing.
 
-# Start server with HTTP enabled
-anaconda-mcp serve --config /tmp/http-config.toml &
-sleep 10
-
-# Test API (note: Accept header required for streamable HTTP)
-curl -X POST http://localhost:8888/mcp \
-  -H "Content-Type: application/json" \
-  -H "Accept: application/json, text/event-stream" \
-  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}'
-
-# Stop server
-kill %1
-```
-
-**Expected**: 6 tools listed (`conda_list_environments`, `conda_create_environment`, `conda_remove_environment`, `conda_install_packages`, `conda_remove_packages`, `conda_list_environment_packages`).
+Test script available at: [scripts/test-http-server.sh](./scripts/test-http-server.sh)
 
 ---
 
