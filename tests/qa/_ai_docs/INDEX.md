@@ -30,8 +30,9 @@ This documentation serves as the central knowledge base for QA testing of the An
 ### Reference
 | Document | Description | Audience |
 |----------|-------------|----------|
+| [QUICK_START.md](./QUICK_START.md) | Minimal install steps | All QA |
+| [LOCAL_DEV_SETUP.md](./LOCAL_DEV_SETUP.md) | Full setup guide with troubleshooting | All QA |
 | [KNOWN_ISSUES.md](./KNOWN_ISSUES.md) | Known bugs and regression tests | All QA |
-| [LOCAL_DEV_SETUP.md](./LOCAL_DEV_SETUP.md) | Local dev environment setup | All QA |
 
 ## Source Documents
 
@@ -44,7 +45,8 @@ Original requirements in `initial_docs/`:
 
 | Task | Document |
 |------|----------|
-| **Start Testing** | [LOCAL_DEV_SETUP.md](./LOCAL_DEV_SETUP.md) |
+| **Quick Start** | [QUICK_START.md](./QUICK_START.md) |
+| **Full Setup Guide** | [LOCAL_DEV_SETUP.md](./LOCAL_DEV_SETUP.md) |
 | **E2E Tests (macOS)** | [TESTS_E2E_CLAUDE.md](./TESTS_E2E_CLAUDE.md) |
 | **CLI Tests (All Platforms)** | [TESTS_CLI.md](./TESTS_CLI.md) |
 | **Config Tests (All Platforms)** | [TESTS_CONFIG.md](./TESTS_CONFIG.md) |
