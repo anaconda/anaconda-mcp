@@ -2,187 +2,104 @@
 
 ## Purpose
 
-This guide explains **what to test** and **why** for each configuration option. Use CONFIGURATION.md as reference for option details.
+Component-level testing of configuration options via CLI. These tests do **not** require Claude Desktop - they validate configuration behavior directly.
+
+For end-to-end testing with Claude Desktop, see [E2E_USER_FLOWS.md](./E2E_USER_FLOWS.md).
 
 ---
 
-## Testing Priority
+## Scope
 
-| Priority | Config Area | Why Test |
-|----------|-------------|----------|
-| P0 | Transport (STDIO/HTTP) | Core functionality |
-| P0 | Claude Desktop paths | OS-specific, user-facing |
-| P1 | Environment variables | User customization |
-| P1 | Config file overrides | Advanced usage |
-| P2 | Telemetry settings | Privacy compliance |
-
----
-
-## P0: Transport Configuration
-
-### STDIO Transport (Default)
-
-**What**: Claude Desktop spawns anaconda-mcp as subprocess
-
-**Why Test**: This is the default experience for most users
-
-**Test Scenario**:
-1. Run `anaconda-mcp claude-desktop setup-config` (no transport flag)
-2. Restart Claude Desktop
-3. Ask Claude to list environments
-
-**Pass Criteria**:
-- Config uses `"command"` and `"args"` (not `"url"`)
-- Claude Desktop can communicate with server
-- Tools respond correctly
-
-**Fail Indicators**:
-- "Server not responding" in Claude Desktop
-- Config has wrong Python path
+| This Guide Covers | E2E Flows Cover |
+|-------------------|-----------------|
+| Env var behavior via CLI | Full Claude Desktop integration |
+| Config file parsing | User asks Claude, Claude responds |
+| CLI flag precedence | Transport works end-to-end |
+| OS-specific paths (verification) | Tool execution via AI |
 
 ---
 
-### HTTP Transport
+## Test Scenarios
 
-**What**: User starts server manually, Claude connects via URL
+### ENV-001: Log Level
 
-**Why Test**: Alternative for shared servers, debugging
+**What**: `ANACONDA_MCP_LOG_LEVEL` controls verbosity
 
-**Test Scenario**:
-1. Start server: `anaconda-mcp serve --port 8888`
-2. Configure: `anaconda-mcp claude-desktop setup-config --transport streamable-http --port 8888`
-3. Restart Claude Desktop
-4. Ask Claude to list environments
-
-**Pass Criteria**:
-- Server shows "Listening on port 8888"
-- Config uses `"url": "http://localhost:8888/mcp"`
-- Tools respond correctly
-
-**Fail Indicators**:
-- "Connection refused" errors
-- Port already in use
-- Config still has STDIO format
-
----
-
-## P0: Claude Desktop Config Paths
-
-**What**: OS-specific config file locations
-
-**Why Test**: Wrong path = Claude Desktop won't find config
-
-| OS | Expected Path |
-|----|---------------|
-| macOS | `~/Library/Application Support/Claude/claude_desktop_config.json` |
-| Linux | `~/.config/Claude/claude_desktop_config.json` |
-| Windows | `%APPDATA%\Claude\claude_desktop_config.json` |
-
-**Test Scenario**:
-1. Run `anaconda-mcp claude-desktop path`
-2. Verify path matches OS
-3. Run `anaconda-mcp claude-desktop setup-config`
-4. Verify file created at correct location
-
-**Pass Criteria**:
-- Path command returns OS-appropriate path
-- Config file actually created there
-- Claude Desktop reads the config
-
-**Fail Indicators**:
-- Path doesn't exist
-- Wrong OS path returned
-- Permission denied errors
-
----
-
-## P1: Environment Variables
-
-### ANACONDA_MCP_LOG_LEVEL
-
-**What**: Controls log verbosity (DEBUG, INFO, WARNING, ERROR)
-
-**Why Test**: Users need DEBUG for troubleshooting
-
-**Test Scenario**:
+**Test**:
 ```bash
-# Test DEBUG level
-ANACONDA_MCP_LOG_LEVEL=DEBUG anaconda-mcp serve --port 8888
+# DEBUG - verbose output
+ANACONDA_MCP_LOG_LEVEL=DEBUG anaconda-mcp serve --port 8888 &
+sleep 3 && kill %1
 
-# Test default (INFO)
-anaconda-mcp serve --port 8889
+# WARNING - minimal output
+ANACONDA_MCP_LOG_LEVEL=WARNING anaconda-mcp serve --port 8889 &
+sleep 3 && kill %1
 ```
 
-**Pass Criteria**:
-- DEBUG shows detailed MCP protocol messages
-- INFO shows only startup/connection messages
-- Invalid values handled gracefully
+**Pass**: DEBUG shows MCP protocol details, WARNING shows minimal logs
 
 ---
 
-### ANACONDA_MCP_SEND_METRICS
+### ENV-002: Telemetry Control
 
-**What**: Enable/disable telemetry
+**What**: `ANACONDA_MCP_SEND_METRICS` enables/disables telemetry
 
-**Why Test**: Privacy compliance, enterprise requirement
-
-**Test Scenario**:
+**Test**:
 ```bash
-# Disable telemetry
-ANACONDA_MCP_SEND_METRICS=false anaconda-mcp serve
+# Disabled
+ANACONDA_MCP_LOG_LEVEL=DEBUG ANACONDA_MCP_SEND_METRICS=false anaconda-mcp serve &
+sleep 3 && kill %1
+# Check logs for telemetry calls
 
-# Enable telemetry (default)
-anaconda-mcp serve
+# Enabled (default)
+ANACONDA_MCP_LOG_LEVEL=DEBUG anaconda-mcp serve &
+sleep 3 && kill %1
 ```
 
-**Pass Criteria**:
-- `false` = no network calls to telemetry endpoint
-- `true` = metrics sent (verify in DEBUG logs)
-- Server works regardless of setting
-
-**How to Verify**:
-- Use `ANACONDA_MCP_LOG_LEVEL=DEBUG` to see telemetry calls
-- Or use network monitor to check outbound connections
+**Pass**: `false` shows no telemetry initialization, `true` shows telemetry calls in DEBUG logs
 
 ---
 
-### ANACONDA_MCP_PYTHON_EXECUTABLE
+### ENV-003: Python Executable Override
 
-**What**: Override Python interpreter path in generated configs
+**What**: `ANACONDA_MCP_PYTHON_EXECUTABLE` overrides Python path in generated configs
 
-**Why Test**: Users with multiple Python installations
-
-**Test Scenario**:
+**Test**:
 ```bash
-# Set custom Python path
-export ANACONDA_MCP_PYTHON_EXECUTABLE=/opt/conda/bin/python
+# Set custom path
+export ANACONDA_MCP_PYTHON_EXECUTABLE=/usr/bin/python3
 anaconda-mcp claude-desktop setup-config
-
-# Check generated config
-anaconda-mcp claude-desktop show --json
+anaconda-mcp claude-desktop show --json | grep "command"
 ```
 
-**Pass Criteria**:
-- Generated config uses specified Python path
-- Path appears in `"command"` field for STDIO
-- Invalid path should warn (not crash)
+**Pass**: Generated config shows `/usr/bin/python3` in command field
 
 ---
 
-## P1: Config File Overrides
+### ENV-004: Environment Mode
 
-### Custom Config File
+**What**: `ANACONDA_MCP_ENVIRONMENT` sets API environment (production/staging)
 
-**What**: Use custom TOML config instead of default
+**Test**:
+```bash
+ANACONDA_MCP_LOG_LEVEL=DEBUG ANACONDA_MCP_ENVIRONMENT=staging anaconda-mcp serve &
+sleep 3 && kill %1
+```
 
-**Why Test**: Enterprise customization, testing
+**Pass**: Logs show staging domain for Anaconda API calls
 
-**Test Scenario**:
+---
+
+### CFG-001: Custom Config File
+
+**What**: `--config` flag loads custom TOML configuration
+
+**Test**:
 ```bash
 # Create custom config
-cat > /tmp/custom.toml << 'EOF'
+cat > /tmp/test-config.toml << 'EOF'
 [composer]
-name = "test-server"
+name = "custom-test"
 port = 9999
 log_level = "DEBUG"
 
@@ -192,82 +109,126 @@ streamable_http_enabled = true
 EOF
 
 # Start with custom config
-anaconda-mcp serve --config /tmp/custom.toml
+anaconda-mcp serve --config /tmp/test-config.toml &
+sleep 3
+
+# Verify port
+curl -s http://localhost:9999/mcp -X POST \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}'
+
+kill %1
 ```
 
-**Pass Criteria**:
-- Server uses port 9999 (not default 2391)
-- Server name shows as "test-server"
-- HTTP enabled, STDIO disabled
-
-**Fail Indicators**:
-- Config file not found error
-- Invalid TOML syntax error
-- Values not applied
+**Pass**: Server starts on port 9999, responds to API calls
 
 ---
 
-### Port Override
+### CFG-002: CLI Flag Precedence
 
-**What**: `--port` CLI flag overrides config file
+**What**: CLI flags override config file values
 
-**Why Test**: CLI should take precedence
-
-**Test Scenario**:
+**Test**:
 ```bash
-# Config says port 2391, CLI says 7777
-anaconda-mcp serve --port 7777
+# Config says 9999, CLI says 7777
+anaconda-mcp serve --config /tmp/test-config.toml --port 7777 &
+sleep 3
+
+# Should be on 7777, not 9999
+curl -s http://localhost:7777/mcp -X POST \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}'
+
+kill %1
 ```
 
-**Pass Criteria**:
-- Server listens on 7777
-- Logs show correct port
+**Pass**: Server listens on CLI-specified port (7777), not config port (9999)
 
 ---
 
-## P2: Telemetry Configuration
+### CFG-003: Startup Delay
 
-### ANACONDA_MCP_ENVIRONMENT
+**What**: `--delay` adds startup delay before server initialization
 
-**What**: Sets environment tag for telemetry (production, staging, development)
-
-**Why Test**: Ensures metrics go to correct destination
-
-**Test Scenario**:
+**Test**:
 ```bash
-ANACONDA_MCP_ENVIRONMENT=staging anaconda-mcp serve
+time (anaconda-mcp serve --delay 5 &
+  sleep 1
+  kill %1 2>/dev/null)
 ```
 
-**Pass Criteria**:
-- Telemetry tagged with "staging"
-- No functional difference in server behavior
+**Pass**: Server waits ~5 seconds before initialization logs appear
 
 ---
 
-## Quick Test Checklist
+### PATH-001: OS-Specific Config Paths
+
+**What**: Claude Desktop config path varies by OS
+
+**Test**:
+```bash
+anaconda-mcp claude-desktop path
+```
+
+**Expected by OS**:
+| OS | Expected Path |
+|----|---------------|
+| macOS | `~/Library/Application Support/Claude/claude_desktop_config.json` |
+| Linux | `~/.config/Claude/claude_desktop_config.json` |
+| Windows | `%APPDATA%\Claude\claude_desktop_config.json` |
+
+**Pass**: Returned path matches OS
+
+---
+
+### PATH-002: Config File Creation
+
+**What**: `setup-config` creates file at correct location
+
+**Test**:
+```bash
+# Get expected path
+CONFIG_PATH=$(anaconda-mcp claude-desktop path)
+
+# Remove if exists
+rm -f "$CONFIG_PATH"
+
+# Create config
+anaconda-mcp claude-desktop setup-config
+
+# Verify created
+ls -la "$CONFIG_PATH"
+```
+
+**Pass**: File exists at expected path
+
+---
+
+## Quick Checklist
 
 ### Smoke Test (5 min)
 - [ ] `anaconda-mcp claude-desktop path` returns valid OS path
-- [ ] `anaconda-mcp claude-desktop setup-config` creates config
 - [ ] `anaconda-mcp serve --port 8888` starts without error
 - [ ] `ANACONDA_MCP_LOG_LEVEL=DEBUG` shows verbose output
+- [ ] `anaconda-mcp --help` works with extra env vars set
 
-### Full Config Test (20 min)
-- [ ] STDIO transport works end-to-end
-- [ ] HTTP transport works end-to-end
-- [ ] Custom port override works
-- [ ] Custom config file works
-- [ ] Telemetry can be disabled
-- [ ] Invalid config values handled gracefully
+### Full Config Test (15 min)
+- [ ] ENV-001: Log level changes output
+- [ ] ENV-002: Telemetry can be disabled
+- [ ] ENV-003: Python executable override works
+- [ ] CFG-001: Custom config file loads
+- [ ] CFG-002: CLI flags override config
+- [ ] CFG-003: Startup delay works
+- [ ] PATH-001: Correct OS path returned
+- [ ] PATH-002: Config created at correct location
 
 ---
 
-## Common Issues
+## Troubleshooting
 
-| Symptom | Likely Cause | Config to Check |
-|---------|--------------|-----------------|
-| "Server not found" in Claude | Wrong Python path | `ANACONDA_MCP_PYTHON_EXECUTABLE` |
-| Port conflict on start | Another process using port | `--port` flag |
-| No logs appearing | Log level too high | `ANACONDA_MCP_LOG_LEVEL` |
-| Config not updating | Backup file being read | Remove `.backup` files |
-| HTTP not working | Transport disabled | `streamable_http_enabled` in TOML |
+| Symptom | Likely Cause | Check |
+|---------|--------------|-------|
+| Server won't start | Port in use | `lsof -i :PORT` |
+| No debug logs | Wrong env var | Verify `ANACONDA_MCP_LOG_LEVEL=DEBUG` |
+| Config not updating | Backup interference | Remove `.backup` files |
+| Wrong Python in config | Env var not set | Check `ANACONDA_MCP_PYTHON_EXECUTABLE` |

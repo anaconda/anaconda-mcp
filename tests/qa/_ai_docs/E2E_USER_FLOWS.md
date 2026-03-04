@@ -1,32 +1,31 @@
-# Anaconda MCP - E2E User Flows (Optimized)
+# Anaconda MCP - E2E User Flows
 
 ## Overview
 
-10 E2E flows (including full stack guardrails) + manual dev mode for negative scenarios. Each flow is designed for both manual testing and AI-assisted execution.
+End-to-end flows that test complete user journeys through Claude Desktop. Each flow requires Claude Desktop interaction (user asks, Claude responds).
 
 **Related Documents**:
-- [E2E_COVERAGE_MAP.md](./E2E_COVERAGE_MAP.md) - Coverage mapping and gap analysis
-- [FEATURE_TREE.md](./FEATURE_TREE.md) - Complete feature hierarchy
+- [CONFIG_TESTING_GUIDE.md](./CONFIG_TESTING_GUIDE.md) - Configuration component testing (CLI-only, no Claude Desktop)
+- [E2E_COVERAGE_MAP.md](./E2E_COVERAGE_MAP.md) - Coverage mapping
 - [KNOWN_ISSUES.md](./KNOWN_ISSUES.md) - Known bugs and quirks
 
 ---
 
 ## Flow Summary
 
-| Flow ID | Name | Priority | Features Covered |
-|---------|------|----------|------------------|
-| CORE-001 | Full Setup & Tools | P0 | 8 |
-| CORE-002 | HTTP Transport | P0 | 4 |
-| CORE-003 | Config Management | P0 | 5 |
-| CLI-001 | Server Discovery | P1 | 3 |
-| CLI-002 | Advanced Options | P1 | 4 |
-| AUTH-001 | Full Auth Cycle | P1 | 3 |
-| AUTH-002 | Anonymous Mode | P1 | 1 |
-| CONFIG-001 | Environment Variables | P1 | 4 |
-| GUARD-001 | Guardrails (Full Stack) | P0 | 3 |
-| REGRESS-001 | Known Issues | P0 | 4 |
+| Flow ID | Name | Priority | Requires Claude Desktop |
+|---------|------|----------|------------------------|
+| CORE-001 | Full Setup & Tools | P0 | Yes |
+| CORE-002 | HTTP Transport | P0 | Yes |
+| CORE-003 | Config Management | P0 | Partial (CLI + verify in Claude) |
+| CLI-001 | Server Discovery | P1 | No (CLI only) |
+| CLI-002 | Advanced Options | P1 | No (CLI only) |
+| AUTH-001 | Full Auth Cycle | P1 | Yes |
+| AUTH-002 | Anonymous Mode | P1 | Yes |
+| GUARD-001 | Guardrails (Full Stack) | P0 | Yes |
+| REGRESS-001 | Known Issues | P0 | Partial |
 
-**Note**: Error/exception testing moved to Manual Dev Mode Testing (see below).
+**Note**: Configuration testing (env vars, config files) moved to [CONFIG_TESTING_GUIDE.md](./CONFIG_TESTING_GUIDE.md).
 
 ---
 
@@ -469,55 +468,6 @@ Phase 3: Auto Login Behavior
 
 ---
 
-### CONFIG-001: Environment Variables
-
-**Purpose**: Test all environment variable configurations.
-
-**Features Covered**:
-- [x] Log Level (ANACONDA_MCP_LOG_LEVEL)
-- [x] Disable Telemetry (ANACONDA_MCP_SEND_METRICS)
-- [x] Environment Mode (ANACONDA_MCP_ENVIRONMENT)
-- [x] Python Executable (ANACONDA_MCP_PYTHON_EXECUTABLE)
-
-**Preconditions**:
-- [PRE] anaconda-mcp installed
-
-**Steps**:
-
-```
-Phase 1: Log Level
-```
-1. `ANACONDA_MCP_LOG_LEVEL=DEBUG anaconda-mcp serve` (Ctrl+C)
-2. [EXPECTED] DEBUG level logs displayed
-3. `ANACONDA_MCP_LOG_LEVEL=WARNING anaconda-mcp serve` (Ctrl+C)
-4. [EXPECTED] Only WARNING and above displayed
-
-```
-Phase 2: Disable Telemetry
-```
-5. `ANACONDA_MCP_SEND_METRICS=false anaconda-mcp serve` (Ctrl+C)
-6. [EXPECTED] No telemetry initialization logs
-7. [EXPECTED] Server starts normally
-
-```
-Phase 3: Environment Mode
-```
-8. `ANACONDA_MCP_ENVIRONMENT=staging anaconda-mcp serve` (Ctrl+C)
-9. [EXPECTED] Uses staging domain for Anaconda API
-10. [EXPECTED] Logs may show staging configuration
-
-```
-Phase 4: Python Executable
-```
-11. Create alternate env: `conda create -n alt-python python=3.11 -y`
-12. Get path: `conda run -n alt-python which python`
-13. `ANACONDA_MCP_PYTHON_EXECUTABLE=/path/to/alt-python anaconda-mcp serve` (Ctrl+C)
-14. [EXPECTED] Downstream servers spawned with specified Python
-
-**Cleanup**: `conda remove -n alt-python --all -y`
-
----
-
 ---
 
 ## Test Environment Cleanup Script
@@ -540,9 +490,6 @@ conda remove -n regress-name-test --all -y 2>/dev/null
 
 # Auth flows
 conda remove -n anon-test --all -y 2>/dev/null
-
-# Config flows
-conda remove -n alt-python --all -y 2>/dev/null
 
 # Error flows
 conda remove -n error-test-env --all -y 2>/dev/null
@@ -678,10 +625,10 @@ Phase 4: Verify Ephemeral Nature
 5. **CORE-003** - Config management
 6. **AUTH-001** - Authentication
 7. **AUTH-002** - Anonymous mode
-8. **CONFIG-001** - Environment variables
-9. **CLI-001** - Server discovery
-10. **CLI-002** - Advanced options
-11. **SHARED-001** - Shared server deployment
+8. **CLI-001** - Server discovery
+9. **CLI-002** - Advanced options
+10. **SHARED-001** - Shared server deployment
+11. **CONFIG_TESTING_GUIDE** - Configuration component tests
 12. **Manual Dev Mode** - Negative scenarios (see below)
 
 ### Tier 3: Major Release (All Deployments)

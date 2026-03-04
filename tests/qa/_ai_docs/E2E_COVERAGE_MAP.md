@@ -41,10 +41,10 @@
 | | Manual Login | `anaconda login` before serve | AUTH-001 |
 | | Anonymous Mode | No login, public channels only | AUTH-002 |
 | | Token Management | Stored in system keyring | AUTH-001 |
-| **Configuration** | Log Level | `ANACONDA_MCP_LOG_LEVEL=DEBUG` | CONFIG-001 |
-| | Disable Telemetry | `ANACONDA_MCP_SEND_METRICS=false` | CONFIG-001 |
-| | Set Environment | `ANACONDA_MCP_ENVIRONMENT=staging` | CONFIG-001 |
-| | Python Executable | `ANACONDA_MCP_PYTHON_EXECUTABLE` | CONFIG-001 |
+| **Configuration** | Log Level | `ANACONDA_MCP_LOG_LEVEL=DEBUG` | CONFIG_TESTING_GUIDE |
+| | Disable Telemetry | `ANACONDA_MCP_SEND_METRICS=false` | CONFIG_TESTING_GUIDE |
+| | Set Environment | `ANACONDA_MCP_ENVIRONMENT=staging` | CONFIG_TESTING_GUIDE |
+| | Python Executable | `ANACONDA_MCP_PYTHON_EXECUTABLE` | CONFIG_TESTING_GUIDE |
 | | Config File | Edit `mcp_compose.toml.template` | CLI-002 |
 | | Custom Config | `--config custom.toml` | CLI-002 |
 | | Startup Delay | `anaconda-mcp serve --delay 5` | CLI-002 |
@@ -70,7 +70,8 @@
 | CLI-002 | Advanced Options | Custom config, delay, no-backup, show server | P1 |
 | AUTH-001 | Authentication | Manual login, auto login, token management | P1 |
 | AUTH-002 | Anonymous Mode | Anonymous/public channel access | P1 |
-| CONFIG-001 | Environment Variables | Log level, telemetry, environment, python exec | P1 |
+
+**Note**: Configuration testing (env vars, config files) covered in [CONFIG_TESTING_GUIDE.md](./CONFIG_TESTING_GUIDE.md).
 
 ---
 
@@ -87,7 +88,7 @@
 | CLI-002 | 4 |
 | AUTH-001 | 3 |
 | AUTH-002 | 1 |
-| CONFIG-001 | 4 |
+| CONFIG_TESTING_GUIDE | 4 |
 | **Total unique features** | **35** |
 
-Note: Some features are covered by multiple flows for redundancy (e.g., Delete Environment in CORE-001 and GUARD-001).
+Note: Some features covered by multiple flows. Configuration testing separated into CONFIG_TESTING_GUIDE.md.
