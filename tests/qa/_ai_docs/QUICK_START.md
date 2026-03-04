@@ -108,8 +108,8 @@ Use the test script:
 
 Or manually:
 ```bash
-# Create HTTP config
-cat > /tmp/http-config.toml << 'EOF'
+# Create HTTP config with downstream server
+cat > /tmp/http-config.toml << EOF
 [composer]
 name = "anaconda-mcp"
 port = 8888
@@ -117,15 +117,23 @@ port = 8888
 [transport]
 stdio_enabled = false
 streamable_http_enabled = true
+
+[[servers.proxied.streamable-http]]
+name = "conda"
+url = "http://localhost:4041/mcp"
+auto_start = true
+command = ["$(which python)", "-m", "environments_mcp_server", "start", "--transport", "streamable-http", "--port", "4041"]
+startup_delay = 3
 EOF
 
 # Start server with HTTP enabled
 anaconda-mcp serve --config /tmp/http-config.toml &
 sleep 10
 
-# Test API
+# Test API (note: Accept header required for streamable HTTP)
 curl -X POST http://localhost:8888/mcp \
   -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}'
 
 # Stop server
