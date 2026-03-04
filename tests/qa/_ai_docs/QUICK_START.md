@@ -24,8 +24,9 @@ anaconda-mcp --help
 conda list | grep -E "anaconda-mcp|environments-mcp"
 ```
 
-To install a specific version, add version numbers to the command:
+To install specific versions (package and/or Python):
 ```bash
+# Specific package versions
 conda create --name anaconda-mcp-testing \
   -c datalayer \
   -c anaconda-cloud/label/dev \
@@ -33,6 +34,15 @@ conda create --name anaconda-mcp-testing \
   -c conda-forge \
   --channel 'https://conda.anaconda.org/t/an-19ec59a6-f3b4-4d62-a686-a882d9c1f209/anaconda-connector/' \
   anaconda-mcp=0.1.2 environments-mcp-server=0.1.7
+
+# Specific Python version (e.g., 3.10, 3.11, 3.12, 3.13)
+conda create --name anaconda-mcp-py310 \
+  -c datalayer \
+  -c anaconda-cloud/label/dev \
+  -c defaults \
+  -c conda-forge \
+  --channel 'https://conda.anaconda.org/t/an-19ec59a6-f3b4-4d62-a686-a882d9c1f209/anaconda-connector/' \
+  python=3.10 anaconda-mcp environments-mcp-server
 ```
 
 ---

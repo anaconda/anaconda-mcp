@@ -102,7 +102,7 @@ anaconda-mcp serve --config /tmp/http-config.toml
 
 **Root cause**: Zombie processes from previous test runs hold ports 8888 or 4041, preventing new server from connecting to downstream.
 
-**Prevention**: Always cleanly stop servers with Ctrl+C. Use `pkill` cleanup before starting new tests.
+**Prevention**: Always cleanly stop servers with Ctrl+C. The `start-http-server.sh` script includes cleanup.
 
 ---
 

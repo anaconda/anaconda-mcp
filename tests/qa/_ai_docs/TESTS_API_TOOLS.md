@@ -35,7 +35,7 @@ curl -X POST http://localhost:8888/mcp \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}'
 ```
 
-**Expected**: 5 conda tools listed
+**Expected**: 6 conda tools listed
 
 ---
 
@@ -58,7 +58,7 @@ curl -X POST http://localhost:8888/mcp \
 ```bash
 curl -X POST http://localhost:8888/mcp \
   -H "Content-Type: application/json" \
-  -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"conda_create_environment","arguments":{"name":"api-test-env","python_version":"3.11"}}}'
+  -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"conda_create_environment","arguments":{"environment_name":"api-test-env","packages":["python=3.11"]}}}'
 ```
 
 **Expected**: Success message, environment created
@@ -75,7 +75,7 @@ conda env list | grep api-test-env
 ```bash
 curl -X POST http://localhost:8888/mcp \
   -H "Content-Type: application/json" \
-  -d '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"conda_install_packages","arguments":{"env_name":"api-test-env","packages":["numpy","requests"]}}}'
+  -d '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"conda_install_packages","arguments":{"environment":"api-test-env","packages":["numpy","requests"]}}}'
 ```
 
 **Expected**: Success message, packages installed
@@ -93,7 +93,7 @@ conda list -n api-test-env | grep requests
 ```bash
 curl -X POST http://localhost:8888/mcp \
   -H "Content-Type: application/json" \
-  -d '{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"conda_remove_packages","arguments":{"env_name":"api-test-env","packages":["requests"]}}}'
+  -d '{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"conda_remove_packages","arguments":{"environment":"api-test-env","packages":["requests"]}}}'
 ```
 
 **Expected**: Success message, package removed
@@ -106,12 +106,24 @@ conda list -n api-test-env | grep numpy     # Should still exist
 
 ---
 
-### TOOL-005: Delete Environment
+### TOOL-005: List Environment Packages
 
 ```bash
 curl -X POST http://localhost:8888/mcp \
   -H "Content-Type: application/json" \
-  -d '{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"conda_delete_environment","arguments":{"name":"api-test-env"}}}'
+  -d '{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"conda_list_environment_packages","arguments":{"environment":"api-test-env"}}}'
+```
+
+**Expected**: JSON list of packages in environment
+
+---
+
+### TOOL-006: Remove Environment
+
+```bash
+curl -X POST http://localhost:8888/mcp \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":6,"method":"tools/call","params":{"name":"conda_remove_environment","arguments":{"environment_name":"api-test-env"}}}'
 ```
 
 **Expected**: Success message, environment deleted
@@ -137,12 +149,12 @@ curl -X POST http://localhost:8888/mcp \
 
 ---
 
-### ERR-002: Delete Non-Existent Environment
+### ERR-002: Remove Non-Existent Environment
 
 ```bash
 curl -X POST http://localhost:8888/mcp \
   -H "Content-Type: application/json" \
-  -d '{"jsonrpc":"2.0","id":11,"method":"tools/call","params":{"name":"conda_delete_environment","arguments":{"name":"nonexistent-env-xyz"}}}'
+  -d '{"jsonrpc":"2.0","id":11,"method":"tools/call","params":{"name":"conda_remove_environment","arguments":{"environment_name":"nonexistent-env-xyz"}}}'
 ```
 
 **Expected**: Error - environment not found
@@ -163,12 +175,13 @@ curl -X POST http://localhost:8888/mcp \
 
 ## Quick Checklist
 
-### Happy Path (5 tools)
+### Happy Path (6 tools)
 - [ ] TOOL-001: List environments
 - [ ] TOOL-002: Create environment
 - [ ] TOOL-003: Install packages
 - [ ] TOOL-004: Remove packages
-- [ ] TOOL-005: Delete environment
+- [ ] TOOL-005: List environment packages
+- [ ] TOOL-006: Remove environment
 
 ### Error Handling
 - [ ] ERR-001: Duplicate environment
@@ -248,4 +261,5 @@ Copy to `.github/workflows/` when ready to implement.
 | TOOL-003 | ✅ Manual | Optional | Phase 2 |
 | TOOL-004 | ✅ Manual | Optional | Phase 2 |
 | TOOL-005 | ✅ Manual | Optional | Phase 2 |
+| TOOL-006 | ✅ Manual | Optional | Phase 2 |
 | ERR-001-003 | ✅ Manual | Optional | Phase 2 |

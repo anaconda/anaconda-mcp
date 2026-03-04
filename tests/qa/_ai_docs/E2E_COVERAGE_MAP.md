@@ -4,7 +4,7 @@
 
 | Feature Group | Features | Coverage |
 |---------------|----------|----------|
-| Environment Management | 5 | 100% |
+| Environment Management | 6 | 100% |
 | Server Management | 4 | 100% |
 | Claude Desktop | 9 | 100% |
 | Authentication | 4 | 100% |
@@ -31,8 +31,9 @@
 | Feature Group | Feature | User Actions | Covered By |
 |---------------|---------|--------------|------------|
 | **Environment Management** | List Environments | AI: "List my conda environments" | CORE-001 |
+| | List Environment Packages | AI: "What packages are in env X?" | CORE-001 |
 | | Create Environment | AI: "Create env with Python 3.11" | CORE-001 |
-| | Delete Environment | AI: "Delete environment X" | CORE-001, GUARD-001 |
+| | Remove Environment | AI: "Delete environment X" | CORE-001, GUARD-001 |
 | | Install Packages | AI: "Install numpy in env X" | CORE-001, GUARD-001 |
 | | Remove Packages | AI: "Remove pandas from env X" | CORE-001 |
 | **Server Management** | Start Server | `anaconda-mcp serve --port 8888` | CORE-002, CLI-002 |

@@ -16,12 +16,15 @@ mindmap
       List Environments
         Ask AI: "List my conda environments"
         API: tools/call conda_list_environments
+      List Environment Packages
+        Ask AI: "What packages are in env X?"
+        API: tools/call conda_list_environment_packages
       Create Environment
         Ask AI: "Create env with Python 3.11"
         API: tools/call conda_create_environment
-      Delete Environment
+      Remove Environment
         Ask AI: "Delete environment X"
-        API: tools/call conda_delete_environment
+        API: tools/call conda_remove_environment
       Install Packages
         Ask AI: "Install numpy in env X"
         API: tools/call conda_install_packages
@@ -82,8 +85,9 @@ mindmap
 | Feature Group | Feature | User Actions | Priority |
 |---------------|---------|--------------|----------|
 | **Environment Management** | List Environments | AI: "List my conda environments"<br>API: `tools/call conda_list_environments` | P0 |
+| | List Environment Packages | AI: "What packages are in env X?"<br>API: `tools/call conda_list_environment_packages` | P0 |
 | | Create Environment | AI: "Create env with Python 3.11"<br>API: `tools/call conda_create_environment` | P0 |
-| | Delete Environment | AI: "Delete environment X"<br>API: `tools/call conda_delete_environment` | P0 |
+| | Remove Environment | AI: "Delete environment X"<br>API: `tools/call conda_remove_environment` | P0 |
 | | Install Packages | AI: "Install numpy in env X"<br>API: `tools/call conda_install_packages` | P0 |
 | | Remove Packages | AI: "Remove pandas from env X"<br>API: `tools/call conda_remove_packages` | P0 |
 | **Server Management** | Start Server | `anaconda-mcp serve`<br>`anaconda-mcp serve --port 8888` | P0 |

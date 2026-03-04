@@ -38,9 +38,10 @@ anaconda-mcp claude-desktop setup-config
 | 1 | Ask: "List my conda environments" | Uses `conda_list_environments` |
 | 2 | Ask: "Create environment e2e-test with Python 3.11" | Uses `conda_create_environment` |
 | 3 | Ask: "Install numpy in e2e-test" | Uses `conda_install_packages` |
-| 4 | Ask: "Remove numpy from e2e-test" | Uses `conda_remove_packages` |
-| 5 | Ask: "Delete e2e-test environment" | Uses `conda_remove_environment` |
-| 6 | Ask: "List my conda environments" | e2e-test not in list |
+| 4 | Ask: "What packages are in e2e-test?" | Uses `conda_list_environment_packages` |
+| 5 | Ask: "Remove numpy from e2e-test" | Uses `conda_remove_packages` |
+| 6 | Ask: "Delete e2e-test environment" | Uses `conda_remove_environment` |
+| 7 | Ask: "List my conda environments" | e2e-test not in list |
 
 ---
 
