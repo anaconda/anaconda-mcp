@@ -75,6 +75,30 @@ mindmap
         Connect: --transport streamable-http
 ```
 
+### Feature Tree Table View
+
+| Level 1: Feature Group | Level 2: Feature | Level 3: User Actions |
+|------------------------|------------------|----------------------|
+| **Environment Management** | List Environments | AI: "List my conda environments"<br>API: `tools/call conda_list_environments` |
+| | Create Environment | AI: "Create env with Python 3.11"<br>API: `tools/call conda_create_environment` |
+| | Delete Environment | AI: "Delete environment X"<br>API: `tools/call conda_delete_environment` |
+| | Install Packages | AI: "Install numpy in env X"<br>API: `tools/call conda_install_packages` |
+| | Remove Packages | AI: "Remove pandas from env X"<br>API: `tools/call conda_remove_packages` |
+| **Server Management** | Start Server | `anaconda-mcp serve`<br>`anaconda-mcp serve --port 8888` |
+| | Discover Servers | `anaconda-mcp discover`<br>`anaconda-mcp discover --output-format json` |
+| | Compose Servers | `anaconda-mcp compose`<br>`anaconda-mcp compose --include server1` |
+| **Claude Desktop Integration** | Setup Config | `anaconda-mcp claude-desktop setup-config`<br>`setup-config --transport streamable-http` |
+| | Remove Config | `anaconda-mcp claude-desktop remove-config` |
+| | Show Config | `anaconda-mcp claude-desktop show`<br>`claude-desktop show --json` |
+| | Get Config Path | `anaconda-mcp claude-desktop path` |
+| **Authentication** | Anaconda Login | Auto: Browser opens on serve<br>Manual: `anaconda login` before serve |
+| | Token Management | Auto: Stored in system keyring<br>Used for telemetry |
+| **Configuration** | Environment Variables | `ANACONDA_MCP_LOG_LEVEL=DEBUG`<br>`ANACONDA_MCP_SEND_METRICS=false` |
+| | Config File | Edit: `mcp_compose.toml.template`<br>Override: `--config custom.toml` |
+| | Python Executable | Env: `ANACONDA_MCP_PYTHON_EXECUTABLE`<br>Template: `{{PYTHON_EXECUTABLE}}` |
+| **Transport Modes** | STDIO Transport | Default for Claude Desktop<br>Auto-spawns as subprocess |
+| | HTTP Transport | Start: `anaconda-mcp serve --port 8888`<br>Connect: `--transport streamable-http` |
+
 ---
 
 ## Detailed Feature Tree (Text Format)
@@ -258,22 +282,22 @@ journey
 
 ## Feature Priority Matrix
 
-| Group | Feature | Priority | Status |
-|-------|---------|----------|--------|
-| Environment Mgmt | List Environments | P0 | Implemented |
-| Environment Mgmt | Create Environment | P0 | Implemented |
-| Environment Mgmt | Delete Environment | P0 | Implemented |
-| Environment Mgmt | Install Packages | P0 | Implemented |
-| Environment Mgmt | Remove Packages | P0 | Implemented |
-| Server Mgmt | Start Server | P0 | Implemented |
-| Server Mgmt | Discover Servers | P1 | Implemented |
-| Server Mgmt | Compose Servers | P1 | Implemented |
-| Claude Desktop | Setup Config | P0 | Implemented |
-| Claude Desktop | Remove Config | P0 | Implemented |
-| Claude Desktop | Show Config | P1 | Implemented |
-| Authentication | Auto Login | P0 | Implemented |
-| Authentication | Anonymous Mode | P1 | Implemented |
-| Configuration | Env Variables | P0 | Implemented |
-| Configuration | Config File | P0 | Implemented |
-| Transport | STDIO | P0 | Implemented |
-| Transport | HTTP | P0 | Implemented |
+| Group | Feature | Priority |
+|-------|---------|----------|
+| Environment Mgmt | List Environments | P0 |
+| Environment Mgmt | Create Environment | P0 |
+| Environment Mgmt | Delete Environment | P0 |
+| Environment Mgmt | Install Packages | P0 |
+| Environment Mgmt | Remove Packages | P0 |
+| Server Mgmt | Start Server | P0 |
+| Server Mgmt | Discover Servers | P1 |
+| Server Mgmt | Compose Servers | P1 |
+| Claude Desktop | Setup Config | P0 |
+| Claude Desktop | Remove Config | P0 |
+| Claude Desktop | Show Config | P1 |
+| Authentication | Auto Login | P0 |
+| Authentication | Anonymous Mode | P1 |
+| Configuration | Env Variables | P0 |
+| Configuration | Config File | P0 |
+| Transport | STDIO | P0 |
+| Transport | HTTP | P0 |
