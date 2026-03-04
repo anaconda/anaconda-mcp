@@ -90,7 +90,7 @@ make test-coverage
 
 ## Verify Server Works
 
-### STDIO Mode (default - recommended)
+### STDIO Mode
 
 ```bash
 # Start server - will auto-connect to downstream and show tools
@@ -114,12 +114,13 @@ Total tools: 6
 
 Press `Ctrl+C` to exit.
 
-### HTTP Mode (known issue)
+### HTTP Mode
 
-> **Note**: HTTP transport mode may hang during downstream server connection.
-> This is being investigated. Use STDIO mode for Claude Desktop testing.
+```bash
+./tests/qa/_ai_docs/scripts/test-http-server.sh 8888
+```
 
-Test script available at: [scripts/test-http-server.sh](./scripts/test-http-server.sh)
+**Troubleshooting**: If server hangs, see [KI-007 in KNOWN_ISSUES.md](./KNOWN_ISSUES.md#ki-007-http-transport-hangs-or-fails-to-connect) - likely zombie processes holding ports.
 
 ---
 
