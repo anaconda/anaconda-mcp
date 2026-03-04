@@ -150,7 +150,6 @@ NOT TESTED:
 1. **config.py tests** - Settings validation, env vars
 2. **consts.py tests** - OS detection, enums
 3. **MCP protocol tests** - Tool invocation, responses
-4. **Guardrail tests** - See below
 
 ### Priority 2: E2E Coverage
 1. Full Claude Desktop setup flow
@@ -164,43 +163,6 @@ NOT TESTED:
 3. Concurrent access
 4. Permission errors
 
-## Guardrail Test Coverage (From Epic)
-
-These are non-negotiable requirements that MUST have test coverage:
-
-| Guardrail | Current Coverage | Priority |
-|-----------|------------------|----------|
-| All operations use conda, never pip | **NOT TESTED** | Critical |
-| Respects .condarc channel ordering | **NOT TESTED** | Critical |
-| Hard-fail if package not on channels | **NOT TESTED** | Critical |
-| No .condarc modification without confirmation | **NOT TESTED** | Critical |
-| Environment deletion requires confirmation | **NOT TESTED** | Critical |
-
-### Recommended Guardrail Tests
-
-```python
-# test_guardrails.py (proposed)
-
-def test_no_pip_fallback():
-    """Verify pip is never used for package operations"""
-    pass
-
-def test_channel_ordering_respected():
-    """Verify .condarc channel order is followed"""
-    pass
-
-def test_hard_fail_missing_package():
-    """Verify failure when package not on configured channels"""
-    pass
-
-def test_condarc_modification_requires_confirmation():
-    """Verify .condarc cannot be modified without confirmation"""
-    pass
-
-def test_environment_deletion_requires_confirmation():
-    """Verify deletion prompts for confirmation"""
-    pass
-```
 
 ## Test Execution Commands
 

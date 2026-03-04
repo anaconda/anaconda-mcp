@@ -7,7 +7,7 @@ This documentation serves as the central knowledge base for QA testing of the An
 
 | Document | Description | Audience |
 |----------|-------------|----------|
-| [PRODUCT_OVERVIEW.md](./PRODUCT_OVERVIEW.md) | Product features, architecture, guardrails, constraints | All QA |
+| [PRODUCT_OVERVIEW.md](./PRODUCT_OVERVIEW.md) | Product features, architecture, constraints | All QA |
 | [FEATURE_TREE.md](./FEATURE_TREE.md) | 3-level feature tree with mermaid diagrams | All QA |
 | [CONFIGURATION.md](./CONFIGURATION.md) | Configuration options, environment variables | All QA |
 | [E2E_USER_FLOWS.md](./E2E_USER_FLOWS.md) | Real-world user scenarios and test flows | Manual/AI QA |
@@ -20,7 +20,7 @@ This documentation serves as the central knowledge base for QA testing of the An
 ## Source Documents
 
 Original requirements and context in `initial_docs/`:
-- `epic_information.md` - Epic requirements, success metrics, guardrails
+- `epic_information.md` - Epic requirements (reference only)
 - `conversation.md` - Internal testing feedback and known issues
 - `Anaconda MCP-User Stories.pdf` - User stories document
 
@@ -30,7 +30,6 @@ Original requirements and context in `initial_docs/`:
 - **Test Scenarios**: [E2E_USER_FLOWS.md](./E2E_USER_FLOWS.md)
 - **Known Issues**: [KNOWN_ISSUES.md](./KNOWN_ISSUES.md)
 - **Test Matrix**: [TEST_MATRIX.md](./TEST_MATRIX.md)
-- **Guardrails**: [PRODUCT_OVERVIEW.md#guardrails-non-negotiable](./PRODUCT_OVERVIEW.md)
 
 ## Conventions
 

@@ -48,7 +48,7 @@ port = 2391                     # HTTP server port
 [transport]
 stdio_enabled = true             # Enable STDIO transport
 streamable_http_enabled = false  # Enable HTTP transport
-sse_enabled = false              # Enable SSE transport (legacy)
+sse_enabled = false              # SSE transport (mcp-compose only, not used by anaconda-mcp)
 ```
 
 ### [authentication]

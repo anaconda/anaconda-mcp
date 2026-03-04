@@ -2,7 +2,7 @@
 
 ## Overview
 
-10 E2E flows (happy paths) + manual dev mode testing (negative scenarios). Each flow is designed for both manual testing and AI-assisted execution.
+10 E2E flows (including full stack guardrails) + manual dev mode for negative scenarios. Each flow is designed for both manual testing and AI-assisted execution.
 
 **Related Documents**:
 - [E2E_COVERAGE_MAP.md](./E2E_COVERAGE_MAP.md) - Coverage mapping and gap analysis
@@ -23,7 +23,7 @@
 | AUTH-001 | Full Auth Cycle | P1 | 3 |
 | AUTH-002 | Anonymous Mode | P1 | 1 |
 | CONFIG-001 | Environment Variables | P1 | 4 |
-| GUARD-001 | Guardrails | P0 | 3 |
+| GUARD-001 | Guardrails (Full Stack) | P0 | 3 |
 | REGRESS-001 | Known Issues | P0 | 4 |
 
 **Note**: Error/exception testing moved to Manual Dev Mode Testing (see below).
@@ -200,9 +200,11 @@ Phase 4: Restore
 
 ---
 
-### GUARD-001: Guardrails
+### GUARD-001: Guardrails (Full Stack)
 
-**Purpose**: Verify non-negotiable guardrails are enforced.
+**Purpose**: Verify guardrail behaviors work correctly end-to-end.
+
+**Note**: Logic is implemented in environments-mcp-server, but tested here as full stack E2E.
 
 **Features Covered**:
 - [x] Channel Ordering Respected
@@ -529,6 +531,7 @@ echo "Cleaning up test environments..."
 # Core flows
 conda remove -n e2e-test-env --all -y 2>/dev/null
 
+
 # Guard flows
 conda remove -n guard-channel-test --all -y 2>/dev/null
 
@@ -668,7 +671,7 @@ Phase 4: Verify Ephemeral Nature
 ### Tier 1: Every PR (Local Native)
 1. **REGRESS-001** - Verify known issues first
 2. **CORE-001** - Full happy path
-3. **GUARD-001** - Guardrails
+3. **GUARD-001** - Guardrails (full stack)
 
 ### Tier 2: Release Testing (Local + Extended)
 4. **CORE-002** - HTTP transport

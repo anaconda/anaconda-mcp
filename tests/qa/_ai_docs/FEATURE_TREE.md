@@ -153,7 +153,6 @@ mindmap
 | | Claude Desktop spawns anaconda-mcp as subprocess | Automatic |
 | **Use HTTP** | `anaconda-mcp serve --port 8888` | CLI (Terminal 1) |
 | | `anaconda-mcp claude-desktop setup-config --transport streamable-http --port 8888` | CLI (Terminal 2) |
-| **Use SSE** | Set `sse_enabled = true` in config (deprecated) | Config Edit |
 
 ---
 
@@ -266,10 +265,6 @@ journey
 | Environment Mgmt | Delete Environment | P0 | Implemented |
 | Environment Mgmt | Install Packages | P0 | Implemented |
 | Environment Mgmt | Remove Packages | P0 | Implemented |
-| Environment Mgmt | Search Packages | P0 | **Planned** |
-| Environment Mgmt | Get Condarc | P0 | **Planned** |
-| Environment Mgmt | Activate Environment | P1 | **Planned** |
-| Environment Mgmt | Export Environment | P1 | **Planned** |
 | Server Mgmt | Start Server | P0 | Implemented |
 | Server Mgmt | Discover Servers | P1 | Implemented |
 | Server Mgmt | Compose Servers | P1 | Implemented |

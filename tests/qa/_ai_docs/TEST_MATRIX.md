@@ -131,8 +131,6 @@ flowchart LR
 |--------|--------|-------|
 | Claude Desktop | Fully supported | Only client with dedicated code |
 | Claude Code | Works (via STDIO) | No specific integration |
-| Cursor | Planned (P1) | No code yet |
-| VS Code + Copilot | Planned (P1) | No code yet |
 
 **Conclusion**: Only Claude Desktop needs testing now.
 
@@ -215,57 +213,144 @@ Using pairwise algorithm for: 3 OS × 3 Python × 2 Transport = 18 full → **6 
 
 ## Recommended Test Strategy
 
-### Tier 1: CI/CD Automated (Every PR) - Local Native
+### Available Test Environments
 
-Run on every pull request:
+| Environment | OS | Claude Desktop | Use For |
+|-------------|-----|----------------|---------|
+| QA macOS | macOS | ✅ Yes | Full E2E testing |
+| GitHub Runner | Linux | ❌ No | CLI + API smoke tests |
+| GitHub Runner | Windows | ❌ No | CLI + API smoke tests |
+| Win365 Instance | Windows | ❌ No | CLI + API smoke tests |
 
-| # | OS | Python | Transport | Deployment | E2E Flows |
-|---|-----|--------|-----------|------------|-----------|
-| 1 | ubuntu-latest | 3.11 | STDIO | Local | CORE-001, REGRESS-001 |
-| 2 | macos-latest | 3.11 | STDIO | Local | CORE-001 (config path) |
-| 3 | windows-latest | 3.11 | STDIO | Local | CORE-001 (config path) |
+### Test Strategy by Platform
 
-**Rationale**: Matches current CI, catches OS-specific path issues.
+```mermaid
+flowchart TB
+    subgraph MAC["macOS (Full E2E)"]
+        M1[All 10 E2E flows]
+        M2[Claude Desktop integration]
+        M3[Full stack testing]
+    end
 
-### Tier 2: Release Testing (Before Release) - Local + Shared
+    subgraph LINUX["Linux (CI Runner)"]
+        L1[CLI commands]
+        L2[Server start/stop]
+        L3[API smoke tests]
+        L4[Config path verification]
+    end
 
-Run before each release:
+    subgraph WIN["Windows (CI Runner / Win365)"]
+        W1[CLI commands]
+        W2[Server start/stop]
+        W3[API smoke tests]
+        W4[Config path verification]
+    end
 
-| # | OS | Python | Transport | Deployment | E2E Flows |
-|---|-----|--------|-----------|------------|-----------|
-| 1 | Linux | 3.10 | STDIO | Local | All P0 flows |
-| 2 | Linux | 3.13 | HTTP | Local | CORE-002, CONFIG-001 |
-| 3 | macOS | 3.11 | STDIO | Local | All P0 flows |
-| 4 | Windows | 3.13 | STDIO | Local | All P0 flows |
-| 5 | Linux | 3.11 | HTTP | **Shared** | SHARED-001 (new) |
-
-**Rationale**: Covers Python boundaries, both transports, and shared server.
-
-### Tier 3: Full Regression (Major Release) - All Deployments
-
-| # | OS | Python | Transport | Deployment | E2E Flows |
-|---|-----|--------|-----------|------------|-----------|
-| 1-5 | (Tier 2) | | | | |
-| 6 | Linux | 3.11 | HTTP | **Docker** | DOCKER-001 (new) |
-| 7 | Linux | 3.11 | HTTP | **Shared** | Multi-client test |
-
-### Deployment-Specific Test Flows (New)
-
-**SHARED-001: Shared Server Scenario**
-```
-1. Start server: anaconda-mcp serve --host 0.0.0.0 --port 8888
-2. From another machine/container, connect via HTTP
-3. Verify tool execution works remotely
-4. Test concurrent client connections (if applicable)
+    MAC -->|"P0 Priority"| FULL((Full Coverage))
+    LINUX -->|"Smoke Tests"| PARTIAL((Partial))
+    WIN -->|"Smoke Tests"| PARTIAL
 ```
 
-**DOCKER-001: Docker Deployment Scenario**
+### Tier 1: macOS Full E2E (Manual QA)
+
+**Environment**: QA macOS with Claude Desktop
+
+| # | Flow | Priority | Description |
+|---|------|----------|-------------|
+| 1 | CORE-001 | P0 | Full setup & all 5 tools |
+| 2 | CORE-002 | P0 | HTTP transport |
+| 3 | CORE-003 | P0 | Config management |
+| 4 | GUARD-001 | P0 | Guardrails (full stack) |
+| 5 | REGRESS-001 | P0 | Known issues regression |
+| 6 | CLI-001 | P1 | Server discovery |
+| 7 | CLI-002 | P1 | Advanced options |
+| 8 | AUTH-001 | P1 | Authentication |
+| 9 | AUTH-002 | P1 | Anonymous mode |
+| 10 | CONFIG-001 | P1 | Environment variables |
+
+### Tier 2: Linux/Windows Smoke Tests (CI/Manual)
+
+**Environment**: GitHub Runners or Win365 (no Claude Desktop)
+
+**What we CAN test without Claude Desktop:**
+
+```bash
+# 1. CLI Help & Version
+anaconda-mcp --help
+anaconda-mcp --version  # if available
+
+# 2. Server Start/Stop
+anaconda-mcp serve --port 8888 &
+sleep 5
+curl -s http://localhost:8888/mcp -X POST \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"test","version":"1.0"}}}'
+curl -s http://localhost:8888/mcp -X POST \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}'
+kill %1
+
+# 3. Config Path Verification (OS-specific)
+anaconda-mcp claude-desktop path
+# Linux: ~/.config/Claude/claude_desktop_config.json
+# Windows: %APPDATA%\Claude\claude_desktop_config.json
+
+# 4. Discover & Compose
+anaconda-mcp discover
+anaconda-mcp compose --output-format json
+
+# 5. Verbose Logging
+anaconda-mcp -v serve --delay 1 &
+sleep 3
+kill %1
 ```
-1. Build image: make docker-build
-2. Run container: docker run -it -p 8000:8000 anaconda-mcp
-3. Connect Claude Desktop to container
-4. Create environment (verify it's ephemeral)
-5. Stop container, verify environment lost
+
+### Linux/Windows Smoke Test Checklist
+
+| Test | Command | Expected |
+|------|---------|----------|
+| CLI loads | `anaconda-mcp --help` | Shows help |
+| Server starts | `anaconda-mcp serve` | Listening on port |
+| API responds | `curl .../initialize` | JSON-RPC response |
+| Tools available | `curl .../tools/list` | 5 conda tools |
+| Correct config path | `claude-desktop path` | OS-specific path |
+| Discover works | `anaconda-mcp discover` | Lists servers |
+| Compose works | `anaconda-mcp compose` | No errors |
+| Env vars work | `ANACONDA_MCP_LOG_LEVEL=DEBUG` | Debug logs |
+
+### Platform Test Coverage
+
+| Test Area | macOS | Linux | Windows |
+|-----------|-------|-------|---------|
+| Claude Desktop E2E | ✅ Full | ❌ N/A | ❌ N/A |
+| CLI commands | ✅ | ✅ | ✅ |
+| Server start/stop | ✅ | ✅ | ✅ |
+| API smoke test | ✅ | ✅ | ✅ |
+| Config path | ✅ | ✅ | ✅ |
+| Tool execution | ✅ via Claude | ✅ via API | ✅ via API |
+| Environment tools | ✅ Full | ⚠️ API only | ⚠️ API only |
+
+### Simplified CI Workflow
+
+```yaml
+# GitHub Actions
+jobs:
+  smoke-test:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: conda-incubator/setup-miniconda@v3
+      - run: conda install anaconda-mcp environments-mcp-server
+      - run: |
+          anaconda-mcp --help
+          anaconda-mcp claude-desktop path
+          anaconda-mcp discover
+          # Start server and test API
+          anaconda-mcp serve --port 8888 &
+          sleep 10
+          curl -f http://localhost:8888/mcp -X POST ...
 ```
 
 ---
@@ -279,7 +364,7 @@ Run before each release:
 | Python 3.12 | Yes | Between boundaries, low risk |
 | Cursor client | Yes | No code exists yet |
 | VS Code client | Yes | No code exists yet |
-| SSE transport | Yes | Deprecated |
+| SSE transport | Yes | Not supported by anaconda-mcp CLI |
 | Claude Code specific | Yes | Uses same STDIO as Claude Desktop |
 
 ### What We Must Test
@@ -363,7 +448,6 @@ strategy:
 | CORE-001 | All 3 OS | All 5 combinations |
 | CORE-002 | - | HTTP combinations only |
 | CORE-003 | Linux only | All |
-| GUARD-001 | Linux only | All |
 | REGRESS-001 | All 3 OS | All |
 | Others | - | All |
 

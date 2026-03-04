@@ -124,44 +124,22 @@ sequenceDiagram
     Claude-->>User: "You have these environments..."
 ```
 
-### Tool Name Prefixing
-
-```mermaid
-flowchart LR
-    subgraph DOWNSTREAM["environments-mcp-server"]
-        T1[list_environments]
-        T2[create_environment]
-    end
-
-    subgraph GATEWAY["anaconda-mcp"]
-        PREFIX["conflict_resolution = prefix<br>server name = conda"]
-    end
-
-    subgraph EXPOSED["Exposed to Claude"]
-        E1[conda_list_environments]
-        E2[conda_create_environment]
-    end
-
-    T1 --> PREFIX --> E1
-    T2 --> PREFIX --> E2
-```
-
 ## Transport Modes
 
 | Mode | Description | Use Case |
 |------|-------------|----------|
-| **STDIO** | Claude Desktop spawns anaconda-mcp as subprocess | Default for Claude Desktop |
+| **STDIO** | Claude Desktop spawns anaconda-mcp as subprocess | Default for Claude Desktop (recommended) |
 | **Streamable HTTP** | HTTP server mode, client connects via URL | Shared servers, Docker |
-| **SSE** | Server-Sent Events (legacy) | Backwards compatibility |
 
-## Target Clients
+**Note**: Only STDIO and Streamable HTTP are supported by anaconda-mcp CLI.
 
-| Client | Priority | Status |
-|--------|----------|--------|
-| Claude Desktop | P0 | Supported |
-| Claude Code | P1 | Supported |
-| Cursor | P1 | Planned |
-| VS Code + Copilot | P1 | Planned (MCP support less mature) |
+## Supported Clients
+
+| Client | Status | Notes |
+|--------|--------|-------|
+| **Claude Desktop** | Supported | Dedicated CLI integration (`claude-desktop` commands) |
+
+**Other MCP clients** (Claude Code, Cursor, VS Code) may work via standard MCP protocol but have no dedicated integration code. Not in scope for current release testing.
 
 ## Exposed Tools
 
@@ -177,14 +155,6 @@ Currently, anaconda-mcp exposes tools from the **Environments MCP Server** with 
 | `conda_install_packages` | Install packages | env_name, packages |
 | `conda_remove_packages` | Remove packages | env_name, packages |
 
-### Planned Tools (Per Epic)
-
-| Tool | Priority | Description |
-|------|----------|-------------|
-| `search_packages` | P0 | Search available packages across configured channels |
-| `get_condarc` | P0 | Return current channel and solver configuration |
-| `activate_environment` | P1 | Set active environment for subsequent operations |
-| `export_environment` | P1 | Export environment spec to YAML |
 
 ## Key Features
 
@@ -207,26 +177,6 @@ Currently, anaconda-mcp exposes tools from the **Environments MCP Server** with 
 - Uses `{{PYTHON_EXECUTABLE}}` placeholder
 - Supports environment variable override
 - Auto-detects Python interpreter path
-
-## Guardrails (Non-Negotiable)
-
-These constraints MUST be enforced and tested:
-
-| Guardrail | Description | Test Priority |
-|-----------|-------------|---------------|
-| **Conda Only** | All package operations MUST use conda, never pip | Critical |
-| **Channel Ordering** | Package installation MUST respect `.condarc` channel ordering | Critical |
-| **Hard Fail on Missing** | MUST hard-fail if package not available on configured channels | Critical |
-| **No .condarc Modification** | MUST NOT modify `.condarc` without explicit user confirmation | Critical |
-| **Deletion Confirmation** | Environment deletion MUST require explicit user confirmation | Critical |
-
-## Success Metrics (From Epic)
-
-| Metric | Target | QA Relevance |
-|--------|--------|--------------|
-| Environment creation success rate | 90%+ | Reliability testing |
-| Package installs from defaults channel | 70%+ | Channel policy testing |
-| Successful authentications | 70%+ of installs | Auth flow testing |
 
 ## Constraints and Limitations
 
