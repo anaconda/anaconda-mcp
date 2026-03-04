@@ -9,7 +9,8 @@ This documentation serves as the central knowledge base for QA testing of the An
 |----------|-------------|----------|
 | [PRODUCT_OVERVIEW.md](./PRODUCT_OVERVIEW.md) | Product features, architecture, constraints | All QA |
 | [FEATURE_TREE.md](./FEATURE_TREE.md) | 3-level feature tree with mermaid diagrams | All QA |
-| [CONFIGURATION.md](./CONFIGURATION.md) | Configuration options, environment variables | All QA |
+| [CONFIGURATION.md](./CONFIGURATION.md) | Configuration options reference (glossary) | All QA |
+| [CONFIG_TESTING_GUIDE.md](./CONFIG_TESTING_GUIDE.md) | What to test, why, pass/fail criteria | All QA |
 | [E2E_USER_FLOWS.md](./E2E_USER_FLOWS.md) | Real-world user scenarios and test flows | Manual/AI QA |
 | [E2E_COVERAGE_MAP.md](./E2E_COVERAGE_MAP.md) | E2E to feature mapping, gaps, optimized flows | QA leads |
 | [TEST_MATRIX.md](./TEST_MATRIX.md) | OS/Python/Transport pairwise test matrix | QA leads |
