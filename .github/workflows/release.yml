@@ -33,7 +33,9 @@ jobs:
       - name: Configure private conda channels
         run: |
           conda config --add channels conda-forge
+          conda config --add channels datalayer
           conda config --add channels https://conda.anaconda.org/t/${{ secrets.ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN }}/anaconda-cloud
+          conda config --add channels https://conda.anaconda.org/t/${{ secrets.ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN }}/anaconda-cloud/label/dev
           conda config --add channels https://conda.anaconda.org/t/${{ secrets.ANACONDA_CONNECTOR_TOKEN }}/anaconda-connector
 
       - name: Build conda package
@@ -41,7 +43,9 @@ jobs:
           mkdir -p build/conda
           conda build \
             -c conda-forge \
+            -c datalayer \
             -c https://conda.anaconda.org/t/${{ secrets.ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN }}/anaconda-cloud \
+            -c https://conda.anaconda.org/t/${{ secrets.ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN }}/anaconda-cloud/label/dev \
             -c https://conda.anaconda.org/t/${{ secrets.ANACONDA_CONNECTOR_TOKEN }}/anaconda-connector \
             --output-folder build/conda \
             conda-build
@@ -129,9 +133,23 @@ jobs:
           if [[ "$TAG" == *"-rc."* ]]; then
             VERSION="${TAG%%-rc.*}"
             RC_NUM="${TAG##*-rc.}"
-            echo "notes=## Release Candidate ${RC_NUM} for ${VERSION}\n\n> ⚠️ This is a pre-release. Not recommended for production use.\n\nPlease test and report any issues before the final \`${VERSION}\` release." >> $GITHUB_OUTPUT
+            cat >> $GITHUB_OUTPUT << EOF
+          notes<<EON
+          ## Release Candidate ${RC_NUM} for ${VERSION}
+
+          > ⚠️ This is a pre-release. Not recommended for production use.
+
+          Please test and report any issues before the final \`${VERSION}\` release.
+          EON
+          EOF
           else
-            echo "notes=## What's Changed\n\nSee [CHANGELOG](https://github.com/${{ github.repository }}/commits/${{ github.ref_name }}) for full details." >> $GITHUB_OUTPUT
+            cat >> $GITHUB_OUTPUT << EOF
+          notes<<EON
+          ## What's Changed
+
+          See [CHANGELOG](https://github.com/${{ github.repository }}/commits/${{ github.ref_name }}) for full details.
+          EON
+          EOF
           fi
 
       - name: Create GitHub Release
