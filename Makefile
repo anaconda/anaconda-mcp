@@ -10,7 +10,7 @@ PIP := $(PYTHON) -m pip
 PROJECT := anaconda-mcp
 DIST_DIR := dist
 BUILD_DIR := build
-MCP_SERVER_PORT   ?= 8888
+MCP_SERVER_PORT   ?= 4041
 ENV_NAME ?= anaconda-mcp-dev
 CONDA    ?= conda
 
@@ -231,8 +231,8 @@ docker-build-from-source: ## Build the Docker image from local source code
 	$(MAKE) docker-build DOCKER_FROM_SRC=true
 
 docker-run: ## Run the Docker container in streamable-http mode with port mapping
-	@echo "Running $(DOCKER_IMAGE) in streamable-http mode on port 8000..."
-	docker run -it -p 8000:8000 --rm $(DOCKER_IMAGE)
+	@echo "Running $(DOCKER_IMAGE) in streamable-http mode on port 4041..."
+	docker run -it -p 4041:4041 --rm $(DOCKER_IMAGE)
 
 setup: ## Create or update the dev conda env from environment-dev.yml
 	@echo "Setting up Conda env: $(ENV_NAME)"

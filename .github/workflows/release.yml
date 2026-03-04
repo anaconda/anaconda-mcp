@@ -1,0 +1,145 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+-rc.[0-9]+"   # pre-release: v1.0.0-rc.1
+      - "v[0-9]+.[0-9]+.[0-9]+"              # full release: v1.0.0
+
+jobs:
+  conda-build:
+    name: Build conda package
+    runs-on: [self-hosted-amd64-medium-privileged-on-demand]
+
+    defaults:
+      run:
+        shell: bash -el {0}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # required so GIT_DESCRIBE_TAG is resolved correctly
+
+      - name: Setup Miniconda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          auto-activate-base: true
+          use-mamba: true
+          conda-solver: libmamba
+
+      - name: Install conda-build
+        run: conda install -y conda-build
+
+      - name: Configure private conda channels
+        run: |
+          conda config --add channels conda-forge
+          conda config --add channels https://conda.anaconda.org/t/${{ secrets.ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN }}/anaconda-cloud
+          conda config --add channels https://conda.anaconda.org/t/${{ secrets.ANACONDA_CONNECTOR_TOKEN }}/anaconda-connector
+
+      - name: Build conda package
+        run: |
+          mkdir -p build/conda
+          conda build \
+            -c conda-forge \
+            -c https://conda.anaconda.org/t/${{ secrets.ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN }}/anaconda-cloud \
+            -c https://conda.anaconda.org/t/${{ secrets.ANACONDA_CONNECTOR_TOKEN }}/anaconda-connector \
+            --output-folder build/conda \
+            conda-build
+
+      - name: Show built package
+        run: ls -lh build/conda/**/*.conda || ls -lh build/conda/**/*.tar.bz2
+
+      - name: Upload conda artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: conda-package
+          path: build/conda/
+
+  docker:
+    name: Build & smoke-test Docker image
+    needs: conda-build
+    runs-on: [self-hosted-amd64-medium-privileged-on-demand]
+
+    defaults:
+      run:
+        shell: bash -el {0}
+
+    steps:
+      - name: Check required secrets
+        run: |
+          if [ -z "${{ secrets.ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN }}" ]; then
+            echo "::error::ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN secret is not set."
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          load: true
+          secrets: |
+            ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN=${{ secrets.ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN }}
+          tags: anaconda-mcp:${{ github.ref_name }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Smoke test
+        run: docker run --rm anaconda-mcp:${{ github.ref_name }} --help
+
+  release:
+    name: Create GitHub Release
+    needs: [conda-build, docker]
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download conda artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: conda-package
+          path: build/conda/
+
+      - name: Determine if pre-release
+        id: prerelease
+        run: |
+          if [[ "${{ github.ref_name }}" == *"-rc."* ]]; then
+            echo "is_prerelease=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_prerelease=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Generate release notes
+        id: release_notes
+        run: |
+          TAG="${{ github.ref_name }}"
+          if [[ "$TAG" == *"-rc."* ]]; then
+            VERSION="${TAG%%-rc.*}"
+            RC_NUM="${TAG##*-rc.}"
+            echo "notes=## Release Candidate ${RC_NUM} for ${VERSION}\n\n> ⚠️ This is a pre-release. Not recommended for production use.\n\nPlease test and report any issues before the final \`${VERSION}\` release." >> $GITHUB_OUTPUT
+          else
+            echo "notes=## What's Changed\n\nSee [CHANGELOG](https://github.com/${{ github.repository }}/commits/${{ github.ref_name }}) for full details." >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
+          prerelease: ${{ steps.prerelease.outputs.is_prerelease }}
+          body: ${{ steps.release_notes.outputs.notes }}
+          files: build/conda/**/*.conda
+          generate_release_notes: true
