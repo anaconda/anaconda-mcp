@@ -3,7 +3,7 @@
 ## Install (from source)
 
 ```bash
-cd /Users/iiliukhina/projects/anaconda-mcp
+cd /your-path-to-project/anaconda-mcp
 make setup
 conda activate anaconda-mcp-dev
 ```
