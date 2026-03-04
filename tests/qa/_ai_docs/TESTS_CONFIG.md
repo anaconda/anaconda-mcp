@@ -6,10 +6,6 @@ Component-level testing of configuration options via CLI. No Claude Desktop requ
 
 **Platforms**: macOS, Windows, Linux (all GitHub runners)
 
-**Related**:
-- [TESTS_CLI.md](./TESTS_CLI.md) - CLI flow tests
-- [TESTS_E2E_CLAUDE.md](./TESTS_E2E_CLAUDE.md) - Claude Desktop E2E flows
-
 ---
 
 ## Test Summary

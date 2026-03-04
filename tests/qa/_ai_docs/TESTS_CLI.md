@@ -6,10 +6,6 @@ CLI-only flows that can run on any platform without Claude Desktop.
 
 **Platforms**: macOS, Windows (Win365, GitHub runners), Linux (GitHub runners)
 
-**Related**:
-- [TESTS_E2E_CLAUDE.md](./TESTS_E2E_CLAUDE.md) - Claude Desktop flows (macOS only)
-- [TESTS_CONFIG.md](./TESTS_CONFIG.md) - Configuration tests
-
 ---
 
 ## Flow Summary

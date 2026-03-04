@@ -4,12 +4,8 @@
 
 Direct API calls to MCP tools - validates tool functionality without Claude Desktop.
 
-**Platforms**: macOS, Windows (Win365), Linux
-**Priority**: Manual first (Win365), automation if time allows
-
-**Related**:
-- [TESTS_CLI.md](./TESTS_CLI.md) - CLI flow tests
-- [TESTS_E2E_CLAUDE.md](./TESTS_E2E_CLAUDE.md) - Claude Desktop E2E
+- **Platforms**: macOS, Windows (Win365), Linux
+- **Priority**: Manual first (Win365), automation if time allows
 
 ---
 

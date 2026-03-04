@@ -4,10 +4,6 @@
 
 End-to-end flows requiring Claude Desktop interaction. Must run manually on macOS.
 
-**Related**:
-- [TESTS_CLI.md](./TESTS_CLI.md) - CLI-only flows (all platforms)
-- [TESTS_CONFIG.md](./TESTS_CONFIG.md) - Configuration tests (all platforms)
-
 ---
 
 ## Flow Summary
