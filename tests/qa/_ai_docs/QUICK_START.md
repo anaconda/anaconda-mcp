@@ -21,9 +21,15 @@ conda activate anaconda-mcp-testing
 anaconda-mcp --help
 ```
 
-To install a specific version:
+To install a specific version, add version numbers to the command:
 ```bash
-anaconda-mcp=0.1.2 environments-mcp-server=0.1.7
+conda create --name anaconda-mcp-testing \
+  -c datalayer \
+  -c anaconda-cloud/label/dev \
+  -c defaults \
+  -c conda-forge \
+  --channel 'https://conda.anaconda.org/t/an-19ec59a6-f3b4-4d62-a686-a882d9c1f209/anaconda-connector/' \
+  anaconda-mcp=0.1.2 environments-mcp-server=0.1.7
 ```
 
 ---
