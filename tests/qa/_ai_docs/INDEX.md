@@ -37,7 +37,8 @@ This documentation serves as the central knowledge base for QA testing of the An
 ### Scripts
 | Script | Description |
 |--------|-------------|
-| [scripts/test-http-server.sh](./scripts/test-http-server.sh) | Start HTTP server and test API |
+| [scripts/start-http-server.sh](./scripts/start-http-server.sh) | Start HTTP server (keeps running) |
+| [scripts/test-http-server.sh](./scripts/test-http-server.sh) | Start HTTP server, test API, stop |
 
 ## Source Documents
 

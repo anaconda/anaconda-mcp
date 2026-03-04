@@ -88,19 +88,42 @@ make test-coverage
 
 ---
 
-## Verify Server Works
+## Start Server
 
-### STDIO Mode
+### STDIO Mode (for Claude Desktop)
 
 ```bash
-# Start server - will auto-connect to downstream and show tools
 anaconda-mcp serve
 ```
 
-**Expected output**:
+Server runs in foreground. Configure Claude Desktop:
+```bash
+anaconda-mcp claude-desktop setup-config
+# Restart Claude Desktop
+```
+
+### HTTP Mode (for API testing)
+
+```bash
+# Start server (runs in foreground)
+./tests/qa/_ai_docs/scripts/start-http-server.sh 8888
+```
+
+Or manually:
+```bash
+anaconda-mcp serve --config /tmp/http-config.toml
+```
+
+Configure Claude Desktop for HTTP:
+```bash
+anaconda-mcp claude-desktop setup-config --transport streamable-http --port 8888
+# Restart Claude Desktop
+```
+
+### Expected Output (both modes)
+
 ```
 ✓ All servers started successfully!
-📡 MCP Server Mode: STDIO
 Total tools: 6
 
 🔧 Available Tools:
@@ -112,16 +135,10 @@ Total tools: 6
   • conda_remove_packages
 ```
 
-Press `Ctrl+C` to exit.
+Press `Ctrl+C` to stop server.
 
-### HTTP Mode
-
-```bash
-./tests/qa/_ai_docs/scripts/test-http-server.sh 8888
-```
-
-**Troubleshooting**: If server hangs, see [KI-007 in KNOWN_ISSUES.md](./KNOWN_ISSUES.md#ki-007-http-transport-hangs-or-fails-to-connect) - likely zombie processes holding ports.
+**Troubleshooting**: If server hangs, see [KI-007 in KNOWN_ISSUES.md](./KNOWN_ISSUES.md#ki-007-http-transport-hangs-or-fails-to-connect).
 
 ---
 
-For troubleshooting and architecture details, see [LOCAL_DEV_SETUP.md](./LOCAL_DEV_SETUP.md).
+For architecture details, see [LOCAL_DEV_SETUP.md](./LOCAL_DEV_SETUP.md).

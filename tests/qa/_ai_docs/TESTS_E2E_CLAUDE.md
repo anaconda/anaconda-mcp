@@ -50,9 +50,8 @@ anaconda-mcp claude-desktop setup-config
 
 ### Setup
 ```bash
-# Terminal 1: Start server
-./tests/qa/_ai_docs/scripts/test-http-server.sh 8888
-# Keep running
+# Terminal 1: Start server (keeps running)
+./tests/qa/_ai_docs/scripts/start-http-server.sh 8888
 
 # Terminal 2: Configure Claude Desktop
 anaconda-mcp claude-desktop setup-config --transport streamable-http --port 8888
