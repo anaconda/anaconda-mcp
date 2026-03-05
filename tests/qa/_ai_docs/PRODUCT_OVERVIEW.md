@@ -150,10 +150,11 @@ Currently, anaconda-mcp exposes tools from the **Environments MCP Server** with 
 | Tool | Description | Parameters |
 |------|-------------|------------|
 | `conda_list_environments` | List all conda environments | None |
-| `conda_create_environment` | Create new conda environment | name, python_version, packages |
-| `conda_delete_environment` | Delete conda environment (requires confirmation) | name |
-| `conda_install_packages` | Install packages | env_name, packages |
-| `conda_remove_packages` | Remove packages | env_name, packages |
+| `conda_list_environment_packages` | List packages in an environment | environment |
+| `conda_create_environment` | Create new conda environment | environment_name, packages |
+| `conda_remove_environment` | Delete conda environment (requires confirmation) | environment_name |
+| `conda_install_packages` | Install packages | environment, packages |
+| `conda_remove_packages` | Remove packages | environment, packages |
 
 
 ## Key Features

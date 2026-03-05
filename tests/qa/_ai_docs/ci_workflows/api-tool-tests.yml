@@ -59,28 +59,35 @@ jobs:
         run: |
           curl -sf http://localhost:8888/mcp -X POST \
             -H "Content-Type: application/json" \
-            -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"conda_create_environment","arguments":{"name":"ci-test-env","python_version":"3.11"}}}'
+            -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"conda_create_environment","arguments":{"environment_name":"ci-test-env","packages":["python=3.11"]}}}'
 
       # TOOL-003: Install packages
       - name: Test install packages
         run: |
           curl -sf http://localhost:8888/mcp -X POST \
             -H "Content-Type: application/json" \
-            -d '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"conda_install_packages","arguments":{"env_name":"ci-test-env","packages":["numpy"]}}}'
+            -d '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"conda_install_packages","arguments":{"environment":"ci-test-env","packages":["numpy"]}}}'
 
       # TOOL-004: Remove packages
       - name: Test remove packages
         run: |
           curl -sf http://localhost:8888/mcp -X POST \
             -H "Content-Type: application/json" \
-            -d '{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"conda_remove_packages","arguments":{"env_name":"ci-test-env","packages":["numpy"]}}}'
+            -d '{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"conda_remove_packages","arguments":{"environment":"ci-test-env","packages":["numpy"]}}}'
 
-      # TOOL-005: Delete environment
-      - name: Test delete environment
+      # TOOL-005: List environment packages
+      - name: Test list environment packages
         run: |
           curl -sf http://localhost:8888/mcp -X POST \
             -H "Content-Type: application/json" \
-            -d '{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"conda_delete_environment","arguments":{"name":"ci-test-env"}}}'
+            -d '{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"conda_list_environment_packages","arguments":{"environment":"ci-test-env"}}}'
+
+      # TOOL-006: Remove environment
+      - name: Test remove environment
+        run: |
+          curl -sf http://localhost:8888/mcp -X POST \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":6,"method":"tools/call","params":{"name":"conda_remove_environment","arguments":{"environment_name":"ci-test-env"}}}'
 
       - name: Cleanup
         if: always()

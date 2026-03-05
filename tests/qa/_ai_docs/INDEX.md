@@ -61,18 +61,16 @@ Original requirements in `initial_docs/`:
 
 ```
 TESTS_E2E_CLAUDE.md   → macOS only (requires Claude Desktop)
-  ├── CORE-001: Full Setup & Tools
-  ├── CORE-002: HTTP Transport
+  ├── CORE-001: Full Tools Flow (run with STDIO and HTTP)
   ├── GUARD-001: Guardrails
-  ├── AUTH-002: Anonymous Mode
+  ├── AUTH-001: Anonymous Mode
   └── REGRESS-001: Known Issues
 
 TESTS_CLI.md          → All platforms (manual first, then CI)
   ├── CLI-001: Server Discovery
   ├── CLI-002: Advanced Options
   ├── CLI-003: Config Management
-  ├── CLI-004: Regression CLI
-  └── CLI-005: Negative Scenarios
+  └── CLI-004: Regression CLI
 
 TESTS_CONFIG.md       → All platforms (manual first, then CI)
   ├── ENV-001 to ENV-004: Environment variables
@@ -80,8 +78,8 @@ TESTS_CONFIG.md       → All platforms (manual first, then CI)
   └── PATH-001 to PATH-002: OS path tests
 
 TESTS_API_TOOLS.md    → Win365 manual first, then CI
-  ├── TOOL-001 to TOOL-005: Each MCP tool
-  └── ERR-001 to ERR-003: Error scenarios
+  ├── TOOL-001 to TOOL-006: Each MCP tool
+  └── ERR-001 to ERR-005: Error scenarios (tool + protocol)
 ```
 
 ## Conventions

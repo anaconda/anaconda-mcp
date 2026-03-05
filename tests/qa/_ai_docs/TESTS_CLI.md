@@ -16,7 +16,8 @@ CLI-only flows that can run on any platform without Claude Desktop.
 | CLI-002 | Advanced Options | P1 | Yes |
 | CLI-003 | Config Management | P0 | Yes |
 | CLI-004 | Regression CLI | P0 | Yes |
-| CLI-005 | Negative Scenarios | P1 | Yes |
+
+> **Note**: Error scenarios (negative tests) are in [TESTS_API_TOOLS.md](./TESTS_API_TOOLS.md#error-scenarios).
 
 ---
 
@@ -154,51 +155,6 @@ unset OPENAI_API_KEY RANDOM_VAR
 
 ---
 
-## CLI-005: Negative Scenarios (API)
-
-**Purpose**: Validate error handling via direct API calls.
-
-**Setup**:
-```bash
-anaconda-mcp serve --port 2391 &
-sleep 10
-```
-
-**Tests**:
-
-```bash
-# Duplicate environment
-curl -X POST http://localhost:2391/mcp \
-  -H "Content-Type: application/json" \
-  -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"conda_create_environment","arguments":{"name":"base"}}}'
-# [EXPECTED] Error: environment already exists
-
-# Non-existent environment
-curl -X POST http://localhost:2391/mcp \
-  -H "Content-Type: application/json" \
-  -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"conda_delete_environment","arguments":{"name":"nonexistent-xyz"}}}'
-# [EXPECTED] Error: environment not found
-
-# Invalid tool
-curl -X POST http://localhost:2391/mcp \
-  -H "Content-Type: application/json" \
-  -d '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"invalid_tool"}}'
-# [EXPECTED] Error code: -32601
-
-# Malformed JSON
-curl -X POST http://localhost:2391/mcp \
-  -H "Content-Type: application/json" \
-  -d 'not valid json'
-# [EXPECTED] Error code: -32700
-```
-
-**Cleanup**:
-```bash
-kill %1
-```
-
----
-
 ## CI Automation (Phase 2)
 
 Workflow template: [ci_workflows/cli-tests.yml](./ci_workflows/cli-tests.yml)
@@ -215,17 +171,12 @@ Copy to `.github/workflows/` when ready to implement.
 | CLI-002 | ✅ | ✅ | ✅ |
 | CLI-003 | ✅ | ✅ | ✅ |
 | CLI-004 | ✅ | ✅ | ✅ |
-| CLI-005 | ✅ | ✅ | ✅ |
 
 ---
 
 ## Test Execution Order
 
-### Every PR (CI)
 1. **CLI-004** - Regression (KI-004)
 2. **CLI-001** - Server discovery
 3. **CLI-002** - Advanced options
 4. **CLI-003** - Config management
-
-### Release Testing
-5. **CLI-005** - Negative scenarios

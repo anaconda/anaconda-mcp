@@ -2,26 +2,38 @@
 
 ## Prerequisites
 
-See [QUICK_START.md](./QUICK_START.md) for:
-- Installation (conda channels or source)
-- Starting server (STDIO or HTTP)
-- Configuring Claude Desktop
+**Before running any test flow**, complete these steps:
 
-**Before each test**: Activate conda environment
-```bash
-conda activate anaconda-mcp-testing
-```
+### 1. Determine Test Configuration
 
----
+Record the configuration you are testing:
 
-## Test Variables
+| Setting | Your Value |
+|---------|------------|
+| Python version | _______ (3.10, 3.11, 3.12, or 3.13) |
+| Transport mode | _______ (STDIO or HTTP) |
+| anaconda-mcp version | _______ (run: `conda list \| grep anaconda-mcp`) |
+| environments-mcp-server version | _______ (run: `conda list \| grep environments-mcp`) |
 
-| Variable | Options |
-|----------|---------|
-| Transport | STDIO, HTTP |
-| Python | 3.10, 3.11, 3.12, 3.13 |
+See [TEST_MATRIX.md](./TEST_MATRIX.md) for recommended combinations.
 
-Run each test flow with different combinations per [TEST_MATRIX.md](./TEST_MATRIX.md).
+### 2. Setup Environment
+
+Follow [QUICK_START.md](./QUICK_START.md):
+
+1. Install from conda channels OR source (Option A or B)
+2. Configure Claude Desktop for your transport mode
+3. Restart Claude Desktop (Cmd+Q, then reopen)
+4. **For HTTP only**: Start the server manually before continuing
+
+### 3. Verify Ready State
+
+**All tests start from this state:**
+- Claude Desktop is running
+- Anaconda MCP server is connected (check for tools icon in Claude)
+- You can ask Claude: "List my conda environments" and get a response
+
+If this doesn't work, troubleshoot per [KNOWN_ISSUES.md](./KNOWN_ISSUES.md#troubleshooting) before proceeding.
 
 ---
 
