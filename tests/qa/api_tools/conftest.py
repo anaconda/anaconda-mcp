@@ -6,11 +6,13 @@ Provides:
                 --start-server, --server-conda-env
 - Session fixture: mcp_server  (starts / verifies the server)
 - Session fixture: server_url  (the resolved MCP endpoint URL)
+- Module fixture: session_id   (MCP initialize handshake; one per test file)
 - HTML report metadata injection
 """
 
 from __future__ import annotations
 
+import logging
 import os
 import shutil
 import signal
@@ -21,6 +23,8 @@ from pathlib import Path
 
 import httpx
 import pytest
+
+logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Shared helpers (used both in conftest and tests)
@@ -143,6 +147,7 @@ def mcp_server(request: pytest.FixtureRequest, server_url: str):
         )
         log_path = Path(log_file.name)
 
+        logger.info("Starting MCP server (conda env: %s, port: %s)", conda_env, port)
         server_proc = subprocess.Popen(
             ["conda", "run", "-n", conda_env, "--no-capture-output",
              "bash", str(_SCRIPT_PATH), port],
@@ -158,6 +163,7 @@ def mcp_server(request: pytest.FixtureRequest, server_url: str):
                 tail = log_path.read_text()[-3000:]
             except Exception:
                 tail = "(could not read log)"
+            logger.error("MCP server did not become ready within 60 s. Log tail:\n%s", tail)
             pytest.fail(
                 f"MCP server at {server_url} did not become ready within 60 s.\n"
                 f"Conda env: '{conda_env}'\n"
@@ -165,6 +171,7 @@ def mcp_server(request: pytest.FixtureRequest, server_url: str):
             )
 
         _wait_for_server(server_url, timeout=60, on_timeout=_on_timeout)
+        logger.info("MCP server is ready at %s", server_url)
 
     else:
         _assert_server_reachable(server_url)
@@ -172,6 +179,7 @@ def mcp_server(request: pytest.FixtureRequest, server_url: str):
     yield
 
     if server_proc is not None:
+        logger.info("Stopping MCP server (pid %s)", server_proc.pid)
         try:
             os.killpg(os.getpgid(server_proc.pid), signal.SIGTERM)
         except (ProcessLookupError, PermissionError):
@@ -185,6 +193,49 @@ def mcp_server(request: pytest.FixtureRequest, server_url: str):
             log_path.unlink(missing_ok=True)
         except Exception:
             pass
+
+
+@pytest.fixture(scope="module")
+def session_id(mcp_server, server_url: str) -> str | None:
+    """
+    Initialize an MCP session and return the session ID (may be None).
+
+    Module-scoped so each test file gets its own MCP session, keeping
+    test files isolated from each other.
+    """
+    logger.info("Initializing MCP session at %s", server_url)
+    response = httpx.post(
+        server_url,
+        json={
+            "jsonrpc": "2.0",
+            "id": 0,
+            "method": "initialize",
+            "params": {
+                "protocolVersion": "2024-11-05",
+                "capabilities": {},
+                "clientInfo": {"name": "api-tools-test", "version": "1.0"},
+            },
+        },
+        headers={"Accept": "application/json, text/event-stream"},
+        timeout=10,
+    )
+    sid = response.headers.get("mcp-session-id")
+    logger.debug("MCP session established (session-id present: %s)", sid is not None)
+
+    headers = {"Accept": "application/json, text/event-stream"}
+    if sid:
+        headers["Mcp-Session-Id"] = sid
+    try:
+        httpx.post(
+            server_url,
+            json={"jsonrpc": "2.0", "method": "notifications/initialized", "params": {}},
+            headers=headers,
+            timeout=5,
+        )
+    except Exception:
+        pass
+
+    return sid
 
 
 # ---------------------------------------------------------------------------
@@ -218,10 +269,12 @@ def _port_from_url(url: str) -> str:
 
 
 def _wait_for_server(url: str, *, timeout: float, on_timeout) -> None:
+    logger.info("Waiting for MCP server at %s (timeout=%ss)", url, timeout)
     deadline = time.time() + timeout
     while time.time() < deadline:
         try:
             r = httpx.post(url, json=_INIT_BODY, headers=_SSE_HEADERS, timeout=3)
+            logger.debug("Server probe: HTTP %s", r.status_code)
             if r.status_code in (200, 202, 406):
                 return
         except (httpx.ConnectError, httpx.TimeoutException):
@@ -230,9 +283,12 @@ def _wait_for_server(url: str, *, timeout: float, on_timeout) -> None:
 
 
 def _assert_server_reachable(url: str) -> None:
+    logger.info("Checking MCP server reachability at %s", url)
     try:
         httpx.post(url, json=_INIT_BODY, headers=_SSE_HEADERS, timeout=5)
+        logger.info("MCP server is reachable at %s", url)
     except httpx.ConnectError:
+        logger.error("MCP server not reachable at %s", url)
         pytest.skip(
             f"MCP server not reachable at {url}.\n"
             "Start it first:  ./tests/qa/_ai_docs/scripts/start-http-server.sh 8888\n"
