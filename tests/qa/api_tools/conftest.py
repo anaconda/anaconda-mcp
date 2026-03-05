@@ -15,6 +15,7 @@ import os
 import shutil
 import signal
 import subprocess
+import tempfile
 import time
 from pathlib import Path
 
@@ -80,11 +81,13 @@ def pytest_addoption(parser: pytest.Parser) -> None:
     )
     parser.addoption(
         "--server-conda-env",
-        default="anaconda-mcp-rc-py313",
+        default=os.environ.get("MCP_SERVER_CONDA_ENV", "anaconda-mcp-rc-py313"),
         metavar="ENV",
         help=(
             "Conda environment with anaconda-mcp installed, used when "
-            "--start-server is set. (default: anaconda-mcp-rc-py313)"
+            "--start-server is set. "
+            "Also reads MCP_SERVER_CONDA_ENV env var. "
+            "(default: anaconda-mcp-rc-py313)"
         ),
     )
 
@@ -135,21 +138,33 @@ def mcp_server(request: pytest.FixtureRequest, server_url: str):
         if not shutil.which("conda"):
             pytest.fail("conda not found in PATH; cannot auto-start the server.")
 
+        log_file = tempfile.NamedTemporaryFile(
+            mode="w", suffix="-anaconda-mcp.log", delete=False
+        )
+        log_path = Path(log_file.name)
+
         server_proc = subprocess.Popen(
             ["conda", "run", "-n", conda_env, "--no-capture-output",
              "bash", str(_SCRIPT_PATH), port],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
+            stdout=log_file,
+            stderr=subprocess.STDOUT,
             start_new_session=True,  # own process group → clean SIGTERM
         )
 
-        _wait_for_server(server_url, timeout=60, on_timeout=lambda: (
-            server_proc.kill(),
+        def _on_timeout() -> None:
+            server_proc.kill()
+            log_file.flush()
+            try:
+                tail = log_path.read_text()[-3000:]
+            except Exception:
+                tail = "(could not read log)"
             pytest.fail(
                 f"MCP server at {server_url} did not become ready within 60 s.\n"
-                f"Check that conda env '{conda_env}' has anaconda-mcp installed."
-            ),
-        ))
+                f"Conda env: '{conda_env}'\n"
+                f"Log ({log_path}):\n{tail}"
+            )
+
+        _wait_for_server(server_url, timeout=60, on_timeout=_on_timeout)
 
     else:
         _assert_server_reachable(server_url)
@@ -165,6 +180,11 @@ def mcp_server(request: pytest.FixtureRequest, server_url: str):
             server_proc.wait(timeout=15)
         except subprocess.TimeoutExpired:
             server_proc.kill()
+        try:
+            log_file.close()
+            log_path.unlink(missing_ok=True)
+        except Exception:
+            pass
 
 
 # ---------------------------------------------------------------------------
