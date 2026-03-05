@@ -176,4 +176,4 @@ Press `Ctrl+C` to stop server.
 
 ---
 
-For architecture details, see [LOCAL_DEV_SETUP.md](./LOCAL_DEV_SETUP.md).
+For architecture details, see [PRODUCT_OVERVIEW.md](./PRODUCT_OVERVIEW.md).

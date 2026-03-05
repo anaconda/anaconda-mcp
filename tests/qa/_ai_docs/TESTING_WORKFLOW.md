@@ -78,8 +78,8 @@ Format: `anaconda-mcp <version> - <platform> - <transport> - <python>`
 
 Examples:
 - `anaconda-mcp 0.1.2 - macOS - STDIO - py3.10`
-- `anaconda-mcp 0.1.2 - macOS - HTTP - py3.11`
-- `anaconda-mcp 0.1.2 - Win365 - CLI/API - py3.11`
+- `anaconda-mcp 0.1.2 - macOS - HTTP - py3.13`
+- `anaconda-mcp 0.1.2 - Win365 - CLI/API - py3.13`
 
 ---
 

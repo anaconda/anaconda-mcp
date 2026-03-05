@@ -105,6 +105,30 @@ Questions requiring product owner decision before finalizing test scope and prio
 
 ---
 
+---
+
+## Q5: Additional MCP Client Coverage
+
+**Question**: Should we test with other MCP clients beyond Claude Desktop and Cursor?
+
+| Option | Clients |
+|--------|---------|
+| A | Claude Desktop + Cursor only (current) |
+| B | + Claude Code |
+| C | + VS Code |
+| D | + Claude Code + VS Code |
+
+**Current assumption**: Option A (Claude Desktop + Cursor only)
+
+**Context**:
+- Claude Code and VS Code may work via standard MCP protocol but have no dedicated integration code in anaconda-mcp
+- Cursor is already required for HTTP transport validation (KI-009 constraint)
+- Additional clients would increase test matrix size
+
+**Impact**: Test matrix size, client-specific setup effort.
+
+---
+
 ## Summary Table
 
 | Question | Current Assumption | Needs Decision? |
@@ -113,6 +137,7 @@ Questions requiring product owner decision before finalizing test scope and prio
 | Q2: CLI/API/Config Platform | macOS + Windows | Yes |
 | Q3: Auth & Related | Option B (Anonymous + Auth basic) | Yes |
 | Q4: Python Version | Boundaries (3.10, 3.13) | Yes |
+| Q5: Additional MCP Clients | Claude Desktop + Cursor only | Yes |
 
 ---
 
@@ -124,6 +149,7 @@ Questions requiring product owner decision before finalizing test scope and prio
 | ___ | Q2 | ___ | ___ |
 | ___ | Q3 | ___ | ___ |
 | ___ | Q4 | ___ | ___ |
+| ___ | Q5 | ___ | ___ |
 
 ---
 

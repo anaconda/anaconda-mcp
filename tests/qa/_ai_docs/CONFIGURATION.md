@@ -117,7 +117,7 @@ anaconda-mcp claude-desktop remove-config
 
 # Show current config
 anaconda-mcp claude-desktop show
-anaconda-mcp claude-desktop show --server anaconda-mcp
+anaconda-mcp claude-desktop show --name anaconda-mcp
 
 # Show config file path
 anaconda-mcp claude-desktop path

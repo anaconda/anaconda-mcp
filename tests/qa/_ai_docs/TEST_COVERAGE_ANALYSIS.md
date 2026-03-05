@@ -156,7 +156,7 @@ curl http://localhost:8888/mcp ...
 
 **Matrix**:
 - OS: Ubuntu, macOS, Windows
-- Python: 3.11
+- Python: 3.11 (existing CI — note: QA test matrix uses boundaries 3.10 + 3.13, see [TEST_MATRIX.md](./TEST_MATRIX.md))
 
 **Coverage**:
 | Test Type | CI Automated |
@@ -164,7 +164,7 @@ curl http://localhost:8888/mcp ...
 | Pytest unit tests | Yes |
 | QA CLI tests | Can be (see TESTS_CLI.md) |
 | QA Config tests | Can be (see TESTS_CONFIG.md) |
-| QA E2E Claude | No (manual, macOS only) |
+| QA E2E (Claude Desktop / Cursor) | No (manual, macOS only) |
 
 ---
 

@@ -285,8 +285,8 @@ Copy to `.github/workflows/` when ready to implement.
 
 ## Platform Coverage
 
-| Test | Win365 (3.10) | macOS (3.11) | Linux CI (3.13) |
-|------|---------------|--------------|-----------------|
+| Test | Win365 (3.13) | macOS (3.10) | Linux CI (3.10 + 3.13) |
+|------|---------------|--------------|------------------------|
 | TOOL-001 | ✅ Manual | Optional | Phase 2 |
 | TOOL-002 | ✅ Manual | Optional | Phase 2 |
 | TOOL-003 | ✅ Manual | Optional | Phase 2 |

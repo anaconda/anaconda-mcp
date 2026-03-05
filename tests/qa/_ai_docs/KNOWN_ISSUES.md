@@ -168,34 +168,3 @@ But this command starts server in **STDIO mode**, not HTTP mode. Claude Desktop 
 **Impact**: First-time user experience has multiple prompts.
 **Expected**: This is standard Claude Desktop behavior for MCP tools.
 
----
-
-## Testing Recommendations
-
-### High Priority Tests (Based on Known Issues)
-
-1. **Environment Deletion Verification**
-   - Delete environment
-   - Verify with `conda env list` that it's actually gone
-   - Test when environment is activated
-
-2. **Environment Name Resolution**
-   - Create environment with specific name
-   - List environments and verify name matches
-   - Install packages by environment name (not path)
-
-3. **Authentication Flow**
-   - Test with `anaconda login` completed
-   - Test without authentication
-   - Test with licensed channel access
-
-4. **Extra Environment Variables**
-   - Set various env vars (OPENAI_API_KEY, etc.)
-   - Verify anaconda-mcp starts without error
-
-### Regression Test Checklist
-
-After each release, verify these fixed issues don't regress:
-
-- [ ] KI-001: Environment deletion actually removes environment
-- [ ] KI-004: Extra env vars don't cause crash
