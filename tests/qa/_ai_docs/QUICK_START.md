@@ -45,6 +45,37 @@ conda create --name anaconda-mcp-py310 \
   python=3.10 anaconda-mcp environments-mcp-server
 ```
 
+### Pinned RC Versions — Current Test Cycle
+
+**Versions under test**:
+- `anaconda-mcp=1.0.0.rc.1`
+- `environments-mcp-server=1.0.0.rc.1`
+- `anaconda-connector` — latest in channel
+
+Run once per Python version required (3.10, 3.11, 3.12, 3.13). Replace `X.Y` with the target version:
+
+```bash
+# Replace X.Y with: 3.10 | 3.11 | 3.12 | 3.13
+conda create --name anaconda-mcp-rc-pyXY \
+  -c datalayer \
+  -c anaconda-cloud/label/dev \
+  -c defaults \
+  -c conda-forge \
+  --channel 'https://conda.anaconda.org/t/an-19ec59a6-f3b4-4d62-a686-a882d9c1f209/anaconda-connector/' \
+  python=X.Y \
+  anaconda-mcp=1.0.0.rc.1 \
+  environments-mcp-server=1.0.0.rc.1 \
+  anaconda-connector
+
+conda activate anaconda-mcp-rc-pyXY
+
+# Verify
+anaconda-mcp --help
+conda list | grep -E "anaconda-mcp|environments-mcp|anaconda-connector"
+```
+
+> **Why `anaconda-connector` is listed without a version**: listing it explicitly (unpinned) tells conda's solver to maximize its version from the channel, rather than letting it be silently pulled in as a transitive dependency at whatever version the RC packages happen to require.
+
 ---
 
 ## Option B: Install from Source

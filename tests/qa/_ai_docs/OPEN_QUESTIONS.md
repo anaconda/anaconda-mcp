@@ -18,14 +18,21 @@ Questions requiring product owner decision before finalizing test scope and prio
 | D | Multiple versions (regression across releases) |
 
 **Current assumption**: Option A (conda channels, latest release)
+**Answer**: We need to use specific versions for 
+- anaconda-mcp=1.0.0.rc.1 
+- environments-mcp-server=1.0.0.rc.1
+- anaconda connector - latest in channel
+easiest way to have all specific versions (including python) is to use [Pinned RC Versions — Current Test Cycle](./QUICK_START.md#pinned-rc-versions--current-test-cycle)
 ---
 
 ## Constraints (FYI)
 
 ### Platform and Transport/Client Constraints
-- **E2E testing**: macOS only (Claude Desktop and Cursor are available on macOS only)
+**E2E testing**: 
+- macOS mostly (Claude Desktop and Cursor are available on macOS only)
     - Claude Desktop OR Cursor for STDIO transport
     - Cursor for HTTP transport [Claude Desktop does not support HTTP transport - KI-009](./KNOWN_ISSUES.md#ki-009-claude-desktop-does-not-support-http-transport)
+- Windows as lower priority (likely we could have Claude Desktop here)    
 
 
 ---
@@ -41,6 +48,7 @@ Questions requiring product owner decision before finalizing test scope and prio
 | C | macOS + Windows + Linux (CI runners) |
 
 **Current assumption**: Option B (macOS + Windows)
+**Answer**: Option B (macOS + Windows)
 
 **Context**:
 - These tests don't require Claude Desktop or Cursor
@@ -62,6 +70,7 @@ Questions requiring product owner decision before finalizing test scope and prio
 | C | Anonymous + Authenticated + Private channels + Telemetry verification |
 
 **Current assumption**: Option B
+**Answer**: Option B
 
 **What each option covers**:
 
@@ -96,6 +105,7 @@ Questions requiring product owner decision before finalizing test scope and prio
 | C | All supported (3.10, 3.11, 3.12, 3.13) |
 
 **Current assumption**: Option B (boundaries: 3.10 + 3.13)
+**Answer**: Option C (3.10, 3.11, 3.12, 3.13)
 
 **Context**:
 - Supported range: 3.10 - 3.13
@@ -119,6 +129,7 @@ Questions requiring product owner decision before finalizing test scope and prio
 | D | + Claude Code + VS Code |
 
 **Current assumption**: Option A (Claude Desktop + Cursor only)
+**Answer**: Option A (Claude Desktop + Cursor only)
 
 **Context**:
 - Claude Code and VS Code may work via standard MCP protocol but have no dedicated integration code in anaconda-mcp
@@ -131,31 +142,12 @@ Questions requiring product owner decision before finalizing test scope and prio
 
 ## Summary Table
 
-| Question | Current Assumption | Needs Decision? |
-|----------|-------------------|-----------------|
-| Q1: Installation Source | Conda channels (latest) | Yes |
-| Q2: CLI/API/Config Platform | macOS + Windows | Yes |
-| Q3: Auth & Related | Option B (Anonymous + Auth basic) | Yes |
-| Q4: Python Version | Boundaries (3.10, 3.13) | Yes |
-| Q5: Additional MCP Clients | Claude Desktop + Cursor only | Yes |
+| Question | Decision | Needs Decision? |
+|----------|----------|-----------------|
+| Q1: Installation Source | Specific RC versions: anaconda-mcp=1.0.0.rc.1, environments-mcp-server=1.0.0.rc.1, anaconda-connector latest | No |
+| Q2: CLI/API/Config Platform | Option B — macOS + Windows | No |
+| Q3: Auth & Related | Option B — Anonymous + Authenticated basic | No |
+| Q4: Python Version | Option C — All supported: 3.10, 3.11, 3.12, 3.13 | No |
+| Q5: Additional MCP Clients | Option A — Claude Desktop + Cursor only | No |
 
----
-
-## Decision Log
-
-| Date | Question | Decision | Rationale |
-|------|----------|----------|-----------|
-| ___ | Q1 | ___ | ___ |
-| ___ | Q2 | ___ | ___ |
-| ___ | Q3 | ___ | ___ |
-| ___ | Q4 | ___ | ___ |
-| ___ | Q5 | ___ | ___ |
-
----
-
-## Next Steps
-
-1. Review questions with product owner
-2. Document decisions in Decision Log
-3. Update TEST_MATRIX.md based on decisions
-4. Adjust test documentation as needed
+All decisions received. TEST_MATRIX.md updated accordingly.
