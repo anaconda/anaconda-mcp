@@ -23,8 +23,13 @@ Follow [QUICK_START.md](./QUICK_START.md):
 
 1. Install from conda channels OR source (Option A or B)
 2. Configure Claude Desktop for your transport mode
+
+**For STDIO transport:**
 3. Restart Claude Desktop (Cmd+Q, then reopen)
-4. **For HTTP only**: Start the server manually before continuing
+
+**For HTTP transport:**
+3. Start the server manually first (`./scripts/start-http-server.sh 8888`)
+4. Then restart Claude Desktop (Cmd+Q, then reopen)
 
 ### 3. Verify Ready State
 
@@ -44,6 +49,7 @@ If this doesn't work, troubleshoot per [KNOWN_ISSUES.md](./KNOWN_ISSUES.md#troub
 | CORE-001 | Full Tools Flow | P0 |
 | GUARD-001 | Guardrails | P0 |
 | AUTH-001 | Anonymous Mode | P1 |
+| AUTH-002 | Authenticated Mode | P1 |
 | REGRESS-001 | Known Issues | P0 |
 
 ---
@@ -102,6 +108,44 @@ conda remove -n anon-test --all -y
 
 ---
 
+## AUTH-002: Authenticated Mode
+
+**Purpose**: Test with Anaconda authentication (enables private channels + telemetry).
+
+### Prep
+```bash
+# Login to Anaconda (browser will open)
+anaconda login
+
+# Verify logged in
+anaconda whoami
+# [EXPECTED] Shows your username
+
+# Restart Claude Desktop to pick up auth state
+# Cmd+Q, then reopen Claude Desktop
+```
+
+| Step | Action | Expected |
+|------|--------|----------|
+| 1 | Ask: "List my conda environments" | Works |
+| 2 | Ask: "Create environment auth-test with Python 3.11" | Environment created |
+| 3 | Ask: "Install numpy in auth-test" | Package installed |
+| 4 | Check server logs for telemetry | "Initializing telemetry" message present |
+
+### Verify Telemetry (optional)
+```bash
+# Run server with debug logging to see telemetry
+ANACONDA_MCP_LOG_LEVEL=DEBUG anaconda-mcp serve --port 8888 2>&1 | grep -i telemetry
+# [EXPECTED] "Initializing telemetry" appears
+```
+
+### Cleanup
+```bash
+conda remove -n auth-test --all -y
+```
+
+---
+
 ## REGRESS-001: Known Issues
 
 **Purpose**: Regression tests for fixed bugs.
@@ -126,6 +170,7 @@ conda create -n regress-test python=3.11 -y
 2. CORE-001 - Full happy path
 3. GUARD-001 - Guardrails
 4. AUTH-001 - Anonymous mode
+5. AUTH-002 - Authenticated mode
 
 ---
 

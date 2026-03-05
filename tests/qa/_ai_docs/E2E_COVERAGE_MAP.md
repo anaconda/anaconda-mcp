@@ -19,7 +19,7 @@
 
 | File | Platform | Flows |
 |------|----------|-------|
-| [TESTS_E2E_CLAUDE.md](./TESTS_E2E_CLAUDE.md) | macOS only | CORE-001, GUARD-001, AUTH-001, REGRESS-001 |
+| [TESTS_E2E_CLAUDE.md](./TESTS_E2E_CLAUDE.md) | macOS only | CORE-001, GUARD-001, AUTH-001, AUTH-002, REGRESS-001 |
 | [TESTS_CLI.md](./TESTS_CLI.md) | All platforms | CLI-001 to CLI-004 |
 | [TESTS_CONFIG.md](./TESTS_CONFIG.md) | All platforms | ENV-001 to ENV-004, CFG-001 to CFG-003, PATH-001 to PATH-002 |
 | [TESTS_API_TOOLS.md](./TESTS_API_TOOLS.md) | Win365 first, then CI | TOOL-001 to TOOL-006, ERR-001 to ERR-005 |
@@ -49,10 +49,10 @@
 | | Show Server Config | `claude-desktop show --name` | CLI-002 |
 | | JSON Output | `claude-desktop show --json` | CLI-003 |
 | | Get Config Path | `claude-desktop path` | PATH-001 |
-| **Authentication** | Auto Login | Browser opens on serve | AUTH-001 |
-| | Manual Login | `anaconda login` | AUTH-001 |
+| **Authentication** | Auto Login | Browser opens on serve | AUTH-002 |
+| | Manual Login | `anaconda login` | AUTH-002 |
 | | Anonymous Mode | No login, public channels | AUTH-001 |
-| | Token Management | System keyring | AUTH-001 |
+| | Token Management | System keyring | AUTH-002 |
 | **Configuration** | Log Level | `ANACONDA_MCP_LOG_LEVEL` | ENV-001 |
 | | Disable Telemetry | `ANACONDA_MCP_SEND_METRICS` | ENV-002 |
 | | Set Environment | `ANACONDA_MCP_ENVIRONMENT` | ENV-004 |
@@ -78,6 +78,7 @@
 | CORE-001 | Full Tools Flow | 6 tools (run with STDIO and HTTP) |
 | GUARD-001 | Guardrails | 3 features |
 | AUTH-001 | Anonymous Mode | 2 features |
+| AUTH-002 | Authenticated Mode | 3 features |
 | REGRESS-001 | Known Issues | 4 features |
 
 ### TESTS_CLI.md (All platforms)

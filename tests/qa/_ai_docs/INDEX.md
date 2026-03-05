@@ -26,6 +26,7 @@ This documentation serves as the central knowledge base for QA testing of the An
 | [E2E_COVERAGE_MAP.md](./E2E_COVERAGE_MAP.md) | Feature to test mapping | QA leads |
 | [TEST_MATRIX.md](./TEST_MATRIX.md) | OS/Python/Transport matrix | QA leads |
 | [TEST_COVERAGE_ANALYSIS.md](./TEST_COVERAGE_ANALYSIS.md) | Existing pytest coverage analysis | QA leads |
+| [OPEN_QUESTIONS.md](./OPEN_QUESTIONS.md) | Questions for product owner | QA leads, PO |
 
 ### Reference
 | Document | Description | Audience |
@@ -64,6 +65,7 @@ TESTS_E2E_CLAUDE.md   → macOS only (requires Claude Desktop)
   ├── CORE-001: Full Tools Flow (run with STDIO and HTTP)
   ├── GUARD-001: Guardrails
   ├── AUTH-001: Anonymous Mode
+  ├── AUTH-002: Authenticated Mode
   └── REGRESS-001: Known Issues
 
 TESTS_CLI.md          → All platforms (manual first, then CI)
