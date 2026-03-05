@@ -21,7 +21,7 @@ Questions requiring product owner decision before finalizing test scope and prio
 **Answer**: We need to use specific versions for 
 - anaconda-mcp=1.0.0.rc.1 
 - environments-mcp-server=1.0.0.rc.1
-- anaconda connector - latest in channel
+- anaconda-connector — transitive dependency, version resolved by conda solver (record from `conda list` after install)
 easiest way to have all specific versions (including python) is to use [Pinned RC Versions — Current Test Cycle](./QUICK_START.md#pinned-rc-versions--current-test-cycle)
 ---
 
@@ -144,7 +144,7 @@ easiest way to have all specific versions (including python) is to use [Pinned R
 
 | Question | Decision | Needs Decision? |
 |----------|----------|-----------------|
-| Q1: Installation Source | Specific RC versions: anaconda-mcp=1.0.0.rc.1, environments-mcp-server=1.0.0.rc.1, anaconda-connector latest | No |
+| Q1: Installation Source | anaconda-mcp=1.0.0.rc.1, environments-mcp-server=1.0.0.rc.1; anaconda-connector resolved as transitive dep | No |
 | Q2: CLI/API/Config Platform | Option B — macOS + Windows | No |
 | Q3: Auth & Related | Option B — Anonymous + Authenticated basic | No |
 | Q4: Python Version | Option C — All supported: 3.10, 3.11, 3.12, 3.13 | No |

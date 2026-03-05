@@ -4,7 +4,7 @@
 
 | Assumption | Decision |
 |------------|----------|
-| Installation source | Specific RC versions: anaconda-mcp=1.0.0.rc.1, environments-mcp-server=1.0.0.rc.1, anaconda-connector latest (see [Q1](./OPEN_QUESTIONS.md#q1-installation-source)) |
+| Installation source | anaconda-mcp=1.0.0.rc.1, environments-mcp-server=1.0.0.rc.1; anaconda-connector resolved as transitive dep (see [Q1](./OPEN_QUESTIONS.md#q1-installation-source)) |
 | Platform coverage | macOS + Windows for manual; Linux via CI (see [Q2](./OPEN_QUESTIONS.md#q2-cliapiconfig-platform-coverage)) |
 | Auth scope | Anonymous + Authenticated basic (see [Q3](./OPEN_QUESTIONS.md#q3-authentication--related-features)) |
 | Python versions | All supported: 3.10, 3.11, 3.12, 3.13 (see [Q4](./OPEN_QUESTIONS.md#q4-python-version-coverage)) |

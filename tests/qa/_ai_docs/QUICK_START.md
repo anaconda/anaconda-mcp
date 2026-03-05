@@ -50,7 +50,7 @@ conda create --name anaconda-mcp-py310 \
 **Versions under test**:
 - `anaconda-mcp=1.0.0.rc.1`
 - `environments-mcp-server=1.0.0.rc.1`
-- `anaconda-connector` — latest in channel
+- `anaconda-connector` — resolved as transitive dependency (version determined by RC package metadata)
 
 Run once per Python version required (3.10, 3.11, 3.12, 3.13). Replace `X.Y` with the target version:
 
@@ -64,17 +64,25 @@ conda create --name anaconda-mcp-rc-pyXY \
   --channel 'https://conda.anaconda.org/t/an-19ec59a6-f3b4-4d62-a686-a882d9c1f209/anaconda-connector/' \
   python=X.Y \
   anaconda-mcp=1.0.0.rc.1 \
-  environments-mcp-server=1.0.0.rc.1 \
-  anaconda-connector
+  environments-mcp-server=1.0.0.rc.1
 
 conda activate anaconda-mcp-rc-pyXY
 
-# Verify
+# Verify installed versions (anaconda-connector is a transitive dependency — confirm it resolved)
 anaconda-mcp --help
 conda list | grep -E "anaconda-mcp|environments-mcp|anaconda-connector"
 ```
 
-> **Why `anaconda-connector` is listed without a version**: listing it explicitly (unpinned) tells conda's solver to maximize its version from the channel, rather than letting it be silently pulled in as a transitive dependency at whatever version the RC packages happen to require.
+> **Note on `anaconda-connector`**: it cannot be requested explicitly — it is not published as a standalone package in the configured channels. It is pulled in as a transitive dependency of `anaconda-mcp`. The version resolved is whatever the RC package declares as compatible. Record the version from `conda list` output for traceability.
+>
+> **To lock or reproduce a specific `anaconda-connector` version** — after verifying the installed version is correct, export an exact spec and reuse it:
+> ```bash
+> # Export (includes exact URLs + builds for every package)
+> conda list --explicit -n anaconda-mcp-rc-pyXY > spec-exact.txt
+>
+> # Recreate identical environment on any machine (no solver, fully deterministic)
+> conda create --name anaconda-mcp-rc-pyXY --file spec-exact.txt
+> ```
 
 ---
 
