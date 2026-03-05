@@ -98,34 +98,48 @@ make test-coverage
 
 ---
 
-## Start Server
+## Configure Claude Desktop
 
-### STDIO Mode
+### STDIO Transport (default)
 
-```bash
-anaconda-mcp serve
-```
-
-Configure Claude Desktop for STDIO:
 ```bash
 anaconda-mcp claude-desktop setup-config
-# Restart Claude Desktop
+# Restart Claude Desktop (Cmd+Q, reopen)
 ```
 
-### HTTP Mode
-
-```bash
-# Start server on port 8888 (runs in foreground)
-./tests/qa/_ai_docs/scripts/start-http-server.sh 8888
+Config created:
+```json
+{"command": "/path/to/python", "args": ["-m", "anaconda_mcp", "serve"]}
 ```
+Server auto-starts when Claude Desktop launches.
 
-Configure Claude Desktop for HTTP:
+### HTTP Transport
+
 ```bash
+# Step 1: Configure
 anaconda-mcp claude-desktop setup-config --transport streamable-http --port 8888
-# Restart Claude Desktop
+
+# Step 2: Start server (keep running)
+./tests/qa/_ai_docs/scripts/start-http-server.sh 8888
+
+# Step 3: Restart Claude Desktop (Cmd+Q, reopen)
 ```
 
-Port 8888 is default. Use different port if needed: `./start-http-server.sh 9999`
+Config created:
+```json
+{"url": "http://localhost:8888/mcp", "transport": "streamable-http"}
+```
+Server must be running before Claude Desktop connects.
+
+### Restore STDIO (after HTTP testing)
+
+```bash
+anaconda-mcp claude-desktop setup-config --force
+```
+
+---
+
+## Verify Server
 
 ### Expected Output (both modes)
 

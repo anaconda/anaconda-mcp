@@ -19,7 +19,7 @@
 
 | File | Platform | Flows |
 |------|----------|-------|
-| [TESTS_E2E_CLAUDE.md](./TESTS_E2E_CLAUDE.md) | macOS only | CORE-001, CORE-002, GUARD-001, AUTH-002, REGRESS-001 |
+| [TESTS_E2E_CLAUDE.md](./TESTS_E2E_CLAUDE.md) | macOS only | CORE-001, GUARD-001, AUTH-001, REGRESS-001 |
 | [TESTS_CLI.md](./TESTS_CLI.md) | All platforms | CLI-001 to CLI-005 |
 | [TESTS_CONFIG.md](./TESTS_CONFIG.md) | All platforms | ENV-001 to ENV-004, CFG-001 to CFG-003, PATH-001 to PATH-002 |
 | [TESTS_API_TOOLS.md](./TESTS_API_TOOLS.md) | Win365 first, then CI | TOOL-001 to TOOL-005, ERR-001 to ERR-003 |
@@ -75,10 +75,9 @@
 
 | Flow ID | Name | Features |
 |---------|------|----------|
-| CORE-001 | Full Setup & Tools | 7 features |
-| CORE-002 | HTTP Transport | 3 features |
+| CORE-001 | Full Tools Flow | 6 tools (run with STDIO and HTTP) |
 | GUARD-001 | Guardrails | 3 features |
-| AUTH-002 | Anonymous Mode | 1 feature |
+| AUTH-001 | Anonymous Mode | 2 features |
 | REGRESS-001 | Known Issues | 4 features |
 
 ### TESTS_CLI.md (All platforms)

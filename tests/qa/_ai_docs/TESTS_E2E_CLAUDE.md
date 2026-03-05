@@ -1,38 +1,45 @@
 # E2E Flows - Claude Desktop (macOS Only)
 
-## Overview
-
-End-to-end flows requiring Claude Desktop interaction. Must run manually on macOS.
-
 ## Prerequisites
 
-See [QUICK_START.md](./QUICK_START.md) for installation.
+See [QUICK_START.md](./QUICK_START.md) for:
+- Installation (conda channels or source)
+- Starting server (STDIO or HTTP)
+- Configuring Claude Desktop
+
+**Before each test**: Activate conda environment
+```bash
+conda activate anaconda-mcp-testing
+```
+
+---
+
+## Test Variables
+
+| Variable | Options |
+|----------|---------|
+| Transport | STDIO, HTTP |
+| Python | 3.10, 3.11, 3.12, 3.13 |
+
+Run each test flow with different combinations per [TEST_MATRIX.md](./TEST_MATRIX.md).
 
 ---
 
 ## Flow Summary
 
-| Flow ID | Name | Transport | Priority |
-|---------|------|-----------|----------|
-| CORE-001 | Full Setup & Tools | STDIO | P0 |
-| CORE-002 | Full Setup & Tools | HTTP | P0 |
-| GUARD-001 | Guardrails | Both | P0 |
-| AUTH-001 | Anonymous Mode | Both | P1 |
-| REGRESS-001 | Known Issues | Both | P0 |
+| Flow ID | Name | Priority |
+|---------|------|----------|
+| CORE-001 | Full Tools Flow | P0 |
+| GUARD-001 | Guardrails | P0 |
+| AUTH-001 | Anonymous Mode | P1 |
+| REGRESS-001 | Known Issues | P0 |
 
 ---
 
-## CORE-001: Full Setup & Tools (STDIO)
+## CORE-001: Full Tools Flow
 
-**Purpose**: E2E happy path with STDIO transport.
+**Purpose**: E2E happy path covering all 6 tools.
 
-### Setup
-```bash
-anaconda-mcp claude-desktop setup-config
-# Restart Claude Desktop
-```
-
-### Test
 | Step | Action | Expected |
 |------|--------|----------|
 | 1 | Ask: "List my conda environments" | Uses `conda_list_environments` |
@@ -45,47 +52,20 @@ anaconda-mcp claude-desktop setup-config
 
 ---
 
-## CORE-002: Full Setup & Tools (HTTP)
-
-**Purpose**: E2E happy path with HTTP transport.
-
-### Setup
-```bash
-# Terminal 1: Start server (keeps running)
-./tests/qa/_ai_docs/scripts/start-http-server.sh 8888
-
-# Terminal 2: Configure Claude Desktop
-anaconda-mcp claude-desktop setup-config --transport streamable-http --port 8888
-# Restart Claude Desktop
-```
-
-### Test
-Same as CORE-001 steps 1-6.
-
-### Cleanup
-```bash
-# Stop server (Ctrl+C in Terminal 1)
-anaconda-mcp claude-desktop setup-config  # Restore STDIO
-```
-
----
-
 ## GUARD-001: Guardrails
 
 **Purpose**: Verify guardrail behaviors.
 
-### Setup
-Choose transport:
-- **STDIO**: `anaconda-mcp claude-desktop setup-config`
-- **HTTP**: Start server + `anaconda-mcp claude-desktop setup-config --transport streamable-http --port 8888`
+### Prep
+```bash
+conda create -n guard-test python=3.11 -y
+```
 
-### Test
 | Step | Action | Expected |
 |------|--------|----------|
-| 1 | Create: `conda create -n guard-test python=3.11 -y` | Environment ready |
-| 2 | Ask: "Install nonexistent-package-xyz123 in guard-test" | Error, no pip fallback |
-| 3 | Ask: "Delete guard-test environment" | Claude asks confirmation |
-| 4 | Confirm deletion | Environment removed |
+| 1 | Ask: "Install nonexistent-package-xyz123 in guard-test" | Error, no pip fallback |
+| 2 | Ask: "Delete guard-test environment" | Claude asks confirmation |
+| 3 | Confirm deletion | Environment removed |
 
 ---
 
@@ -93,17 +73,11 @@ Choose transport:
 
 **Purpose**: Test without authentication.
 
-### Setup
+### Prep
 ```bash
-# Clear auth tokens
 anaconda logout 2>/dev/null || true
 ```
 
-Choose transport:
-- **STDIO**: `anaconda-mcp claude-desktop setup-config`
-- **HTTP**: Start server + configure
-
-### Test
 | Step | Action | Expected |
 |------|--------|----------|
 | 1 | Ask: "List my conda environments" | Works with public channels |
@@ -120,39 +94,34 @@ conda remove -n anon-test --all -y
 
 **Purpose**: Regression tests for fixed bugs.
 
-### Setup
-Choose transport (STDIO or HTTP).
+### Prep
+```bash
+conda create -n regress-test python=3.11 -y
+```
 
-### Test
 | Step | Issue | Action | Expected |
 |------|-------|--------|----------|
-| 1 | KI-002 | Create `conda create -n regress-test python=3.11 -y` | - |
-| 2 | KI-002 | Ask: "List my conda environments" | Shows "regress-test" (not "base") |
-| 3 | KI-003 | Ask: "Install numpy in regress-test" | Found by name, installs |
-| 4 | KI-001 | Ask: "Delete regress-test" | Actually deleted |
-| 5 | KI-001 | Verify: `conda env list \| grep regress-test` | Empty (gone) |
+| 1 | KI-002 | Ask: "List my conda environments" | Shows "regress-test" (not "base") |
+| 2 | KI-003 | Ask: "Install numpy in regress-test" | Found by name, installs |
+| 3 | KI-001 | Ask: "Delete regress-test" | Actually deleted |
+| 4 | KI-001 | Run: `conda env list \| grep regress-test` | Empty (gone) |
 
 ---
 
 ## Test Execution Order
 
-### Every PR
-1. REGRESS-001 (both transports)
-2. CORE-001 (STDIO)
-3. GUARD-001
-
-### Release Testing
-4. CORE-002 (HTTP)
-5. AUTH-001
+1. REGRESS-001 - Verify fixed issues first
+2. CORE-001 - Full happy path
+3. GUARD-001 - Guardrails
+4. AUTH-001 - Anonymous mode
 
 ---
 
-## Cleanup Script
+## Cleanup
 
 ```bash
 conda remove -n e2e-test --all -y 2>/dev/null
 conda remove -n guard-test --all -y 2>/dev/null
 conda remove -n regress-test --all -y 2>/dev/null
 conda remove -n anon-test --all -y 2>/dev/null
-anaconda-mcp claude-desktop setup-config  # Restore STDIO
 ```
