@@ -1,4 +1,6 @@
-# E2E Flows - Claude Desktop (macOS Only)
+# E2E Flows (macOS Only)
+
+> **Clients**: Claude Desktop (STDIO) or Cursor (HTTP). See [TEST_MATRIX.md](./TEST_MATRIX.md) for transport/client mapping.
 
 ## Prerequisites
 
@@ -11,7 +13,7 @@ Record the configuration you are testing:
 | Setting | Your Value |
 |---------|------------|
 | Python version | _______ (3.10, 3.11, 3.12, or 3.13) |
-| Transport mode | _______ (STDIO or HTTP) |
+| Transport mode | STDIO (HTTP not supported with Claude Desktop - see KI-009) |
 | anaconda-mcp version | _______ (run: `conda list \| grep anaconda-mcp`) |
 | environments-mcp-server version | _______ (run: `conda list \| grep environments-mcp`) |
 
@@ -22,14 +24,21 @@ See [TEST_MATRIX.md](./TEST_MATRIX.md) for recommended combinations.
 Follow [QUICK_START.md](./QUICK_START.md):
 
 1. Install from conda channels OR source (Option A or B)
-2. Configure Claude Desktop for your transport mode
+2. Configure your client:
 
-**For STDIO transport:**
-3. Restart Claude Desktop (Cmd+Q, then reopen)
+**For STDIO (Claude Desktop)**:
+```bash
+anaconda-mcp claude-desktop setup-config
+# Restart Claude Desktop (Cmd+Q, then reopen)
+```
 
-**For HTTP transport:**
-3. Start the server manually first (`./scripts/start-http-server.sh 8888`)
-4. Then restart Claude Desktop (Cmd+Q, then reopen)
+**For HTTP (Cursor)**:
+```bash
+# Start server first
+./tests/qa/_ai_docs/scripts/start-http-server.sh 8888
+# Add config to ~/.cursor/mcp.json (see QUICK_START.md)
+# Restart Cursor
+```
 
 ### 3. Verify Ready State
 

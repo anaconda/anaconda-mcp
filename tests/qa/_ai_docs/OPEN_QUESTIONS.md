@@ -20,25 +20,17 @@ Questions requiring product owner decision before finalizing test scope and prio
 **Current assumption**: Option A (conda channels, latest release)
 ---
 
-## Q2: E2E Claude Desktop Platform
+## Constraints (FYI)
 
-**Question**: Which platform for E2E Claude Desktop testing?
+### Platform and Transport/Client Constraints
+- **E2E testing**: macOS only (Claude Desktop and Cursor are available on macOS only)
+    - Claude Desktop OR Cursor for STDIO transport
+    - Cursor for HTTP transport [Claude Desktop does not support HTTP transport - KI-009](./KNOWN_ISSUES.md#ki-009-claude-desktop-does-not-support-http-transport)
 
-| Option | Platform |
-|--------|----------|
-| A | macOS only |
-
-**Current assumption**: Option A (macOS only)
-
-**Context**:
-- Claude Desktop is available on macOS only
-- No alternative platforms available for E2E Claude flows
-
-**Note**: This is a constraint, not a choice. Included for documentation completeness.
 
 ---
 
-## Q3: CLI/API/Config Platform Coverage
+## Q2: CLI/API/Config Platform Coverage
 
 **Question**: Which platforms for CLI, API tools, and config testing?
 
@@ -51,34 +43,15 @@ Questions requiring product owner decision before finalizing test scope and prio
 **Current assumption**: Option B (macOS + Windows)
 
 **Context**:
-- These tests don't require Claude Desktop
+- These tests don't require Claude Desktop or Cursor
 - Win365 available for Windows testing
-- Linux available via GitHub runners
+- Linux available via GitHub runners (to use this option, tests should be automated - technically possible, but we might have lack of time. What's priority for Linux?)
 
 **Impact**: Cross-platform compatibility verification.
 
 ---
 
-## Q4: Transport Mode Coverage
-
-**Question**: Do we need to test both STDIO and HTTP transport modes?
-
-| Option | Transport |
-|--------|-----------|
-| A | STDIO only (default) |
-| B | STDIO + HTTP |
-
-**Current assumption**: Option B (both transports)
-
-**Context**:
-- STDIO: Default, auto-spawns with Claude Desktop
-- HTTP: Manual server start, useful for shared/Docker deployments
-
-**Impact**: Each transport doubles E2E test execution time.
-
----
-
-## Q5: Authentication & Related Features
+## Q3: Authentication & Related Features
 
 **Question**: What authentication scope should we test?
 
@@ -112,7 +85,7 @@ Questions requiring product owner decision before finalizing test scope and prio
 
 ---
 
-## Q6: Python Version Coverage
+## Q4: Python Version Coverage
 
 **Question**: Which Python versions must be tested?
 
@@ -136,12 +109,10 @@ Questions requiring product owner decision before finalizing test scope and prio
 
 | Question | Current Assumption | Needs Decision? |
 |----------|-------------------|-----------------|
-| Q1: Installation | Conda channels (latest) | Yes |
-| Q2: E2E Platform | macOS only (constraint) | No |
-| Q3: CLI/API/Config Platform | macOS + Windows | Yes |
-| Q4: Transport | STDIO + HTTP | Yes |
-| Q5: Auth & Related | Option B (Anonymous + Auth basic) | Yes |
-| Q6: Python | Boundaries (3.10, 3.13) | Yes |
+| Q1: Installation Source | Conda channels (latest) | Yes |
+| Q2: CLI/API/Config Platform | macOS + Windows | Yes |
+| Q3: Auth & Related | Option B (Anonymous + Auth basic) | Yes |
+| Q4: Python Version | Boundaries (3.10, 3.13) | Yes |
 
 ---
 
@@ -150,10 +121,9 @@ Questions requiring product owner decision before finalizing test scope and prio
 | Date | Question | Decision | Rationale |
 |------|----------|----------|-----------|
 | ___ | Q1 | ___ | ___ |
+| ___ | Q2 | ___ | ___ |
 | ___ | Q3 | ___ | ___ |
 | ___ | Q4 | ___ | ___ |
-| ___ | Q5 | ___ | ___ |
-| ___ | Q6 | ___ | ___ |
 
 ---
 

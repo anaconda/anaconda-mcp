@@ -129,6 +129,32 @@ But this command starts server in **STDIO mode**, not HTTP mode. Claude Desktop 
 
 ---
 
+### KI-009: Claude Desktop Does Not Support HTTP Transport
+**Status**: By Design (Not a bug)
+**Severity**: N/A - Use Cursor for HTTP testing
+**Description**: Claude Desktop only supports STDIO transport. The `url`/`transport` config format is not supported.
+
+**Evidence**:
+- Official MCP quickstart only shows STDIO examples: https://modelcontextprotocol.io/quickstart/user
+- Claude Desktop "Remote servers" feature uses OAuth/cloud, not direct HTTP: https://support.claude.com/en/articles/11175166-getting-started-with-custom-connectors-using-remote-mcp
+- MCP clients page doesn't list transport support per client: https://modelcontextprotocol.io/clients
+
+**Observed behavior**: Claude Desktop crashes with `TypeError: Cannot read properties of undefined (reading 'value')` when config contains:
+```json
+{
+  "anaconda-mcp": {
+    "url": "http://localhost:8888/mcp",
+    "transport": "streamable-http"
+  }
+}
+```
+
+**Solution**:
+- **Claude Desktop**: Use STDIO transport only
+- **HTTP transport testing**: Use **Cursor** (confirmed working) or direct API calls (curl)
+
+---
+
 ## Setup Quirks
 
 ### SQ-001: Claude Desktop Capability Setting

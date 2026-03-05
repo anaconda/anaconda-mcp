@@ -115,25 +115,35 @@ Server auto-starts when Claude Desktop launches.
 
 ### HTTP Transport
 
+> **Note [KI-009]**: Claude Desktop does not support HTTP transport. Use **Cursor** or direct API calls for HTTP testing. See [KNOWN_ISSUES.md](./KNOWN_ISSUES.md#ki-009-claude-desktop-does-not-support-http-transport).
+
+**Step 1: Start HTTP server**
 ```bash
-# Step 1: Configure
-anaconda-mcp claude-desktop setup-config --transport streamable-http --port 8888
-
-# Step 2: Start server (keep running)
-# NOTE: Ignore the command suggested by CLI - it's incorrect (see KI-008)
-# Use the script instead:
 ./tests/qa/_ai_docs/scripts/start-http-server.sh 8888
-
-# Step 3: Restart Claude Desktop (Cmd+Q, reopen)
 ```
 
-> **Known Issue [KI-008]**: The CLI suggests `anaconda-mcp serve --port 8888` but this starts in STDIO mode. The `serve` command has no `--transport` flag - HTTP mode requires a config file. Use the script above. See [KNOWN_ISSUES.md](./KNOWN_ISSUES.md#ki-008-http-setup-suggests-wrong-server-command).
+**Step 2: Configure client**
 
-Config created:
+**Option A - Cursor** (recommended for E2E, see [KI-009](./KNOWN_ISSUES.md#ki-009-claude-desktop-does-not-support-http-transport)):
+Add to `~/.cursor/mcp.json`:
 ```json
-{"url": "http://localhost:8888/mcp", "transport": "streamable-http"}
+{
+  "mcpServers": {
+    "anaconda-mcp": {
+      "url": "http://localhost:8888/mcp",
+      "transport": "streamable-http"
+    }
+  }
+}
 ```
-Server must be running before Claude Desktop connects.
+Then restart Cursor.
+
+**Option B - API testing** (curl):
+```bash
+curl -X POST http://localhost:8888/mcp \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}'
+```
 
 ### Restore STDIO (after HTTP testing)
 

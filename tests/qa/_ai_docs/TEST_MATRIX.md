@@ -2,13 +2,13 @@
 
 ## Available Resources
 
-| Resource | OS | Claude Desktop | Python |
-|----------|-----|----------------|--------|
-| QA Engineer 1 | macOS | Yes | Can install any |
-| QA Engineer 2 | macOS | Yes | Can install any |
-| QA Engineer 3 (?) | macOS | Yes | Can install any |
-| Win365 | Windows | No | Can install any |
-| GitHub Runners | Linux/Windows | No | CI matrix |
+| Resource | OS | Claude Desktop | Cursor | Python |
+|----------|-----|----------------|--------|--------|
+| QA Engineer 1 | macOS | Yes | Yes | Can install any |
+| QA Engineer 2 | macOS | Yes | Yes | Can install any |
+| QA Engineer 3 (?) | macOS | Yes | Yes | Can install any |
+| Win365 | Windows | No | No | Can install any |
+| GitHub Runners | Linux/Windows | No | No | CI matrix |
 
 ## Supported Versions
 
@@ -18,25 +18,32 @@
 | Transport | STDIO, HTTP |
 | OS | Linux, macOS, Windows |
 
+## Transport / Client Matrix
+
+| Transport | Claude Desktop | Cursor | API (curl) |
+|-----------|----------------|--------|------------|
+| STDIO | Yes | Yes | N/A |
+| HTTP | **No** (KI-009) | Yes | Yes |
+
+> **Note**: Claude Desktop only supports STDIO transport. HTTP transport testing requires Cursor or direct API calls.
+
 ---
 
 ## Phase 1: Manual Testing (2 QA Engineers)
 
-### E2E Claude Tests (macOS only)
+### E2E Tests (macOS only)
 
-Both QAs run E2E with different combinations:
+| QA | Client | Python | Transport | Document |
+|----|--------|--------|-----------|----------|
+| QA 1 | Claude Desktop | 3.10 | STDIO | TESTS_E2E_CLAUDE.md |
+| QA 2 | Cursor | 3.11 | HTTP | TESTS_E2E_CLAUDE.md |
 
-| QA | Python | Transport | Document |
-|----|--------|-----------|----------|
-| QA 1 | 3.10 | STDIO | TESTS_E2E_CLAUDE.md |
-| QA 2 | 3.11 | HTTP | TESTS_E2E_CLAUDE.md |
-
-**Coverage**: 2 Python versions + 2 transports
+**Coverage**: 2 Python versions + 2 transports + 2 clients
 
 **Optional (if 3rd QA or time)**:
-| QA | Python | Transport |
-|----|--------|-----------|
-| QA 3 | 3.13 | STDIO |
+| QA | Client | Python | Transport |
+|----|--------|--------|-----------|
+| QA 3 | Claude Desktop | 3.13 | STDIO |
 
 ### CLI, Config, API-Tools Tests
 
@@ -53,16 +60,16 @@ Split across platforms for OS coverage:
 
 ## Phase 1 Summary
 
-| What | Who | Where | Python | Transport |
-|------|-----|-------|--------|-----------|
-| E2E STDIO | QA 1 | macOS | 3.10 | STDIO |
-| E2E HTTP | QA 2 | macOS | 3.11 | HTTP |
-| CLI + Config | QA 1 | macOS | 3.10 | - |
-| CLI + Config + API Tools | QA 2 | Win365 | 3.11 | - |
+| What | Who | Where | Client | Python | Transport |
+|------|-----|-------|--------|--------|-----------|
+| E2E STDIO | QA 1 | macOS | Claude Desktop | 3.10 | STDIO |
+| E2E HTTP | QA 2 | macOS | Cursor | 3.11 | HTTP |
+| CLI + Config | QA 1 | macOS | - | 3.10 | - |
+| CLI + Config + API Tools | QA 2 | Win365 | - | 3.11 | - |
 
 **Total coverage from Phase 1**:
 - ✅ Python 3.10, 3.11
-- ✅ STDIO, HTTP transport
+- ✅ STDIO (Claude Desktop), HTTP (Cursor) transport
 - ✅ macOS, Windows
 - ✅ All test types
 
