@@ -5,7 +5,7 @@
 
 | File | Platform | Flows |
 |------|----------|-------|
-| [TESTS_E2E.md](./TESTS_E2E.md) | macOS only | CORE-001, GUARD-001, AUTH-001, AUTH-002, REGRESS-001 |
+| [TESTS_E2E.md](./TESTS_E2E.md) | macOS, Windows | CORE-001, GUARD-001, AUTH-001, AUTH-002, REGRESS-001, REGRESS-002 |
 | [TESTS_CLI.md](./TESTS_CLI.md) | All platforms | CLI-001 to CLI-004 |
 | [TESTS_CONFIG.md](./TESTS_CONFIG.md) | All platforms | ENV-001 to ENV-004, CFG-001 to CFG-003, PATH-001 to PATH-002 |
 | [TESTS_API_TOOLS.md](./TESTS_API_TOOLS.md) | Win365 first, then CI | TOOL-001 to TOOL-006, ERR-001 to ERR-005 |
@@ -19,7 +19,7 @@
 | **Environment Management** | List Environments | AI: "List my conda environments" | CORE-001, TOOL-001 |
 | | List Environment Packages | AI: "What packages are in env X?" | CORE-001, TOOL-005 |
 | | Create Environment | AI: "Create env with Python 3.11" | CORE-001, TOOL-002, ERR-001 |
-| | Remove Environment | AI: "Delete environment X" | CORE-001, GUARD-001, TOOL-006, ERR-002 |
+| | Remove Environment | AI: "Delete environment X" | CORE-001, GUARD-001, TOOL-006, ERR-002, REGRESS-002 |
 | | Install Packages | AI: "Install numpy in env X" | CORE-001, GUARD-001, TOOL-003, ERR-003 |
 | | Remove Packages | AI: "Remove pandas from env X" | CORE-001, TOOL-004 |
 | **Server Management** | Start Server | `anaconda-mcp serve --port 8888` | CLI-002 |

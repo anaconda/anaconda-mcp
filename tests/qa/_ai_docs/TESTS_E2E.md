@@ -187,6 +187,8 @@ conda create -n regress-remove-test python=3.11 -y
 
 **Purpose**: Verify that `conda_remove_environment` resolves the correct prefix when called by name — not the prefix of a misclassified "base" environment.
 
+**Coverage scope**: Run in **two configurations only** (see TEST_MATRIX.md — Regression Tests section). The bug is in server-side prefix resolution logic, not transport- or client-specific; the API regression test covers the remaining combinations.
+
 **API regression test**: `test_ki003_remove_environment_by_name`
 
 #### Prep

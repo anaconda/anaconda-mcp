@@ -64,6 +64,15 @@
 | QA 2 | macOS | Cursor | 3.10 | HTTP | TESTS_E2E.md |
 | QA 3 | Windows | Claude Desktop | 3.10 | STDIO | TESTS_E2E.md |
 
+### Regression Tests (Known Issues)
+
+Run as part of the scheduled E2E session for that configuration — no extra setup.
+
+| Test | QA | Config | Rationale |
+|------|----|--------|-----------|
+| REGRESS-002 (KI-003) | QA 2 | Cursor, HTTP, 3.13 | Confirmed reproduction environment |
+| REGRESS-002 (KI-003) | QA 1 | Claude Desktop, STDIO, 3.10 | STDIO transport + 3.10 boundary |
+
 ### CLI, Config, API-Tools Tests
 
 Owned by QA 2, split across platforms for OS coverage:
@@ -158,6 +167,7 @@ After manual testing passes, automate on CI runners:
 E2E — Claude Desktop, STDIO, all Python versions:
 [ ] 1. Install Python 3.10 (anaconda-mcp=1.0.0.rc.1, environments-mcp-server=1.0.0.rc.1)
 [ ]    Run TESTS_E2E.md — Claude Desktop, STDIO — AUTH-001 + AUTH-002
+[ ]    Run REGRESS-002 (KI-003) — see TESTS_E2E.md
 
 [ ] 2. Install Python 3.11 (same versions)
 [ ]    Run TESTS_E2E.md — Claude Desktop, STDIO — AUTH-001 + AUTH-002
@@ -178,6 +188,7 @@ E2E — Cursor, STDIO (different client, same Python 3.13 env):
 macOS — E2E:
 [ ] 1. Install Python 3.13 (anaconda-mcp=1.0.0.rc.1, environments-mcp-server=1.0.0.rc.1)
 [ ]    Run TESTS_E2E.md — Cursor, HTTP — AUTH-001 + AUTH-002
+[ ]    Run REGRESS-002 (KI-003) — see TESTS_E2E.md
 
 macOS — Low-level (Python 3.10):
 [ ] 2. Install Python 3.10 (same versions)

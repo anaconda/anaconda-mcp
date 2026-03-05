@@ -56,15 +56,44 @@ Issues documented from internal testing conversations (Feb 2026).
 
 ---
 
-### KI-003: Package Install Requires Path Instead of Name
-**Status**: Open
-**Severity**: Medium
-**Description**: MCP could not find specific environment by name. Had to search by path.
-**Reproduction**: Try to install package specifying environment by name only.
-**Test Case**:
-- [ ] Install package using environment name
-- [ ] Install package using environment path
-- [ ] Compare behavior
+### KI-003: Environment Operations Fail by Name — Wrong Prefix Resolved
+**Status**: Open (Bug)
+**Severity**: High
+**Version**: 1.0.0rc1
+**Regression test**: `tests/qa/api_tools/test_env_name_resolution.py::TestEnvironmentNameResolution::test_ki003_remove_environment_by_name`
+**Related**: KI-002 (misclassified "base" environment is the root cause)
+
+**Description**: `conda_remove_environment(environment_name="<name>")` — and other tools that accept a name — resolve the wrong prefix for the target environment and return `"Conda environment not found"` even though the environment exists. Only passing the full `prefix` path works as a workaround.
+
+**Root cause**: The `environments-mcp-server` subprocess runs inside its own conda environment (e.g. `anaconda-mcp-rc-py313` at `/opt/miniconda3/envs/anaconda-mcp-rc-py313`). Due to KI-002, that environment is misclassified as "base". When a tool resolves a named environment it constructs the prefix as `<base>/envs/<name>` — but `<base>` is incorrectly set to the server's own environment path, not the real conda root. The resulting prefix (`/opt/miniconda3/envs/anaconda-mcp-rc-py313/envs/<name>`) does not exist, so `EnvironmentLocationNotFound` is raised.
+
+**Example**:
+```
+# Requested:  conda_remove_environment(environment_name="guard-env-remove-test")
+# Resolved:   /opt/miniconda3/envs/anaconda-mcp-rc-py313/envs/guard-env-remove-test  ← WRONG
+# Correct:    /opt/miniconda3/envs/guard-env-remove-test
+```
+
+**Expected behavior**: The tool resolves the correct prefix from `conda env list` (or equivalent), finds `/opt/miniconda3/envs/guard-env-remove-test`, and removes it successfully. Single tool call, `is_error: false`.
+
+**Observed behavior**: `is_error: true` — `"Conda environment not found. Perhaps wrong name or prefix? Details: ('conda:environment:not-found', 'requested conda environment not found: prefix=\"/opt/miniconda3/envs/anaconda-mcp-rc-py313/envs/guard-env-remove-test\"', ...)"`.
+The LLM then self-recovers: calls `conda_list_environments`, retries with the full prefix — resulting in 3+ tool calls instead of 1.
+
+**Affected tools**: Any tool that resolves `environment_name → prefix` using `context.target_prefix`. Confirmed on `conda_remove_environment`; likely affects `conda_install_packages`, `conda_remove_packages`, `conda_list_environment_packages`.
+
+**Observed on**:
+
+| Client | Transport | Python | Result |
+|--------|-----------|--------|--------|
+| Cursor | Streamable HTTP | 3.13 | Confirmed — wrong prefix, `EnvironmentLocationNotFound` |
+| (likely all) | (likely all) | (likely all) | Bug is in prefix resolution logic, not transport/client-specific |
+
+**Workaround**: Pass the full `prefix` path instead of `environment_name`.
+
+**E2E fail symptoms** (see REGRESS-002):
+- First tool call returns `"Conda environment not found"` with wrong prefix in the error details
+- Agent self-recovers with `conda_list_environments` + retry by prefix — 3+ tool calls total
+- Or agent gives up and reports the environment does not exist
 
 ---
 
