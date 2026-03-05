@@ -9,14 +9,12 @@ without an LLM client in the loop. Deterministic and repeatable.
 
 | Test | Bug | Checks |
 |------|-----|--------|
-| `test_err_003a_by_name_error_description` | ERR-003a | `conda_install_packages(environment=<name>)` must report "could not resolve the packages", not "environment not found", when the environment exists |
+| `test_err_003a_by_name_error_description` | ERR-003a | `conda_install_packages(environment=<name>)` must NOT return "environment not found" when the environment exists |
 | `test_err_003a_by_name_returns_error` | ERR-003a | must return `is_error=true` for a nonexistent package (no silent pip fallback) |
-| `test_err_003b_by_prefix_error_description` | ERR-003b (2a) | `conda_install_packages(prefix=<path>)` must report "could not resolve the packages" — not the connector-level CondaError message |
-| `test_err_003b_by_prefix_does_not_hang` | ERR-003b (2b) | must respond within 60 s — a timeout means the synchronous solve blocked the event loop on a cold cache |
-| `test_err_003b_solve_blocks_concurrent_requests` | ERR-003b (2b) | a concurrent `tools/list` must respond in < 1 s while a prefix-based install is running — a delay means the solve is blocking the event loop |
+| `test_err_003b_by_prefix_does_not_hang` | ERR-003b | `conda_install_packages(prefix=<path>)` must respond within 60 s |
 
-All bugs were reproduced on 2026-03-05 (macOS, Streamable HTTP, Python 3.13,
-Cursor client). See [Root Cause Analysis](#root-cause-analysis) below.
+Both bugs reproduced on 2026-03-05, macOS, `environments-mcp-server 1.0.0rc1`.
+See [Root Cause Analysis](#root-cause-analysis) below.
 
 ---
 
@@ -28,74 +26,25 @@ File: `tools/environments/install_packages.py`
 ### ERR-003a — False "environment not found" when called by name
 
 **Symptom:** `conda_install_packages(environment="<name>", ...)` returns
-`"The environment was not found"` even though the environment exists and the
-real problem is that the requested package is not available.
+`"The environment was not found"` even though the environment exists. The
+misleading error causes the LLM to list environments and retry by prefix,
+producing extra tool calls.
 
-**Root cause:** `anaconda_connector_conda` creates a fresh
-`Context(search_path=())` (empty search path) for every call via
-`local_context.py`. With an empty search path conda's context does not populate
-`envs_dirs`, so `context.target_prefix` raises
-`conda.exceptions.EnvironmentLocationNotFound` when trying to resolve the
-environment name — **before the solver is ever invoked**. The handler at
-`install_packages.py:93` catches this and returns the wrong error.
+**Root cause:** `anaconda_connector_conda` creates a `Context(search_path=())`
+for every call. With an empty search path conda does not populate `envs_dirs`,
+so `context.target_prefix` raises `EnvironmentLocationNotFound` before the
+solver is invoked. `install_packages.py:93` catches this and returns the wrong
+error.
 
-The handler at line 100 (`except conda_exceptions.ResolvePackageNotFound`) is
-not implicated in ERR-003a. The env resolution fails earlier; the solver path
-is never reached.
+### ERR-003b — Indefinite hang when called by prefix
 
-### ERR-003b — Two independent sub-defects when called by prefix
+**Symptom:** `conda_install_packages(prefix=<path>, ...)` never returns. The
+MCP session goes silent and does not recover until the SSE stream times out
+(~5 min).
 
-Calling by prefix bypasses the name-resolution step, so the context issue does
-not apply. The solver is invoked directly — which exposes two further defects.
-
-#### 2a — Dead code / wrong error path
-
-**Symptom:** the returned `error_description` does not say
-"Could not resolve the packages" — it contains a connector-level message.
-
-**Root cause:** the connector (`transactions/env/base.py:202`) catches
-`conda.exceptions.ResolvePackageNotFound` internally and re-raises it as
-`PackageNotFoundError` (a `CondaError` subclass). By the time this exception
-reaches `install_packages.py`, it is already a `CondaError`, so it bypasses:
-
-```python
-except conda_exceptions.ResolvePackageNotFound:   # line 100 — DEAD CODE
-    return "Could not resolve the packages"        # never reached
-```
-
-and is caught by the generic handler at line 112 instead:
-
-```python
-except CondaError as ex:
-    error_msg = str(ex)   # connector-level message, not "Could not resolve…"
-```
-
-The handler at line 100 is **unreachable dead code for any call path** — name
-or prefix — because the connector always wraps the exception before it arrives
-at `install_packages.py`.
-
-#### 2b — Synchronous solve blocks the event loop
-
-**Symptom:** on a cold repodata cache the server becomes unresponsive to all
-concurrent requests for the duration of the conda solve, manifesting as an
-apparent hang from the client's perspective.
-
-**Root cause:** `InstallTransaction.prepare()` accesses `self._status`
-synchronously (before any `await`). `_status` is a `cached_property` that
-accesses `self.unlink_link_transaction`, which calls
-`solver.solve_for_transaction()` directly **on the async event loop thread** —
-not inside `asyncio.to_thread`. The `asyncio.to_thread(execute)` call at
-`base.py:151` only wraps the transaction execution phase, which is never reached
-for a nonexistent package. On a cold repodata cache the solver blocks on
-network I/O, starving the event loop of the ability to process any other
-request until the solve completes or the SSE session times out.
-
-### Why both defects appear together in GUARD-001
-
-ERR-003a's misleading "environment not found" causes the LLM to retry the
-installation using the prefix (interpreting the error as a misconfiguration).
-The retry triggers ERR-003b. Without ERR-003a the prefix call would not normally
-occur.
+**Observed on:** Cursor / Streamable HTTP / Python 3.13.
+**Not observed on:** Claude Desktop / STDIO / Python 3.10.
+**Root cause:** not identified.
 
 ---
 
@@ -251,18 +200,11 @@ Open in any browser. The report includes:
 
 ## Expected results
 
-| Test | Bug present | Bug fixed |
-|------|-------------|-----------|
+| Test | ERR-003a present | ERR-003a fixed |
+|------|------------------|----------------|
 | `test_err_003a_by_name_error_description` | **FAIL** | PASS |
 | `test_err_003a_by_name_returns_error` | PASS | PASS |
-| `test_err_003b_by_prefix_error_description` | **FAIL** | PASS |
-| `test_err_003b_by_prefix_does_not_hang` | **FAIL** (timeout, cold cache) / PASS (warm cache) | PASS |
-| `test_err_003b_solve_blocks_concurrent_requests` | **FAIL** (cold cache only) / PASS (warm cache) | PASS |
-
-> **Cache note:** tests tagged "cold cache only" require the repodata cache to
-> be cleared (`conda clean --all`) before the run to reliably fail. With warm
-> cache the solve completes in < 100 ms and the timing-based assertions cannot
-> detect the block.
+| `test_err_003b_by_prefix_does_not_hang` | PASS | PASS |
 
 ---
 

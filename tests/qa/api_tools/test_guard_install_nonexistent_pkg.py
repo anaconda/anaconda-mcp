@@ -1,43 +1,27 @@
 """
 Regression tests: GUARD-001-API
 
-Covers bugs in environments_mcp_server/tools/environments/install_packages.py
-triggered by GUARD-001 Step 1 ("Install nonexistent-package-xyz123 in guard-test").
+Covers the confirmed defect in
+environments_mcp_server/tools/environments/install_packages.py triggered by
+GUARD-001 Step 1 ("Install nonexistent-package-xyz123 in guard-test").
 
-── ERR-003a ────────────────────────────────────────────────────────────────────
-False "environment not found" when called by name.
-
-Root cause: anaconda_connector_conda creates a stripped Context(search_path=())
+── ERR-003a — false "environment not found" when called by name ─────────────────
+anaconda_connector_conda creates a Context(search_path=()) (empty search path)
 for each call. With an empty search path conda's context does not populate
 envs_dirs, so context.target_prefix raises EnvironmentLocationNotFound when
-resolving the environment name — before the solver is ever invoked. The
-install_packages.py handler at line 93 catches this and returns the wrong error.
+resolving the environment name — before the solver is ever invoked.
+install_packages.py:93 catches this and returns the wrong error.
 
-── ERR-003b ────────────────────────────────────────────────────────────────────
-Two independent sub-defects when called by prefix:
+Side-effect: the misleading "environment not found" causes the LLM to list
+environments, find the prefix, and retry by prefix — producing extra tool calls.
 
-  2a — Dead code / wrong error path (always reproducible):
-       The connector (transactions/env/base.py:202) catches
-       conda.exceptions.ResolvePackageNotFound internally and re-raises it as
-       PackageNotFoundError(CondaError). This wrapped exception bypasses
-       install_packages.py:100 (except conda_exceptions.ResolvePackageNotFound)
-       entirely — that handler is unreachable dead code for any call path.
-       The error falls to the generic CondaError handler at line 112, returning
-       a connector-level message instead of "Could not resolve the packages".
+Note: the handler at install_packages.py:100 (except ResolvePackageNotFound)
+is unreachable dead code. The connector intercepts ResolvePackageNotFound and
+re-raises it as PackageNotFoundError(CondaError) before it reaches this file.
 
-  2b — Synchronous solve blocks event loop (reproduces on cold repodata cache):
-       InstallTransaction.prepare() accesses self._status synchronously before
-       any await. _status accesses self.unlink_link_transaction (cached_property)
-       which calls solver.solve_for_transaction() directly on the event loop
-       thread. asyncio.to_thread() is only used for the execute phase (line 151),
-       which is never reached for a nonexistent package. On a cold repodata cache
-       the network fetch blocks the event loop, making the server unresponsive
-       to all concurrent requests until the solve completes or the SSE times out.
-
-── Why both defects appear together in the GUARD-001 session ───────────────────
-ERR-003a's misleading "environment not found" causes the LLM to retry using
-the prefix. The retry triggers ERR-003b. Without ERR-003a, the prefix call
-would not normally occur.
+── ERR-003b — indefinite hang when called by prefix ─────────────────────────────
+Reproduced on Cursor / Streamable HTTP / Python 3.13.
+Not observed on Claude Desktop / STDIO / Python 3.10.
 
 Reproduced: 2026-03-05, macOS, Streamable HTTP, Python 3.13, Cursor client.
 See tests/qa/api_tools/README.md for setup and usage.
