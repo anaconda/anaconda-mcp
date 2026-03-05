@@ -208,6 +208,39 @@ But this command starts server in **STDIO mode**, not HTTP mode. Claude Desktop 
 
 ---
 
+### KI-011: Cursor Chat Hangs When an MCP Tool Returns an Error
+
+**Status**: Open (Cursor-side bug — not an Anaconda MCP issue)
+**Severity**: Medium (workaround: start a new chat session)
+**Observed**: Twice during internal testing (Feb–Mar 2026), two different tools (one-time occasional cases, non-reproducible with same configuration by next attempts)
+
+**Description**: After an MCP tool call returns an error response, the Cursor chat panel stops responding — no further output, no error displayed, the session simply hangs. The same prompt in a fresh session works normally.
+
+**Root cause**: This is a **Cursor UI state machine bug**. Cursor's frontend gets stuck in a *"waiting for tool response"* state and does not properly process or surface error responses returned by the MCP server. The MCP server itself has already returned a valid (error) response; Cursor never acknowledges it.
+
+This is a well-documented, recurring issue across multiple unrelated MCP servers and Cursor versions.
+
+**Observed pattern**:
+1. Tool is called → MCP server returns an error
+2. Cursor chat shows "Generating…" or "Running…" indefinitely
+3. No error is surfaced in the chat
+4. Starting a new chat session with the same prompt and config works fine
+
+**Workaround**: Start a new chat session. If the hang persists, reload the Cursor window (`Cmd+Shift+P` → *Reload Window*) or temporarily disable and re-enable the MCP server in *Cursor Settings → Tools & MCP*.
+
+**How to check MCP logs during a hang**: Bottom Pane → Output → select **MCP** from the dropdown.
+
+**Cursor forum references**:
+- [Cursor not handling long-running MCP tool responses](https://forum.cursor.com/t/cursor-not-handling-long-running-mcp-tool-responses/124718) — Cursor engineer confirmed the bug; a 30 s timeout was removed as a partial fix
+- [Chat frequently stuck / not responding](https://forum.cursor.com/t/chat-frequently-stuck-not-responding/148975)
+- [Cursor freezes/crashes when attempting to use an MCP server](https://forum.cursor.com/t/cursor-freezes-crashes-when-attempting-to-use-an-mcp-server/152332)
+- [Cursor doesn't cancel long-running MCP tool](https://forum.cursor.com/t/cursor-doesn-t-cancel-long-running-mcp-tool/134079) — Cancel button does not send MCP cancellation; tool keeps running on the server
+- [IDE hangs after automatic MCP browser test](https://forum.cursor.com/t/ide-hangs-after-automatic-mcp-browser-test/148923)
+
+**Note on KI-010**: The isolated hang observed under KI-010 (*Note on hanging*) is consistent with this Cursor-side bug.
+
+---
+
 ## Troubleshooting
 
 ### Accessing MCP server logs
