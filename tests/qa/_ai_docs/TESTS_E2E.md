@@ -87,13 +87,21 @@ If this doesn't work, troubleshoot per [KNOWN_ISSUES.md](./KNOWN_ISSUES.md#troub
 ### Prep
 ```bash
 conda create -n guard-test python=3.11 -y
+conda env list | grep guard-test        # note the prefix path for Step 1b
+# or: conda info -e | grep guard-test
 ```
 
 | Step | Action | Expected |
 |------|--------|----------|
-| 1 | Ask: "Install nonexistent-package-xyz123 in guard-test" | Error, no pip fallback |
-| 2 | Ask: "Delete guard-test environment" | Claude asks confirmation |
+| 1a | Ask: "Install nonexistent-package-xyz123 in guard-test" | Error, no pip fallback |
+| 1b | New conversation. Ask: "Install nonexistent-package-xyz123 in `<prefix>`" | Error, no pip fallback |
+| 2 | Ask: "Delete guard-test environment" | Client asks confirmation |
 | 3 | Confirm deletion | Environment removed |
+
+### Cleanup
+```bash
+conda remove -n guard-test --all -y 2>/dev/null
+```
 
 ---
 
