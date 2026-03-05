@@ -106,6 +106,32 @@ anaconda-mcp serve --config /tmp/http-config.toml
 
 ---
 
+### KI-008: HTTP Setup Suggests Wrong Server Command
+**Status**: Open (Bug)
+**Severity**: High
+**Version**: 1.0.0.rc.1
+**Description**: When running `anaconda-mcp claude-desktop setup-config --transport streamable-http --port 8888`, the CLI suggests:
+```
+Start the server manually: anaconda-mcp serve --port 8888
+```
+But this command starts server in **STDIO mode**, not HTTP mode. Claude Desktop cannot connect.
+
+**Correct command**:
+```bash
+anaconda-mcp serve --transport streamable-http --port 8888
+```
+
+**Or use config file** (recommended):
+```bash
+./tests/qa/_ai_docs/scripts/start-http-server.sh 8888
+```
+
+**Root cause**: `src/anaconda_mcp/cli.py:293` missing `--transport streamable-http` in suggested command.
+
+**Workaround**: Use the script or add `--transport streamable-http` manually.
+
+---
+
 ## Setup Quirks
 
 ### SQ-001: Claude Desktop Capability Setting

@@ -120,10 +120,14 @@ Server auto-starts when Claude Desktop launches.
 anaconda-mcp claude-desktop setup-config --transport streamable-http --port 8888
 
 # Step 2: Start server (keep running)
+# NOTE: Ignore the command suggested by CLI - it's incorrect (see KI-008)
+# Use the script instead:
 ./tests/qa/_ai_docs/scripts/start-http-server.sh 8888
 
 # Step 3: Restart Claude Desktop (Cmd+Q, reopen)
 ```
+
+> **Known Issue [KI-008]**: The CLI suggests `anaconda-mcp serve --port 8888` but this starts in STDIO mode. Use the script above instead. See [KNOWN_ISSUES.md](./KNOWN_ISSUES.md#ki-008-http-setup-suggests-wrong-server-command).
 
 Config created:
 ```json
