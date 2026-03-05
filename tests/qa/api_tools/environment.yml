@@ -1,0 +1,9 @@
+name: anaconda-mcp-qa
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - python>=3.10
+  - httpx>=0.27
+  - pytest>=7.0
+  - pytest-html>=4.0
