@@ -1,51 +1,10 @@
 # Quick Start
 
-## Option A: Install from Conda Channels
+For general installation options (latest release, specific versions, from source) see [INSTALL_OPTIONS.md](./INSTALL_OPTIONS.md).
 
-**Use when**: Testing a published release version. No codebase needed.
+---
 
-```bash
-# Create environment with all dependencies
-conda create --name anaconda-mcp-testing \
-  -c datalayer \
-  -c anaconda-cloud/label/dev \
-  -c defaults \
-  -c conda-forge \
-  --channel 'https://conda.anaconda.org/t/an-19ec59a6-f3b4-4d62-a686-a882d9c1f209/anaconda-connector/' \
-  anaconda-mcp environments-mcp-server
-
-# Activate
-conda activate anaconda-mcp-testing
-
-# Verify
-anaconda-mcp --help
-
-# Check installed versions
-conda list | grep -E "anaconda-mcp|environments-mcp"
-```
-
-To install specific versions (package and/or Python):
-```bash
-# Specific package versions
-conda create --name anaconda-mcp-testing \
-  -c datalayer \
-  -c anaconda-cloud/label/dev \
-  -c defaults \
-  -c conda-forge \
-  --channel 'https://conda.anaconda.org/t/an-19ec59a6-f3b4-4d62-a686-a882d9c1f209/anaconda-connector/' \
-  anaconda-mcp=0.1.2 environments-mcp-server=0.1.7
-
-# Specific Python version (e.g., 3.10, 3.11, 3.12, 3.13)
-conda create --name anaconda-mcp-py310 \
-  -c datalayer \
-  -c anaconda-cloud/label/dev \
-  -c defaults \
-  -c conda-forge \
-  --channel 'https://conda.anaconda.org/t/an-19ec59a6-f3b4-4d62-a686-a882d9c1f209/anaconda-connector/' \
-  python=3.10 anaconda-mcp environments-mcp-server
-```
-
-### Pinned RC Versions — Current Test Cycle
+## Pinned RC Versions — Current Test Cycle
 
 **Versions under test**:
 - `anaconda-mcp=1.0.0.rc.1`
@@ -70,7 +29,7 @@ conda activate anaconda-mcp-rc-pyXY
 
 # Verify installed versions (anaconda-connector is a transitive dependency — confirm it resolved)
 anaconda-mcp --help
-conda list | grep -E "anaconda-mcp|environments-mcp|anaconda-connector"
+conda list | grep -E "anaconda-mcp|environments-mcp|anaconda-connector|python"
 ```
 
 > **Note on `anaconda-connector`**: it cannot be requested explicitly — it is not published as a standalone package in the configured channels. It is pulled in as a transitive dependency of `anaconda-mcp`. The version resolved is whatever the RC package declares as compatible. Record the version from `conda list` output for traceability.
@@ -83,57 +42,6 @@ conda list | grep -E "anaconda-mcp|environments-mcp|anaconda-connector"
 > # Recreate identical environment on any machine (no solver, fully deterministic)
 > conda create --name anaconda-mcp-rc-pyXY --file spec-exact.txt
 > ```
-
----
-
-## Option B: Install from Source
-
-**Use when**: Testing unpublished code (specific branch/tag/commit) OR running pytest suite.
-
-### Step 1: Clone and Select Version
-
-```bash
-# Clone repository
-git clone git@github.com:anaconda/anaconda-mcp.git
-cd anaconda-mcp
-
-# Option: Use latest main
-git checkout main && git pull
-
-# Option: Use specific tag
-git tag --list
-git checkout v0.1.2
-```
-
-### Step 2: Setup Environment
-
-```bash
-# Add required channels
-conda config --add channels conda-forge
-conda config --add channels datalayer
-conda config --add channels anaconda-cloud/label/dev
-conda config --add channels 'https://conda.anaconda.org/t/an-19ec59a6-f3b4-4d62-a686-a882d9c1f209/anaconda-connector/'
-
-# Create dev environment
-make setup
-conda activate anaconda-mcp-dev
-
-# Verify
-anaconda-mcp --help
-
-# Check installed versions
-conda list | grep -E "anaconda-mcp|environments-mcp"
-```
-
-### Step 3: Run Tests (optional)
-
-```bash
-# Run pytest suite
-make test
-
-# Run with coverage
-make test-coverage
-```
 
 ---
 
