@@ -57,6 +57,13 @@
 
 **Coverage**: All 4 Python versions (via QA 1) + all transports + both clients + macOS & Windows
 
+**Optional** (if time allows):
+
+| QA | OS | Client | Python | Transport | Document |
+|----|-----|--------|--------|-----------|----------|
+| QA 2 | macOS | Cursor | 3.10 | HTTP | TESTS_E2E.md |
+| QA 3 | Windows | Claude Code | 3.10 | STDIO | TESTS_E2E.md |
+
 ### CLI, Config, API-Tools Tests
 
 Owned by QA 2, split across platforms for OS coverage:
