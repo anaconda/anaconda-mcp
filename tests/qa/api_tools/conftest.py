@@ -7,6 +7,7 @@ Provides:
 - Session fixture: mcp_server  (starts / verifies the server)
 - Session fixture: server_url  (the resolved MCP endpoint URL)
 - Module fixture: session_id   (MCP initialize handshake; one per test file)
+- Module fixture: conda_env    (ephemeral conda env; created once per file)
 - HTML report metadata injection
 """
 
@@ -23,6 +24,9 @@ from pathlib import Path
 
 import httpx
 import pytest
+
+from common.constants.test_data import ENV_NAME
+from common.utils.conda_utils import _conda_env_prefix
 
 logger = logging.getLogger(__name__)
 
@@ -236,6 +240,29 @@ def session_id(mcp_server, server_url: str) -> str | None:
         pass
 
     return sid
+
+
+@pytest.fixture(scope="module")
+def conda_env():
+    """
+    Create the guard-api-test conda environment once for the module; remove it after.
+
+    Module-scoped so the environment is shared across all tests in a file but
+    never bleeds into other test files.
+    """
+    logger.info("Creating conda environment '%s'", ENV_NAME)
+    subprocess.run(
+        ["conda", "create", "-n", ENV_NAME, "python=3.11", "-y"],
+        check=True,
+    )
+    prefix = _conda_env_prefix(ENV_NAME)
+    logger.debug("Conda env '%s' prefix: %s", ENV_NAME, prefix)
+    yield {"name": ENV_NAME, "prefix": prefix}
+    logger.info("Removing conda environment '%s'", ENV_NAME)
+    subprocess.run(
+        ["conda", "remove", "-n", ENV_NAME, "--all", "-y"],
+        check=False,
+    )
 
 
 # ---------------------------------------------------------------------------
