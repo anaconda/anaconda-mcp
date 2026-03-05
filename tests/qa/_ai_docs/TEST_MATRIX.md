@@ -62,7 +62,7 @@
 | QA | OS | Client | Python | Transport | Document |
 |----|-----|--------|--------|-----------|----------|
 | QA 2 | macOS | Cursor | 3.10 | HTTP | TESTS_E2E.md |
-| QA 3 | Windows | Claude Code | 3.10 | STDIO | TESTS_E2E.md |
+| QA 3 | Windows | Claude Desktop | 3.10 | STDIO | TESTS_E2E.md |
 
 ### CLI, Config, API-Tools Tests
 
