@@ -127,7 +127,7 @@ anaconda-mcp claude-desktop setup-config --transport streamable-http --port 8888
 # Step 3: Restart Claude Desktop (Cmd+Q, reopen)
 ```
 
-> **Known Issue [KI-008]**: The CLI suggests `anaconda-mcp serve --port 8888` but this starts in STDIO mode. Use the script above instead. See [KNOWN_ISSUES.md](./KNOWN_ISSUES.md#ki-008-http-setup-suggests-wrong-server-command).
+> **Known Issue [KI-008]**: The CLI suggests `anaconda-mcp serve --port 8888` but this starts in STDIO mode. The `serve` command has no `--transport` flag - HTTP mode requires a config file. Use the script above. See [KNOWN_ISSUES.md](./KNOWN_ISSUES.md#ki-008-http-setup-suggests-wrong-server-command).
 
 Config created:
 ```json
