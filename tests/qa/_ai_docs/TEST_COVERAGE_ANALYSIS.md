@@ -5,7 +5,7 @@
 This document analyzes the **existing pytest unit/integration tests** in the codebase (`/tests/`).
 
 For QA test flows (manual + CI automation), see:
-- [TESTS_E2E_CLAUDE.md](./TESTS_E2E_CLAUDE.md) - E2E flows (macOS)
+- [TESTS_E2E.md](./TESTS_E2E.md) - E2E flows (macOS)
 - [TESTS_CLI.md](./TESTS_CLI.md) - CLI flows (all platforms)
 - [TESTS_CONFIG.md](./TESTS_CONFIG.md) - Config tests (all platforms)
 
@@ -16,7 +16,7 @@ For QA test flows (manual + CI automation), see:
 | Type | Location | Purpose |
 |------|----------|---------|
 | **Unit/Integration** | `/tests/*.py` | Developer tests (pytest) |
-| **QA E2E** | `TESTS_E2E_CLAUDE.md` | Manual E2E with Claude Desktop |
+| **QA E2E** | `TESTS_E2E.md` | Manual E2E (Claude Desktop or Cursor) |
 | **QA CLI** | `TESTS_CLI.md` | CLI automation (CI) |
 | **QA Config** | `TESTS_CONFIG.md` | Configuration testing (CI) |
 
@@ -116,7 +116,7 @@ Gaps in pytest coverage are addressed by QA test flows:
 | discover command | CLI-001 |
 | Config env vars | TESTS_CONFIG (ENV-*) |
 | OS path detection | TESTS_CONFIG (PATH-*) |
-| Full E2E flow | TESTS_E2E_CLAUDE |
+| Full E2E flow | TESTS_E2E |
 
 ---
 
@@ -178,4 +178,4 @@ curl http://localhost:8888/mcp ...
 ### For QA
 1. Run TESTS_CLI.md flows in CI (all platforms)
 2. Run TESTS_CONFIG.md flows in CI (all platforms)
-3. Run TESTS_E2E_CLAUDE.md manually on macOS before release
+3. Run TESTS_E2E.md manually on macOS before release

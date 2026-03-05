@@ -1,6 +1,6 @@
 # E2E Flows (macOS Only)
 
-> **Clients**: Claude Desktop (STDIO) or Cursor (HTTP). See [TEST_MATRIX.md](./TEST_MATRIX.md) for transport/client mapping.
+> **Clients**: Claude Desktop (STDIO) or Cursor (HTTP or STDIO). See [TEST_MATRIX.md](./TEST_MATRIX.md) for transport/client assignment per QA.
 
 ## Prerequisites
 
@@ -12,8 +12,9 @@ Record the configuration you are testing:
 
 | Setting | Your Value |
 |---------|------------|
+| Client | _______ (Claude Desktop or Cursor) |
 | Python version | _______ (3.10, 3.11, 3.12, or 3.13) |
-| Transport mode | STDIO (HTTP not supported with Claude Desktop - see KI-009) |
+| Transport mode | _______ (STDIO or HTTP — note: Claude Desktop only supports STDIO, see KI-009) |
 | anaconda-mcp version | _______ (run: `conda list \| grep anaconda-mcp`) |
 | environments-mcp-server version | _______ (run: `conda list \| grep environments-mcp`) |
 
@@ -43,9 +44,9 @@ anaconda-mcp claude-desktop setup-config
 ### 3. Verify Ready State
 
 **All tests start from this state:**
-- Claude Desktop is running
-- Anaconda MCP server is connected (check for tools icon in Claude)
-- You can ask Claude: "List my conda environments" and get a response
+- Your client (Claude Desktop or Cursor) is running
+- Anaconda MCP server is connected (check for tools icon in your client)
+- You can ask: "List my conda environments" and get a response
 
 If this doesn't work, troubleshoot per [KNOWN_ISSUES.md](./KNOWN_ISSUES.md#troubleshooting) before proceeding.
 
@@ -129,10 +130,9 @@ anaconda login
 # Verify logged in
 anaconda whoami
 # [EXPECTED] Shows your username
-
-# Restart Claude Desktop to pick up auth state
-# Cmd+Q, then reopen Claude Desktop
 ```
+
+> Restart your client (Claude Desktop: Cmd+Q then reopen; Cursor: reload window) to pick up the new auth state.
 
 | Step | Action | Expected |
 |------|--------|----------|

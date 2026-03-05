@@ -15,7 +15,7 @@ This documentation serves as the central knowledge base for QA testing of the An
 ### Test Flows (TESTS_* prefix)
 | Document | Description | Platform |
 |----------|-------------|----------|
-| [TESTS_E2E_CLAUDE.md](./TESTS_E2E_CLAUDE.md) | E2E flows requiring Claude Desktop | macOS only |
+| [TESTS_E2E.md](./TESTS_E2E.md) | E2E flows (Claude Desktop or Cursor) | macOS only |
 | [TESTS_CLI.md](./TESTS_CLI.md) | CLI-only flows (automatable) | All platforms |
 | [TESTS_CONFIG.md](./TESTS_CONFIG.md) | Configuration tests (automatable) | All platforms |
 | [TESTS_API_TOOLS.md](./TESTS_API_TOOLS.md) | Direct API tool tests (automatable) | All platforms |
@@ -23,7 +23,7 @@ This documentation serves as the central knowledge base for QA testing of the An
 ### Test Planning
 | Document | Description | Audience |
 |----------|-------------|----------|
-| [E2E_COVERAGE_MAP.md](./E2E_COVERAGE_MAP.md) | Feature to test mapping | QA leads |
+| [COVERAGE_MAP.md](./COVERAGE_MAP.md) | Feature to test case mapping (all test files) | QA leads |
 | [TEST_MATRIX.md](./TEST_MATRIX.md) | OS/Python/Transport matrix | QA leads |
 | [TEST_COVERAGE_ANALYSIS.md](./TEST_COVERAGE_ANALYSIS.md) | Existing pytest coverage analysis | QA leads |
 | [OPEN_QUESTIONS.md](./OPEN_QUESTIONS.md) | Questions for product owner | QA leads, PO |
@@ -54,15 +54,18 @@ Original requirements in `initial_docs/`:
 |------|----------|
 | **Quick Start** | [QUICK_START.md](./QUICK_START.md) |
 | **Full Setup Guide** | [LOCAL_DEV_SETUP.md](./LOCAL_DEV_SETUP.md) |
-| **E2E Tests (macOS)** | [TESTS_E2E_CLAUDE.md](./TESTS_E2E_CLAUDE.md) |
+| **Test Matrix** | [TEST_MATRIX.md](./TEST_MATRIX.md) |
+| **E2E Tests (macOS)** | [TESTS_E2E.md](./TESTS_E2E.md) |
 | **CLI Tests (All Platforms)** | [TESTS_CLI.md](./TESTS_CLI.md) |
 | **Config Tests (All Platforms)** | [TESTS_CONFIG.md](./TESTS_CONFIG.md) |
+| **API Tool Tests (All Platforms)** | [TESTS_API_TOOLS.md](./TESTS_API_TOOLS.md) |
+| **Feature → Test Mapping** | [COVERAGE_MAP.md](./COVERAGE_MAP.md) |
 | **Known Issues** | [KNOWN_ISSUES.md](./KNOWN_ISSUES.md) |
 
 ## Test Flow Organization
 
 ```
-TESTS_E2E_CLAUDE.md   → macOS only (requires Claude Desktop)
+TESTS_E2E.md          → macOS only (Claude Desktop or Cursor)
   ├── CORE-001: Full Tools Flow (run with STDIO and HTTP)
   ├── GUARD-001: Guardrails
   ├── AUTH-001: Anonymous Mode
