@@ -61,6 +61,7 @@ If this doesn't work, troubleshoot per [KNOWN_ISSUES.md](./KNOWN_ISSUES.md#troub
 | AUTH-001 | Anonymous Mode | P1 |
 | AUTH-002 | Authenticated Mode | P1 |
 | REGRESS-001 | Known Issues | P0 |
+| REGRESS-002 | Remove Environment by Name (KI-003) | P0 |
 
 ---
 
@@ -170,6 +171,7 @@ conda remove -n auth-test --all -y
 ### Prep
 ```bash
 conda create -n regress-test python=3.11 -y
+conda create -n regress-remove-test python=3.11 -y
 ```
 
 | Step | Issue | Action | Expected |
@@ -178,6 +180,42 @@ conda create -n regress-test python=3.11 -y
 | 2 | KI-003 | Ask: "Install numpy in regress-test" | Found by name, installs |
 | 3 | KI-001 | Ask: "Delete regress-test" | Actually deleted |
 | 4 | KI-001 | Run: `conda env list \| grep regress-test` | Empty (gone) |
+
+---
+
+### REGRESS-002: Remove Environment by Name (KI-003)
+
+**Purpose**: Verify that `conda_remove_environment` resolves the correct prefix when called by name — not the prefix of a misclassified "base" environment.
+
+**API regression test**: `test_ki003_remove_environment_by_name`
+
+#### Prep
+```bash
+conda create -n regress-remove-test python=3.11 -y
+```
+
+#### Steps
+
+| Step | Action | Expected |
+|------|--------|----------|
+| 1 | Ask: "Delete the regress-remove-test environment" | **Exactly one** `conda_remove_environment` tool call with `environment_name="regress-remove-test"`. Agent confirms deletion. |
+| 2 | Run: `conda env list \| grep regress-remove-test` | Empty (env is gone) |
+
+#### Pass criteria
+
+- **Tool calls**: exactly 1 (`conda_remove_environment` by name). No `conda_list_environments` retry, no second call with `prefix`.
+- **Result**: `is_error: false`, environment removed.
+
+#### Fail symptoms (KI-003 present)
+
+- First tool call returns: `"Conda environment not found"` with wrong prefix in details, e.g. `/opt/miniconda3/envs/anaconda-mcp-rc-py313/envs/regress-remove-test`
+- Agent self-recovers: calls `conda_list_environments`, then retries with `prefix` — 3+ tool calls total
+- Or agent gives up and tells the user the environment doesn't exist
+
+#### Cleanup (if test fails and agent did not remove it)
+```bash
+conda remove -n regress-remove-test --all -y 2>/dev/null
+```
 
 ---
 
@@ -197,5 +235,6 @@ conda create -n regress-test python=3.11 -y
 conda remove -n e2e-test --all -y 2>/dev/null
 conda remove -n guard-test --all -y 2>/dev/null
 conda remove -n regress-test --all -y 2>/dev/null
+conda remove -n regress-remove-test --all -y 2>/dev/null
 conda remove -n anon-test --all -y 2>/dev/null
 ```

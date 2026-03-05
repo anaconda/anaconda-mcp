@@ -12,9 +12,11 @@ without an LLM client in the loop. Deterministic and repeatable.
 | `test_err_003a_by_name_error_description` | KI-010 | `conda_install_packages(environment=<name>)` must NOT return "environment not found" when the environment exists |
 | `test_err_003a_by_name_returns_error` | KI-010 | must return `is_error=true` for a nonexistent package (no silent pip fallback) |
 | `test_err_003b_by_prefix_does_not_hang` | KI-010 | `conda_install_packages(prefix=<path>)` must respond within 60 s |
+| `test_ki002_list_environments_reports_correct_name` | KI-002 | `conda_list_environments` must return the correct name for each env — not "base" for a non-base environment |
+| `test_ki003_remove_environment_by_name` | KI-003 | `conda_remove_environment(environment_name=<name>)` must resolve the correct prefix and remove the env |
 
 Reproduced on 2026-03-05, macOS, `environments-mcp-server 1.0.0rc1`.
-See [KI-010](../_ai_docs/KNOWN_ISSUES.md) in KNOWN_ISSUES.md for details.
+See [KI-002, KI-003, KI-010](../_ai_docs/KNOWN_ISSUES.md) in KNOWN_ISSUES.md for details.
 
 ---
 
@@ -170,11 +172,13 @@ Open in any browser. The report includes:
 
 ## Expected results
 
-| Test | KI-010 present | KI-010 fixed |
-|------|----------------|--------------|
+| Test | Bug present | Bug fixed |
+|------|-------------|-----------|
 | `test_err_003a_by_name_error_description` | **FAIL** | PASS |
 | `test_err_003a_by_name_returns_error` | PASS | PASS |
 | `test_err_003b_by_prefix_does_not_hang` | PASS | PASS |
+| `test_ki002_list_environments_reports_correct_name` | **FAIL** | PASS |
+| `test_ki003_remove_environment_by_name` | **FAIL** | PASS |
 
 ---
 
@@ -187,12 +191,13 @@ tests/qa/api_tools/
 ├── pytest.ini                             ← local config (HTML report, markers)
 ├── .gitignore                             ← ignores reports/*.html and caches
 ├── conftest.py                            ← CLI options, server fixture, HTML metadata, shared fixtures
-├── test_guard_install_nonexistent_pkg.py  ← GUARD-001 regression tests
+├── test_guard_install_nonexistent_pkg.py  ← KI-010 regression tests
+├── test_env_name_resolution.py            ← KI-002, KI-003 regression tests
 ├── common/
 │   ├── constants/
 │   │   ├── config.py                      ← BASE_URL, TOOL_TIMEOUT
 │   │   ├── test_data.py                   ← ENV_NAME, NONEXISTENT_PKG
-│   │   └── mcp_tools.py                   ← Tools, InstallPackagesArgs, ToolResultFields enums
+│   │   └── mcp_tools.py                   ← Tools, InstallPackagesArgs, RemoveEnvironmentArgs, ToolResultFields enums
 │   └── utils/
 │       ├── mcp_client.py                  ← _call_tool, _parse_mcp_response, _tool_result
 │       ├── conda_utils.py                 ← _conda_env_prefix

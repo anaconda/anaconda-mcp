@@ -12,12 +12,19 @@ from enum import Enum
 
 class Tools(str, Enum):
     CONDA_INSTALL_PACKAGES = "conda_install_packages"
+    CONDA_LIST_ENVIRONMENTS = "conda_list_environments"
+    CONDA_REMOVE_ENVIRONMENT = "conda_remove_environment"
 
 
 class InstallPackagesArgs(str, Enum):
     ENVIRONMENT = "environment"
     PREFIX = "prefix"
     PACKAGES = "packages"
+
+
+class RemoveEnvironmentArgs(str, Enum):
+    ENVIRONMENT_NAME = "environment_name"
+    PREFIX = "prefix"
 
 
 class ToolResultFields(str, Enum):
