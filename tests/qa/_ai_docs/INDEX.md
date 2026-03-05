@@ -31,6 +31,7 @@ This documentation serves as the central knowledge base for QA testing of the An
 ### Reference
 | Document | Description | Audience |
 |----------|-------------|----------|
+| [TESTING_WORKFLOW.md](./TESTING_WORKFLOW.md) | Step-by-step workflow for QA participants | All QA |
 | [QUICK_START.md](./QUICK_START.md) | Minimal install steps | All QA |
 | [LOCAL_DEV_SETUP.md](./LOCAL_DEV_SETUP.md) | Full setup guide with troubleshooting | All QA |
 | [KNOWN_ISSUES.md](./KNOWN_ISSUES.md) | Known bugs and regression tests | All QA |
