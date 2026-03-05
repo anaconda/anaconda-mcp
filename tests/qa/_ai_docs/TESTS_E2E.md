@@ -151,9 +151,18 @@ anaconda whoami
 | 4 | Check server logs for telemetry | "Initializing telemetry" message present |
 
 ### Verify Telemetry (optional)
+
+**If running via the start script (HTTP mode):**
 ```bash
-# Run server with debug logging to see telemetry
+ANACONDA_MCP_LOG_LEVEL=DEBUG ./tests/qa/_ai_docs/scripts/start-http-server.sh 8888
+```
+
+**If running the server directly:**
+```bash
 ANACONDA_MCP_LOG_LEVEL=DEBUG anaconda-mcp serve --port 8888 2>&1 | grep -i telemetry
+```
+
+```bash
 # [EXPECTED] "Initializing telemetry" appears
 ```
 
