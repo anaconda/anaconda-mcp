@@ -7,44 +7,14 @@ without an LLM client in the loop. Deterministic and repeatable.
 
 ## What these tests cover
 
-| Test | Bug | Checks |
-|------|-----|--------|
-| `test_err_003a_by_name_error_description` | ERR-003a | `conda_install_packages(environment=<name>)` must NOT return "environment not found" when the environment exists |
-| `test_err_003a_by_name_returns_error` | ERR-003a | must return `is_error=true` for a nonexistent package (no silent pip fallback) |
-| `test_err_003b_by_prefix_does_not_hang` | ERR-003b | `conda_install_packages(prefix=<path>)` must respond within 60 s |
+| Test | Issue | Checks |
+|------|-------|--------|
+| `test_err_003a_by_name_error_description` | KI-010 | `conda_install_packages(environment=<name>)` must NOT return "environment not found" when the environment exists |
+| `test_err_003a_by_name_returns_error` | KI-010 | must return `is_error=true` for a nonexistent package (no silent pip fallback) |
+| `test_err_003b_by_prefix_does_not_hang` | KI-010 | `conda_install_packages(prefix=<path>)` must respond within 60 s |
 
-Both bugs reproduced on 2026-03-05, macOS, `environments-mcp-server 1.0.0rc1`.
-See [Root Cause Analysis](#root-cause-analysis) below.
-
----
-
-## Root Cause Analysis
-
-Component: `environments_mcp_server 1.0.0rc1`
-File: `tools/environments/install_packages.py`
-
-### ERR-003a — False "environment not found" when called by name
-
-**Symptom:** `conda_install_packages(environment="<name>", ...)` returns
-`"The environment was not found"` even though the environment exists. The
-misleading error causes the LLM to list environments and retry by prefix,
-producing extra tool calls.
-
-**Root cause:** `anaconda_connector_conda` creates a `Context(search_path=())`
-for every call. With an empty search path conda does not populate `envs_dirs`,
-so `context.target_prefix` raises `EnvironmentLocationNotFound` before the
-solver is invoked. `install_packages.py:93` catches this and returns the wrong
-error.
-
-### ERR-003b — Indefinite hang when called by prefix
-
-**Symptom:** `conda_install_packages(prefix=<path>, ...)` never returns. The
-MCP session goes silent and does not recover until the SSE stream times out
-(~5 min).
-
-**Observed on:** Cursor / Streamable HTTP / Python 3.13.
-**Not observed on:** Claude Desktop / STDIO / Python 3.10.
-**Root cause:** not identified.
+Reproduced on 2026-03-05, macOS, `environments-mcp-server 1.0.0rc1`.
+See [KI-010](../_ai_docs/KNOWN_ISSUES.md) in KNOWN_ISSUES.md for details.
 
 ---
 
@@ -200,8 +170,8 @@ Open in any browser. The report includes:
 
 ## Expected results
 
-| Test | ERR-003a present | ERR-003a fixed |
-|------|------------------|----------------|
+| Test | KI-010 present | KI-010 fixed |
+|------|----------------|--------------|
 | `test_err_003a_by_name_error_description` | **FAIL** | PASS |
 | `test_err_003a_by_name_returns_error` | PASS | PASS |
 | `test_err_003b_by_prefix_does_not_hang` | PASS | PASS |

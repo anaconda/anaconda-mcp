@@ -19,6 +19,30 @@ Issues documented from internal testing conversations (Feb 2026).
 
 ---
 
+### KI-010: False "Environment Not Found" When Installing Nonexistent Package
+**Status**: Open (Bug)
+**Severity**: Medium
+**Version**: 1.0.0rc1
+**Regression test**: `tests/qa/api_tools/test_guard_install_nonexistent_pkg.py`
+
+**Description**: `conda_install_packages(environment="<name>", packages=["nonexistent-package-xyz123"])` returns `is_error=true` with `"The environment was not found. Make sure you are providing the correct name or prefix"` even though the environment exists. The misleading error causes the LLM to list environments and retry by prefix, producing extra tool calls.
+
+**Root cause**: `anaconda_connector_conda` creates a `Context(search_path=())` for each call. With an empty search path conda does not populate `envs_dirs`, so `context.target_prefix` raises `EnvironmentLocationNotFound` before the solver is invoked. `install_packages.py:93` catches this and returns the wrong error message.
+
+**Expected behavior**: Returns `is_error=true` with a package-resolution error (e.g. `"Could not resolve the packages"`). Single tool call, no retry.
+
+**Observed on**:
+
+| Client | Transport | Python | Result |
+|--------|-----------|--------|--------|
+| Cursor | Streamable HTTP | 3.13 | Incorrect error message |
+| Cursor | STDIO | 3.10, 3.13 | Incorrect error message |
+| Claude Desktop | STDIO | 3.10 | Incorrect error message |
+
+**Note on hanging**: In one isolated run (Cursor / Streamable HTTP / Python 3.13) the session hung after the retry-by-prefix call. The same configuration was retested multiple times and the hang did not recur. Root cause not identified; treated as a transient issue for now.
+
+---
+
 ## Open Issues / Quirks
 
 ### KI-002: Environment Misclassified as "base"
@@ -152,6 +176,33 @@ But this command starts server in **STDIO mode**, not HTTP mode. Claude Desktop 
 **Solution**:
 - **Claude Desktop**: Use STDIO transport only
 - **HTTP transport testing**: Use **Cursor** (confirmed working) or direct API calls (curl)
+
+---
+
+## Troubleshooting
+
+### Accessing MCP server logs
+
+**Claude Desktop**
+
+Logs are written per MCP server under `~/Library/Logs/Claude/`:
+
+```bash
+open ~/Library/Logs/Claude/mcp-server-anaconda-mcp.log   # server stdout/stderr
+open ~/Library/Logs/Claude/mcp.log                        # MCP protocol traffic
+```
+
+**Cursor**
+
+Cursor does not write persistent MCP log files. Use the **Output** panel:
+`View → Output`, then select **MCP** or **Cursor** from the dropdown.
+
+For server-side logs when running HTTP transport, start the server manually
+and observe its terminal output directly:
+
+```bash
+./tests/qa/_ai_docs/scripts/start-http-server.sh 8888
+```
 
 ---
 
