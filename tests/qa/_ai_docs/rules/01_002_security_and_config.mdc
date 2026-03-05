@@ -1,0 +1,29 @@
+# Rule 01_002: Security & Configuration
+
+## Key Points
+1. **No hardcoded secrets** — Use environment variables only (no tokens, API keys, or passwords in source).
+2. **`.env` goes in `.gitignore`** — Never commit credentials or environment-specific values.
+3. **Centralize config** — All MCP server coordinates live in `conftest.py` or a dedicated `common/constants/config.py`; test files read constants, not raw env vars.
+
+## Known Env Vars for This Suite
+| Variable | Default | Purpose |
+|---|---|---|
+| `MCP_SERVER_URL` | `http://localhost:8888/mcp` | Full MCP endpoint URL |
+| `MCP_PORT` | `8888` | Legacy fallback port (used when `MCP_SERVER_URL` is absent) |
+| `MCP_SERVER_CONDA_ENV` | `anaconda-mcp-rc-py313` | Conda env used by `--start-server` |
+
+## Config Pattern in conftest.py
+```python
+import os
+
+BASE_URL = os.environ.get(
+    "MCP_SERVER_URL",
+    f"http://localhost:{os.environ.get('MCP_PORT', '8888')}/mcp",
+)
+```
+
+## Rules for AI
+- Never log or print `Mcp-Session-Id`, tokens, or API keys.
+- Validate required env vars in `conftest.py` during `pytest_configure`; fail early with a clear message.
+- Provide `.env.example` if the suite gains secrets beyond server URL/port.
+- CLI options (`--server-url`, `--server-conda-env`) take precedence over env vars; `conftest.py` must propagate them to `os.environ` via `pytest_configure`.

@@ -1,0 +1,34 @@
+# Rule 02_001: Test Design Patterns
+
+## Arrange-Act-Assert (AAA) for MCP Tool Calls
+Every test has 3 phases:
+1. **Arrange**: Prepare arguments and expected values.
+2. **Act**: Call the MCP tool via `_call_tool()`.
+3. **Assert**: Verify the JSON-RPC result.
+
+```python
+def test_install_nonexistent_pkg_returns_error(conda_env, session_id):
+    # ARRANGE
+    arguments = {"environment": conda_env["name"], "packages": ["nonexistent-pkg-xyz"]}
+
+    # ACT
+    response = _call_tool("conda_install_packages", arguments, session_id)
+
+    # ASSERT
+    result = _tool_result(response)
+    assert result.get("is_error") is True
+```
+
+## Naming Conventions
+- **Files**: `test_[feature_or_bug_id].py` — e.g. `test_guard_install_nonexistent_pkg.py`
+- **Classes**: `Test[Feature]` — groups related scenarios, e.g. `TestInstallNonexistentPackage`
+- **Methods**: `test_[bug_or_scenario_id]_[expected_outcome]`
+  - Good: `test_err_003a_by_name_no_false_env_not_found`
+  - Bad: `test_install`, `test_1`
+- **Constants**: `UPPER_SNAKE_CASE` — e.g. `TOOL_TIMEOUT`, `NONEXISTENT_PKG`
+
+## Rules for AI
+- One behavior per test — don't assert both "no hang" and "correct error" in the same test.
+- No magic numbers — define `TOOL_TIMEOUT`, `ENV_NAME`, etc. as module-level constants.
+- Use `@pytest.mark.parametrize` with descriptive `ids` when the same tool is called with varied inputs.
+- Bug regression tests must include: bug ID, reproduction date, and OS/transport/Python version in the docstring.

@@ -1,0 +1,35 @@
+# Rule 02_002: Isolation & Organization
+
+## Test Isolation
+1. **Independent**: Each test must pass regardless of execution order.
+2. **Conda env lifecycle**: Create/destroy test conda environments in `scope="module"` fixtures — never reuse environments across test files.
+3. **Use `monkeypatch`**: For env var overrides; never permanently modify `os.environ` in test bodies.
+4. **Absolute paths**: Always pass `prefix` as an absolute resolved path when testing conda operations by prefix.
+
+```python
+@pytest.fixture(scope="module")
+def conda_env():
+    subprocess.run(["conda", "create", "-n", ENV_NAME, "python=3.11", "-y"], check=True)
+    prefix = _conda_env_prefix(ENV_NAME)
+    yield {"name": ENV_NAME, "prefix": prefix}
+    subprocess.run(["conda", "remove", "-n", ENV_NAME, "--all", "-y"], check=False)
+```
+
+## pytest Markers
+Define in `pytest.ini`:
+- `@pytest.mark.smoke` — Quick connectivity/sanity checks
+- `@pytest.mark.api` — MCP tool API tests
+- `@pytest.mark.slow` — Tests involving conda env create/remove (>10 s)
+- `@pytest.mark.regression` — Bug regression tests
+
+Run selectively:
+```
+pytest -m "api and not slow"
+pytest -m "regression"
+```
+
+## Rules for AI
+- Always assert `result.get("is_error")` explicitly — don't rely on absence of exceptions alone.
+- Set appropriate `scope` on fixtures: `session` for MCP server/session, `module` for conda envs.
+- Never modify a shared conda environment in a test — use dedicated ephemeral envs.
+- Use `check=False` in cleanup `subprocess.run` calls to avoid masking the original test failure.

@@ -1,0 +1,42 @@
+# Rule 03_001: Fixtures & Resource Management
+
+## Key Distinction
+- **Fixtures**: Manage resources needing setup/teardown — MCP server process, conda environments, HTTP sessions.
+- **Functions**: Generate data or perform stateless operations — build JSON-RPC payloads, extract tool results.
+
+## Fixture Hierarchy in This Suite
+```
+scope="session"   mcp_server     — starts/verifies MCP HTTP server; tears it down after all tests
+scope="session"   server_url     — resolved endpoint URL for the session
+scope="module"    session_id     — MCP session (initialize handshake); one per test file
+scope="module"    conda_env      — ephemeral conda env; created once per file, removed after
+```
+
+## Fixture with Cleanup (yield pattern)
+```python
+@pytest.fixture(scope="module")
+def conda_env():
+    subprocess.run(["conda", "create", "-n", ENV_NAME, "python=3.11", "-y"], check=True)
+    prefix = _conda_env_prefix(ENV_NAME)
+    yield {"name": ENV_NAME, "prefix": prefix}
+    # teardown — use check=False so cleanup doesn't mask test failures
+    subprocess.run(["conda", "remove", "-n", ENV_NAME, "--all", "-y"], check=False)
+```
+
+## When to Use Regular Functions
+```python
+# ✅ Regular function — stateless, no setup/teardown needed
+def _build_tool_call_payload(tool_name: str, arguments: dict, call_id: int = 1) -> dict:
+    return {
+        "jsonrpc": "2.0",
+        "id": call_id,
+        "method": "tools/call",
+        "params": {"name": tool_name, "arguments": arguments},
+    }
+```
+
+## Rules for AI
+- Fixtures use `yield`; everything after `yield` is teardown.
+- Put reusable fixtures in `conftest.py`; test-file-specific fixtures may live in the test file.
+- `mcp_server` is `autouse=True` at session scope — all tests implicitly depend on it.
+- Never put data generation or JSON-RPC payload construction inside a fixture.

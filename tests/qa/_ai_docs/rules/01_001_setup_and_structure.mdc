@@ -1,0 +1,27 @@
+# Rule 01_001: Project Setup & Structure
+
+## Key Points
+1. **Directory Layout**: Keep tests flat (`test_*.py` directly in `tests/qa/api_tools/`). Use subfolders only for 100+ tests.
+2. **pytest.ini**: Lives in `tests/qa/api_tools/` (not the project root).
+3. **Execution**: Always run from the project root (`cd anaconda-mcp && pytest tests/qa/api_tools/`).
+4. **Installation**: `pip install -e .` (or `conda run -n <env> pip install -e .`) before testing.
+
+## Structure
+```
+tests/qa/
+├── _ai_docs/           # AI context docs and scripts
+│   ├── rules/          # ← THIS FILE'S HOME
+│   └── scripts/
+│       └── start-http-server.sh
+└── api_tools/
+    ├── pytest.ini      # ← HERE (not project root)
+    ├── conftest.py     # Session/module fixtures, CLI options
+    ├── test_*.py       # Flat test files, one feature/bug per file
+    └── reports/        # HTML reports (git-ignored)
+```
+
+## Rules for AI
+- Tests are run from the **project root**, not from `tests/qa/api_tools/`.
+- The MCP server must be reachable before running; use `--start-server` to auto-start it.
+- The `anaconda-mcp` package must be installed in the target conda environment.
+- Do not nest test files unless the suite exceeds ~100 tests.
