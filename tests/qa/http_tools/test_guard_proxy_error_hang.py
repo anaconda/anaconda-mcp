@@ -17,14 +17,18 @@ import logging
 
 import pytest
 
-from common.constants.config import TOOL_TIMEOUT
+from common.constants.config import TOOL_TIMEOUT, WARM_ITERATIONS
 from common.constants.mcp_tools import (
     InstallPackagesArgs,
     RemoveEnvironmentArgs,
     ToolResultFields,
     Tools,
 )
-from common.constants.test_data import NONEXISTENT_ENV_PREFIX, NONEXISTENT_PKG
+from common.constants.test_data import (
+    KI011_HANG_FAIL_MSG,
+    NONEXISTENT_ENV_PREFIX,
+    NONEXISTENT_PKG,
+)
 from common.utils.mcp_client import _call_no_hang, _tool_result
 from common.utils.response_validators import _validate_is_error
 
@@ -32,19 +36,6 @@ logger = logging.getLogger(__name__)
 
 pytestmark = pytest.mark.http_transport
 
-
-# 20 iterations to accumulate session state (the production hang occurred after
-# ~47 min of use). If the race fires on any iteration, ReadTimeout is raised
-# immediately and the test fails with the iteration number and a KI-011 reference.
-WARM_ITERATIONS = 20
-
-_HANG_FAIL_MSG = (
-    "mcp-compose proxy did not forward the error response from "
-    "environments_mcp_server within {timeout}s (iteration {iteration}/{total}). "
-    "The backend HTTP session to port 4041 was likely abandoned "
-    "(missing 5th POST + DELETE). Matches the KI-011 hang pattern. "
-    "Observed on 2026-03-05 with Streamable HTTP transport, Python 3.13."
-)
 
 
 # ---------------------------------------------------------------------------
@@ -72,7 +63,7 @@ class TestProxyErrorHangHttp:
                 {RemoveEnvironmentArgs.PREFIX: NONEXISTENT_ENV_PREFIX},
                 fresh_session_id,
                 f"HANG-001: conda_remove_environment hung for > {TOOL_TIMEOUT}s. "
-                + _HANG_FAIL_MSG.format(timeout=TOOL_TIMEOUT, iteration=i, total=WARM_ITERATIONS),
+                + KI011_HANG_FAIL_MSG.format(timeout=TOOL_TIMEOUT, iteration=i, total=WARM_ITERATIONS),
             )
             result = _tool_result(response)
             logger.info(
@@ -104,7 +95,7 @@ class TestProxyErrorHangHttp:
                 },
                 fresh_session_id,
                 f"HANG-002: conda_install_packages hung for > {TOOL_TIMEOUT}s. "
-                + _HANG_FAIL_MSG.format(timeout=TOOL_TIMEOUT, iteration=i, total=WARM_ITERATIONS),
+                + KI011_HANG_FAIL_MSG.format(timeout=TOOL_TIMEOUT, iteration=i, total=WARM_ITERATIONS),
             )
             result = _tool_result(response)
             logger.info(
@@ -171,7 +162,7 @@ class TestProxyErrorHangHttp:
                 fresh_session_id,
                 f"HANG-003 iteration {i}/{WARM_ITERATIONS} (error step): "
                 f"conda_remove_environment hung for > {TOOL_TIMEOUT}s. "
-                + _HANG_FAIL_MSG.format(timeout=TOOL_TIMEOUT, iteration=i, total=WARM_ITERATIONS),
+                + KI011_HANG_FAIL_MSG.format(timeout=TOOL_TIMEOUT, iteration=i, total=WARM_ITERATIONS),
             )
             logger.info(
                 "HANG-003 [%d/%d] error step done in %.2fs",

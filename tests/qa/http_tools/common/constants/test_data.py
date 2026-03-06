@@ -17,3 +17,13 @@ NONEXISTENT_PKG = "nonexistent-package-xyz123"
 # Used to trigger "environment not found" error responses from tools that
 # accept a prefix argument, without creating or removing any real environment.
 NONEXISTENT_ENV_PREFIX = "/tmp/nonexistent-conda-env-xyz123"
+
+# Failure message template for KI-011 hang-regression tests.
+# Placeholders: {timeout} seconds, {iteration} current pass, {total} total passes.
+KI011_HANG_FAIL_MSG = (
+    "mcp-compose proxy did not forward the error response from "
+    "environments_mcp_server within {timeout}s (iteration {iteration}/{total}). "
+    "The backend HTTP session to port 4041 was likely abandoned "
+    "(missing 5th POST + DELETE). Matches the KI-011 hang pattern. "
+    "Observed on 2026-03-05 with Streamable HTTP transport, Python 3.13."
+)
