@@ -108,7 +108,7 @@ conda remove -n guard-test --all -y 2>/dev/null
 
 ## AUTH-001: Anonymous Mode
 
-**Purpose**: Test without authentication.
+**Purpose**: Verify the server works with public channels and is correctly denied access to private Anaconda channels when not authenticated.
 
 ### Prep
 ```bash
@@ -117,8 +117,11 @@ anaconda logout 2>/dev/null || true
 
 | Step | Action | Expected |
 |------|--------|----------|
-| 1 | Ask: "List my conda environments" | Works with public channels |
+| 1 | Ask: "List my conda environments" | Works |
 | 2 | Ask: "Create environment anon-test with Python 3.11" | Environment created |
+| 2a | Run: `conda list -n anon-test --show-channel-urls` | All package URLs contain only public channels (e.g. `pkgs/main`, `pkgs/r`, `conda-forge`). No `repo.anaconda.cloud` URLs present. |
+| 3 | Ask: "Install numpy in anon-test from the repo.anaconda.cloud channel" | Error: access denied or authentication required — not silently falling back to a public channel |
+| 3a | Run: `conda list -n anon-test --show-channel-urls \| grep numpy` | numpy not listed (install was rejected, not silently resolved from a public channel) |
 
 ### Cleanup
 ```bash
@@ -129,7 +132,7 @@ conda remove -n anon-test --all -y
 
 ## AUTH-002: Authenticated Mode
 
-**Purpose**: Test with Anaconda authentication (enables private channels + telemetry).
+**Purpose**: Verify the login flow works and the server picks up credentials for private Anaconda channels after authentication.
 
 ### Prep
 ```bash
@@ -148,23 +151,9 @@ anaconda whoami
 | 1 | Ask: "List my conda environments" | Works |
 | 2 | Ask: "Create environment auth-test with Python 3.11" | Environment created |
 | 3 | Ask: "Install numpy in auth-test" | Package installed |
-| 4 | Check server logs for telemetry | "Initializing telemetry" message present |
+| 4 | Ask: "Install numpy in auth-test from the repo.anaconda.cloud channel" | Request is sent to `repo.anaconda.cloud` with credentials. See note below. |
 
-### Verify Telemetry (optional)
-
-**If running via the start script (HTTP mode):**
-```bash
-ANACONDA_MCP_LOG_LEVEL=DEBUG ./tests/qa/_ai_docs/scripts/start-http-server.sh 8888
-```
-
-**If running the server directly:**
-```bash
-ANACONDA_MCP_LOG_LEVEL=DEBUG anaconda-mcp serve --port 8888 2>&1 | grep -i telemetry
-```
-
-```bash
-# [EXPECTED] "Initializing telemetry" appears
-```
+> **Note on Step 4 (KI-005)**: `repo.anaconda.cloud` requires credentials that the MCP server is not currently picking up correctly. Expected current behavior: the request reaches the channel but fails with an auth/resolution error. A silent fallback to a public channel is a **fail**. Tracking in [KI-005](./KNOWN_ISSUES.md#ki-005-channel-credentials-not-picked-up).
 
 ### Cleanup
 ```bash
