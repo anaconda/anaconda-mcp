@@ -272,7 +272,7 @@ and observe its terminal output directly:
 
 ### PI-001: `anaconda-mcp` CLI Not Executable on Windows — Missing `.exe` Wrapper
 
-**Status**: Open (packaging bug — fix required by Anaconda MCP developers)
+**Status**: Open — [DESK-1344](https://anaconda.atlassian.net/browse/DESK-1344) (packaging bug — fix required by Anaconda MCP developers)
 **Severity**: High (blocks all CLI usage on Windows without workaround)
 **Platform**: Windows only
 

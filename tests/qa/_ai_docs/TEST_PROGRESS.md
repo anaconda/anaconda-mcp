@@ -3,7 +3,7 @@
 ## Summary
 
 - **Last updated**: 2026-03-05
-- **Bugs filed**: 2 (2 - minor)
+- **Bugs filed**: 3 (2 - minor, 1 - high)
 - **Observations**: 1 (Cursor-side hang — not an Anaconda MCP issue)
 
 | Phase | What | Status |
@@ -15,6 +15,7 @@
 ## Bugs
 - [DESK-1341](https://anaconda.atlassian.net/browse/DESK-1341) 
 - [DESK-1342](https://anaconda.atlassian.net/browse/DESK-1342)
+- [DESK-1344](https://anaconda.atlassian.net/browse/DESK-1344)
 ---
 
 ## Phase 1: E2E Progress
@@ -29,7 +30,7 @@ See [TEST_MATRIX.md](./TEST_MATRIX.md) for full assignment rationale.
 | QA 1 | macOS | Claude Desktop | 3.12 | STDIO | TESTS_E2E.md | ⬜ Not started | — | |
 | QA 1 | macOS | Claude Desktop | 3.13 | STDIO | TESTS_E2E.md | ⬜ Not started | — | |
 | QA 1 | macOS | Cursor | 3.13 | STDIO | TESTS_E2E.md | ⬜ Not started | — | |
-| QA 3 | Windows | Claude Desktop | 3.13 | STDIO | TESTS_E2E.md | ⬜ Not started | — | |
+| QA 3 | Windows | Claude Desktop | 3.13 | STDIO | TESTS_E2E.md | 🔶 In progress | — | DESK-1344; PI-001 hit during setup |
 
 ### Optional (if time allows)
 
@@ -67,6 +68,7 @@ See [TEST_MATRIX.md](./TEST_MATRIX.md) for full assignment rationale.
 |----|-------|----------|----|----------|
 | [DESK-1342](https://anaconda.atlassian.net/browse/DESK-1342) | Environment Operations Fail by Name — Wrong Prefix Resolved | Minor | [KI-003](./KNOWN_ISSUES.md#ki-003-environment-operations-fail-by-name--wrong-prefix-resolved) | QA 2 · macOS · Cursor · 3.13 · HTTP |
 | [DESK-1341](https://anaconda.atlassian.net/browse/DESK-1341) | Incorrect behavior for conda_install_packages when package does not exist | Minor | [KI-010](./KNOWN_ISSUES.md#ki-010-false-environment-not-found-when-installing-nonexistent-package) | QA 1 · macOS · Claude Desktop · 3.10 · STDIO |
+| [DESK-1344](https://anaconda.atlassian.net/browse/DESK-1344) | `anaconda-mcp` command not recognized on Windows despite correct installation | High | [PI-001](./KNOWN_ISSUES.md#pi-001-anaconda-mcp-cli-not-executable-on-windows--missing-exe-wrapper) | QA 3 · Windows · Claude Desktop · 3.13 · STDIO |
 
 ---
 
