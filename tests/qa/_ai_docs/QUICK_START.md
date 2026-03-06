@@ -12,6 +12,11 @@ For general installation options (latest release, specific versions, from source
 >
 > **Why `anaconda-mcp` doesn't work on Windows even when found by `where`**: conda installs a Unix-style script named `anaconda-mcp` (no extension) into the `Scripts` folder. Windows `cmd.exe` only executes files with `.exe`, `.bat`, or `.cmd` extensions, so it silently ignores the extensionless file. The `.exe` wrapper may not be generated for this package. Use `python -m anaconda_mcp` as the reliable cross-platform alternative.
 >
+> **Example** — to run `anaconda-mcp claude-desktop setup-config` on Windows:
+> ```
+> python -m anaconda_mcp claude-desktop setup-config
+> ```
+>
 > Open an **Anaconda Prompt** or **PowerShell** (after running `conda init powershell` once) to ensure the conda environment's `Scripts` folder is on `PATH`.
 
 ---
