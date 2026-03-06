@@ -13,8 +13,8 @@
 
 ---
 ## Bugs
-— [DESK-1341](https://anaconda.atlassian.net/browse/DESK-1341), 
-- [DESK-1342](https://anaconda.atlassian.net/browse/DESK-1342))
+— [DESK-1341](https://anaconda.atlassian.net/browse/DESK-1341) 
+- [DESK-1342](https://anaconda.atlassian.net/browse/DESK-1342)
 ---
 
 ## Phase 1: E2E Progress
