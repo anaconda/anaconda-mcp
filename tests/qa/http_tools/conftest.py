@@ -211,6 +211,19 @@ def session_id(mcp_server, server_url: str) -> str | None:
     return _initialize_session(server_url, client_name="api-tools-test")
 
 
+@pytest.fixture
+def fresh_session_id(mcp_server, server_url: str) -> str | None:
+    """
+    Function-scoped MCP session for tests that need per-test session isolation.
+
+    Each test gets a fresh session so a hang triggered by one test (which
+    permanently corrupts mcp-compose's internal connection pool) does not
+    cascade into subsequent tests. Use instead of session_id in hang regression
+    tests.
+    """
+    return _initialize_session(server_url, client_name="api-tools-hang-test")
+
+
 @pytest.fixture(scope="module")
 def conda_env():
     """

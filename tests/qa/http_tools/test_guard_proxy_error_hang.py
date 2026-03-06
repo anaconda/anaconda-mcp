@@ -14,12 +14,10 @@ diagrams, and fix plan.
 from __future__ import annotations
 
 import logging
-import time
 
-import httpx
 import pytest
 
-from common.constants.config import BASE_URL, TOOL_TIMEOUT
+from common.constants.config import TOOL_TIMEOUT
 from common.constants.mcp_tools import (
     InstallPackagesArgs,
     RemoveEnvironmentArgs,
@@ -27,25 +25,12 @@ from common.constants.mcp_tools import (
     Tools,
 )
 from common.constants.test_data import NONEXISTENT_ENV_PREFIX, NONEXISTENT_PKG
-from common.utils.mcp_client import _call_tool, _initialize_session, _tool_result
+from common.utils.mcp_client import _call_no_hang, _tool_result
 from common.utils.response_validators import _validate_is_error
 
 logger = logging.getLogger(__name__)
 
 pytestmark = pytest.mark.http_transport
-
-
-@pytest.fixture
-def session_id(mcp_server) -> str | None:
-    """
-    Function-scoped MCP session for hang tests — overrides the module-scoped
-    fixture from conftest.py.
-
-    Each test opens a fresh session so a hang triggered by one test (which
-    permanently corrupts mcp-compose's internal connection pool) does not
-    cascade into subsequent tests.
-    """
-    return _initialize_session(BASE_URL, client_name="api-tools-hang-test")
 
 
 # 20 iterations to accumulate session state (the production hang occurred after
@@ -72,7 +57,7 @@ _HANG_FAIL_MSG = (
 class TestProxyErrorHangHttp:
 
     @pytest.mark.timeout(TOOL_TIMEOUT * WARM_ITERATIONS)
-    def test_hang_001_remove_nonexistent_env_does_not_hang(self, session_id):
+    def test_hang_001_remove_nonexistent_env_does_not_hang(self, fresh_session_id):
         """
         HANG-001: conda_remove_environment must return isError=true within
         TOOL_TIMEOUT on each of WARM_ITERATIONS repeated calls.
@@ -82,26 +67,17 @@ class TestProxyErrorHangHttp:
                 "HANG-001 [%d/%d] remove_environment prefix=%s",
                 i, WARM_ITERATIONS, NONEXISTENT_ENV_PREFIX,
             )
-            t0 = time.monotonic()
-            try:
-                response = _call_tool(
-                    Tools.CONDA_REMOVE_ENVIRONMENT,
-                    {RemoveEnvironmentArgs.PREFIX: NONEXISTENT_ENV_PREFIX},
-                    session_id,
-                )
-            except httpx.ReadTimeout:
-                pytest.fail(
-                    f"HANG-001: conda_remove_environment hung for > {TOOL_TIMEOUT}s. "
-                    + _HANG_FAIL_MSG.format(
-                        timeout=TOOL_TIMEOUT, iteration=i, total=WARM_ITERATIONS
-                    )
-                )
-
+            response, elapsed = _call_no_hang(
+                Tools.CONDA_REMOVE_ENVIRONMENT,
+                {RemoveEnvironmentArgs.PREFIX: NONEXISTENT_ENV_PREFIX},
+                fresh_session_id,
+                f"HANG-001: conda_remove_environment hung for > {TOOL_TIMEOUT}s. "
+                + _HANG_FAIL_MSG.format(timeout=TOOL_TIMEOUT, iteration=i, total=WARM_ITERATIONS),
+            )
             result = _tool_result(response)
             logger.info(
                 "HANG-001 [%d/%d] done in %.2fs — is_error=%s",
-                i, WARM_ITERATIONS, time.monotonic() - t0,
-                result.get(ToolResultFields.IS_ERROR),
+                i, WARM_ITERATIONS, elapsed, result.get(ToolResultFields.IS_ERROR),
             )
             _validate_is_error(
                 result,
@@ -109,7 +85,7 @@ class TestProxyErrorHangHttp:
             )
 
     @pytest.mark.timeout(TOOL_TIMEOUT * WARM_ITERATIONS)
-    def test_hang_002_install_into_nonexistent_env_does_not_hang(self, session_id):
+    def test_hang_002_install_into_nonexistent_env_does_not_hang(self, fresh_session_id):
         """
         HANG-002: conda_install_packages must return isError=true within
         TOOL_TIMEOUT on each of WARM_ITERATIONS repeated calls.
@@ -120,29 +96,20 @@ class TestProxyErrorHangHttp:
                 "HANG-002 [%d/%d] install_packages prefix=%s pkg=%s",
                 i, WARM_ITERATIONS, NONEXISTENT_ENV_PREFIX, NONEXISTENT_PKG,
             )
-            t0 = time.monotonic()
-            try:
-                response = _call_tool(
-                    Tools.CONDA_INSTALL_PACKAGES,
-                    {
-                        InstallPackagesArgs.PREFIX: NONEXISTENT_ENV_PREFIX,
-                        InstallPackagesArgs.PACKAGES: [NONEXISTENT_PKG],
-                    },
-                    session_id,
-                )
-            except httpx.ReadTimeout:
-                pytest.fail(
-                    f"HANG-002: conda_install_packages hung for > {TOOL_TIMEOUT}s. "
-                    + _HANG_FAIL_MSG.format(
-                        timeout=TOOL_TIMEOUT, iteration=i, total=WARM_ITERATIONS
-                    )
-                )
-
+            response, elapsed = _call_no_hang(
+                Tools.CONDA_INSTALL_PACKAGES,
+                {
+                    InstallPackagesArgs.PREFIX: NONEXISTENT_ENV_PREFIX,
+                    InstallPackagesArgs.PACKAGES: [NONEXISTENT_PKG],
+                },
+                fresh_session_id,
+                f"HANG-002: conda_install_packages hung for > {TOOL_TIMEOUT}s. "
+                + _HANG_FAIL_MSG.format(timeout=TOOL_TIMEOUT, iteration=i, total=WARM_ITERATIONS),
+            )
             result = _tool_result(response)
             logger.info(
                 "HANG-002 [%d/%d] done in %.2fs — is_error=%s",
-                i, WARM_ITERATIONS, time.monotonic() - t0,
-                result.get(ToolResultFields.IS_ERROR),
+                i, WARM_ITERATIONS, elapsed, result.get(ToolResultFields.IS_ERROR),
             )
             _validate_is_error(
                 result,
@@ -150,7 +117,7 @@ class TestProxyErrorHangHttp:
             )
 
     @pytest.mark.timeout(TOOL_TIMEOUT * WARM_ITERATIONS * 3)
-    def test_hang_003_session_survives_error_response(self, session_id):
+    def test_hang_003_session_survives_error_response(self, fresh_session_id):
         """
         HANG-003: the session must stay functional across repeated error+health
         cycles.
@@ -175,19 +142,18 @@ class TestProxyErrorHangHttp:
         )
         for i in range(1, WARM_ITERATIONS + 1):
             logger.info("HANG-003 warm-up [%d/%d] list_environments", i, WARM_ITERATIONS)
-            t0 = time.monotonic()
-            try:
-                _call_tool(Tools.CONDA_LIST_ENVIRONMENTS, {}, session_id)
-            except httpx.ReadTimeout:
-                pytest.fail(
-                    f"HANG-003 warm-up [{i}/{WARM_ITERATIONS}]: "
-                    f"conda_list_environments hung — mcp-compose internal pool is stuck. "
-                    f"If HANG-002 also failed in this run, restart the server and rerun "
-                    f"HANG-003 in isolation. KI-011."
-                )
+            _, elapsed = _call_no_hang(
+                Tools.CONDA_LIST_ENVIRONMENTS,
+                {},
+                fresh_session_id,
+                f"HANG-003 warm-up [{i}/{WARM_ITERATIONS}]: "
+                f"conda_list_environments hung — mcp-compose internal pool is stuck. "
+                f"If HANG-002 also failed in this run, restart the server and rerun "
+                f"HANG-003 in isolation. KI-011.",
+            )
             logger.info(
                 "HANG-003 warm-up [%d/%d] done in %.2fs",
-                i, WARM_ITERATIONS, time.monotonic() - t0,
+                i, WARM_ITERATIONS, elapsed,
             )
 
         logger.info(
@@ -199,42 +165,32 @@ class TestProxyErrorHangHttp:
                 "HANG-003 [%d/%d] error step: remove_environment prefix=%s",
                 i, WARM_ITERATIONS, NONEXISTENT_ENV_PREFIX,
             )
-            t0 = time.monotonic()
-            try:
-                _call_tool(
-                    Tools.CONDA_REMOVE_ENVIRONMENT,
-                    {RemoveEnvironmentArgs.PREFIX: NONEXISTENT_ENV_PREFIX},
-                    session_id,
-                )
-            except httpx.ReadTimeout:
-                pytest.fail(
-                    f"HANG-003 iteration {i}/{WARM_ITERATIONS} (error step): "
-                    f"conda_remove_environment hung for > {TOOL_TIMEOUT}s. "
-                    + _HANG_FAIL_MSG.format(
-                        timeout=TOOL_TIMEOUT, iteration=i, total=WARM_ITERATIONS
-                    )
-                )
+            _, elapsed = _call_no_hang(
+                Tools.CONDA_REMOVE_ENVIRONMENT,
+                {RemoveEnvironmentArgs.PREFIX: NONEXISTENT_ENV_PREFIX},
+                fresh_session_id,
+                f"HANG-003 iteration {i}/{WARM_ITERATIONS} (error step): "
+                f"conda_remove_environment hung for > {TOOL_TIMEOUT}s. "
+                + _HANG_FAIL_MSG.format(timeout=TOOL_TIMEOUT, iteration=i, total=WARM_ITERATIONS),
+            )
             logger.info(
                 "HANG-003 [%d/%d] error step done in %.2fs",
-                i, WARM_ITERATIONS, time.monotonic() - t0,
+                i, WARM_ITERATIONS, elapsed,
             )
 
             logger.info("HANG-003 [%d/%d] health step: list_environments", i, WARM_ITERATIONS)
-            t0 = time.monotonic()
-            try:
-                response = _call_tool(Tools.CONDA_LIST_ENVIRONMENTS, {}, session_id)
-            except httpx.ReadTimeout:
-                pytest.fail(
-                    f"HANG-003 [{i}/{WARM_ITERATIONS}] health step: "
-                    "session hung after an error response — proxy corrupted "
-                    "internal state. Server restart required. KI-011."
-                )
-
+            response, elapsed = _call_no_hang(
+                Tools.CONDA_LIST_ENVIRONMENTS,
+                {},
+                fresh_session_id,
+                f"HANG-003 [{i}/{WARM_ITERATIONS}] health step: "
+                "session hung after an error response — proxy corrupted "
+                "internal state. Server restart required. KI-011.",
+            )
             result = _tool_result(response)
             logger.info(
                 "HANG-003 [%d/%d] health step done in %.2fs — is_error=%s",
-                i, WARM_ITERATIONS, time.monotonic() - t0,
-                result.get(ToolResultFields.IS_ERROR),
+                i, WARM_ITERATIONS, elapsed, result.get(ToolResultFields.IS_ERROR),
             )
             assert not result.get(ToolResultFields.IS_ERROR), (
                 f"HANG-003 iteration {i}/{WARM_ITERATIONS}: "

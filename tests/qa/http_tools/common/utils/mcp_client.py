@@ -30,6 +30,7 @@ import signal
 import time
 
 import httpx
+import pytest
 
 from common.constants.config import BASE_URL, TOOL_TIMEOUT
 
@@ -129,6 +130,26 @@ def _call_tool(tool_name: str, arguments: dict, session_id: str | None) -> dict:
     elapsed_s = time.monotonic() - t0
     response.raise_for_status()
     return _parse_mcp_response(response, elapsed_s)
+
+
+def _call_no_hang(
+    tool_name: str,
+    arguments: dict,
+    session_id: str | None,
+    fail_msg: str,
+) -> tuple[dict, float]:
+    """
+    Call a tool and fail the test immediately on httpx.ReadTimeout.
+
+    Returns (response_json, elapsed_seconds). Use in place of a bare
+    try/except ReadTimeout block when the test should fail fast on a hang.
+    """
+    t0 = time.monotonic()
+    try:
+        response = _call_tool(tool_name, arguments, session_id)
+    except httpx.ReadTimeout:
+        pytest.fail(fail_msg)
+    return response, time.monotonic() - t0
 
 
 def _initialize_session(server_url: str, client_name: str = "api-tools-test") -> str | None:
