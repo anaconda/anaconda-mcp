@@ -26,7 +26,7 @@
 | | Discover Servers | `anaconda-mcp discover` | CLI-001 |
 | | Compose Servers | `anaconda-mcp compose` | CLI-001 |
 | | Verbose Logging | `anaconda-mcp -v serve` | CLI-001 |
-| **Client Setup (Claude Desktop / Cursor)** | Setup STDIO | `claude-desktop setup-config` | CLI-003 |
+| **Client Setup (Claude Desktop / Cursor / Claude Code)** | Setup STDIO | `claude-desktop setup-config` | CLI-003 |
 | | Setup HTTP | `setup-config --transport streamable-http` | CLI-003 |
 | | Force Overwrite | `setup-config --force` | CLI-003 |
 | | Skip Backup | `setup-config --no-backup` | CLI-002 |

@@ -15,7 +15,7 @@ This documentation serves as the central knowledge base for QA testing of the An
 ### Test Flows (TESTS_* prefix)
 | Document | Description | Platform |
 |----------|-------------|----------|
-| [TESTS_E2E.md](./TESTS_E2E.md) | E2E flows (Claude Desktop or Cursor) | macOS only |
+| [TESTS_E2E.md](./TESTS_E2E.md) | E2E flows (Claude Desktop, Cursor, or Claude Code) | macOS, Windows |
 | [TESTS_CLI.md](./TESTS_CLI.md) | CLI-only flows (automatable) | All platforms |
 | [TESTS_CONFIG.md](./TESTS_CONFIG.md) | Configuration tests (automatable) | All platforms |
 | [TESTS_API_TOOLS.md](./TESTS_API_TOOLS.md) | Direct API tool tests (automatable) | All platforms |
@@ -56,38 +56,12 @@ Original requirements in `initial_docs/`:
 | **Setup & Install** | [QUICK_START.md](./QUICK_START.md) |
 | **Test Matrix** | [TEST_MATRIX.md](./TEST_MATRIX.md) |
 | **Test Progress** | [TEST_PROGRESS.md](./TEST_PROGRESS.md) |
-| **E2E Tests (macOS)** | [TESTS_E2E.md](./TESTS_E2E.md) |
+| **E2E Tests** | [TESTS_E2E.md](./TESTS_E2E.md) |
 | **CLI Tests (All Platforms)** | [TESTS_CLI.md](./TESTS_CLI.md) |
 | **Config Tests (All Platforms)** | [TESTS_CONFIG.md](./TESTS_CONFIG.md) |
 | **API Tool Tests (All Platforms)** | [TESTS_API_TOOLS.md](./TESTS_API_TOOLS.md) |
 | **Feature → Test Mapping** | [COVERAGE_MAP.md](./COVERAGE_MAP.md) |
 | **Known Issues** | [KNOWN_ISSUES.md](./KNOWN_ISSUES.md) |
-
-## Test Flow Organization
-
-```
-TESTS_E2E.md          → macOS only (Claude Desktop or Cursor)
-  ├── CORE-001: Full Tools Flow (run with STDIO and HTTP)
-  ├── GUARD-001: Guardrails
-  ├── AUTH-001: Anonymous Mode
-  ├── AUTH-002: Authenticated Mode
-  └── REGRESS-001: Known Issues
-
-TESTS_CLI.md          → All platforms (manual first, then CI)
-  ├── CLI-001: Server Discovery
-  ├── CLI-002: Advanced Options
-  ├── CLI-003: Config Management
-  └── CLI-004: Regression CLI
-
-TESTS_CONFIG.md       → All platforms (manual first, then CI)
-  ├── ENV-001 to ENV-004: Environment variables
-  ├── CFG-001 to CFG-003: Config file tests
-  └── PATH-001 to PATH-002: OS path tests
-
-TESTS_API_TOOLS.md    → Win365 manual first, then CI
-  ├── TOOL-001 to TOOL-006: Each MCP tool
-  └── ERR-001 to ERR-005: Error scenarios (tool + protocol)
-```
 
 ## Conventions
 

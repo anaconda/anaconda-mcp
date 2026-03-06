@@ -1,6 +1,6 @@
 # E2E Flows (macOS Only)
 
-> **Clients**: Claude Desktop (STDIO) or Cursor (HTTP or STDIO). See [TEST_MATRIX.md](./TEST_MATRIX.md) for transport/client assignment per QA.
+> **Clients**: Claude Desktop (STDIO), Cursor (HTTP or STDIO), or Claude Code (HTTP). See [TEST_MATRIX.md](./TEST_MATRIX.md) for transport/client assignment per QA.
 
 ## Prerequisites
 
@@ -12,9 +12,9 @@ Record the configuration you are testing:
 
 | Setting | Your Value |
 |---------|------------|
-| Client | _______ (Claude Desktop or Cursor) |
+| Client | _______ (Claude Desktop, Cursor, or Claude Code) |
 | Python version | _______ (3.10, 3.11, 3.12, or 3.13) |
-| Transport mode | _______ (STDIO or HTTP — note: Claude Desktop only supports STDIO, see KI-009) |
+| Transport mode | _______ (STDIO or HTTP — note: Claude Desktop only supports STDIO, see [KI-009](./KNOWN_ISSUES.md#ki-009-claude-desktop-does-not-support-http-transport)) |
 | anaconda-mcp version | _______ (run: `conda list \| grep anaconda-mcp`) |
 | environments-mcp-server version | _______ (run: `conda list \| grep environments-mcp`) |
 
@@ -33,18 +33,18 @@ anaconda-mcp claude-desktop setup-config
 # Restart Claude Desktop (Cmd+Q, then reopen)
 ```
 
-**For HTTP (Cursor)**:
+**For HTTP (Cursor or Claude Code)**:
 ```bash
 # Start server first
 ./tests/qa/_ai_docs/scripts/start-http-server.sh 8888
-# Add config to ~/.cursor/mcp.json (see QUICK_START.md)
-# Restart Cursor
+# Cursor: add config to ~/.cursor/mcp.json (see QUICK_START.md), restart Cursor
+# Claude Code: claude mcp add --transport http anaconda-mcp http://localhost:8888/mcp
 ```
 
 ### 3. Verify Ready State
 
 **All tests start from this state:**
-- Your client (Claude Desktop or Cursor) is running
+- Your client (Claude Desktop, Cursor, or Claude Code) is running
 - Anaconda MCP server is connected (check for tools icon in your client)
 - You can ask: "List my conda environments" and get a response
 
@@ -141,7 +141,7 @@ anaconda whoami
 # [EXPECTED] Shows your username
 ```
 
-> Restart your client (Claude Desktop: Cmd+Q then reopen; Cursor: reload window) to pick up the new auth state.
+> Restart your client (Claude Desktop: Cmd+Q then reopen; Cursor: reload window; Claude Code: exit and restart the session) to pick up the new auth state.
 
 | Step | Action | Expected |
 |------|--------|----------|

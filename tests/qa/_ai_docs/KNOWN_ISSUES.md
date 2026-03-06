@@ -39,7 +39,7 @@ Issues documented from internal testing conversations (Feb 2026).
 | Cursor | STDIO | 3.10, 3.13 | Incorrect error message |
 | Claude Desktop | STDIO | 3.10 | Incorrect error message |
 
-**Note on hanging**: In one isolated run (Cursor / Streamable HTTP / Python 3.13) the session hung after the retry-by-prefix call. The same configuration was retested multiple times and the hang did not recur. Root cause not identified; treated as a transient issue for now.
+**Note on hanging**: In one isolated run (Cursor / Streamable HTTP / Python 3.13) the session hung after the retry-by-prefix call and did not recur on retest. This is consistent with the client-side hang pattern documented in [KI-011](./KNOWN_ISSUES.md#ki-011-client-hangs-when-an-mcp-tool-returns-an-error-cursor-and-claude-code).
 
 ---
 
@@ -247,7 +247,7 @@ This is a well-documented, recurring issue across multiple unrelated MCP servers
 - [CRITICAL: MCP server causes 16+ hour hang — no timeout or stuck detection](https://github.com/anthropics/claude-code/issues/15945) — no timeout mechanism; 70+ zombie processes accumulated with no auto-cleanup
 - [Hangs when resuming conversations with large tool outputs in history](https://github.com/anthropics/claude-code/issues/19036) — related hang triggered by conversation state, not just live errors
 
-**Note on KI-010**: The isolated hang observed under KI-010 (*Note on hanging*) is consistent with this client-side bug.
+**Note on KI-010**: The isolated hang observed under KI-010 is consistent with this client-side bug (see *Note on hanging* in KI-010).
 
 ---
 
