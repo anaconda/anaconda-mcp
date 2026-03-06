@@ -4,7 +4,7 @@
 
 - **Last updated**: 2026-03-05
 - **Bugs filed**: 2 (2 - minor)
-- **Observations**: KI-011 noted (Cursor-side hang — not an Anaconda MCP issue)
+- **Observations**: 1 (Cursor-side hang — not an Anaconda MCP issue)
 
 | Phase | What | Status |
 |-------|------|--------|
@@ -13,7 +13,7 @@
 
 ---
 ## Bugs
-— [DESK-1341](https://anaconda.atlassian.net/browse/DESK-1341) 
+- [DESK-1341](https://anaconda.atlassian.net/browse/DESK-1341) 
 - [DESK-1342](https://anaconda.atlassian.net/browse/DESK-1342)
 ---
 
