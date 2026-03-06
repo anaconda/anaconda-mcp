@@ -66,6 +66,9 @@ Server auto-starts when Claude Desktop launches.
 
 **Step 1: Start HTTP server**
 ```bash
+# Optional: enable debug logging
+export ANACONDA_MCP_LOG_LEVEL=DEBUG
+
 ./tests/qa/_ai_docs/scripts/start-http-server.sh 8888
 ```
 
