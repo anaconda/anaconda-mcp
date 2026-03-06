@@ -2,9 +2,8 @@
 
 ## Summary
 
-- **Last updated**: 2026-03-05
-- **Bugs filed**: 3 (2 - minor, 1 - high)
-- **Observations**: 2 (client-side hang — not an Anaconda MCP issue; observed in both Cursor and Claude Code)
+- **Last updated**: 2026-03-06
+- **Bugs filed**: 5 (2 - minor, 3 - high)
 
 | Phase | What | Status |
 |-------|------|--------|
@@ -13,9 +12,11 @@
 
 ---
 ## Bugs
-- [DESK-1341](https://anaconda.atlassian.net/browse/DESK-1341) 
+- [DESK-1341](https://anaconda.atlassian.net/browse/DESK-1341)
 - [DESK-1342](https://anaconda.atlassian.net/browse/DESK-1342)
 - [DESK-1344](https://anaconda.atlassian.net/browse/DESK-1344)
+- [DESK-1355](https://anaconda.atlassian.net/browse/DESK-1355)
+- [DESK-1356](https://anaconda.atlassian.net/browse/DESK-1356)
 ---
 
 ## Phase 1: E2E Progress
@@ -24,12 +25,12 @@ See [TEST_MATRIX.md](./TEST_MATRIX.md) for full assignment rationale.
 
 | QA | OS | Client | Python | Transport | Suite | Status | Result | Notes |
 |----|----|--------|--------|-----------|-------|--------|--------|-------|
-| QA 2 | macOS | Cursor | 3.13 | HTTP | TESTS_E2E.md | ✅ Done | 4 passed / 2 failed | DESK-1342; KI-011 observed |
+| QA 2 | macOS | Cursor | 3.13 | HTTP | TESTS_E2E.md | ✅ Done | 4 passed / 2 failed | DESK-1342; DESK-1355 triggered |
 | QA 1 | macOS | Claude Desktop | 3.10 | STDIO | TESTS_E2E.md | 🔶 Partial | 1 failed / 5 not run | GUARD-001 run; DESK-1341 |
 | QA 1 | macOS | Claude Desktop | 3.11 | STDIO | TESTS_E2E.md | ⬜ Not started | — | |
 | QA 1 | macOS | Claude Desktop | 3.12 | STDIO | TESTS_E2E.md | ⬜ Not started | — | |
 | QA 1 | macOS | Claude Desktop | 3.13 | STDIO | TESTS_E2E.md | ⬜ Not started | — | |
-| QA 1 | macOS | Cursor | 3.13 | STDIO | TESTS_E2E.md | ⬜ Not started | — | |
+| QA 1 | macOS | Cursor | 3.12 | STDIO | TESTS_E2E.md | ⬜ Not started | — | |
 | QA 3 | Windows | Claude Desktop | 3.13 | STDIO | TESTS_E2E.md | 🔶 In progress | — | DESK-1344; PI-001 hit during setup |
 
 ### Optional (if time allows)
@@ -70,12 +71,6 @@ See [TEST_MATRIX.md](./TEST_MATRIX.md) for full assignment rationale.
 | [DESK-1342](https://anaconda.atlassian.net/browse/DESK-1342) | Environment Operations Fail by Name — Wrong Prefix Resolved | Minor | [KI-003](./KNOWN_ISSUES.md#ki-003-environment-operations-fail-by-name--wrong-prefix-resolved) | QA 2 · macOS · Cursor · 3.13 · HTTP |
 | [DESK-1341](https://anaconda.atlassian.net/browse/DESK-1341) | Incorrect behavior for conda_install_packages when package does not exist | Minor | [KI-010](./KNOWN_ISSUES.md#ki-010-false-environment-not-found-when-installing-nonexistent-package) | QA 1 · macOS · Claude Desktop · 3.10 · STDIO |
 | [DESK-1344](https://anaconda.atlassian.net/browse/DESK-1344) | `anaconda-mcp` command not recognized on Windows despite correct installation | High | [PI-001](./KNOWN_ISSUES.md#pi-001-anaconda-mcp-cli-not-executable-on-windows--missing-exe-wrapper) | QA 3 · Windows · Claude Desktop · 3.13 · STDIO |
-
----
-
-## Observations
-
-| ID | Description | Observed in | Reference |
-|----|-------------|-------------|-----------|
-| KI-011 (Cursor) | Cursor chat hung after MCP tool returned an error — non-reproducible on retry; Cursor-side bug, not an Anaconda MCP issue | QA 2 · macOS · Cursor · 3.13 · HTTP | [KI-011](./KNOWN_ISSUES.md#ki-011-cursor-chat-hangs-when-an-mcp-tool-returns-an-error) |
-| KI-011 (Claude Code) | Claude Code session hung after MCP tool returned an error — same pattern as KI-011; not an Anaconda MCP issue | QA 2 · macOS · Claude Code · 3.10 · HTTP | [KI-011](./KNOWN_ISSUES.md#ki-011-cursor-chat-hangs-when-an-mcp-tool-returns-an-error) |
+| [DESK-1355](https://anaconda.atlassian.net/browse/DESK-1355) | mcp-compose proxy hangs and corrupts session on tool error | High | [KI-011](./KNOWN_ISSUES.md#ki-011-mcp-compose-proxy-hangs-and-corrupts-session-on-tool-error) | QA 2 · macOS · Cursor · 3.13 · HTTP; QA 2 · macOS · Claude Code · 3.10 · HTTP |
+| [DESK-1356](https://anaconda.atlassian.net/browse/DESK-1356) | HTTP setup wizard suggests wrong server command — starts STDIO mode instead of HTTP | High | [KI-008](./KNOWN_ISSUES.md#ki-008-http-setup-suggests-wrong-server-command) | Manual testing |
+| [DESK-1355](https://anaconda.atlassian.net/browse/DESK-1355) | mcp-compose proxy hangs and corrupts session on tool error | High | [KI-011](./KNOWN_ISSUES.md#ki-011-mcp-compose-proxy-hangs-and-corrupts-session-on-tool-error) | QA 2 · macOS · Cursor · 3.13 · HTTP; QA 2 · macOS · Claude Code · 3.10 · HTTP |

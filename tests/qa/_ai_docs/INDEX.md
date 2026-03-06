@@ -35,7 +35,7 @@ This documentation serves as the central knowledge base for QA testing of the An
 | [TESTING_WORKFLOW.md](./TESTING_WORKFLOW.md) | Step-by-step workflow for QA participants | All QA |
 | [QUICK_START.md](./QUICK_START.md) | Install, configure and verify setup | All QA |
 | [KNOWN_ISSUES.md](./KNOWN_ISSUES.md) | Known bugs and workarounds | All QA |
-| [hang_issue/](./hang_issue/) | Root cause analysis, bug report, and reproduction log for the mcp-compose proxy hang on tool error responses (KI-011) | Developers, QA leads |
+| [hang_issue/](./hang_issue/) | Root cause analysis, bug report, and reproduction log for the mcp-compose proxy hang on tool error responses (KI-011 / [DESK-1355](https://anaconda.atlassian.net/browse/DESK-1355)) | Developers, QA leads |
 
 ### Scripts
 | Script | Description |
