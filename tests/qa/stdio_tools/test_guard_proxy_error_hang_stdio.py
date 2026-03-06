@@ -1,61 +1,20 @@
 """
-Regression tests: KI-011 — client hang after MCP tool error (STDIO transport)
+Regression tests: KI-011 — mcp-compose proxy must forward tool error responses
+over STDIO transport without hanging (mirrors test_guard_proxy_error_hang.py).
 
-Background:
-  The HTTP-transport tests (test_guard_proxy_error_hang.py) confirm that
-  mcp-compose hangs under Streamable HTTP when a tool returns an error.
-  These tests exercise the identical flows over STDIO transport (the mode
-  used by Claude Desktop) to determine whether the hang is gated on the
-  upstream transport or lives in mcp-compose's internal proxy logic.
+The test process spawns mcp-compose as a subprocess and communicates via
+stdin/stdout pipe (newline-delimited JSON-RPC). mcp-compose's internal
+connection to environments_mcp_server is still Streamable HTTP in STDIO mode —
+only the upstream transport (test process → mcp-compose) differs.
 
-Transport architecture under test:
-  Test process  --stdin/stdout pipe-->  mcp-compose (STDIO mode)
-                                              |
-                                        Streamable HTTP (port 4042)
-                                              |
-                                    environments_mcp_server
+stdio_server is function-scoped so each test gets a fresh process. Tests that
+trigger the hang corrupt the internal connection pool permanently; a shared
+process would cause cascading failures.
 
-  Note: mcp-compose's INTERNAL connection to environments_mcp_server is still
-  Streamable HTTP in STDIO mode — the same internal path as the HTTP tests.
-  Only the UPSTREAM transport (client → mcp-compose) differs.
+No httpx or MCP SDK required — stdlib only (subprocess, threading, json).
 
-Test result (2026-03-06):
-  The hang reproduces over STDIO at iteration 16/20 (vs iteration 4/20 for
-  HTTP).  The race condition lives in mcp-compose's internal Streamable HTTP
-  pool to port 4042, not in the upstream transport handler.
-
-What these tests assert:
-  STDIO-HANG-001  conda_remove_environment error response arrives within
-                  TOOL_TIMEOUT on every one of WARM_ITERATIONS repeated calls.
-                  Mirrors HTTP HANG-001.
-
-  STDIO-HANG-002  conda_install_packages error response arrives within
-                  TOOL_TIMEOUT on every one of WARM_ITERATIONS repeated calls.
-                  Mirrors HTTP HANG-002.
-
-  STDIO-HANG-003  After WARM_ITERATIONS warm-up calls and WARM_ITERATIONS
-                  error+health cycles, the server remains functional throughout.
-                  Mirrors HTTP HANG-003.
-
-STDIO session isolation:
-  STDIO has no session-ID concept — the entire pipe is one session tied to
-  the subprocess lifetime.  To isolate tests (so HANG-001/002 corruption does
-  not cascade into HANG-003), stdio_server is function-scoped: each test gets
-  a fresh mcp-compose process.  This mirrors the function-scoped session_id
-  fixture used by the HTTP tests.
-
-STDIO JSON-RPC framing:
-  MCP STDIO uses newline-delimited JSON.  Each request is a single-line JSON
-  object written to stdin; each response is a single-line JSON object read from
-  stdout.  stderr receives mcp-compose log output and is not part of the
-  protocol.
-
-No external HTTP dependencies:
-  These tests use only stdlib (subprocess, threading, json, time, tempfile) plus
-  pytest.  The mcp Python SDK is NOT required in the test environment.
-
-See tests/qa/_ai_docs/KI-011-HTTP-PROXY-HANG.md and
-    tests/qa/_ai_docs/BUG-REPORT-KI011-MCP-COMPOSE-PROXY-HANG.md
+See tests/qa/_ai_docs/hang_issue/ for root-cause analysis and transport
+comparison.
 """
 
 from __future__ import annotations
@@ -210,24 +169,13 @@ enabled = false
 @pytest.fixture
 def stdio_server(request: pytest.FixtureRequest):
     """
-    Spawn anaconda-mcp serve in STDIO mode and return the ready subprocess.
+    Spawn anaconda-mcp serve in STDIO mode and yield the ready subprocess.
 
-    Function-scoped so each test gets a fresh mcp-compose process.
+    Function-scoped — each test gets a fresh mcp-compose process so a hang
+    triggered by one test does not corrupt subsequent tests.
 
-    This mirrors the function-scoped session_id fixture used by the HTTP tests:
-    HANG-001 and HANG-002 deliberately trigger a proxy hang that permanently
-    corrupts mcp-compose's internal connection pool.  With a shared subprocess,
-    HANG-003 would inherit that corruption and fail during warm-up — masking
-    whether HANG-003 found an independent regression or merely inherited the
-    damage.  A fresh process per test ensures every result is independent.
-
-    Lifecycle:
-      1. Write a STDIO-specific config to a temp file.
-      2. Spawn 'conda run -n <env> anaconda-mcp serve --config <file>'
-         with stdin=PIPE / stdout=PIPE / stderr=PIPE.
-      3. Send MCP initialize + notifications/initialized.
-      4. Yield the Popen object for tests to use.
-      5. Kill the subprocess and clean up on teardown.
+    Lifecycle: write STDIO config → spawn process → initialize handshake →
+    yield → SIGTERM + cleanup.
     """
     conda_env = request.config.getoption("--server-conda-env", default=_DEFAULT_CONDA_ENV)
     config_path = _write_stdio_config(DOWNSTREAM_PORT, conda_env)
@@ -374,37 +322,13 @@ def _is_error(response: dict) -> bool:
 @pytest.mark.regression
 @pytest.mark.slow
 class TestProxyErrorHangStdio:
-    """
-    Regression: mcp-compose STDIO proxy must forward error responses from
-    environments_mcp_server within TOOL_TIMEOUT — not abandon the backend
-    session and leave the pipe hanging.
-
-    These tests mirror TestProxyErrorHangHttp (test_guard_proxy_error_hang.py)
-    exactly, using STDIO transport instead of Streamable HTTP.
-
-    Test result (2026-03-06):
-      STDIO-HANG-001 failed at iteration 16/20 (HTTP fails at iteration 4).
-      STDIO-HANG-002 failed at iteration 1/20 (server already corrupted by
-      HANG-001 in that run — they shared a subprocess).  With function-scoped
-      stdio_server, each test now gets a clean process.
-
-      The race condition is in mcp-compose's internal Streamable HTTP pool to
-      port 4042, independent of upstream transport.
-    """
 
     @pytest.mark.timeout(TOOL_TIMEOUT * WARM_ITERATIONS)
     def test_stdio_hang_001_remove_nonexistent_env_does_not_hang(self, stdio_server):
         """
-        STDIO-HANG-001: conda_remove_environment for a non-existent prefix must
-        return an isError=true response within TOOL_TIMEOUT seconds on every
-        iteration across WARM_ITERATIONS repeated calls, over STDIO transport.
-
+        STDIO-HANG-001: conda_remove_environment must return isError=true within
+        TOOL_TIMEOUT on each of WARM_ITERATIONS repeated calls, over STDIO.
         Mirrors HTTP HANG-001.
-
-        If the race condition fires on any iteration, TimeoutError is raised
-        and the test fails with the iteration number.
-
-        Reproduced (2026-03-06): hangs at iteration 16/20 over STDIO transport.
         """
         for i in range(1, WARM_ITERATIONS + 1):
             logger.info(
@@ -440,12 +364,9 @@ class TestProxyErrorHangStdio:
     @pytest.mark.timeout(TOOL_TIMEOUT * WARM_ITERATIONS)
     def test_stdio_hang_002_install_into_nonexistent_env_does_not_hang(self, stdio_server):
         """
-        STDIO-HANG-002: conda_install_packages targeting a non-existent prefix
-        must return an isError=true response within TOOL_TIMEOUT seconds on
-        every iteration across WARM_ITERATIONS repeated calls, over STDIO.
-
-        Mirrors HTTP HANG-002.  Exercises a different code path in
-        environments_mcp_server from HANG-001.
+        STDIO-HANG-002: conda_install_packages must return isError=true within
+        TOOL_TIMEOUT on each of WARM_ITERATIONS repeated calls, over STDIO.
+        Mirrors HTTP HANG-002. Exercises a different code path than HANG-001.
         """
         for i in range(1, WARM_ITERATIONS + 1):
             logger.info(
@@ -481,48 +402,24 @@ class TestProxyErrorHangStdio:
     @pytest.mark.timeout(TOOL_TIMEOUT * WARM_ITERATIONS * 3)
     def test_stdio_hang_003_server_survives_error_response(self, stdio_server):
         """
-        STDIO-HANG-003: the mcp-compose STDIO server must remain functional after
-        forwarding an error response — subsequent tool calls must also complete
-        within TOOL_TIMEOUT.
+        STDIO-HANG-003: server must stay functional across repeated error+health
+        cycles, over STDIO. Mirrors HTTP HANG-003.
 
-        Mirrors HTTP HANG-003.
+        Phase 1 — WARM_ITERATIONS × list_environments to build session state.
+        Phase 2 — WARM_ITERATIONS × (remove_nonexistent_env → list_environments).
 
-        Sequence:
-          Phase 1 — warm-up: WARM_ITERATIONS successful conda_list_environments
-            calls to accumulate session state before the first error.  This
-            simulates a real chat session that has been active for some time
-            before encountering an error.
-          Phase 2 — looped error+health: WARM_ITERATIONS iterations of:
-            (a) trigger an error (remove_environment on non-existent prefix)
-            (b) immediately call a healthy tool (conda_list_environments)
+        Two failure modes:
+          1. Warm-up hangs: pool already stuck from an error earlier in the
+             same test (stdio_server is function-scoped, so no cross-test leak).
+          2. Health step hangs: proxy corrupted state while forwarding the error,
+             causing the immediately following healthy call to hang.
 
-        Two failure modes this test can catch:
-
-        1. Warm-up hangs on iteration 1 (KI-011 server-level corruption):
-           The mcp-compose process is already corrupted — its internal HTTP
-           connection pool to port 4042 is permanently stuck.  Because
-           stdio_server is function-scoped, this should only happen if the
-           corruption occurs within HANG-003 itself, not leaked from HANG-001
-           or HANG-002.
-
-        2. Warm-up passes, health step hangs in Phase 2 (observed 2026-03-06):
-           The proxy corrupts its internal state while forwarding an error,
-           causing the immediately following healthy call to hang — even though
-           the error call itself returned within TOOL_TIMEOUT.  Observed at
-           Phase 2 iteration 20/20: all 20 warm-up calls and 19 full error+health
-           cycles completed, then the 20th health call after an error timed out.
-
-        For HANG-003 to test mode 2 independently, run it against a fresh
-        server in isolation:
+        Run in isolation to test mode 2 independently:
           python -m pytest tests/qa/stdio_tools/test_guard_proxy_error_hang_stdio.py \
               -k test_stdio_hang_003 -v
-
-        The @pytest.mark.timeout uses WARM_ITERATIONS * 3 because three
-        round-trips are made per iteration (1 warm-up + 1 error + 1 healthy).
         """
-        # Phase 1: warm up the server with WARM_ITERATIONS healthy calls
         logger.info(
-            "STDIO-HANG-003 warm-up: %d × conda_list_environments to accumulate session state",
+            "STDIO-HANG-003 warm-up: %d × conda_list_environments",
             WARM_ITERATIONS,
         )
         for i in range(1, WARM_ITERATIONS + 1):
@@ -532,20 +429,15 @@ class TestProxyErrorHangStdio:
                 _call_tool_stdio(stdio_server, "conda_list_environments", {})
             except TimeoutError:
                 pytest.fail(
-                    f"STDIO-HANG-003 warm-up iteration {i}/{WARM_ITERATIONS}: "
-                    f"conda_list_environments hung on a healthy call. "
-                    f"This is KI-011 server-level corruption: mcp-compose's internal "
-                    f"HTTP connection pool to port {DOWNSTREAM_PORT} is permanently stuck. "
-                    f"A server restart is required to recover. "
-                    f"To test HANG-003 independently, run it in isolation against a "
-                    f"fresh server."
+                    f"STDIO-HANG-003 warm-up [{i}/{WARM_ITERATIONS}]: "
+                    f"conda_list_environments hung — internal pool stuck on port "
+                    f"{DOWNSTREAM_PORT}. Run in isolation against a fresh server. KI-011."
                 )
             logger.info(
                 "STDIO-HANG-003 warm-up [%d/%d] done in %.2fs",
                 i, WARM_ITERATIONS, time.monotonic() - t0,
             )
 
-        # Phase 2: WARM_ITERATIONS × (error trigger → server health check)
         logger.info(
             "STDIO-HANG-003: warm-up done — starting %d × error+health iterations",
             WARM_ITERATIONS,
@@ -584,12 +476,9 @@ class TestProxyErrorHangStdio:
                 response = _call_tool_stdio(stdio_server, "conda_list_environments", {})
             except TimeoutError:
                 pytest.fail(
-                    f"STDIO-HANG-003 iteration {i}/{WARM_ITERATIONS} (health step): "
-                    f"server hung after an error response. "
-                    "mcp-compose STDIO proxy corrupted the internal session state "
-                    "while handling the error from environments_mcp_server. "
-                    "All subsequent calls on this pipe will also hang until "
-                    "the MCP server is restarted. Matches KI-011."
+                    f"STDIO-HANG-003 [{i}/{WARM_ITERATIONS}] health step: "
+                    "server hung after an error response — proxy corrupted "
+                    "internal state. Server restart required. KI-011."
                 )
 
             is_err = _is_error(response)
