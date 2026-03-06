@@ -2,6 +2,18 @@
 
 For general installation options (latest release, specific versions, from source) see [INSTALL_OPTIONS.md](./INSTALL_OPTIONS.md).
 
+> **Windows users — read first**: Throughout this guide, make these substitutions:
+> | macOS / Linux | Windows (cmd / Anaconda Prompt) |
+> |---|---|
+> | `anaconda-mcp <cmd>` | `python -m anaconda_mcp <cmd>` |
+> | `export VAR=value` | `set VAR=value` |
+> | `grep -E "..."` | `findstr /R "..."` |
+> | `./tests/qa/_ai_docs/scripts/start-http-server.sh 8888` | `python -m anaconda_mcp serve --http --port 8888` |
+>
+> **Why `anaconda-mcp` doesn't work on Windows even when found by `where`**: conda installs a Unix-style script named `anaconda-mcp` (no extension) into the `Scripts` folder. Windows `cmd.exe` only executes files with `.exe`, `.bat`, or `.cmd` extensions, so it silently ignores the extensionless file. The `.exe` wrapper may not be generated for this package. Use `python -m anaconda_mcp` as the reliable cross-platform alternative.
+>
+> Open an **Anaconda Prompt** or **PowerShell** (after running `conda init powershell` once) to ensure the conda environment's `Scripts` folder is on `PATH`.
+
 ---
 
 ## Pinned RC Versions — Current Test Cycle
