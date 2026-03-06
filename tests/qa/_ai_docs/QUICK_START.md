@@ -85,7 +85,12 @@ Add to `~/.cursor/mcp.json`:
 ```
 Then restart Cursor.
 
-**Option B - API testing** (curl):
+**Option B - Claude Code**:
+```bash
+claude mcp add --transport http anaconda-mcp http://localhost:8888/mcp
+```
+
+**Option C - API testing** (curl):
 ```bash
 curl -X POST http://localhost:8888/mcp \
   -H "Content-Type: application/json" \
