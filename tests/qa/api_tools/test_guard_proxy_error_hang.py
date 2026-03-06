@@ -27,7 +27,8 @@ from common.constants.mcp_tools import (
     Tools,
 )
 from common.constants.test_data import NONEXISTENT_ENV_PREFIX, NONEXISTENT_PKG
-from common.utils.mcp_client import _call_tool, _tool_result
+from common.utils.mcp_client import _call_tool, _initialize_session, _tool_result
+from common.utils.response_validators import _validate_is_error
 
 logger = logging.getLogger(__name__)
 
@@ -44,36 +45,7 @@ def session_id(mcp_server) -> str | None:
     permanently corrupts mcp-compose's internal connection pool) does not
     cascade into subsequent tests.
     """
-    response = httpx.post(
-        BASE_URL,
-        json={
-            "jsonrpc": "2.0",
-            "id": 0,
-            "method": "initialize",
-            "params": {
-                "protocolVersion": "2024-11-05",
-                "capabilities": {},
-                "clientInfo": {"name": "api-tools-hang-test", "version": "1.0"},
-            },
-        },
-        headers={"Accept": "application/json, text/event-stream"},
-        timeout=10,
-    )
-    sid = response.headers.get("mcp-session-id")
-    headers = {"Accept": "application/json, text/event-stream"}
-    if sid:
-        headers["Mcp-Session-Id"] = sid
-    try:
-        httpx.post(
-            BASE_URL,
-            json={"jsonrpc": "2.0", "method": "notifications/initialized", "params": {}},
-            headers=headers,
-            timeout=5,
-        )
-    except Exception:
-        pass
-    logger.info("fresh session_id=%s", sid)
-    return sid
+    return _initialize_session(BASE_URL, client_name="api-tools-hang-test")
 
 
 # 20 iterations to accumulate session state (the production hang occurred after
@@ -131,9 +103,9 @@ class TestProxyErrorHangHttp:
                 i, WARM_ITERATIONS, time.monotonic() - t0,
                 result.get(ToolResultFields.IS_ERROR),
             )
-            assert result.get(ToolResultFields.IS_ERROR) is True, (
-                f"HANG-001 iteration {i}/{WARM_ITERATIONS}: expected is_error=true "
-                f"for non-existent prefix '{NONEXISTENT_ENV_PREFIX}', got: {result}"
+            _validate_is_error(
+                result,
+                f"HANG-001 [{i}/{WARM_ITERATIONS}] for non-existent prefix '{NONEXISTENT_ENV_PREFIX}'",
             )
 
     @pytest.mark.timeout(TOOL_TIMEOUT * WARM_ITERATIONS)
@@ -172,9 +144,9 @@ class TestProxyErrorHangHttp:
                 i, WARM_ITERATIONS, time.monotonic() - t0,
                 result.get(ToolResultFields.IS_ERROR),
             )
-            assert result.get(ToolResultFields.IS_ERROR) is True, (
-                f"HANG-002 iteration {i}/{WARM_ITERATIONS}: expected is_error=true "
-                f"for non-existent prefix '{NONEXISTENT_ENV_PREFIX}', got: {result}"
+            _validate_is_error(
+                result,
+                f"HANG-002 [{i}/{WARM_ITERATIONS}] for non-existent prefix '{NONEXISTENT_ENV_PREFIX}'",
             )
 
     @pytest.mark.timeout(TOOL_TIMEOUT * WARM_ITERATIONS * 3)

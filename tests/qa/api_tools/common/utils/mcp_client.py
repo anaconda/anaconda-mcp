@@ -131,6 +131,50 @@ def _call_tool(tool_name: str, arguments: dict, session_id: str | None) -> dict:
     return _parse_mcp_response(response, elapsed_s)
 
 
+def _initialize_session(server_url: str, client_name: str = "api-tools-test") -> str | None:
+    """
+    Perform the MCP initialize handshake and return the session ID (may be None).
+
+    Sends POST initialize, extracts Mcp-Session-Id from the response headers,
+    then sends POST notifications/initialized to complete the handshake.
+
+    Use this instead of duplicating the two-request sequence in fixtures.
+    """
+    logger.info("Initializing MCP session at %s", server_url)
+    response = httpx.post(
+        server_url,
+        json={
+            "jsonrpc": "2.0",
+            "id": 0,
+            "method": "initialize",
+            "params": {
+                "protocolVersion": "2024-11-05",
+                "capabilities": {},
+                "clientInfo": {"name": client_name, "version": "1.0"},
+            },
+        },
+        headers={"Accept": "application/json, text/event-stream"},
+        timeout=10,
+    )
+    sid = response.headers.get("mcp-session-id")
+    logger.debug("MCP session established (session-id present: %s)", sid is not None)
+
+    headers: dict[str, str] = {"Accept": "application/json, text/event-stream"}
+    if sid:
+        headers["Mcp-Session-Id"] = sid
+    try:
+        httpx.post(
+            server_url,
+            json={"jsonrpc": "2.0", "method": "notifications/initialized", "params": {}},
+            headers=headers,
+            timeout=5,
+        )
+    except Exception:
+        pass
+
+    return sid
+
+
 def _tool_result(response_json: dict) -> dict:
     """
     Extract and JSON-parse the tool result payload from a tools/call response.

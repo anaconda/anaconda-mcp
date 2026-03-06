@@ -26,10 +26,13 @@ import logging
 import pytest
 
 from common.constants.config import TOOL_TIMEOUT
-from common.constants.mcp_tools import InstallPackagesArgs, ToolResultFields, Tools
+from common.constants.mcp_tools import InstallPackagesArgs, Tools
 from common.constants.test_data import NONEXISTENT_PKG
 from common.utils.mcp_client import _call_tool, _tool_result
-from common.utils.response_validators import _validate_package_resolution_error
+from common.utils.response_validators import (
+    _validate_is_error,
+    _validate_package_resolution_error,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -82,10 +85,7 @@ class TestInstallNonexistentPackage:
         )
         result = _tool_result(response)
 
-        assert result.get(ToolResultFields.IS_ERROR) is True, (
-            f"Expected is_error=true for nonexistent package '{NONEXISTENT_PKG}', "
-            f"got: {result}"
-        )
+        _validate_is_error(result, f"nonexistent package '{NONEXISTENT_PKG}'")
 
     @pytest.mark.timeout(TOOL_TIMEOUT)
     def test_err_003b_by_prefix_does_not_hang(self, conda_env, session_id):
@@ -107,8 +107,5 @@ class TestInstallNonexistentPackage:
             session_id,
         )
         result = _tool_result(response)
-        assert result.get(ToolResultFields.IS_ERROR) is True, (
-            f"Expected is_error=true for nonexistent package '{NONEXISTENT_PKG}', "
-            f"got: {result}"
-        )
+        _validate_is_error(result, f"nonexistent package '{NONEXISTENT_PKG}'")
 

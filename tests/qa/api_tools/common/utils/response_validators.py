@@ -10,6 +10,20 @@ from __future__ import annotations
 from common.constants.mcp_tools import ToolResultFields
 
 
+def _validate_is_error(result: dict, context: str = "") -> None:
+    """
+    Assert that the tool result has is_error=true.
+
+    Raises AssertionError with the context string and the actual result if not.
+    """
+    if result.get(ToolResultFields.IS_ERROR) is not True:
+        parts = ["Expected is_error=true"]
+        if context:
+            parts.append(context)
+        parts.append(f"got: {result!r}")
+        raise AssertionError(" — ".join(parts))
+
+
 def _validate_package_resolution_error(result: dict, env_name: str) -> None:
     """
     Assert that the tool result describes a package-resolution failure,

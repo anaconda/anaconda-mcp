@@ -27,6 +27,7 @@ import pytest
 
 from common.constants.test_data import ENV_NAME
 from common.utils.conda_utils import _conda_env_prefix
+from common.utils.mcp_client import _initialize_session
 
 logger = logging.getLogger(__name__)
 
@@ -207,39 +208,7 @@ def session_id(mcp_server, server_url: str) -> str | None:
     Module-scoped so each test file gets its own MCP session, keeping
     test files isolated from each other.
     """
-    logger.info("Initializing MCP session at %s", server_url)
-    response = httpx.post(
-        server_url,
-        json={
-            "jsonrpc": "2.0",
-            "id": 0,
-            "method": "initialize",
-            "params": {
-                "protocolVersion": "2024-11-05",
-                "capabilities": {},
-                "clientInfo": {"name": "api-tools-test", "version": "1.0"},
-            },
-        },
-        headers={"Accept": "application/json, text/event-stream"},
-        timeout=10,
-    )
-    sid = response.headers.get("mcp-session-id")
-    logger.debug("MCP session established (session-id present: %s)", sid is not None)
-
-    headers = {"Accept": "application/json, text/event-stream"}
-    if sid:
-        headers["Mcp-Session-Id"] = sid
-    try:
-        httpx.post(
-            server_url,
-            json={"jsonrpc": "2.0", "method": "notifications/initialized", "params": {}},
-            headers=headers,
-            timeout=5,
-        )
-    except Exception:
-        pass
-
-    return sid
+    return _initialize_session(server_url, client_name="api-tools-test")
 
 
 @pytest.fixture(scope="module")

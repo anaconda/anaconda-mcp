@@ -23,7 +23,15 @@ BASE_URL = os.environ.get(
 ```
 
 ## Rules for AI
-- Never log or print `Mcp-Session-Id`, tokens, or API keys.
-- Validate required env vars in `conftest.py` during `pytest_configure`; fail early with a clear message.
+- Never log or print the **value** of `Mcp-Session-Id`, tokens, or API keys.
+  Log only the presence/absence: `logger.debug("session-id present: %s", sid is not None)`.
+  Rationale: even for a localhost suite, logs may end up in CI artifacts, HTML reports, or shared
+  test runs — and the habit protects the suite if it is ever pointed at a non-localhost server.
+- Validate in `pytest_configure` only for values with no natural early-failure path — e.g. a
+  missing required env var that would cause a cryptic `KeyError` inside a test.
+  **Server URL validation is not required here**: a bad or unreachable URL produces a fast,
+  obvious error at the `mcp_server` fixture's reachability check; a redundant
+  `startswith("http")` guard in `pytest_configure` adds noise without value.
 - Provide `.env.example` if the suite gains secrets beyond server URL/port.
-- CLI options (`--server-url`, `--server-conda-env`) take precedence over env vars; `conftest.py` must propagate them to `os.environ` via `pytest_configure`.
+- CLI options (`--server-url`, `--server-conda-env`) take precedence over env vars; `conftest.py`
+  must propagate them to `os.environ` via `pytest_configure`.
