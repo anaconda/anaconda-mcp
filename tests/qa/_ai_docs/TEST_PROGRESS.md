@@ -77,5 +77,5 @@ See [TEST_MATRIX.md](./TEST_MATRIX.md) for full assignment rationale.
 
 | ID | Description | Observed in | Reference |
 |----|-------------|-------------|-----------|
-| KI-011 | Cursor chat hung after MCP tool returned an error — non-reproducible on retry; Cursor-side bug, not an Anaconda MCP issue | QA 2 · macOS · Cursor · 3.13 · HTTP | [KI-011](./KNOWN_ISSUES.md#ki-011-cursor-chat-hangs-when-an-mcp-tool-returns-an-error) |
+| KI-011 (Cursor) | Cursor chat hung after MCP tool returned an error — non-reproducible on retry; Cursor-side bug, not an Anaconda MCP issue | QA 2 · macOS · Cursor · 3.13 · HTTP | [KI-011](./KNOWN_ISSUES.md#ki-011-cursor-chat-hangs-when-an-mcp-tool-returns-an-error) |
 | KI-011 (Claude Code) | Claude Code session hung after MCP tool returned an error — same pattern as KI-011; not an Anaconda MCP issue | QA 2 · macOS · Claude Code · 3.10 · HTTP | [KI-011](./KNOWN_ISSUES.md#ki-011-cursor-chat-hangs-when-an-mcp-tool-returns-an-error) |
