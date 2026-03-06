@@ -14,9 +14,19 @@ without an LLM client in the loop. Deterministic and repeatable.
 | `test_err_003b_by_prefix_does_not_hang` | KI-010 | `conda_install_packages(prefix=<path>)` must respond within 60 s |
 | `test_ki002_list_environments_reports_correct_name` | KI-002 | `conda_list_environments` must return the correct name for each env — not "base" for a non-base environment |
 | `test_ki003_remove_environment_by_name` | KI-003 | `conda_remove_environment(environment_name=<name>)` must resolve the correct prefix and remove the env |
+| `test_hang_001_remove_nonexistent_env_does_not_hang` | KI-011 | `conda_remove_environment(prefix=<nonexistent>)` must return an error within 60 s — the mcp-compose proxy must not hang when the backend returns `isError=true` |
+| `test_hang_002_install_into_nonexistent_env_does_not_hang` | KI-011 | `conda_install_packages(prefix=<nonexistent>)` must return an error within 60 s — same proxy hang guard for the install code path |
+| `test_hang_003_session_survives_error_response` | KI-011 | after receiving an error response, subsequent tool calls on the same HTTP session must also complete — the proxy must not corrupt session state |
 
 Reproduced on 2026-03-05, macOS, `environments-mcp-server 1.0.0rc1`.
-See [KI-002, KI-003, KI-010](../_ai_docs/KNOWN_ISSUES.md) in KNOWN_ISSUES.md for details.
+See [KI-002, KI-003, KI-010, KI-011](../_ai_docs/KNOWN_ISSUES.md) in KNOWN_ISSUES.md for details.
+
+> **Note on KI-011 tests and transport:** `test_guard_proxy_error_hang.py` is marked
+> `http_transport` — it tests the HTTP transport code path specifically and cannot be
+> run against STDIO. Both Option A and Option B exercise the same code path: the hang
+> lives in mcp-compose's internal proxy (`:8888` → `:4041`), not in how the server
+> process was started. The only practical difference is that Option B starts a fresh
+> server per session, preventing corrupted state from one run bleeding into the next.
 
 ---
 
@@ -172,6 +182,10 @@ Open in any browser. The report includes:
 
 ## Expected results
 
+### HTTP transport tests (`test_guard_proxy_error_hang.py`)
+
+Run with either Option A or Option B. Requires a running HTTP server on port 8888.
+
 | Test | Bug present | Bug fixed |
 |------|-------------|-----------|
 | `test_err_003a_by_name_error_description` | **FAIL** | PASS |
@@ -179,6 +193,17 @@ Open in any browser. The report includes:
 | `test_err_003b_by_prefix_does_not_hang` | PASS | PASS |
 | `test_ki002_list_environments_reports_correct_name` | **FAIL** | PASS |
 | `test_ki003_remove_environment_by_name` | **FAIL** | PASS |
+| `test_hang_001_remove_nonexistent_env_does_not_hang` | **FAIL** (ReadTimeout after 60 s) | PASS |
+| `test_hang_002_install_into_nonexistent_env_does_not_hang` | **FAIL** (ReadTimeout after 60 s) | PASS |
+| `test_hang_003_session_survives_error_response` | **FAIL** (session corrupted or ReadTimeout) | PASS |
+
+The KI-011 tests fail the same way under both Option A and Option B — the bug is in
+mcp-compose's proxy code, not in how the server was started. Under Option A, a failed
+hang test may leave the server in a corrupted state that affects the next run; restart
+the server manually if subsequent runs show unexpected cascading failures.
+
+For the **STDIO transport negative-control tests**, see `tests/qa/stdio_tools/` — a
+separate test project with its own conftest, environment, and README.
 
 ---
 
@@ -193,10 +218,11 @@ tests/qa/api_tools/
 ├── conftest.py                            ← CLI options, server fixture, HTML metadata, shared fixtures
 ├── test_guard_install_nonexistent_pkg.py  ← KI-010 regression tests
 ├── test_env_name_resolution.py            ← KI-002, KI-003 regression tests
+├── test_guard_proxy_error_hang.py         ← KI-011 regression tests (HTTP transport)
 ├── common/
 │   ├── constants/
 │   │   ├── config.py                      ← BASE_URL, TOOL_TIMEOUT
-│   │   ├── test_data.py                   ← ENV_NAME, NONEXISTENT_PKG
+│   │   ├── test_data.py                   ← ENV_NAME, NONEXISTENT_PKG, NONEXISTENT_ENV_PREFIX
 │   │   └── mcp_tools.py                   ← Tools, InstallPackagesArgs, RemoveEnvironmentArgs, ToolResultFields enums
 │   └── utils/
 │       ├── mcp_client.py                  ← _call_tool, _parse_mcp_response, _tool_result

@@ -35,11 +35,20 @@ This documentation serves as the central knowledge base for QA testing of the An
 | [TESTING_WORKFLOW.md](./TESTING_WORKFLOW.md) | Step-by-step workflow for QA participants | All QA |
 | [QUICK_START.md](./QUICK_START.md) | Install, configure and verify setup | All QA |
 | [KNOWN_ISSUES.md](./KNOWN_ISSUES.md) | Known bugs and workarounds | All QA |
+| [KI-011-HTTP-PROXY-HANG.md](./KI-011-HTTP-PROXY-HANG.md) | Root cause analysis and fix plan for the mcp-compose proxy hang on error responses (HTTP transport) | Developers, QA leads |
+| [BUG-REPORT-KI011-MCP-COMPOSE-PROXY-HANG.md](./BUG-REPORT-KI011-MCP-COMPOSE-PROXY-HANG.md) | Concise bug report for filing against mcp-compose — steps to reproduce, observed behaviour, server logs, suggested fix | Developers |
 
 ### Scripts
 | Script | Description |
 |--------|-------------|
 | [scripts/start-http-server.sh](./scripts/start-http-server.sh) | Start HTTP server (keeps running) |
+
+## Test Projects
+
+| Folder | Transport | Purpose | Needs pre-started server? |
+|--------|-----------|---------|--------------------------|
+| [`tests/qa/api_tools/`](../api_tools/README.md) | Streamable HTTP | Primary API regression suite; catches KI-011 hang | Yes (port 8888) |
+| [`tests/qa/stdio_tools/`](../stdio_tools/README.md) | STDIO | Negative-control for KI-011; confirms hang is HTTP-specific | No — fixture self-manages |
 
 ## Source Documents
 
