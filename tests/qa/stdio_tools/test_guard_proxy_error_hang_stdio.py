@@ -39,7 +39,7 @@ logger = logging.getLogger(__name__)
 # Constants
 # ---------------------------------------------------------------------------
 
-WARM_ITERATIONS = 20
+WARM_ITERATIONS = 40
 TOOL_TIMEOUT = 60  # seconds per individual tool call
 
 # Port for environments_mcp_server in STDIO test runs.
