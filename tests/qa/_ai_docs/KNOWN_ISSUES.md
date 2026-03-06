@@ -208,27 +208,32 @@ But this command starts server in **STDIO mode**, not HTTP mode. Claude Desktop 
 
 ---
 
-### KI-011: Cursor Chat Hangs When an MCP Tool Returns an Error
+### KI-011: Client Hangs When an MCP Tool Returns an Error (Cursor and Claude Code)
 
-**Status**: Open (Cursor-side bug — not an Anaconda MCP issue)
+**Status**: Open (client-side bug — not an Anaconda MCP issue)
 **Severity**: Medium (workaround: start a new chat session)
-**Observed**: Twice during internal testing (Feb–Mar 2026), two different tools (one-time occasional cases, non-reproducible with same configuration by next attempts)
+**Affected clients**: Cursor, Claude Code
+**Observed**: Three times during internal testing (Feb–Mar 2026) — twice in Cursor, once in Claude Code; one-time occasional cases, non-reproducible on retry with the same configuration
 
-**Description**: After an MCP tool call returns an error response, the Cursor chat panel stops responding — no further output, no error displayed, the session simply hangs. The same prompt in a fresh session works normally.
+**Description**: After an MCP tool call returns an error response, the chat session stops responding — no further output, no error displayed, the session simply hangs. The same prompt in a fresh session works normally. This pattern has been confirmed in both Cursor and Claude Code, indicating it is a general MCP client implementation problem rather than a Cursor-specific issue.
 
-**Root cause**: This is a **Cursor UI state machine bug**. Cursor's frontend gets stuck in a *"waiting for tool response"* state and does not properly process or surface error responses returned by the MCP server. The MCP server itself has already returned a valid (error) response; Cursor never acknowledges it.
+**Root cause**: The client gets stuck in a *"waiting for tool response"* state and does not properly process or surface error responses returned by the MCP server. The MCP server itself has already returned a valid (error) response; the client never acknowledges it.
 
-This is a well-documented, recurring issue across multiple unrelated MCP servers and Cursor versions.
+This is a well-documented, recurring issue across multiple unrelated MCP servers and client versions.
 
 **Observed pattern**:
 1. Tool is called → MCP server returns an error
-2. Cursor chat shows "Generating…" or "Running…" indefinitely
+2. Client shows "Generating…" or "Running…" indefinitely
 3. No error is surfaced in the chat
 4. Starting a new chat session with the same prompt and config works fine
 
-**Workaround**: Start a new chat session. If the hang persists, reload the Cursor window (`Cmd+Shift+P` → *Reload Window*) or temporarily disable and re-enable the MCP server in *Cursor Settings → Tools & MCP*.
+**Workarounds**:
+- **Cursor**: Start a new chat session. If the hang persists, reload the Cursor window (`Cmd+Shift+P` → *Reload Window*) or temporarily disable and re-enable the MCP server in *Cursor Settings → Tools & MCP*.
+- **Claude Code**: Exit the session (`Ctrl+C`) and start a new one. Check for lingering MCP server processes (`ps aux | grep anaconda-mcp`) and kill them if present — Claude Code has no automatic timeout or zombie process cleanup.
 
-**How to check MCP logs during a hang**: Bottom Pane → Output → select **MCP** from the dropdown.
+**How to check MCP logs during a hang**:
+- **Cursor**: Bottom Pane → Output → select **MCP** from the dropdown
+- **Claude Code**: run with `--verbose` flag or check stderr output in the terminal
 
 **Cursor forum references**:
 - [Cursor not handling long-running MCP tool responses](https://forum.cursor.com/t/cursor-not-handling-long-running-mcp-tool-responses/124718) — Cursor engineer confirmed the bug; a 30 s timeout was removed as a partial fix
@@ -237,7 +242,12 @@ This is a well-documented, recurring issue across multiple unrelated MCP servers
 - [Cursor doesn't cancel long-running MCP tool](https://forum.cursor.com/t/cursor-doesn-t-cancel-long-running-mcp-tool/134079) — Cancel button does not send MCP cancellation; tool keeps running on the server
 - [IDE hangs after automatic MCP browser test](https://forum.cursor.com/t/ide-hangs-after-automatic-mcp-browser-test/148923)
 
-**Note on KI-010**: The isolated hang observed under KI-010 (*Note on hanging*) is consistent with this Cursor-side bug.
+**Claude Code GitHub issues**:
+- [VS Code extension hangs indefinitely on MCP server error -32601](https://github.com/anthropics/claude-code/issues/25976) — extension hangs on method-not-found errors; duplicate process spawning observed
+- [CRITICAL: MCP server causes 16+ hour hang — no timeout or stuck detection](https://github.com/anthropics/claude-code/issues/15945) — no timeout mechanism; 70+ zombie processes accumulated with no auto-cleanup
+- [Hangs when resuming conversations with large tool outputs in history](https://github.com/anthropics/claude-code/issues/19036) — related hang triggered by conversation state, not just live errors
+
+**Note on KI-010**: The isolated hang observed under KI-010 (*Note on hanging*) is consistent with this client-side bug.
 
 ---
 

@@ -61,7 +61,7 @@
 
 | QA | OS | Client | Python | Transport | Document |
 |----|-----|--------|--------|-----------|----------|
-| QA 2 | macOS | Cursor | 3.10 | HTTP | TESTS_E2E.md |
+| QA 2 | macOS | Claude Code | 3.10 | HTTP | TESTS_E2E.md |
 | QA 3 | Windows | Claude Desktop | 3.10 | STDIO | TESTS_E2E.md |
 
 ### Regression Tests (Known Issues)
@@ -72,6 +72,7 @@ Run as part of the scheduled E2E session for that configuration — no extra set
 |------|----|--------|-----------|
 | REGRESS-002 (KI-003) | QA 2 | Cursor, HTTP, 3.13 | Confirmed reproduction environment |
 | REGRESS-002 (KI-003) | QA 1 | Claude Desktop, STDIO, 3.10 | STDIO transport + 3.10 boundary |
+| REGRESS-002 (KI-003) | QA 2 | Claude Code, HTTP, 3.10 | Observe Claude Code behavior on known regression |
 
 ### CLI, Config, API-Tools Tests
 

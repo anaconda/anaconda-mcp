@@ -4,7 +4,7 @@
 
 - **Last updated**: 2026-03-05
 - **Bugs filed**: 3 (2 - minor, 1 - high)
-- **Observations**: 1 (Cursor-side hang — not an Anaconda MCP issue)
+- **Observations**: 2 (client-side hang — not an Anaconda MCP issue; observed in both Cursor and Claude Code)
 
 | Phase | What | Status |
 |-------|------|--------|
@@ -36,7 +36,7 @@ See [TEST_MATRIX.md](./TEST_MATRIX.md) for full assignment rationale.
 
 | QA | OS | Client | Python | Transport | Suite | Status | Result |
 |----|----|--------|--------|-----------|-------|--------|--------|
-| QA 2 | macOS | Cursor | 3.10 | HTTP | TESTS_E2E.md | ⬜ Not started | — |
+| QA 2 | macOS | Claude Code | 3.10 | HTTP | TESTS_E2E.md | ✅ Done | 4 passed / 2 failed | DESK-1342; KI-011 equivalent observed |
 | QA 3 | Windows | Claude Desktop | 3.10 | STDIO | TESTS_E2E.md | ⬜ Not started | — |
 
 ---
@@ -47,6 +47,7 @@ See [TEST_MATRIX.md](./TEST_MATRIX.md) for full assignment rationale.
 |------|----|--------|--------|--------|
 | REGRESS-002 (KI-003) | QA 2 | Cursor, HTTP, 3.13 | ✅ Done | KI-003 confirmed — DESK-1342 filed |
 | REGRESS-002 (KI-003) | QA 1 | Claude Desktop, STDIO, 3.10 | 🔶 Partial | Run via GUARD-001; full REGRESS-002 pending |
+| REGRESS-002 (KI-003) | QA 2 | Claude Code, HTTP, 3.10 | ⬜ Not started | — |
 
 ---
 
@@ -77,3 +78,4 @@ See [TEST_MATRIX.md](./TEST_MATRIX.md) for full assignment rationale.
 | ID | Description | Observed in | Reference |
 |----|-------------|-------------|-----------|
 | KI-011 | Cursor chat hung after MCP tool returned an error — non-reproducible on retry; Cursor-side bug, not an Anaconda MCP issue | QA 2 · macOS · Cursor · 3.13 · HTTP | [KI-011](./KNOWN_ISSUES.md#ki-011-cursor-chat-hangs-when-an-mcp-tool-returns-an-error) |
+| KI-011 (Claude Code) | Claude Code session hung after MCP tool returned an error — same pattern as KI-011; not an Anaconda MCP issue | QA 2 · macOS · Claude Code · 3.10 · HTTP | [KI-011](./KNOWN_ISSUES.md#ki-011-cursor-chat-hangs-when-an-mcp-tool-returns-an-error) |
