@@ -28,7 +28,7 @@ pre-started server required.
 ## Why test over STDIO
 
 - **Matches Claude Desktop's transport** — exercises the exact code path Claude
-  Desktop uses, not just the HTTP path tested by `api_tools/`.
+  Desktop uses, not just the HTTP path tested by `http_tools/`.
 - **Independent hang detection** — mcp-compose's internal connection to
   `environments_mcp_server` is Streamable HTTP in both modes; STDIO tests
   confirm whether a proxy defect is transport-agnostic or HTTP-specific.
@@ -43,7 +43,7 @@ pre-started server required.
 
 ## Setup
 
-The test environment is the same `anaconda-mcp-qa` conda env used by `api_tools/`.
+The test environment is the same `anaconda-mcp-qa` conda env used by `http_tools/`.
 If it already exists, no additional setup is needed.
 
 ```bash

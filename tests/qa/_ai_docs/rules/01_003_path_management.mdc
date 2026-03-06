@@ -9,7 +9,7 @@
 ```python
 from pathlib import Path
 
-# Script lives two levels up from api_tools/
+# Script lives two levels up from http_tools/
 _SCRIPT_PATH = (
     Path(__file__).parent.parent / "_ai_docs" / "scripts" / "start-http-server.sh"
 ).resolve()
@@ -33,4 +33,4 @@ filename = path.stem   # without extension
 - No hardcoded path separators (`/` or `\`).
 - Always call `.resolve()` when passing paths to subprocesses or external tools.
 - Use `mkdir(parents=True, exist_ok=True)` for directory creation.
-- Test data files (if any) go under `tests/qa/api_tools/_test_data/`; derive that path from `Path(__file__)`.
+- Test data files (if any) go under `tests/qa/http_tools/_test_data/`; derive that path from `Path(__file__)`.

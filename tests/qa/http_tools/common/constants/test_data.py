@@ -1,5 +1,5 @@
 """
-Reusable test data constants for the api_tools suite.
+Reusable test data constants for the http_tools suite.
 """
 
 from __future__ import annotations

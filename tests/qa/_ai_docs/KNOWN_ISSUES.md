@@ -23,7 +23,7 @@ Issues documented from internal testing conversations (Feb 2026).
 **Status**: Open (Bug)
 **Severity**: Medium
 **Version**: 1.0.0rc1
-**Regression test**: `tests/qa/api_tools/test_guard_install_nonexistent_pkg.py`
+**Regression test**: `tests/qa/http_tools/test_guard_install_nonexistent_pkg.py`
 
 **Description**: `conda_install_packages(environment="<name>", packages=["nonexistent-package-xyz123"])` returns `is_error=true` with `"The environment was not found. Make sure you are providing the correct name or prefix"` even though the environment exists. The misleading error causes the LLM to list environments and retry by prefix, producing extra tool calls.
 
@@ -60,7 +60,7 @@ Issues documented from internal testing conversations (Feb 2026).
 **Status**: Open (Bug)
 **Severity**: High
 **Version**: 1.0.0rc1
-**Regression test**: `tests/qa/api_tools/test_env_name_resolution.py::TestEnvironmentNameResolution::test_ki003_remove_environment_by_name`
+**Regression test**: `tests/qa/http_tools/test_env_name_resolution.py::TestEnvironmentNameResolution::test_ki003_remove_environment_by_name`
 **Related**: KI-002 (misclassified "base" environment is the root cause)
 
 **Description**: `conda_remove_environment(environment_name="<name>")` — and other tools that accept a name — resolve the wrong prefix for the target environment and return `"Conda environment not found"` even though the environment exists. Only passing the full `prefix` path works as a workaround.

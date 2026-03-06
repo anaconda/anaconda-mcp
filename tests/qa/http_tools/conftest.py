@@ -1,5 +1,5 @@
 """
-Shared pytest fixtures and configuration for the api_tools test suite.
+Shared pytest fixtures and configuration for the http_tools test suite.
 
 Provides:
 - CLI options: --server-url, --transport, --python-version,

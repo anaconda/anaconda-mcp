@@ -46,7 +46,7 @@ This documentation serves as the central knowledge base for QA testing of the An
 
 | Folder | Transport | Purpose | Needs pre-started server? |
 |--------|-----------|---------|--------------------------|
-| [`tests/qa/api_tools/`](../api_tools/README.md) | Streamable HTTP | Direct API regression suite — calls mcp-compose over HTTP | Yes (port 8888) |
+| [`tests/qa/http_tools/`](../http_tools/README.md) | Streamable HTTP | Direct API regression suite — calls mcp-compose over HTTP | Yes (port 8888) |
 | [`tests/qa/stdio_tools/`](../stdio_tools/README.md) | STDIO | Regression suite — calls mcp-compose via subprocess pipe | No — fixture self-manages |
 
 ## Source Documents

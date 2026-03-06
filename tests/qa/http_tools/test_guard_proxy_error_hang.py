@@ -166,7 +166,7 @@ class TestProxyErrorHangHttp:
              forwarding the error, so the immediately following healthy call hangs.
 
         Run in isolation against a fresh server to test mode 2 independently:
-          python -m pytest tests/qa/api_tools/test_guard_proxy_error_hang.py \
+          python -m pytest tests/qa/http_tools/test_guard_proxy_error_hang.py \
               -k test_hang_003 -v
         """
         logger.info(

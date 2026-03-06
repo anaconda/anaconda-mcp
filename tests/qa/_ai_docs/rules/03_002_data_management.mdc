@@ -2,7 +2,7 @@
 
 ## Organization (when suite grows beyond one file)
 ```
-api_tools/
+http_tools/
 ├── conftest.py
 ├── common/
 │   └── constants/
@@ -38,4 +38,4 @@ def _build_install_args(environment: str | None = None,
 - Use `.copy()` for flat header dicts.
 - Keep payload builder functions small and reusable.
 - Don't hardcode environment names, package names, or timeouts inside test functions — define them as module constants.
-- Static artifacts (large JSON blobs, real installer files) go in `tests/qa/api_tools/_test_data/`.
+- Static artifacts (large JSON blobs, real installer files) go in `tests/qa/http_tools/_test_data/`.

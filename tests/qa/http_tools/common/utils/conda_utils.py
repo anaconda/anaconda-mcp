@@ -1,5 +1,5 @@
 """
-Conda environment utilities for the api_tools test suite.
+Conda environment utilities for the http_tools test suite.
 """
 
 from __future__ import annotations

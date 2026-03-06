@@ -1,4 +1,4 @@
-# API Tools Tests
+# HTTP Transport Tests
 
 Tests validate MCP tool behavior by calling the server over **Streamable HTTP** —
 direct API calls via httpx, no LLM client in the loop. Deterministic and repeatable.
@@ -35,7 +35,7 @@ See [hang_issue/](../_ai_docs/hang_issue/) for the KI-011 root-cause analysis an
 ### 1. Create the QA conda environment
 
 ```bash
-conda env create -f tests/qa/api_tools/environment.yml
+conda env create -f tests/qa/http_tools/environment.yml
 ```
 
 This creates `anaconda-mcp-qa` with `pytest`, `pytest-html`, and `httpx`.
@@ -44,7 +44,7 @@ It does **not** need `anaconda-mcp` installed — the server runs separately.
 If the environment already exists and needs updating:
 
 ```bash
-conda env update -f tests/qa/api_tools/environment.yml --prune
+conda env update -f tests/qa/http_tools/environment.yml --prune
 ```
 
 ---
@@ -63,7 +63,7 @@ conda activate anaconda-mcp-rc-py313
 
 # Terminal 2: run the tests
 conda activate anaconda-mcp-qa
-python -m pytest tests/qa/api_tools/ -v
+python -m pytest tests/qa/http_tools/ -v
 ```
 
 ### Option B — auto-start server
@@ -90,15 +90,15 @@ conda run -n anaconda-mcp-rc-py313 pip install -e .
 
 ```bash
 conda activate anaconda-mcp-qa
-python -m pytest tests/qa/api_tools/ -v --start-server
+python -m pytest tests/qa/http_tools/ -v --start-server
 
 # Explicit env name
-python -m pytest tests/qa/api_tools/ -v \
+python -m pytest tests/qa/http_tools/ -v \
   --start-server \
   --server-conda-env anaconda-mcp-rc-py313
 
 # With report metadata
-python -m pytest tests/qa/api_tools/ -v \
+python -m pytest tests/qa/http_tools/ -v \
   --start-server \
   --server-conda-env anaconda-mcp-rc-py313 \
   --transport http \
@@ -146,17 +146,17 @@ sequenceDiagram
 
 ```bash
 # Different port
-python -m pytest tests/qa/api_tools/ -v --server-url http://localhost:9999/mcp
+python -m pytest tests/qa/http_tools/ -v --server-url http://localhost:9999/mcp
 
 # Remote server
-python -m pytest tests/qa/api_tools/ -v --server-url http://myserver:8888/mcp
+python -m pytest tests/qa/http_tools/ -v --server-url http://myserver:8888/mcp
 ```
 
 ---
 
 ## HTML report
 
-Generated after every run at `tests/qa/api_tools/reports/report.html`.
+Generated after every run at `tests/qa/http_tools/reports/report.html`.
 Open in any browser — includes pass/fail per test, assertion diffs, and
 server metadata in the header.
 
@@ -186,7 +186,7 @@ For the STDIO transport tests, see [`tests/qa/stdio_tools/`](../stdio_tools/READ
 ## File structure
 
 ```
-tests/qa/api_tools/
+tests/qa/http_tools/
 ├── environment.yml                        ← QA conda env (pytest + httpx + pytest-html + pytest-timeout)
 ├── conftest.py                            ← CLI options, server fixture, shared fixtures
 ├── test_guard_install_nonexistent_pkg.py  ← KI-010 regression tests

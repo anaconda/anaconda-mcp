@@ -50,7 +50,7 @@ conda activate anaconda-mcp-rc-py313
 
 # Terminal 2 — run the test
 conda activate anaconda-mcp-qa
-python -m pytest tests/qa/api_tools/test_guard_proxy_error_hang.py \
+python -m pytest tests/qa/http_tools/test_guard_proxy_error_hang.py \
     -k test_hang_002 -v
 ```
 
@@ -163,8 +163,8 @@ Across four HTTP test runs and two STDIO test runs on 2026-03-06:
 
 | Run | Suite | Upstream transport | Test | Result | Hang at iteration |
 |---|---|---|---|---|---|
-| 1–4 | `api_tools` HANG-001 | Streamable HTTP | `remove_environment` × 20 | **FAILED** | 4/20 |
-| 1–4 | `api_tools` HANG-002 | Streamable HTTP | `install_packages` × 20 | **FAILED** | 4/20 |
+| 1–4 | `http_tools` HANG-001 | Streamable HTTP | `remove_environment` × 20 | **FAILED** | 4/20 |
+| 1–4 | `http_tools` HANG-002 | Streamable HTTP | `install_packages` × 20 | **FAILED** | 4/20 |
 | 5 | `stdio_tools` STDIO-HANG-001 (module-scoped) | STDIO | `install_packages` × 20 | **FAILED** | 16/20 |
 | 5 | `stdio_tools` STDIO-HANG-002 (module-scoped) | STDIO | `remove_environment` × 20 | **FAILED** | 1/20 (cascade) |
 | 6 | `stdio_tools` STDIO-HANG-001 (function-scoped) | STDIO | `remove_environment` × 20 | **PASSED** | — |
@@ -317,9 +317,9 @@ All artifacts are in `tests/qa/_ai_docs/`:
 |---|---|
 | `BUG-REPORT-KI011-MCP-COMPOSE-PROXY-HANG.md` | This document |
 | `KI-011-HTTP-PROXY-HANG.md` | Full investigation log with server logs, evidence table, protocol flow diagrams, and fix plan |
-| `tests/qa/api_tools/test_guard_proxy_error_hang.py` | Automated regression test — HANG-001, HANG-002, HANG-003 (HTTP transport) |
+| `tests/qa/http_tools/test_guard_proxy_error_hang.py` | Automated regression test — HANG-001, HANG-002, HANG-003 (HTTP transport) |
 | `tests/qa/stdio_tools/test_guard_proxy_error_hang_stdio.py` | Negative-control test — STDIO-HANG-001, STDIO-HANG-002 (STDIO transport; expected PASS) |
-| `tests/qa/api_tools/common/utils/mcp_client.py` | Test HTTP client with SIGALRM-based timeout to detect SSE-keepalive hangs |
+| `tests/qa/http_tools/common/utils/mcp_client.py` | Test HTTP client with SIGALRM-based timeout to detect SSE-keepalive hangs |
 
 ---
 
@@ -355,7 +355,7 @@ conda activate anaconda-mcp-rc-py313
 
 # Terminal 2 — run the reproducer
 conda activate anaconda-mcp-qa
-python -m pytest tests/qa/api_tools/test_guard_proxy_error_hang.py \
+python -m pytest tests/qa/http_tools/test_guard_proxy_error_hang.py \
     -k test_hang_002 -v -s
 ```
 
@@ -363,7 +363,7 @@ python -m pytest tests/qa/api_tools/test_guard_proxy_error_hang.py \
 
 ```bash
 conda activate anaconda-mcp-qa
-python -m pytest tests/qa/api_tools/test_guard_proxy_error_hang.py \
+python -m pytest tests/qa/http_tools/test_guard_proxy_error_hang.py \
     -k test_hang_002 -v -s --start-server
 ```
 

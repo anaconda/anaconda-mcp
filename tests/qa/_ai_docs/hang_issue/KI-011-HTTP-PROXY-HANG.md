@@ -233,7 +233,7 @@ After the hang started (11:34:33), the server log showed:
 resets on every received byte. mcp-compose sends SSE keepalive comment lines
 (`:\n\n`) while it waits for the backend SSE result, keeping the upstream
 connection alive indefinitely. Fix: SIGALRM-based total call timeout added to
-`_call_tool` (see `tests/qa/api_tools/common/utils/mcp_client.py`).
+`_call_tool` (see `tests/qa/http_tools/common/utils/mcp_client.py`).
 
 ---
 
@@ -475,7 +475,7 @@ runs a 20-call healthy warm-up phase before any error is triggered — the scena
 closest to the production hang (~47 min, many prior tool calls before the error).
 
 ```
-tests/qa/api_tools/test_guard_proxy_error_hang.py
+tests/qa/http_tools/test_guard_proxy_error_hang.py
   HANG-001  20 × remove_environment(NONEXISTENT_ENV_PREFIX) — each must return
             is_error=true within TOOL_TIMEOUT.  Pytest timeout: 20 × 60 s.
   HANG-002  20 × install_packages(NONEXISTENT_ENV_PREFIX)   — same guarantee for
@@ -561,7 +561,7 @@ bug is present — the corruption is process-wide.
 **To run HANG-003 independently** (verify mode 2 failure — Phase 2 error+health):
 restart the MCP server, then run HANG-003 alone:
 ```bash
-python -m pytest tests/qa/api_tools/test_guard_proxy_error_hang.py -k test_hang_003 -v
+python -m pytest tests/qa/http_tools/test_guard_proxy_error_hang.py -k test_hang_003 -v
 ```
 
 **Current status**: **H1 confirmed**. HANG-002 reproduced the hang with httpx.
@@ -679,7 +679,7 @@ are worth doing independently:
 ## 11. Regression tests reference
 
 ```
-tests/qa/api_tools/test_guard_proxy_error_hang.py
+tests/qa/http_tools/test_guard_proxy_error_hang.py
 ```
 
 Run against a live Streamable HTTP server:
@@ -691,7 +691,7 @@ conda activate anaconda-mcp-rc-py313
 
 # Terminal 2 — run tests
 conda activate anaconda-mcp-qa
-python -m pytest tests/qa/api_tools/test_guard_proxy_error_hang.py -v
+python -m pytest tests/qa/http_tools/test_guard_proxy_error_hang.py -v
 ```
 
 Expected results by hypothesis:

@@ -1,7 +1,7 @@
 """
 Shared pytest configuration for the stdio_tools test suite.
 
-Unlike api_tools/conftest.py, there is no HTTP server fixture here.
+Unlike http_tools/conftest.py, there is no HTTP server fixture here.
 Each test file spawns its own mcp-compose subprocess over STDIO and manages
 the full lifecycle (start, initialize, teardown) inside its own fixture.
 
