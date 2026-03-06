@@ -20,13 +20,12 @@ comparison.
 from __future__ import annotations
 
 import logging
-import time
 
 import pytest
 
 from common.constants.config import DOWNSTREAM_PORT, TOOL_TIMEOUT, WARM_ITERATIONS
 from common.constants.test_data import HANG_FAIL_MSG, NONEXISTENT_ENV_PREFIX, NONEXISTENT_PKG
-from common.utils.stdio_client import _call_tool_stdio, _is_error
+from common.utils.stdio_client import _call_no_hang, _is_error
 
 pytestmark = pytest.mark.stdio_transport
 
@@ -56,22 +55,13 @@ class TestProxyErrorHangStdio:
                 "STDIO-HANG-001 [%d/%d] remove_environment prefix=%s",
                 i, WARM_ITERATIONS, NONEXISTENT_ENV_PREFIX,
             )
-            t0 = time.monotonic()
-            try:
-                response = _call_tool_stdio(
-                    stdio_server,
-                    "conda_remove_environment",
-                    {"prefix": NONEXISTENT_ENV_PREFIX},
-                )
-            except TimeoutError:
-                pytest.fail(
-                    f"STDIO-HANG-001: conda_remove_environment hung for > {TOOL_TIMEOUT}s. "
-                    + HANG_FAIL_MSG.format(
-                        timeout=TOOL_TIMEOUT, iteration=i, total=WARM_ITERATIONS
-                    )
-                )
-
-            elapsed = time.monotonic() - t0
+            response, elapsed = _call_no_hang(
+                stdio_server,
+                "conda_remove_environment",
+                {"prefix": NONEXISTENT_ENV_PREFIX},
+                f"STDIO-HANG-001: conda_remove_environment hung for > {TOOL_TIMEOUT}s. "
+                + HANG_FAIL_MSG.format(timeout=TOOL_TIMEOUT, iteration=i, total=WARM_ITERATIONS),
+            )
             is_err = _is_error(response)
             logger.info(
                 "STDIO-HANG-001 [%d/%d] done in %.2fs — is_error=%s",
@@ -97,22 +87,13 @@ class TestProxyErrorHangStdio:
                 "STDIO-HANG-002 [%d/%d] install_packages prefix=%s pkg=%s",
                 i, WARM_ITERATIONS, NONEXISTENT_ENV_PREFIX, NONEXISTENT_PKG,
             )
-            t0 = time.monotonic()
-            try:
-                response = _call_tool_stdio(
-                    stdio_server,
-                    "conda_install_packages",
-                    {"prefix": NONEXISTENT_ENV_PREFIX, "packages": [NONEXISTENT_PKG]},
-                )
-            except TimeoutError:
-                pytest.fail(
-                    f"STDIO-HANG-002: conda_install_packages hung for > {TOOL_TIMEOUT}s. "
-                    + HANG_FAIL_MSG.format(
-                        timeout=TOOL_TIMEOUT, iteration=i, total=WARM_ITERATIONS
-                    )
-                )
-
-            elapsed = time.monotonic() - t0
+            response, elapsed = _call_no_hang(
+                stdio_server,
+                "conda_install_packages",
+                {"prefix": NONEXISTENT_ENV_PREFIX, "packages": [NONEXISTENT_PKG]},
+                f"STDIO-HANG-002: conda_install_packages hung for > {TOOL_TIMEOUT}s. "
+                + HANG_FAIL_MSG.format(timeout=TOOL_TIMEOUT, iteration=i, total=WARM_ITERATIONS),
+            )
             is_err = _is_error(response)
             logger.info(
                 "STDIO-HANG-002 [%d/%d] done in %.2fs — is_error=%s",
@@ -151,18 +132,17 @@ class TestProxyErrorHangStdio:
         )
         for i in range(1, WARM_ITERATIONS + 1):
             logger.info("STDIO-HANG-003 warm-up [%d/%d] list_environments", i, WARM_ITERATIONS)
-            t0 = time.monotonic()
-            try:
-                _call_tool_stdio(stdio_server, "conda_list_environments", {})
-            except TimeoutError:
-                pytest.fail(
-                    f"STDIO-HANG-003 warm-up [{i}/{WARM_ITERATIONS}]: "
-                    f"conda_list_environments hung — internal pool stuck on port "
-                    f"{DOWNSTREAM_PORT}. Run in isolation against a fresh server. KI-011."
-                )
+            _, elapsed = _call_no_hang(
+                stdio_server,
+                "conda_list_environments",
+                {},
+                f"STDIO-HANG-003 warm-up [{i}/{WARM_ITERATIONS}]: "
+                f"conda_list_environments hung — internal pool stuck on port "
+                f"{DOWNSTREAM_PORT}. Run in isolation against a fresh server. KI-011.",
+            )
             logger.info(
                 "STDIO-HANG-003 warm-up [%d/%d] done in %.2fs",
-                i, WARM_ITERATIONS, time.monotonic() - t0,
+                i, WARM_ITERATIONS, elapsed,
             )
 
         logger.info(
@@ -174,44 +154,35 @@ class TestProxyErrorHangStdio:
                 "STDIO-HANG-003 [%d/%d] error step: remove_environment prefix=%s",
                 i, WARM_ITERATIONS, NONEXISTENT_ENV_PREFIX,
             )
-            t0 = time.monotonic()
-            try:
-                _call_tool_stdio(
-                    stdio_server,
-                    "conda_remove_environment",
-                    {"prefix": NONEXISTENT_ENV_PREFIX},
-                )
-            except TimeoutError:
-                pytest.fail(
-                    f"STDIO-HANG-003 iteration {i}/{WARM_ITERATIONS} (error step): "
-                    f"conda_remove_environment hung for > {TOOL_TIMEOUT}s. "
-                    + HANG_FAIL_MSG.format(
-                        timeout=TOOL_TIMEOUT, iteration=i, total=WARM_ITERATIONS
-                    )
-                )
+            _, elapsed = _call_no_hang(
+                stdio_server,
+                "conda_remove_environment",
+                {"prefix": NONEXISTENT_ENV_PREFIX},
+                f"STDIO-HANG-003 iteration {i}/{WARM_ITERATIONS} (error step): "
+                f"conda_remove_environment hung for > {TOOL_TIMEOUT}s. "
+                + HANG_FAIL_MSG.format(timeout=TOOL_TIMEOUT, iteration=i, total=WARM_ITERATIONS),
+            )
             logger.info(
                 "STDIO-HANG-003 [%d/%d] error step done in %.2fs",
-                i, WARM_ITERATIONS, time.monotonic() - t0,
+                i, WARM_ITERATIONS, elapsed,
             )
 
             logger.info(
                 "STDIO-HANG-003 [%d/%d] health step: list_environments",
                 i, WARM_ITERATIONS,
             )
-            t0 = time.monotonic()
-            try:
-                response = _call_tool_stdio(stdio_server, "conda_list_environments", {})
-            except TimeoutError:
-                pytest.fail(
-                    f"STDIO-HANG-003 [{i}/{WARM_ITERATIONS}] health step: "
-                    "server hung after an error response — proxy corrupted "
-                    "internal state. Server restart required. KI-011."
-                )
-
+            response, elapsed = _call_no_hang(
+                stdio_server,
+                "conda_list_environments",
+                {},
+                f"STDIO-HANG-003 [{i}/{WARM_ITERATIONS}] health step: "
+                "server hung after an error response — proxy corrupted "
+                "internal state. Server restart required. KI-011.",
+            )
             is_err = _is_error(response)
             logger.info(
                 "STDIO-HANG-003 [%d/%d] health step done in %.2fs — is_error=%s",
-                i, WARM_ITERATIONS, time.monotonic() - t0, is_err,
+                i, WARM_ITERATIONS, elapsed, is_err,
             )
             assert not is_err, (
                 f"STDIO-HANG-003 iteration {i}/{WARM_ITERATIONS}: "

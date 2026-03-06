@@ -29,6 +29,8 @@ import threading
 import time
 from pathlib import Path
 
+import pytest
+
 from common.constants.config import TOOL_TIMEOUT
 
 logger = logging.getLogger(__name__)
@@ -175,6 +177,30 @@ def _call_tool_stdio(proc: subprocess.Popen, tool_name: str, arguments: dict) ->
             logger.debug("STDIO tool response for id=%d: %s", req_id, msg)
             return msg
         logger.debug("STDIO: skipping notification/other: %s", msg.get("method"))
+
+
+# ---------------------------------------------------------------------------
+# Hang-safe call wrapper
+# ---------------------------------------------------------------------------
+
+def _call_no_hang(
+    proc: subprocess.Popen,
+    tool_name: str,
+    arguments: dict,
+    fail_msg: str,
+) -> tuple[dict, float]:
+    """
+    Call a tool via STDIO and fail the test immediately on TimeoutError.
+
+    Returns (response, elapsed_seconds). Use in place of a bare
+    try/except TimeoutError block when the test should fail fast on a hang.
+    """
+    t0 = time.monotonic()
+    try:
+        response = _call_tool_stdio(proc, tool_name, arguments)
+    except TimeoutError:
+        pytest.fail(fail_msg)
+    return response, time.monotonic() - t0
 
 
 # ---------------------------------------------------------------------------
