@@ -2,15 +2,19 @@
 
 ## Summary
 
-**Last updated**: 2026-03-05
-**Bugs filed**: 2 (both minor — [DESK-1341](https://anaconda.atlassian.net/browse/DESK-1341), [DESK-1342](https://anaconda.atlassian.net/browse/DESK-1342))
-**Observations**: KI-011 noted (Cursor-side hang — not an Anaconda MCP issue)
+- **Last updated**: 2026-03-05
+- **Bugs filed**: 2 (2 - minor)
+- **Observations**: KI-011 noted (Cursor-side hang — not an Anaconda MCP issue)
 
 | Phase | What | Status |
 |-------|------|--------|
 | Phase 1 | Manual testing — E2E| 🔶 In progress |
 | Phase 2 | Test automation — CLI, Config, API-Tools| 🔶 Started (API-Tools automation begun to cases from found bugs) |
 
+---
+## Bugs
+— [DESK-1341](https://anaconda.atlassian.net/browse/DESK-1341), 
+- [DESK-1342](https://anaconda.atlassian.net/browse/DESK-1342))
 ---
 
 ## Phase 1: E2E Progress
