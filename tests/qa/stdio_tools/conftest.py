@@ -1,25 +1,44 @@
 """
-Shared pytest configuration for the stdio_tools test suite.
-
-Unlike http_tools/conftest.py, there is no HTTP server fixture here.
-Each test file spawns its own mcp-compose subprocess over STDIO and manages
-the full lifecycle (start, initialize, teardown) inside its own fixture.
+Shared pytest configuration and fixtures for the stdio_tools test suite.
 
 Provides:
 - CLI option: --server-conda-env  (conda env with anaconda-mcp installed)
+- CLI option: --python-version    (for HTML report labeling)
+- Function fixture: stdio_server  (spawns mcp-compose over STDIO; one per test)
 - HTML report metadata injection
 """
 
 from __future__ import annotations
 
+import logging
 import os
+import signal
+import subprocess
 
 import pytest
+
+from common.constants.config import DOWNSTREAM_PORT
+from common.utils.stdio_client import _recv, _send, _write_stdio_config
+
+logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
 # CLI options
 # ---------------------------------------------------------------------------
+
+def pytest_configure(config: pytest.Config) -> None:
+    """
+    Propagate --server-conda-env → MCP_SERVER_CONDA_ENV so test modules that
+    read the env var at import time pick up the correct value before collection.
+    """
+    try:
+        env = config.getoption("--server-conda-env")
+        if env:
+            os.environ["MCP_SERVER_CONDA_ENV"] = env
+    except ValueError:
+        pass  # option not yet registered (e.g. during --help)
+
 
 def pytest_addoption(parser: pytest.Parser) -> None:
     parser.addoption(
@@ -38,6 +57,79 @@ def pytest_addoption(parser: pytest.Parser) -> None:
         metavar="VERSION",
         help="Server Python version label for the HTML report (e.g. '3.13').",
     )
+
+
+# ---------------------------------------------------------------------------
+# Fixtures
+# ---------------------------------------------------------------------------
+
+@pytest.fixture
+def stdio_server(request: pytest.FixtureRequest):
+    """
+    Spawn anaconda-mcp serve in STDIO mode and yield the ready subprocess.
+
+    Function-scoped — each test gets a fresh mcp-compose process so a hang
+    triggered by one test does not corrupt subsequent tests.
+
+    Lifecycle: write STDIO config → spawn process → initialize handshake →
+    yield → SIGTERM + cleanup.
+    """
+    conda_env = request.config.getoption("--server-conda-env")
+    config_path = _write_stdio_config(DOWNSTREAM_PORT, conda_env)
+    logger.info(
+        "Starting mcp-compose STDIO server (env=%s, downstream_port=%d, config=%s)",
+        conda_env, DOWNSTREAM_PORT, config_path,
+    )
+
+    proc = subprocess.Popen(
+        [
+            "conda", "run", "-n", conda_env, "--no-capture-output",
+            "anaconda-mcp", "serve", "--config", str(config_path),
+        ],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        start_new_session=True,
+    )
+
+    try:
+        _send(proc, {
+            "jsonrpc": "2.0",
+            "id": 0,
+            "method": "initialize",
+            "params": {
+                "protocolVersion": "2024-11-05",
+                "capabilities": {},
+                "clientInfo": {"name": "stdio-hang-test", "version": "1.0"},
+            },
+        })
+
+        init_resp = _recv(proc, timeout=45)
+        logger.info(
+            "STDIO server ready — serverInfo: %s",
+            init_resp.get("result", {}).get("serverInfo"),
+        )
+
+        _send(proc, {"jsonrpc": "2.0", "method": "notifications/initialized", "params": {}})
+
+    except Exception as exc:
+        proc.kill()
+        config_path.unlink(missing_ok=True)
+        pytest.fail(f"STDIO server did not become ready: {exc}")
+
+    yield proc
+
+    logger.info("Tearing down STDIO server (pid=%d)", proc.pid)
+    try:
+        os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
+    except (ProcessLookupError, PermissionError):
+        proc.kill()
+    try:
+        proc.wait(timeout=10)
+    except subprocess.TimeoutExpired:
+        proc.kill()
+    config_path.unlink(missing_ok=True)
+    logger.info("STDIO server stopped")
 
 
 # ---------------------------------------------------------------------------
