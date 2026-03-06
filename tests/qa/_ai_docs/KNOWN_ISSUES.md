@@ -268,6 +268,34 @@ and observe its terminal output directly:
 
 ---
 
+## Platform Issues
+
+### PI-001: `anaconda-mcp` CLI Not Executable on Windows — Missing `.exe` Wrapper
+
+**Status**: Open (packaging bug — fix required by Anaconda MCP developers)
+**Severity**: High (blocks all CLI usage on Windows without workaround)
+**Platform**: Windows only
+
+**Title**: `anaconda-mcp` command not recognized on Windows despite correct installation
+
+**Steps to reproduce**:
+1. Install `anaconda-mcp` via conda on Windows (Anaconda Prompt or PowerShell with `conda init powershell`)
+2. Activate the environment: `conda activate anaconda-mcp-rc-pyXY`
+3. Run: `anaconda-mcp --help`
+4. Observe: `'anaconda-mcp' is not recognized as an internal or external command`
+5. Run: `where anaconda-mcp`
+6. Observe: script found at `...\Scripts\anaconda-mcp` (no extension)
+
+**Root cause**: The conda package installs a Unix-style extensionless script into `Scripts\`. On Windows, `cmd.exe` and PowerShell only execute files with `.exe`, `.bat`, or `.cmd` extensions. The `.exe` wrapper that pip/conda normally generates from a `console_scripts` entry point was not created during the conda build.
+
+**Expected**: `anaconda-mcp --help` works on Windows, consistent with macOS/Linux behavior. A `Scripts\anaconda-mcp.exe` wrapper should be present.
+
+**Workaround**: Use `python -m anaconda_mcp <cmd>` as a drop-in replacement for all `anaconda-mcp` commands.
+
+**Fix required**: Verify `console_scripts` entry point is correctly declared in `pyproject.toml` and that the conda recipe generates the `.exe` wrapper on Windows.
+
+---
+
 ## Setup Quirks
 
 ### SQ-001: Claude Desktop Capability Setting
