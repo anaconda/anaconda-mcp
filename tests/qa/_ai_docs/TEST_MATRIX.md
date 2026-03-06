@@ -49,7 +49,7 @@
 | QA 1 | macOS | Claude Desktop | 3.11 | STDIO | TESTS_E2E.md |
 | QA 1 | macOS | Claude Desktop | 3.12 | STDIO | TESTS_E2E.md |
 | QA 1 | macOS | Claude Desktop | 3.13 | STDIO | TESTS_E2E.md |
-| QA 1 | macOS | Cursor | 3.13 | STDIO | TESTS_E2E.md |
+| QA 1 | macOS | Cursor | 3.12 | STDIO | TESTS_E2E.md |
 | QA 2 | macOS | Cursor | 3.13 | HTTP | TESTS_E2E.md |
 | QA 3 | Windows | Claude Desktop | 3.13 | STDIO | TESTS_E2E.md |
 
