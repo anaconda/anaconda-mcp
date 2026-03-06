@@ -25,6 +25,7 @@ This documentation serves as the central knowledge base for QA testing of the An
 |----------|-------------|----------|
 | [COVERAGE_MAP.md](./COVERAGE_MAP.md) | Feature to test case mapping (all test files) | QA leads |
 | [TEST_MATRIX.md](./TEST_MATRIX.md) | OS/Python/Transport matrix | QA leads |
+| [TEST_PROGRESS.md](./TEST_PROGRESS.md) | Live run status, results, bugs and observations | All QA |
 | [TEST_COVERAGE_ANALYSIS.md](./TEST_COVERAGE_ANALYSIS.md) | Existing pytest coverage analysis | QA leads |
 | [OPEN_QUESTIONS.md](./OPEN_QUESTIONS.md) | Questions for product owner | QA leads, PO |
 
@@ -54,6 +55,7 @@ Original requirements in `initial_docs/`:
 | **Quick Start** | [QUICK_START.md](./QUICK_START.md) |
 | **Setup & Install** | [QUICK_START.md](./QUICK_START.md) |
 | **Test Matrix** | [TEST_MATRIX.md](./TEST_MATRIX.md) |
+| **Test Progress** | [TEST_PROGRESS.md](./TEST_PROGRESS.md) |
 | **E2E Tests (macOS)** | [TESTS_E2E.md](./TESTS_E2E.md) |
 | **CLI Tests (All Platforms)** | [TESTS_CLI.md](./TESTS_CLI.md) |
 | **Config Tests (All Platforms)** | [TESTS_CONFIG.md](./TESTS_CONFIG.md) |
