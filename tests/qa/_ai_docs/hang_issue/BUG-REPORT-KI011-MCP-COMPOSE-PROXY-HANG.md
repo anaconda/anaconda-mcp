@@ -28,9 +28,9 @@ corrupting the process-wide connection pool.
 | OS | macOS 15.3, arm64 |
 | `anaconda-mcp` | 1.0.0.rc.1 |
 | `environments-mcp-server` | 1.0.0.rc.1 |
-| Server Python | 3.10, 3.13 |
+| Server Python | 3.10, 3.12, 3.13 |
 | AI clients | Cursor, Claude Code |
-| Transport | Streamable HTTP, port 8888 |
+| Transport | Streamable HTTP (port 8888), STDIO |
 
 ---
 
