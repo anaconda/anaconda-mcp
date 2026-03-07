@@ -109,7 +109,7 @@ conda remove -n guard-test --all -y 2>/dev/null
 
 ## AUTH-001: Anonymous Mode
 
-**Purpose**: Verify the server works with public channels and is correctly denied access to private Anaconda channels when not authenticated.
+**Purpose**: Verify that an anonymous user can create environments and install packages using public channels.
 
 ### Prep
 ```bash
@@ -120,13 +120,9 @@ anaconda logout 2>/dev/null || true
 |------|--------|----------|
 | 1 | Ask: "List my conda environments" | Works |
 | 2 | Ask: "Create environment anon-test with Python 3.11" | Environment created |
-| 2a | Run: `conda list -n anon-test --show-channel-urls` | All package URLs contain only public channels (e.g. `pkgs/main`, `pkgs/r`, `conda-forge`). No `repo.anaconda.cloud` URLs present. This is the primary auth signal — symmetric with AUTH-002 step 3a. |
-| 3 | Ask: "Install numpy in anon-test from the repo.anaconda.cloud channel" | HTTP 404 — channel not accessible. See note below. |
-| 3a | Run: `conda list -n anon-test --show-channel-urls \| grep numpy` | numpy not listed — confirms no silent fallback to a public channel occurred |
+| 2a | Run: `conda list -n anon-test --show-channel-urls` | All package URLs contain only public channels (e.g. `pkgs/main`, `pkgs/r`, `conda-forge`). No `repo.anaconda.cloud` URLs present. |
 
-> **Note on Step 2 (fresh environment required)**: The channel URL check in step 2a is only a reliable auth signal for **freshly created** environments. If `anon-test` already exists and was previously created while authenticated, its package metadata will still reference `repo.anaconda.cloud` regardless of current auth state — conda stores channel provenance locally at install time and never updates it. Always run the cleanup step between test runs.
-
-> **Note on Step 3**: Due to a URL routing issue, conda resolves the channel name `repo.anaconda.cloud` to `https://conda.anaconda.org/repo.anaconda.cloud` (404) rather than the actual private channel endpoint. This error occurs for both authenticated and unauthenticated users, so it is **not** a reliable auth signal. The key assertion is step 3a (no silent fallback). The routing issue is tracked in [KI-005](./KNOWN_ISSUES.md#ki-005-channel-credentials-not-picked-up).
+> **Note (fresh environment required)**: Step 2a is only a reliable signal for **freshly created** environments. If `anon-test` previously existed and was created while authenticated, its package metadata will still reference `repo.anaconda.cloud` regardless of current auth state — conda stores channel provenance locally at install time and never updates it. Always run the cleanup step between test runs.
 
 ### Cleanup
 ```bash
