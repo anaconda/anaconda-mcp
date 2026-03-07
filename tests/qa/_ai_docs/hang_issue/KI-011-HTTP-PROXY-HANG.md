@@ -1,6 +1,6 @@
 # KI-011: Technical Investigation — mcp-compose Proxy Hang
 
-**Status**: Root cause confirmed, fix plan ready
+**Status**: Fix Proposed — [mcp-compose #27](https://github.com/datalayer/mcp-compose/issues/27), [PR #28](https://github.com/datalayer/mcp-compose/pull/28)
 **Component**: `mcp-compose` 0.1.10
 
 ---
@@ -275,173 +275,59 @@ reverted once the upstream fix ships.
 
 ---
 
-## Fix Plan
+## Fix
 
-**All three fixes are required for a complete resolution.** 
-- Fix 1 and Fix 2 address the root cause in `mcp-compose` (upstream, not owned by this team). 
-- Fix 3 is independent defensive hardening in `environments_mcp_server` (this team's repo). 
-- While Fix 1 + Fix 2 are pending upstream, the **Workaround** below can be shipped immediately.
+**Issue**: [mcp-compose #27](https://github.com/datalayer/mcp-compose/issues/27)
+**PR**: [mcp-compose #28](https://github.com/datalayer/mcp-compose/pull/28)
 
-### Fix 1 — Switch from deprecated `streamablehttp_client` to `streamable_http_client` in `mcp-compose`
+### Solution — Replace deprecated `streamablehttp_client` with `streamable_http_client`
 
-**Repo**: `mcp-compose` (upstream — file at https://github.com/datalayer/mcp-compose/issues)
-
-`cli.py` uses the deprecated `streamablehttp_client` for every proxied tool call.
-The deprecated function silently adds a **5-minute SSE read timeout** (`sse_read_timeout=300s`),
-independent of the 30-second `timeout` argument passed by `mcp-compose`. This is why
-hangs last minutes, not seconds. The replacement non-deprecated API does not carry this
-default:
+The deprecated `streamablehttp_client` has a hidden 5-minute SSE read timeout. The fix
+creates a compatibility wrapper using the non-deprecated `streamable_http_client` with
+explicit `httpx.AsyncClient`:
 
 ```python
-# mcp_compose/cli.py — proposed change
-# Before:
-from mcp.client.streamable_http import streamablehttp_client   # deprecated, adds sse_read_timeout=300s
-# After:
-from mcp.client.streamable_http import streamable_http_client  # current API, no hidden timeout
+# mcp_compose/http_client.py
+def streamable_http_client_compat(url, headers=None, timeout=30):
+    import httpx
+    from contextlib import asynccontextmanager
+    from mcp.client.streamable_http import streamable_http_client
+
+    @asynccontextmanager
+    async def _context():
+        async with httpx.AsyncClient(
+            headers=headers,
+            timeout=httpx.Timeout(float(timeout)),
+        ) as http_client:
+            async with streamable_http_client(url=url, http_client=http_client) as streams:
+                yield streams
+
+    return _context()
 ```
 
-The proxy must also handle both response paths for `tools/call`:
+All usages of `streamablehttp_client` in `cli.py` are replaced with this helper.
 
-- **202 Accepted** → result arrives asynchronously on SSE stream (currently handled)
-- **200 OK** → result is inline in the POST response body (currently causes the hang)
+### Test Results (verified 2026-03-07)
 
-### Fix 2 — Bound each proxied call with `asyncio.timeout` in `mcp-compose`
+| Test | Before Fix | After Fix |
+|------|------------|-----------|
+| 20 iterations | Hangs at iteration 4 | ✅ All pass |
+| 50 iterations | N/A | ✅ All pass |
+| Cursor e2e | Hangs after ~4 tool calls | ✅ Works normally |
 
-**Repo**: `mcp-compose` (upstream)
+**No workaround required in `environments-mcp-server`** — the `asyncio.sleep()` hack
+is not needed when using the fixed mcp-compose.
 
-Switching the API (Fix 1) removes the hidden 5-minute default, but a defensive per-call
-timeout prevents any future regression regardless of SDK internals or downstream
-misbehaviour:
+### Optional — Defensive timeouts in `environments_mcp_server`
+
+Independent of this fix, `environments_mcp_server` could add timeouts on conda operations
+as defensive hardening:
 
 ```python
-# mcp_compose/cli.py — proposed change
-async def streamable_http_tool_proxy(**kwargs):
-    async with asyncio.timeout(float(http_config.timeout)):   # hard deadline per call
-        async with streamable_http_client(url=http_config.url, ...) as (r, w, _):
-            async with ClientSession(r, w) as session:
-                await session.initialize()
-                result = await session.call_tool(original_tool_name, kwargs)
-                ...
+result = await asyncio.wait_for(conda.install(...), timeout=120)
 ```
 
-### Fix 3 — Timeouts on conda operations in `environments_mcp_server`
-
-**Repo**: `environments-mcp-server` (owned by this team).
-
-`environments_mcp_server` delegates all real conda work to the `anaconda_connector_conda`
-async library (`await conda.install(...)`, `await conda.remove_environment(...)`, etc.).
-There are no timeouts on these awaited calls, so a hung conda operation keeps the tool
-handler suspended indefinitely, holding the FastMCP SSE stream open forever. Wrap each
-call with `asyncio.wait_for`:
-
-```python
-try:
-    result = await asyncio.wait_for(
-        conda.install(...),
-        timeout=120,
-    )
-except asyncio.TimeoutError:
-    return ServerToolResult(
-        is_error=True,
-        error_description="conda operation timed out after 120 seconds.",
-    ).model_dump()
-```
-
-Apply the same pattern to `conda.remove_environment(...)`, `conda.create(...)`, and
-`conda.remove(...)` in the corresponding tool files.
-
-A secondary concern: `utils/conda.py` calls `subprocess.check_output(["conda", "info",
-"--json"])` synchronously without a `timeout=` argument. This runs only at startup
-(conda discovery), but should also be hardened:
-
-```python
-subprocess.check_output(["conda", "info", "--json"], text=True, timeout=30)
-```
-
----
-
-## Workaround — Ship now while Fix 1 + Fix 2 are pending upstream
-
-**Repo**: `environments-mcp-server` (owned by this team).
-
-The hang is triggered exclusively because error-path handlers return *synchronously*
-(no `await` before returning), causing FastMCP to serve the result inline via 200 OK.
-`mcp-compose` then fails to clean up the GET SSE stream within the 5-minute window.
-
-Adding `await asyncio.sleep(0)` as the **first line** of every tool handler forces a
-yield to the event loop before any work begins. FastMCP observes that the result is not
-yet available and always uses the 202 Accepted + SSE path — the path `mcp-compose`
-handles correctly. The race condition still fires internally but stops mattering.
-
-```mermaid
-sequenceDiagram
-    participant P as mcp-compose
-    participant F as FastMCP
-    participant H as tool handler
-
-    Note over P,H: Without workaround
-    P->>F: POST tools/call
-    F->>H: call handler()
-    H-->>F: return immediately (error, no await)
-    F-->>P: 200 OK — result inline
-    Note over P: GET SSE stream cleanup hangs → HANG
-
-    Note over P,H: With workaround — await asyncio.sleep(0)
-    P->>F: POST tools/call
-    F->>H: call handler()
-    H->>H: await asyncio.sleep(0)  ← yields to event loop
-    H-->>F: return result
-    F-->>P: 202 Accepted
-    F-)P: result via SSE stream
-    Note over P: normal SSE path → OK
-```
-
-```python
-# environments_mcp_server/tools/environments/install_packages.py
-@register_tool
-async def install_packages(prefix: str, packages: list[str]) -> dict:
-    await asyncio.sleep(0)  # workaround: force FastMCP onto 202+SSE path (KI-011)
-    try:
-        ...
-```
-
-Apply to every tool handler (`install_packages`, `remove_packages`,
-`remove_environment`, `create_environment`, `list_environments`,
-`list_environment_packages`).
-
-This workaround couples `environments_mcp_server` to `mcp-compose`'s broken
-assumption and must be reverted once Fix 1 + Fix 2 ship in a `mcp-compose` release.
-Mark each added line with a `# workaround KI-011` comment to make the revert obvious.
-
-### Expected outcome (original expectation)
-
-| Symptom | Before | After Fix 1+2 | After Workaround |
-|---|---|---|---|
-| Hang on error-path tool call | ✓ | ✗ | ✗ |
-| Process-wide pool corruption | ✓ | ✗ | ✗ |
-| New chat session recovers | ✗ | ✓ | ✓ |
-| HANG-002 / STDIO-HANG-002 tests | FAIL | PASS | PASS |
-
-### ⚠️ Actual outcome (tested 2026-03-07)
-
-**The proposed fixes do NOT fully resolve the issue.** Testing revealed the root cause
-is deeper than initially analyzed — it's in the MCP SDK's httpx connection pool
-management, not just the 5-minute SSE timeout.
-
-| Configuration | Hang iteration | Improvement |
-|---------------|----------------|-------------|
-| No workaround | 4/20 | baseline |
-| `asyncio.sleep(0.1)` in handlers | 18/20 | **4× better** |
-| + `sse_read_timeout=30` | 18/20 | no additional improvement |
-| + `asyncio.timeout()` wrapper | 18/20 | no additional improvement |
-| Switch to `streamable_http_client` | **API incompatible** | cannot test |
-
-The non-deprecated `streamable_http_client` has a different API signature and is not
-a drop-in replacement. See [GITHUB-ISSUE-MCP-COMPOSE-PROXY-HANG.md](./GITHUB-ISSUE-MCP-COMPOSE-PROXY-HANG.md)
-for full testing details.
-
-**Recommendation**: Apply the `asyncio.sleep(0.1)` workaround for partial mitigation
-while monitoring upstream MCP Python SDK for connection pool fixes.
+This is not required to fix KI-011 but prevents other potential hang scenarios.
 
 ---
 

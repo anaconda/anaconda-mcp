@@ -4,6 +4,7 @@
 **Severity**: High — requires process restart to recover
 **Reproducibility**: Deterministic
 **Reported**: 2026-03-06
+**Fix**: Proposed — [mcp-compose #27](https://github.com/datalayer/mcp-compose/issues/27), [PR #28](https://github.com/datalayer/mcp-compose/pull/28)
 
 ---
 

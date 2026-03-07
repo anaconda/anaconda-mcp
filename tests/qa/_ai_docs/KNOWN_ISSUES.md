@@ -213,25 +213,20 @@ But this command starts server in **STDIO mode**, not HTTP mode. Claude Desktop 
 ---
 
 ### KI-011: mcp-compose Proxy Hangs and Corrupts Session on Tool Error
-**Status**: Open — [DESK-1355](https://anaconda.atlassian.net/browse/DESK-1355) (mcp-compose proxy bug — fix required by Anaconda MCP developers)
+**Status**: Fix Proposed — [mcp-compose #27](https://github.com/datalayer/mcp-compose/issues/27), [PR #28](https://github.com/datalayer/mcp-compose/pull/28)
+**Internal Ticket**: [DESK-1355](https://anaconda.atlassian.net/browse/DESK-1355)
 **Component**: `mcp-compose`
 **Severity**: High (process-wide corruption; server restart required to recover)
 **Version**: mcp-compose 0.1.10
 **Regression tests**: `tests/qa/http_tools/test_guard_proxy_error_hang.py`, `tests/qa/stdio_tools/test_guard_proxy_error_hang_stdio.py`
 
-**Description**: When an MCP tool returns an error, `mcp-compose`'s internal proxy may silently drop the result and hold the upstream connection open indefinitely. This corrupts the process-wide connection pool — all subsequent calls (including from a new chat session) also hang. Only restarting `mcp-compose` restores normal operation.
+**Description**: When a tool returns quickly (validation errors, etc.), `mcp-compose`'s proxy hangs and corrupts the httpx connection pool. All subsequent calls block indefinitely. Only restarting `mcp-compose` recovers.
 
-**Root cause**: `mcp-compose` expects tool results to arrive via the SSE stream. Under a race condition triggered by rapid sequential calls, `environments_mcp_server` returns the result inline in the `tools/call` POST body (HTTP 200 OK) instead of via SSE. `mcp-compose` does not handle this path — the result is dropped, the connection pool slot is never released, and all subsequent calls block on it process-wide.
+**Root cause**: `mcp-compose` uses deprecated `streamablehttp_client` which has a hidden 5-minute SSE read timeout. When FastMCP serves results inline (200 OK) instead of via SSE, the SSE cleanup hangs waiting for the timeout, leaking the connection pool slot.
 
-The bug fires at a fixed call count: iteration **4** over HTTP transport, iteration **16** over STDIO transport. The upstream transport does not prevent the hang — only the threshold differs.
+**Fix**: Replace deprecated `streamablehttp_client` with non-deprecated `streamable_http_client` using explicit `httpx.AsyncClient`. See [PR #28](https://github.com/datalayer/mcp-compose/pull/28).
 
-**Observed pattern**:
-1. Tool is called → `mcp-compose` triggers the race condition
-2. Client shows "Generating…" indefinitely — no error is surfaced
-3. New chat sessions also hang — corruption is process-wide
-4. Restarting `mcp-compose` restores normal operation
-
-**Workaround**: Restart `mcp-compose`:
+**Workaround** (until fix is merged): Restart `mcp-compose`:
 ```bash
 pkill -9 -f "anaconda-mcp"
 pkill -9 -f "environments_mcp"
@@ -241,8 +236,7 @@ sleep 2
 ./tests/qa/_ai_docs/scripts/start-http-server.sh 8888
 ```
 
-**Full investigation**: [hang_issue/KI-011-HTTP-PROXY-HANG.md](./hang_issue/KI-011-HTTP-PROXY-HANG.md)
-**Bug report**: [hang_issue/BUG-REPORT-KI011-MCP-COMPOSE-PROXY-HANG.md](./hang_issue/BUG-REPORT-KI011-MCP-COMPOSE-PROXY-HANG.md)
+**Investigation**: [hang_issue/](./hang_issue/)
 
 ---
 
