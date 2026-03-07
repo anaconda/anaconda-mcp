@@ -246,6 +246,33 @@ sleep 2
 
 ---
 
+### KI-012: MCP Server Initialization Hangs When Port 4041 Is Occupied by a Non-Responsive Process
+**Status**: Open — [DESK-1359](https://anaconda.atlassian.net/browse/DESK-1359)
+**Severity**: Medium
+**Version**: 1.0.0.rc.1
+
+**Description**: When port 4041 is occupied by a process that accepts TCP connections but never replies, `mcp-compose` connects silently and waits indefinitely. Cursor times out after 60 seconds (`MCP error -32001: Request timed out`), restarts `anaconda_mcp serve`, and the loop repeats. No error identifies the cause.
+
+**Root cause**: `health_check_enabled = false` in `mcp_compose.toml`. `reconnect_on_failure` only fires on refused connections — a silent hung connection never errors, so neither reconnect nor any diagnostic fires.
+
+**Natural trigger**: A KI-011 hang leaves `environments_mcp_server` in a corrupted state — port 4041 stays bound but stops responding. The next Cursor restart connects to the existing hung server.
+
+**Reproduce deterministically**:
+```bash
+nc -lk 4041   # accepts connections, never replies
+```
+Then open/reload Cursor.
+
+**Note**: `Login failed — OSError: [Errno 48] Address already in use` that appears in logs is a red herring — it is caused by a separate process holding the OAuth redirect port and does not affect server initialization.
+
+**Workaround**:
+```bash
+lsof -ti:4041 | xargs kill -9 2>/dev/null
+```
+Then reload Cursor.
+
+---
+
 ## Troubleshooting
 
 ### Accessing MCP server logs

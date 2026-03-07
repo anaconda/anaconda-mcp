@@ -3,7 +3,7 @@
 ## Summary
 
 - **Last updated**: 2026-03-06
-- **Bugs filed**: 6 (3 - minor, 1 - medium, 2 - high)
+- **Bugs filed**: 7 (3 - minor, 2 - medium, 2 - high)
 
 | Phase | What | Status |
 |-------|------|--------|
@@ -18,6 +18,7 @@
 - [DESK-1355](https://anaconda.atlassian.net/browse/DESK-1355)
 - [DESK-1356](https://anaconda.atlassian.net/browse/DESK-1356)
 - [DESK-1358](https://anaconda.atlassian.net/browse/DESK-1358)
+- [DESK-1359](https://anaconda.atlassian.net/browse/DESK-1359)
 ---
 
 ## Phase 1: E2E Progress
@@ -76,3 +77,4 @@ See [TEST_MATRIX.md](./TEST_MATRIX.md) for full assignment rationale.
 | [DESK-1355](https://anaconda.atlassian.net/browse/DESK-1355) | mcp-compose proxy hangs and corrupts session on tool error | High | [KI-011](./KNOWN_ISSUES.md#ki-011-mcp-compose-proxy-hangs-and-corrupts-session-on-tool-error) | QA 2 · macOS · Cursor · 3.13 · HTTP; QA 2 · macOS · Claude Code · 3.10 · HTTP |
 | [DESK-1356](https://anaconda.atlassian.net/browse/DESK-1356) | HTTP setup wizard suggests wrong server command — starts STDIO mode instead of HTTP | High | [KI-008](./KNOWN_ISSUES.md#ki-008-http-setup-suggests-wrong-server-command) | Manual testing |
 | [DESK-1358](https://anaconda.atlassian.net/browse/DESK-1358) | Private channel requests routed to conda.anaconda.org instead of repo.anaconda.cloud — credentials never reached | Medium | [KI-005](./KNOWN_ISSUES.md#ki-005-channel-credentials-not-picked-up) | Manual testing |
+| [DESK-1359](https://anaconda.atlassian.net/browse/DESK-1359) | MCP server initialization hangs when port 4041 is occupied by a non-responsive process | Medium | [KI-012](./KNOWN_ISSUES.md#ki-012-mcp-server-initialization-hangs-when-port-4041-is-occupied-by-a-non-responsive-process) | Manual testing · macOS · Cursor · 3.12 · STDIO |
