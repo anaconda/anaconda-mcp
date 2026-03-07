@@ -229,6 +229,52 @@ is never released. All subsequent calls to port 4041 — regardless of upstream 
 
 ---
 
+## Ecosystem Context
+
+The same class of bug — Streamable HTTP client locks up, corrupts the connection pool,
+and makes all subsequent calls hang process-wide — is widely reported across the MCP
+Python ecosystem. None of the issues below describes exactly KI-011, but they confirm
+that the GET stream lifecycle race is a systemic weakness in the MCP SDK.
+
+### Related issues
+
+| Issue | Project | Root cause stated | Relationship to KI-011 |
+|---|---|---|---|
+| [python-sdk #1941](https://github.com/modelcontextprotocol/python-sdk/issues/1941) | MCP Python SDK | GET stream task fails silently → POST SSE response waits for dead task indefinitely | Closest analogue — identical race around GET stream timing |
+| [python-sdk #1811](https://github.com/modelcontextprotocol/python-sdk/issues/1811) | MCP Python SDK | `read_stream_writer` left open after SSE disconnect → `receive()` hangs | Same stuck-stream consequence |
+| [python-sdk #680](https://github.com/modelcontextprotocol/python-sdk/issues/680) | MCP Python SDK | Server callback response never reaches server → call hangs forever | Same hang pattern, different trigger (fixed in 2025) |
+| [openai-agents #1288](https://github.com/openai/openai-agents-python/issues/1288) | OpenAI Agents | Failed connection corrupts anyio cancel scope → all subsequent `await` calls cancelled process-wide | **Identical consequence** — process-wide corruption after one bad call |
+
+### Timing observation confirms the race
+
+The author of python-sdk #1941 noted:
+
+> *"I tried with and without a debugger, and noticed that with a debugger attached,
+> the timing overhead masks the race condition and operations complete successfully."*
+
+This is the same character as KI-011: the hang is deterministic under load (fixed call
+count: 4 over HTTP, 16 over STDIO) but disappears when execution slows down. Both are
+pool-state races, not logic errors.
+
+### What makes KI-011 distinct
+
+All found issues diagnose the problem at the **MCP SDK client** level
+(`streamablehttp_client`, `handle_get_stream` task). None identifies the specific
+combination that drives KI-011:
+
+1. `mcp-compose` using the **deprecated `streamablehttp_client`** — which silently
+   injects a 5-minute SSE read timeout regardless of the configured `timeout` value.
+2. The server-side trigger: tool handlers that return **synchronously** cause FastMCP
+   to serve the result inline (200 OK), which is the event that activates the broken
+   cleanup path in the deprecated client.
+
+The `asyncio.sleep(0)` workaround (server-side, one line per handler) has not been
+published by any other project in this context. It is a canonical Python asyncio
+technique and is safe, but it is novel as an MCP tool handler mitigation and must be
+reverted once the upstream fix ships.
+
+---
+
 ## Fix Plan
 
 **All three fixes are required for a complete resolution.** 
