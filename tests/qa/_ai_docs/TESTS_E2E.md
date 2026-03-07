@@ -149,7 +149,6 @@ anaconda logout 2>/dev/null || true
 | Step | Action | Expected |
 |------|--------|----------|
 | 1 | Ask: "Install numpy in anon-test from the repo.anaconda.cloud channel" | Explicit authentication/authorization error — **not** HTTP 404, **not** silent fallback to public channel |
-| 1a | Run: `conda list -n anon-test --show-channel-urls \| grep numpy` | numpy not listed |
 
 ### Cleanup
 ```bash
@@ -172,6 +171,8 @@ anaconda whoami
 # [EXPECTED] Shows your username
 ```
 
+> **Account requirement**: Use an account that has access to internal or private Anaconda channels — e.g. an Anaconda employee personal account or any account with `repo.anaconda.cloud` org channel access. A standard free account may not have private channel access and will produce the same results as an anonymous user, making step 3a unverifiable.
+
 > Restart your client (Claude Desktop: Cmd+Q then reopen; Cursor: reload window; Claude Code: exit and restart the session) to pick up the new auth state.
 
 | Step | Action | Expected |
@@ -183,7 +184,7 @@ anaconda whoami
 
 > **Note on Step 2 (fresh environment required)**: Same constraint as AUTH-001 — the channel URL check in step 3a is only meaningful for a freshly created environment. Packages installed in a prior run while authenticated retain their `repo.anaconda.cloud` metadata even after logout. Always run the cleanup step between test runs.
 
-> **Note on Step 3a (open question — KI-005)**: This step is the *intended* auth signal, but whether authenticated users actually see `repo.anaconda.cloud` in channel URLs is **unconfirmed**. The same credential routing issue (KI-005) that breaks explicit private channel installs may also prevent `repo.anaconda.cloud` from appearing here — meaning both authenticated and unauthenticated users might only see public channel URLs. If step 3a shows only public channels even after confirmed login (`anaconda whoami` in prep), treat it as a KI-005 symptom rather than a test failure. Tracked in [KI-005](./KNOWN_ISSUES.md#ki-005-channel-credentials-not-picked-up).
+> **Note on Step 3a**: This step is the *intended* auth signal, but whether authenticated users actually see `repo.anaconda.cloud` in channel URLs is **unconfirmed** — the credential routing issue tracked in [KI-005](./KNOWN_ISSUES.md#ki-005-channel-credentials-not-picked-up) / [DESK-1358](https://anaconda.atlassian.net/browse/DESK-1358) may prevent this. If step 3a shows only public channels even after confirmed login, treat it as a KI-005 symptom rather than a test failure.
 
 ### Cleanup
 ```bash
