@@ -36,15 +36,15 @@ corrupting the process-wide connection pool.
 
 ## Found In: E2E Testing
 
-Observed on 2026-03-05 with Cursor and Claude Code, both using HTTP transport.
-After a tool call returned an error, both clients froze with no error message and
-no way to recover short of a server restart.
+Observed across multiple QA runs. After a tool call returned an error, clients froze
+with no error message and no way to recover short of a server restart.
 
-| Client | Transport | Hangs? |
-|---|---|---|
-| Cursor | Streamable HTTP | **Yes** |
-| Claude Code (`--http`) | Streamable HTTP | **Yes** |
-| Claude Desktop | STDIO | No |
+| Client | Transport | Python | Hangs? | Observed |
+|--------|-----------|--------|--------|----------|
+| Cursor | Streamable HTTP | 3.13 | **Yes** | 2026-03-05 |
+| Claude Code (`--http`) | Streamable HTTP | 3.10 | **Yes** | 2026-03-05 |
+| Cursor | STDIO | 3.12 | **Yes** | 2026-03-06 |
+| Claude Desktop | STDIO | — | No | — |
 
 ---
 

@@ -3,7 +3,7 @@
 ## Summary
 
 - **Last updated**: 2026-03-06
-- **Bugs filed**: 5 (2 - minor, 3 - high)
+- **Bugs filed**: 6 (3 - minor, 1 - medium, 2 - high)
 
 | Phase | What | Status |
 |-------|------|--------|
@@ -17,6 +17,7 @@
 - [DESK-1344](https://anaconda.atlassian.net/browse/DESK-1344)
 - [DESK-1355](https://anaconda.atlassian.net/browse/DESK-1355)
 - [DESK-1356](https://anaconda.atlassian.net/browse/DESK-1356)
+- [DESK-1358](https://anaconda.atlassian.net/browse/DESK-1358)
 ---
 
 ## Phase 1: E2E Progress
@@ -35,10 +36,10 @@ See [TEST_MATRIX.md](./TEST_MATRIX.md) for full assignment rationale.
 
 ### Optional (if time allows)
 
-| QA | OS | Client | Python | Transport | Suite | Status | Result |
-|----|----|--------|--------|-----------|-------|--------|--------|
+| QA | OS | Client | Python | Transport | Suite | Status | Result | Notes |
+|----|----|--------|--------|-----------|-------|--------|--------|-------|
 | QA 2 | macOS | Claude Code | 3.10 | HTTP | TESTS_E2E.md | ✅ Done | 4 passed / 2 failed | DESK-1342; KI-011 equivalent observed |
-| QA 3 | Windows | Claude Desktop | 3.10 | STDIO | TESTS_E2E.md | ⬜ Not started | — |
+| QA 3 | Windows | Claude Desktop | 3.10 | STDIO | TESTS_E2E.md | ⬜ Not started | — | |
 
 ---
 
@@ -49,6 +50,7 @@ See [TEST_MATRIX.md](./TEST_MATRIX.md) for full assignment rationale.
 | REGRESS-002 (KI-003) | QA 2 | Cursor, HTTP, 3.13 | ✅ Done | KI-003 confirmed — DESK-1342 filed |
 | REGRESS-002 (KI-003) | QA 1 | Claude Desktop, STDIO, 3.10 | 🔶 Partial | Run via GUARD-001; full REGRESS-002 pending |
 | REGRESS-002 (KI-003) | QA 2 | Claude Code, HTTP, 3.10 | ⬜ Not started | — |
+| AUTH-001a | all configs | — | ⛔ Blocked | [KI-005](./KNOWN_ISSUES.md#ki-005-channel-credentials-not-picked-up) / [DESK-1358](https://anaconda.atlassian.net/browse/DESK-1358) — config-independent, run in any suite once unblocked |
 
 ---
 
@@ -73,4 +75,4 @@ See [TEST_MATRIX.md](./TEST_MATRIX.md) for full assignment rationale.
 | [DESK-1344](https://anaconda.atlassian.net/browse/DESK-1344) | `anaconda-mcp` command not recognized on Windows despite correct installation | High | [PI-001](./KNOWN_ISSUES.md#pi-001-anaconda-mcp-cli-not-executable-on-windows--missing-exe-wrapper) | QA 3 · Windows · Claude Desktop · 3.13 · STDIO |
 | [DESK-1355](https://anaconda.atlassian.net/browse/DESK-1355) | mcp-compose proxy hangs and corrupts session on tool error | High | [KI-011](./KNOWN_ISSUES.md#ki-011-mcp-compose-proxy-hangs-and-corrupts-session-on-tool-error) | QA 2 · macOS · Cursor · 3.13 · HTTP; QA 2 · macOS · Claude Code · 3.10 · HTTP |
 | [DESK-1356](https://anaconda.atlassian.net/browse/DESK-1356) | HTTP setup wizard suggests wrong server command — starts STDIO mode instead of HTTP | High | [KI-008](./KNOWN_ISSUES.md#ki-008-http-setup-suggests-wrong-server-command) | Manual testing |
-| [DESK-1355](https://anaconda.atlassian.net/browse/DESK-1355) | mcp-compose proxy hangs and corrupts session on tool error | High | [KI-011](./KNOWN_ISSUES.md#ki-011-mcp-compose-proxy-hangs-and-corrupts-session-on-tool-error) | QA 2 · macOS · Cursor · 3.13 · HTTP; QA 2 · macOS · Claude Code · 3.10 · HTTP |
+| [DESK-1358](https://anaconda.atlassian.net/browse/DESK-1358) | Private channel requests routed to conda.anaconda.org instead of repo.anaconda.cloud — credentials never reached | Medium | [KI-005](./KNOWN_ISSUES.md#ki-005-channel-credentials-not-picked-up) | Manual testing |

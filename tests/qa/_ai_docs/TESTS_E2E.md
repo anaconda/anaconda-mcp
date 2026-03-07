@@ -59,7 +59,7 @@ If this doesn't work, troubleshoot per [KNOWN_ISSUES.md](./KNOWN_ISSUES.md#troub
 | CORE-001 | Full Tools Flow | P0 |
 | GUARD-001 | Guardrails | P0 |
 | AUTH-001 | Anonymous Mode | P1 |
-| AUTH-001a | Anonymous Mode — Private Channel Denial | P1 — ⛔ BLOCKED by [KI-005](./KNOWN_ISSUES.md#ki-005-channel-credentials-not-picked-up) |
+| AUTH-001a | Anonymous Mode — Private Channel Denial | P1 — ⛔ Blocked by [KI-005](./KNOWN_ISSUES.md#ki-005-channel-credentials-not-picked-up) |
 | AUTH-002 | Authenticated Mode | P1 |
 | REGRESS-001 | Known Issues | P0 |
 | REGRESS-002 | Remove Environment by Name (KI-003) | P0 |

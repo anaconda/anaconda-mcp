@@ -86,13 +86,17 @@ The LLM then self-recovers: calls `conda_list_environments`, retries with the fu
 
 ### KI-005: Channel Credentials Not Picked Up
 **Status**: Open
-**Severity**: High
-**Description**: `repo.anaconda.cloud` channel requires credentials that MCP tool isn't picking up.
-**Impact**: Cannot create environments or install packages from licensed channels.
-**Test Case**:
-- [ ] Test with authenticated user (anaconda login)
-- [ ] Test with licensed channel access
-- [ ] Verify error messages are clear
+**Severity**: Medium
+**Bug**: [DESK-1358](https://anaconda.atlassian.net/browse/DESK-1358)
+**Description**: When a private Anaconda channel is specified (e.g. `repo.anaconda.cloud` or an org-scoped channel like `anaconda-internal/msys2`), conda resolves the channel name using its default base URL (`https://conda.anaconda.org/<channel>`). This address does not exist for private channels, resulting in HTTP 404. The request never reaches `https://repo.anaconda.cloud`, so credentials are never checked. The failure is identical for authenticated and unauthenticated users.
+**Impact**:
+- Cannot install packages from private or org-scoped channels via MCP tools
+- AUTH-001a test fully blocked — cannot verify anonymous users are denied private channel access
+- AUTH-002 step 3a unconfirmed — unknown whether authenticated default installs resolve from `repo.anaconda.cloud`
+- Misleading error: users see "channel not accessible" (404) instead of an auth error
+**Root cause (hypothesis)**: conda requires either a full URL override (e.g. `https://repo.anaconda.cloud/pkgs/main`) or a token/credential config that maps the channel name to the correct endpoint. The MCP server is not injecting the necessary channel URL mapping or token when calling conda with a private channel override.
+**Workaround**: None — private channel access via MCP tools is not functional until resolved.
+**Blocks**: AUTH-001a (config-independent)
 
 ---
 
