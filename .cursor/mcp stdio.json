@@ -1,7 +1,7 @@
 {
   "mcpServers": {
     "anaconda-mcp": {
-      "command": "/opt/miniconda3/envs/anaconda-mcp-rc-py310/bin/python",
+      "command": "/opt/miniconda3/envs/anaconda-mcp-rc-py312/bin/python",
       "args": [
         "-m",
         "anaconda_mcp",
@@ -10,8 +10,8 @@
         "5"
       ],
       "env": {
-        "ANACONDA_MCP_PYTHON_EXECUTABLE": "/opt/miniconda3/envs/anaconda-mcp-rc-py310/bin/python",
-        "MCP_COMPOSE_CONFIG_DIR": "/opt/miniconda3/envs/anaconda-mcp-rc-py310/lib/python3.10/site-packages/anaconda_mcp"
+        "ANACONDA_MCP_PYTHON_EXECUTABLE": "/opt/miniconda3/envs/anaconda-mcp-rc-py312/bin/python",
+        "MCP_COMPOSE_CONFIG_DIR": "/opt/miniconda3/envs/anaconda-mcp-rc-py312/lib/python3.12/site-packages/anaconda_mcp"
       }
     }
   }

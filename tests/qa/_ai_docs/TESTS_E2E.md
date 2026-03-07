@@ -59,6 +59,7 @@ If this doesn't work, troubleshoot per [KNOWN_ISSUES.md](./KNOWN_ISSUES.md#troub
 | CORE-001 | Full Tools Flow | P0 |
 | GUARD-001 | Guardrails | P0 |
 | AUTH-001 | Anonymous Mode | P1 |
+| AUTH-001a | Anonymous Mode — Private Channel Denial | P1 — ⛔ BLOCKED by [KI-005](./KNOWN_ISSUES.md#ki-005-channel-credentials-not-picked-up) |
 | AUTH-002 | Authenticated Mode | P1 |
 | REGRESS-001 | Known Issues | P0 |
 | REGRESS-002 | Remove Environment by Name (KI-003) | P0 |
@@ -119,13 +120,44 @@ anaconda logout 2>/dev/null || true
 |------|--------|----------|
 | 1 | Ask: "List my conda environments" | Works |
 | 2 | Ask: "Create environment anon-test with Python 3.11" | Environment created |
-| 2a | Run: `conda list -n anon-test --show-channel-urls` | All package URLs contain only public channels (e.g. `pkgs/main`, `pkgs/r`, `conda-forge`). No `repo.anaconda.cloud` URLs present. |
-| 3 | Ask: "Install numpy in anon-test from the repo.anaconda.cloud channel" | Error: access denied or authentication required — not silently falling back to a public channel |
-| 3a | Run: `conda list -n anon-test --show-channel-urls \| grep numpy` | numpy not listed (install was rejected, not silently resolved from a public channel) |
+| 2a | Run: `conda list -n anon-test --show-channel-urls` | All package URLs contain only public channels (e.g. `pkgs/main`, `pkgs/r`, `conda-forge`). No `repo.anaconda.cloud` URLs present. This is the primary auth signal — symmetric with AUTH-002 step 3a. |
+| 3 | Ask: "Install numpy in anon-test from the repo.anaconda.cloud channel" | HTTP 404 — channel not accessible. See note below. |
+| 3a | Run: `conda list -n anon-test --show-channel-urls \| grep numpy` | numpy not listed — confirms no silent fallback to a public channel occurred |
+
+> **Note on Step 2 (fresh environment required)**: The channel URL check in step 2a is only a reliable auth signal for **freshly created** environments. If `anon-test` already exists and was previously created while authenticated, its package metadata will still reference `repo.anaconda.cloud` regardless of current auth state — conda stores channel provenance locally at install time and never updates it. Always run the cleanup step between test runs.
+
+> **Note on Step 3**: Due to a URL routing issue, conda resolves the channel name `repo.anaconda.cloud` to `https://conda.anaconda.org/repo.anaconda.cloud` (404) rather than the actual private channel endpoint. This error occurs for both authenticated and unauthenticated users, so it is **not** a reliable auth signal. The key assertion is step 3a (no silent fallback). The routing issue is tracked in [KI-005](./KNOWN_ISSUES.md#ki-005-channel-credentials-not-picked-up).
 
 ### Cleanup
 ```bash
 conda remove -n anon-test --all -y
+```
+
+---
+
+## AUTH-001a: Anonymous Mode — Private Channel Denial
+
+> ⛔ **BLOCKED by [KI-005](./KNOWN_ISSUES.md#ki-005-channel-credentials-not-picked-up)** — Do not execute until KI-005 is resolved.
+
+**Purpose**: Verify that an anonymous user receives an explicit authentication error (not a silent failure or 404) when attempting to install a package from a private Anaconda channel.
+
+**Why AUTH-001 does not cover this**: AUTH-001 step 3 hits an HTTP 404 due to a URL routing bug — conda resolves `repo.anaconda.cloud` to `conda.anaconda.org` before credentials are ever checked. This error is identical for authenticated and unauthenticated users and therefore cannot prove auth gating.
+
+**What KI-005 must fix for this test to be executable**: The request to a private channel (e.g. `repo.anaconda.cloud` or `anaconda-internal/msys2`) must reach the actual channel endpoint, where an unauthenticated request should receive a `401 Unauthorized` or equivalent auth error.
+
+### Prep
+```bash
+anaconda logout 2>/dev/null || true
+```
+
+| Step | Action | Expected |
+|------|--------|----------|
+| 1 | Ask: "Install numpy in anon-test from the repo.anaconda.cloud channel" | Explicit authentication/authorization error — **not** HTTP 404, **not** silent fallback to public channel |
+| 1a | Run: `conda list -n anon-test --show-channel-urls \| grep numpy` | numpy not listed |
+
+### Cleanup
+```bash
+conda remove -n anon-test --all -y 2>/dev/null
 ```
 
 ---
@@ -151,9 +183,11 @@ anaconda whoami
 | 1 | Ask: "List my conda environments" | Works |
 | 2 | Ask: "Create environment auth-test with Python 3.11" | Environment created |
 | 3 | Ask: "Install numpy in auth-test" | Package installed |
-| 4 | Ask: "Install numpy in auth-test from the repo.anaconda.cloud channel" | Request is sent to `repo.anaconda.cloud` with credentials. See note below. |
+| 3a | Run: `conda list -n auth-test --show-channel-urls \| grep numpy` | numpy URL contains `repo.anaconda.cloud` (confirms credentials were picked up). If URL only shows `pkgs/main` or `conda-forge`, credentials were **not** picked up — **fail**. |
 
-> **Note on Step 4 (KI-005)**: `repo.anaconda.cloud` requires credentials that the MCP server is not currently picking up correctly. Expected current behavior: the request reaches the channel but fails with an auth/resolution error. A silent fallback to a public channel is a **fail**. Tracking in [KI-005](./KNOWN_ISSUES.md#ki-005-channel-credentials-not-picked-up).
+> **Note on Step 2 (fresh environment required)**: Same constraint as AUTH-001 — the channel URL check in step 3a is only meaningful for a freshly created environment. Packages installed in a prior run while authenticated retain their `repo.anaconda.cloud` metadata even after logout. Always run the cleanup step between test runs.
+
+> **Note on Step 3a (open question — KI-005)**: This step is the *intended* auth signal, but whether authenticated users actually see `repo.anaconda.cloud` in channel URLs is **unconfirmed**. The same credential routing issue (KI-005) that breaks explicit private channel installs may also prevent `repo.anaconda.cloud` from appearing here — meaning both authenticated and unauthenticated users might only see public channel URLs. If step 3a shows only public channels even after confirmed login (`anaconda whoami` in prep), treat it as a KI-005 symptom rather than a test failure. Tracked in [KI-005](./KNOWN_ISSUES.md#ki-005-channel-credentials-not-picked-up).
 
 ### Cleanup
 ```bash
