@@ -120,6 +120,12 @@ the inline case — the result is dropped, the upstream connection is held open 
 proxy waits for a result that was already delivered, and the internal HTTP connection
 pool slot is never released, blocking all subsequent calls process-wide.
 
+The inline path is triggered specifically by error-path calls because
+`environments_mcp_server` returns error results synchronously (no async work before
+returning), causing FastMCP to serve them inline in the 200 OK body rather than via
+SSE. Success-path calls await long-running conda operations, so FastMCP issues 202
+Accepted and uses SSE — the path `mcp-compose` handles correctly.
+
 ---
 
 ## Impact

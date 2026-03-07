@@ -204,6 +204,14 @@ the POST response body** (HTTP 200 OK) rather than via the SSE stream. `mcp-comp
 is only listening on the SSE stream and does not read the inline body — the result is
 silently dropped.
 
+**Why errors specifically trigger the inline path**: `environments_mcp_server` tool
+handlers catch all exceptions synchronously and return a result dict immediately —
+they do not await any long-running operation before returning. FastMCP observes that
+the result is already available and serves it inline in the 200 OK POST body. On the
+success path the handler awaits `conda.install(...)` / `conda.remove_environment(...)`
+etc., which takes seconds; FastMCP issues 202 Accepted and delivers the result via SSE
+when the awaited call completes. This is why the hang is exclusive to error-path calls.
+
 The session is abandoned without close or DELETE. The connection pool slot it occupies
 is never released. All subsequent calls to port 4041 — regardless of upstream session
 — block on this stuck slot, making the corruption process-wide.
@@ -212,46 +220,127 @@ is never released. All subsequent calls to port 4041 — regardless of upstream 
 
 ## Fix Plan
 
-### Fix 1 — Handle inline tool results in `mcp-compose`
+**All three fixes are required for a complete resolution.** 
+- Fix 1 and Fix 2 address the root cause in `mcp-compose` (upstream, not owned by this team). 
+- Fix 3 is independent defensive hardening in `environments_mcp_server` (this team's repo). 
+- While Fix 1 + Fix 2 are pending upstream, the **Workaround** below can be shipped immediately.
 
-When `tools/call` returns HTTP 200 OK, read and forward the inline response body
-instead of waiting on the SSE stream. The proxy must handle both paths:
+### Fix 1 — Switch from deprecated `streamablehttp_client` to `streamable_http_client` in `mcp-compose`
 
-- **202 Accepted** → result arrives asynchronously on SSE stream (current path)
-- **200 OK** → result is inline in the POST response body (unhandled path)
+**Repo**: `mcp-compose` (upstream — file at https://github.com/datalayer/mcp-compose/issues)
 
-### Fix 2 — Defensive timeout on the SSE read loop
-
-Prevents a stuck backend from holding the upstream connection open indefinitely if an
-inline result is missed:
+`cli.py` uses the deprecated `streamablehttp_client` for every proxied tool call.
+The deprecated function silently adds a **5-minute SSE read timeout** (`sse_read_timeout=300s`),
+independent of the 30-second `timeout` argument passed by `mcp-compose`. This is why
+hangs last minutes, not seconds. The replacement non-deprecated API does not carry this
+default:
 
 ```python
-# mcp-compose — sketch
-async with asyncio.timeout(180):
-    async for event in backend_sse_stream:
-        yield event
+# mcp_compose/cli.py — proposed change
+# Before:
+from mcp.client.streamable_http import streamablehttp_client   # deprecated, adds sse_read_timeout=300s
+# After:
+from mcp.client.streamable_http import streamable_http_client  # current API, no hidden timeout
+```
+
+The proxy must also handle both response paths for `tools/call`:
+
+- **202 Accepted** → result arrives asynchronously on SSE stream (currently handled)
+- **200 OK** → result is inline in the POST response body (currently causes the hang)
+
+### Fix 2 — Bound each proxied call with `asyncio.timeout` in `mcp-compose`
+
+**Repo**: `mcp-compose` (upstream)
+
+Switching the API (Fix 1) removes the hidden 5-minute default, but a defensive per-call
+timeout prevents any future regression regardless of SDK internals or downstream
+misbehaviour:
+
+```python
+# mcp_compose/cli.py — proposed change
+async def streamable_http_tool_proxy(**kwargs):
+    async with asyncio.timeout(float(http_config.timeout)):   # hard deadline per call
+        async with streamable_http_client(url=http_config.url, ...) as (r, w, _):
+            async with ClientSession(r, w) as session:
+                await session.initialize()
+                result = await session.call_tool(original_tool_name, kwargs)
+                ...
 ```
 
 ### Fix 3 — Timeouts on conda operations in `environments_mcp_server`
 
-Without a timeout, a stuck conda subprocess blocks the tool handler indefinitely,
-keeping the SSE stream open forever:
+**Repo**: `environments-mcp-server` (owned by this team).
+
+`environments_mcp_server` delegates all real conda work to the `anaconda_connector_conda`
+async library (`await conda.install(...)`, `await conda.remove_environment(...)`, etc.).
+There are no timeouts on these awaited calls, so a hung conda operation keeps the tool
+handler suspended indefinitely, holding the FastMCP SSE stream open forever. Wrap each
+call with `asyncio.wait_for`:
 
 ```python
-await asyncio.wait_for(
-    asyncio.get_event_loop().run_in_executor(None, conda_op),
-    timeout=120,
-)
+try:
+    result = await asyncio.wait_for(
+        conda.install(...),
+        timeout=120,
+    )
+except asyncio.TimeoutError:
+    return ServerToolResult(
+        is_error=True,
+        error_description="conda operation timed out after 120 seconds.",
+    ).model_dump()
 ```
+
+Apply the same pattern to `conda.remove_environment(...)`, `conda.create(...)`, and
+`conda.remove(...)` in the corresponding tool files.
+
+A secondary concern: `utils/conda.py` calls `subprocess.check_output(["conda", "info",
+"--json"])` synchronously without a `timeout=` argument. This runs only at startup
+(conda discovery), but should also be hardened:
+
+```python
+subprocess.check_output(["conda", "info", "--json"], text=True, timeout=30)
+```
+
+---
+
+## Workaround — Ship now while Fix 1 + Fix 2 are pending upstream
+
+**Repo**: `environments-mcp-server` (owned by this team).
+
+The hang is triggered exclusively because error-path handlers return *synchronously*
+(no `await` before returning), causing FastMCP to serve the result inline via 200 OK.
+`mcp-compose` then fails to clean up the GET SSE stream within the 5-minute window.
+
+Adding `await asyncio.sleep(0)` as the **first line** of every tool handler forces a
+yield to the event loop before any work begins. FastMCP observes that the result is not
+yet available and always uses the 202 Accepted + SSE path — the path `mcp-compose`
+handles correctly. The race condition still fires internally but stops mattering.
+
+```python
+# environments_mcp_server/tools/environments/install_packages.py
+@register_tool
+async def install_packages(prefix: str, packages: list[str]) -> dict:
+    await asyncio.sleep(0)  # workaround: force FastMCP onto 202+SSE path (KI-011)
+    try:
+        ...
+```
+
+Apply to every tool handler (`install_packages`, `remove_packages`,
+`remove_environment`, `create_environment`, `list_environments`,
+`list_environment_packages`).
+
+This workaround couples `environments_mcp_server` to `mcp-compose`'s broken
+assumption and must be reverted once Fix 1 + Fix 2 ship in a `mcp-compose` release.
+Mark each added line with a `# workaround KI-011` comment to make the revert obvious.
 
 ### Expected outcome
 
-| Symptom | Before fix | After fix |
-|---|---|---|
-| Hang on error-path tool call | ✓ | ✗ |
-| Process-wide pool corruption | ✓ | ✗ |
-| New chat session recovers | ✗ | ✓ |
-| HANG-002 / STDIO-HANG-002 tests | FAIL | PASS |
+| Symptom | Before | After Fix 1+2 | After Workaround |
+|---|---|---|---|
+| Hang on error-path tool call | ✓ | ✗ | ✗ |
+| Process-wide pool corruption | ✓ | ✗ | ✗ |
+| New chat session recovers | ✗ | ✓ | ✓ |
+| HANG-002 / STDIO-HANG-002 tests | FAIL | PASS | PASS |
 
 ---
 
