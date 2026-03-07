@@ -322,6 +322,45 @@ and observe its terminal output directly:
 
 ---
 
+### PI-002: Claude Desktop on Windows 365 (Managed Corporate Device) Likely Blocked by Org Policy
+
+**Status**: Under Investigation
+**Severity**: High (**may** block all Windows STDIO testing with Claude Desktop)
+**Platform**: Windows 365 / managed corporate Windows devices
+
+**Description**: On organizational Windows 365 (cloud PC) instances, Claude Desktop (Windows Store version) may be unable to spawn local subprocess MCP servers. This does not appear to be an `anaconda-mcp` packaging issue — the likely cause is a platform-level constraint from corporate management policies, but this needs further confirmation.
+
+**Why this blocks STDIO MCP servers**:
+- The Windows Store Claude Desktop runs inside an **AppContainer sandbox**. On org-managed devices, additional **AppLocker / WDAC policies** may further restrict subprocess spawning from user directories (e.g. `C:\Users\...\miniconda3\...`).
+- **Group Policy** on managed Windows 365 instances typically restricts app installation to the Store or an approved software list — installing the direct-download `.exe` Claude Desktop may be blocked outright.
+- A **`vmcompute.dll` load failure** was observed in CoworkVMService logs — this may indicate Hyper-V/container features are restricted, which would be consistent with a locked-down Windows 365 instance, but the exact cause needs to be confirmed with IT support or reproduced on another instance.
+
+**Observed symptoms**:
+```
+# CoworkVMService log
+failed to load vmcompute.dll   ← possible indicator of org policy; needs IT confirmation
+```
+MCP servers failed to start when configured in Claude Desktop; subprocess spawn appeared to be silently blocked. **Root cause not yet definitively confirmed** — needs verification with IT support or testing on a second Windows 365 instance.
+
+**Impact**:
+- Windows STDIO testing with Claude Desktop is likely infeasible on org-managed Windows 365 without IT involvement.
+- All QA 3 Windows + Claude Desktop test configurations are blocked.
+
+**Practical alternatives**:
+
+| Option | Feasibility |
+|--------|-------------|
+| Install direct-download Claude Desktop `.exe` | Likely blocked by IT Group Policy |
+| Use **Cursor** or **VS Code** with HTTP transport | Possible — IDE installs are more commonly allowed |
+| Request IT to allowlist direct-download Claude Desktop | Depends on org policy |
+| Use a local (non-managed) Windows machine | Outside tester's control |
+
+**Current plan**: Attempt Windows testing using **Cursor** or **VS Code** (with AI chat) + HTTP transport. STDIO-only configs remain blocked until further notice.
+
+**Note**: This is a tester environment constraint, not an `anaconda-mcp` bug.
+
+---
+
 ## Setup Quirks
 
 ### SQ-001: Claude Desktop Capability Setting
