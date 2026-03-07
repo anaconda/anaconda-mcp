@@ -177,6 +177,76 @@ timeout per call.
 
 ---
 
+## ⚠️ Testing Results — Fixes Are Insufficient (2026-03-07)
+
+**The proposed fixes were tested and do NOT fully resolve the issue.**
+
+### What was tested
+
+| Fix attempted | Result |
+|---------------|--------|
+| Switch to `streamable_http_client` | **API incompatible** — different signature (takes `http_client: httpx.AsyncClient` instead of `headers`/`timeout`) |
+| Add `sse_read_timeout=30` to deprecated client | Still fails at iteration 18/20 |
+| Add `asyncio.timeout()` wrapper | Still fails at iteration 18/20 |
+| Add `await asyncio.sleep(0.1)` in tool handlers (server-side workaround) | **Partial improvement**: fails at iteration 18 instead of 4 (4× better) |
+
+### API difference between deprecated and non-deprecated clients
+
+```python
+# Deprecated (current in mcp-compose)
+@deprecated("Use `streamable_http_client` instead.")
+async def streamablehttp_client(
+    url: str,
+    headers: dict[str, str] | None = None,
+    timeout: float | timedelta = 30,
+    sse_read_timeout: float | timedelta = 60 * 5,  # ← hidden 5-min default
+    ...
+)
+
+# Non-deprecated (different API - not a drop-in replacement)
+async def streamable_http_client(
+    url: str,
+    *,
+    http_client: httpx.AsyncClient | None = None,  # ← must pass pre-configured client
+    terminate_on_close: bool = True,
+)
+```
+
+### Root cause is deeper than initially thought
+
+The issue is **not just** about the 5-minute SSE timeout or the deprecated function.
+The underlying problem is in the MCP SDK's httpx connection pool management. Even with:
+- Reduced `sse_read_timeout`
+- `asyncio.timeout` wrapper
+- Server-side `asyncio.sleep` delays
+
+...the connection pool corruption still accumulates over repeated calls and eventually
+causes a hang. The `asyncio.sleep` workaround reduces the rate of corruption (from
+iteration 4 to iteration 18) but does not eliminate it.
+
+### Related upstream issues
+
+- [python-sdk #1941](https://github.com/modelcontextprotocol/python-sdk/issues/1941) — GET stream task fails silently
+- [python-sdk #1811](https://github.com/modelcontextprotocol/python-sdk/issues/1811) — read_stream_writer left open after SSE disconnect
+- [openai-agents #1288](https://github.com/openai/openai-agents-python/issues/1288) — Failed connection corrupts anyio cancel scope
+
+### Current recommendation
+
+1. **Apply server-side workaround** (`await asyncio.sleep(0.1)` in tool handlers) for 4× improvement
+2. **Monitor upstream** MCP Python SDK for fixes to connection pool handling
+3. **File issue** with mcp-compose to switch to non-deprecated client with proper httpx.AsyncClient configuration
+
+### Versions tested
+
+| Package | Version |
+|---------|---------|
+| mcp-compose | 0.1.10 |
+| mcp SDK | 1.26.0 (latest) |
+| fastmcp | 3.1.0 (latest) |
+| Python | 3.13 |
+
+---
+
 ## Additional finding — STDIO transport inconsistency
 
 Over STDIO transport, `mcp-compose` encodes a downstream tool error with

@@ -413,7 +413,7 @@ This workaround couples `environments_mcp_server` to `mcp-compose`'s broken
 assumption and must be reverted once Fix 1 + Fix 2 ship in a `mcp-compose` release.
 Mark each added line with a `# workaround KI-011` comment to make the revert obvious.
 
-### Expected outcome
+### Expected outcome (original expectation)
 
 | Symptom | Before | After Fix 1+2 | After Workaround |
 |---|---|---|---|
@@ -421,6 +421,27 @@ Mark each added line with a `# workaround KI-011` comment to make the revert obv
 | Process-wide pool corruption | ✓ | ✗ | ✗ |
 | New chat session recovers | ✗ | ✓ | ✓ |
 | HANG-002 / STDIO-HANG-002 tests | FAIL | PASS | PASS |
+
+### ⚠️ Actual outcome (tested 2026-03-07)
+
+**The proposed fixes do NOT fully resolve the issue.** Testing revealed the root cause
+is deeper than initially analyzed — it's in the MCP SDK's httpx connection pool
+management, not just the 5-minute SSE timeout.
+
+| Configuration | Hang iteration | Improvement |
+|---------------|----------------|-------------|
+| No workaround | 4/20 | baseline |
+| `asyncio.sleep(0.1)` in handlers | 18/20 | **4× better** |
+| + `sse_read_timeout=30` | 18/20 | no additional improvement |
+| + `asyncio.timeout()` wrapper | 18/20 | no additional improvement |
+| Switch to `streamable_http_client` | **API incompatible** | cannot test |
+
+The non-deprecated `streamable_http_client` has a different API signature and is not
+a drop-in replacement. See [GITHUB-ISSUE-MCP-COMPOSE-PROXY-HANG.md](./GITHUB-ISSUE-MCP-COMPOSE-PROXY-HANG.md)
+for full testing details.
+
+**Recommendation**: Apply the `asyncio.sleep(0.1)` workaround for partial mitigation
+while monitoring upstream MCP Python SDK for connection pool fixes.
 
 ---
 
