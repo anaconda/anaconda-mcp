@@ -9,11 +9,11 @@
 
 ```mermaid
 graph LR
-    A["AI Client\n(Cursor / Claude Code / Claude Desktop)"]
-    B["mcp-compose\n:8888"]
-    C["environments_mcp_server\n:4041"]
+    A["AI Client<br/>(Cursor / Claude Code / Claude Desktop)"]
+    B["mcp-compose<br/>:8888"]
+    C["environments_mcp_server<br/>:4041"]
 
-    A -- "Streamable HTTP\nor STDIO" --> B
+    A -- "Streamable HTTP<br/>or STDIO" --> B
     B -- "Streamable HTTP" --> C
 ```
 
@@ -163,12 +163,14 @@ To determine whether the hang is gated on the HTTP upstream path or lives in
 `mcp-compose`'s internal proxy logic, a STDIO test suite was created with the
 following architecture:
 
-```
-test process ──stdin/stdout──▶ mcp-compose (STDIO mode)
-                                       │
-                               Streamable HTTP :4042
-                                       │
-                               environments_mcp_server
+```mermaid
+graph LR
+    T["test process"]
+    P["mcp-compose<br/>(STDIO mode)"]
+    B["environments_mcp_server<br/>:4042"]
+
+    T -- "stdin / stdout" --> P
+    P -- "Streamable HTTP" --> B
 ```
 
 The internal proxy path (mcp-compose → environments_mcp_server) is identical to the
@@ -204,13 +206,22 @@ the POST response body** (HTTP 200 OK) rather than via the SSE stream. `mcp-comp
 is only listening on the SSE stream and does not read the inline body — the result is
 silently dropped.
 
-**Why errors specifically trigger the inline path**: `environments_mcp_server` tool
-handlers catch all exceptions synchronously and return a result dict immediately —
-they do not await any long-running operation before returning. FastMCP observes that
-the result is already available and serves it inline in the 200 OK POST body. On the
-success path the handler awaits `conda.install(...)` / `conda.remove_environment(...)`
-etc., which takes seconds; FastMCP issues 202 Accepted and delivers the result via SSE
-when the awaited call completes. This is why the hang is exclusive to error-path calls.
+**Why errors specifically trigger the inline path**:
+
+```mermaid
+flowchart TD
+    A["tool handler called"]
+    A --> B{"awaits any async<br/>operation before returning?"}
+
+    B -- "No — error path<br/>exception caught immediately" --> C["result available<br/>before event loop yields"]
+    B -- "Yes — success path<br/>await conda.install(...) etc." --> D["result available<br/>after async I/O completes"]
+
+    C --> E["FastMCP → 200 OK<br/>result inline in POST body"]
+    D --> F["FastMCP → 202 Accepted<br/>result delivered via SSE"]
+
+    E --> G["⚠️ mcp-compose: GET SSE stream<br/>cleanup hangs up to 5 min<br/>→ HANG"]
+    F --> H["✓ mcp-compose reads result<br/>from SSE → OK"]
+```
 
 The session is abandoned without close or DELETE. The connection pool slot it occupies
 is never released. All subsequent calls to port 4041 — regardless of upstream session
@@ -315,6 +326,29 @@ Adding `await asyncio.sleep(0)` as the **first line** of every tool handler forc
 yield to the event loop before any work begins. FastMCP observes that the result is not
 yet available and always uses the 202 Accepted + SSE path — the path `mcp-compose`
 handles correctly. The race condition still fires internally but stops mattering.
+
+```mermaid
+sequenceDiagram
+    participant P as mcp-compose
+    participant F as FastMCP
+    participant H as tool handler
+
+    Note over P,H: Without workaround
+    P->>F: POST tools/call
+    F->>H: call handler()
+    H-->>F: return immediately (error, no await)
+    F-->>P: 200 OK — result inline
+    Note over P: GET SSE stream cleanup hangs → HANG
+
+    Note over P,H: With workaround — await asyncio.sleep(0)
+    P->>F: POST tools/call
+    F->>H: call handler()
+    H->>H: await asyncio.sleep(0)  ← yields to event loop
+    H-->>F: return result
+    F-->>P: 202 Accepted
+    F-)P: result via SSE stream
+    Note over P: normal SSE path → OK
+```
 
 ```python
 # environments_mcp_server/tools/environments/install_packages.py
