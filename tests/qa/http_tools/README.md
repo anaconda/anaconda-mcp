@@ -56,6 +56,8 @@ Homebrew/system pytest that shadows the conda env's installation.
 
 ### Option A — pre-started server (default)
 
+#### macOS / Linux
+
 ```bash
 # Terminal 1: start the server
 conda activate anaconda-mcp-rc-py313
@@ -65,6 +67,44 @@ conda activate anaconda-mcp-rc-py313
 conda activate anaconda-mcp-qa
 python -m pytest tests/qa/http_tools/ -v
 ```
+
+#### Windows
+
+> **Note:** The `anaconda-mcp` CLI is not directly executable on Windows due to a missing `.exe` wrapper (see [PI-001](../_ai_docs/KNOWN_ISSUES.md#pi-001)). Use `python -m anaconda_mcp` as the workaround.
+
+**PowerShell:**
+
+```powershell
+# Terminal 1: start the server
+conda activate anaconda-mcp-rc-py311
+.\tests\qa\_ai_docs\scripts\start-http-server.ps1 8888
+
+# Terminal 2: run the tests
+conda activate anaconda-mcp-qa
+python -m pytest tests/qa/http_tools/ -v
+```
+
+**Anaconda Prompt (CMD):**
+
+```cmd
+REM Terminal 1: start the server
+conda activate anaconda-mcp-rc-py311
+tests\qa\_ai_docs\scripts\start-http-server.cmd 8888
+
+REM Terminal 2: run the tests
+conda activate anaconda-mcp-qa
+python -m pytest tests/qa/http_tools/ -v
+```
+
+**Simple STDIO mode (no config file):**
+
+```cmd
+cd %USERPROFILE%
+conda activate anaconda-mcp-rc-py311
+python -m anaconda_mcp serve --delay 5
+```
+
+> **Important (Windows):** Run the server from a directory that does NOT contain a `.env` file with test variables. The `environments_mcp_server` uses pydantic-settings which reads `.env` files automatically. Test directories like `C:\projects\anaconda-desktop` may have `.env` files that cause validation errors. Use `cd %USERPROFILE%` or `cd $HOME` before starting the server.
 
 ### Option B — auto-start server
 
@@ -195,3 +235,44 @@ tests/qa/http_tools/
 ├── common/                                ← shared MCP client, constants, validators
 └── reports/report.html                    ← generated, gitignored
 ```
+
+---
+
+## Windows-specific notes
+
+### Server startup scripts
+
+| Platform | Script | Usage |
+|----------|--------|-------|
+| macOS/Linux | `start-http-server.sh` | `./tests/qa/_ai_docs/scripts/start-http-server.sh 8888` |
+| Windows (PowerShell) | `start-http-server.ps1` | `.\tests\qa\_ai_docs\scripts\start-http-server.ps1 8888` |
+| Windows (CMD/Anaconda Prompt) | `start-http-server.cmd` | `tests\qa\_ai_docs\scripts\start-http-server.cmd 8888` |
+
+### Known issues on Windows
+
+| Issue | Description | Workaround |
+|-------|-------------|------------|
+| [PI-001](../_ai_docs/KNOWN_ISSUES.md#pi-001) | `anaconda-mcp` CLI not executable (missing `.exe` wrapper) | Use `python -m anaconda_mcp` |
+| `.env` file conflicts | `environments_mcp_server` reads `.env` files via pydantic-settings, causing validation errors if test variables are present | Run server from `%USERPROFILE%` or a directory without `.env` |
+| PowerShell execution policy | Scripts may be blocked by default | Run `Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned` |
+
+### VS Code MCP integration (Windows)
+
+To use `anaconda-mcp` as an MCP server in VS Code on Windows, create `.vscode/mcp.json`:
+
+```json
+{
+    "servers": {
+        "anaconda-mcp": {
+            "command": "C:\\Users\\<username>\\anaconda3\\envs\\anaconda-mcp-rc-py311\\python.exe",
+            "args": ["-m", "anaconda_mcp", "serve", "--delay", "5"],
+            "cwd": "C:\\Users\\<username>",
+            "env": {
+                "ANACONDA_MCP_PYTHON_EXECUTABLE": "C:\\Users\\<username>\\anaconda3\\envs\\anaconda-mcp-rc-py311\\python.exe"
+            }
+        }
+    }
+}
+```
+
+The `cwd` setting is important to avoid loading test `.env` files from project directories.
