@@ -1,5 +1,5 @@
 {% set name = "anaconda-mcp" %}
-{% set version = (GIT_DESCRIBE_TAG or "0.0.0").lstrip("v").replace("-", ".") %}
+  {% set version = (GIT_DESCRIBE_TAG or "0.0.0").lstrip("v").replace("-", ".") %}
 
 package:
   name: {{ name|lower }}
@@ -11,7 +11,13 @@ source:
 build:
   number: 0
   noarch: python
-  script: python -m pip install . --no-deps -vv
+  script:
+    - python -m pip install . --no-deps -vv
+    - mkdir -p "${PREFIX}/share/anaconda-mcp"
+    - cp "${RECIPE_DIR}/../EULA.txt" "${PREFIX}/share/anaconda-mcp/"
+    - if not exist "%PREFIX%\share\anaconda-mcp" mkdir "%PREFIX%\share\anaconda-mcp"
+    - copy "%RECIPE_DIR%\..\EULA.txt" "%PREFIX%\share\anaconda-mcp\"
+  post-link: scripts/post-link
 
 requirements:
   host:
@@ -26,12 +32,14 @@ requirements:
     - anaconda-auth >=0.8.6,<0.10.0
     - anaconda-opentelemetry >=0.8.1,<1.2.0
     - click >=8.1.0,<9.0.0
+
 about:
   summary: Anaconda MCP
   home: https://github.com/anaconda/anaconda-mcp
   dev_url: https://github.com/anaconda/anaconda-mcp
   doc_url: https://github.com/anaconda/anaconda-mcp
-  license: Apache-2.0
+  license: LicenseRef-Proprietary
+  license_file: ../EULA.txt
 
 extra:
   recipe-maintainers:
