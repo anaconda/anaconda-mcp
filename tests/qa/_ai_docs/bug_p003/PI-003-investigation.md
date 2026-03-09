@@ -1,7 +1,9 @@
 # PI-003: `anaconda-connector` Downloads Fail — Oversized Telemetry Headers Rejected by S3
 
-**Status**: Root cause confirmed · Workaround available · Bug to file against `conda-anaconda-telemetry`  
+**Status**: Fixed in `conda-anaconda-telemetry 0.3.0` — cannot reproduce on newer versions
 **Discovered**: March 2026, Windows QA with full Anaconda installation
+**Affected versions**: `conda-anaconda-telemetry 0.1.2` + `conda 25.5.1`
+**Fixed in**: `conda-anaconda-telemetry 0.3.0` + `conda 25.11.1`
 
 ---
 
@@ -207,9 +209,9 @@ conda config --set anaconda_anon_usage true
 
 ---
 
-## Bug to File
+## Bug to File (Not Needed — Fixed)
 
-**Component**: `conda-anaconda-telemetry`  
+**Component**: `conda-anaconda-telemetry`
 **Title**: Telemetry headers forwarded to S3 redirect targets, exceeding AWS 8192-byte header limit
 
 **Description**: The plugin injects `Anaconda-Telemetry-*` headers (including a full base env package list) into all conda HTTP requests. When conda follows a redirect from `conda.anaconda.org` to `s3.amazonaws.com`, these headers are carried to S3. AWS S3 enforces a strict 8192-byte request header section limit and rejects the request with `RequestHeaderSectionTooLarge`.
@@ -217,3 +219,35 @@ conda config --set anaconda_anon_usage true
 **Fix**: Strip `Anaconda-Telemetry-*` headers before sending requests to non-Anaconda domains (any domain not under `anaconda.org`, `anaconda.com`, or `repo.anaconda.com`). These headers are intended for Anaconda analytics endpoints only — forwarding them to third-party CDNs and object storage is unintentional and causes failures.
 
 **Additional concern**: The `Anaconda-Telemetry-Packages` header (full installed package list) is being sent to AWS S3 presigned URLs unintentionally. This may be a privacy/data-leakage concern worth reviewing.
+
+---
+
+## Resolution
+
+**Status**: Fixed — cannot reproduce on current versions.
+
+### Version comparison
+
+| Component | When bug occurred | Current (no repro) |
+|---|---|---|
+| conda | 25.5.1 | 25.11.1 |
+| conda-anaconda-telemetry | 0.1.2 | 0.3.0 |
+
+### Reproduction attempts (March 2026)
+
+Attempted to reproduce on Windows with:
+- Full Anaconda installation (500+ packages in base)
+- `anaconda_anon_usage: True` (telemetry enabled)
+- Same `anaconda-connector` channel and packages
+
+**Result**: All three `anaconda-connector` packages downloaded successfully. No HTTP 400 errors. The `Anaconda-Telemetry-*` headers are no longer being forwarded to S3 redirect targets.
+
+### Conclusion
+
+The bug was silently fixed in `conda-anaconda-telemetry 0.3.0`. The telemetry plugin now correctly strips `Anaconda-Telemetry-*` headers before following redirects to non-Anaconda domains (S3).
+
+No bug report needed — issue is resolved in current versions. Users on older versions should upgrade or use the workaround:
+
+```bash
+conda config --set anaconda_anon_usage false
+```

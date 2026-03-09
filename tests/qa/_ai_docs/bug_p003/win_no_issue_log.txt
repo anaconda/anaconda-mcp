@@ -1,0 +1,405 @@
+PS C:\projects\anaconda-desktop> conda create --name anaconda-mcp-rc-py311 -c datalayer -c anaconda-cloud/label/dev -c defaults -c conda-forge --channel "https://conda.anaconda.org/t/an-19ec59a6-f3b4-4d62-a686-a882d9c1f209/anaconda-connector/" python=3.11 anaconda-mcp=1.0.0.rc.1 environments-mcp-server=1.0.0.rc.1
+3 channel Terms of Service accepted
+Channels:
+ - datalayer
+ - anaconda-cloud/label/dev
+ - defaults
+ - conda-forge
+ - anaconda-connector
+Platform: win-64
+Collecting package metadata (repodata.json): done
+Solving environment: done
+
+
+==> WARNING: A newer version of conda exists. <==
+    current version: 25.11.1
+    latest version: 26.1.1
+
+Please update conda by running
+
+    $ conda update -n base -c defaults conda
+
+
+
+## Package Plan ##
+
+  environment location: C:\Users\JuliaIliukhina\anaconda3\envs\anaconda-mcp-rc-py311
+
+  added / updated specs:
+    - anaconda-mcp=1.0.0.rc.1
+    - environments-mcp-server=1.0.0.rc.1
+    - python=3.11
+
+
+The following packages will be downloaded:
+
+    package                    |            build
+    ---------------------------|-----------------
+    anaconda-opentelemetry-1.0.1|  py311haa95532_0          73 KB
+    annotated-doc-0.0.4        |  py311haa95532_0          11 KB
+    annotated-types-0.6.0      |  py311haa95532_1          25 KB
+    anyio-4.10.0               |  py311haa95532_0         286 KB
+    attrs-25.4.0               |  py311haa95532_2         174 KB
+    authlib-1.6.6              |  py311haa95532_0         433 KB
+    backports.tarfile-1.2.0    |  py311haa95532_0          81 KB
+    beartype-0.22.9            |  py311haa95532_0         1.4 MB
+    boltons-25.0.0             |  py311haa95532_0         507 KB
+    brotlicffi-1.2.0.0         |  py311h885b0b7_0         348 KB
+    cachetools-6.2.2           |  py311haa95532_0          41 KB
+    caio-0.9.25                |  py311hf893f09_0          42 KB  conda-forge
+    certifi-2026.01.04         |  py311haa95532_0         148 KB
+    cffi-2.0.0                 |  py311h02ab6af_1         298 KB
+    charset-normalizer-3.4.4   |  py311haa95532_0         125 KB
+    click-8.2.1                |  py311haa95532_1         318 KB
+    colorama-0.4.6             |  py311haa95532_0          36 KB
+    conda-26.1.1               |  py311haa95532_0         1.2 MB
+    conda-package-handling-2.4.0|  py311haa95532_1         305 KB
+    conda-package-streaming-0.12.0|  py311haa95532_1          38 KB
+    cryptography-46.0.5        |  py311hbfe00f4_1         1.4 MB
+    cyclopts-4.6.0             |  py311haa95532_0         443 KB
+    distro-1.9.0               |  py311haa95532_0          61 KB
+    dnspython-2.8.0            |  py311haa95532_0         646 KB
+    docstring_parser-0.17.0    |  py311haa95532_0          95 KB
+    docutils-0.21.2            |  py311haa95532_1         997 KB
+    email-validator-2.3.0      |  py311haa95532_0          90 KB
+    exceptiongroup-1.3.0       |  py311haa95532_0          48 KB
+    fastapi-0.128.0            |  py311haa95532_0         166 KB
+    fastapi-cli-0.0.20         |  py311haa95532_0          58 KB
+    fastapi-core-0.128.0       |  py311haa95532_0         247 KB
+    frozendict-2.4.6           |  py311h02ab6af_0          39 KB
+    googleapis-common-protos-1.72.0|  py311haa95532_0         168 KB
+    grpcio-1.78.0              |  py311ha1f0e13_0         715 KB
+    h11-0.16.0                 |  py311haa95532_1          63 KB
+    httpcore-1.0.9             |  py311haa95532_0         123 KB
+    httptools-0.7.1            |  py311h02ab6af_0          83 KB
+    httpx-0.28.1               |  py311haa95532_1         237 KB
+    httpx-sse-0.4.0            |  py311haa95532_0          17 KB
+    idna-3.11                  |  py311haa95532_0         200 KB
+    importlib-metadata-8.7.1   |  py311haa95532_0          69 KB
+    jaraco.classes-3.4.0       |  py311haa95532_0          20 KB
+    jaraco.context-6.1.0       |  py311haa95532_0          16 KB
+    jaraco.functools-4.4.0     |  py311haa95532_0          23 KB
+    jinja2-3.1.6               |  py311haa95532_0         359 KB
+    jsonpatch-1.33             |  py311haa95532_1          63 KB
+    jsonpointer-3.0.0          |  py311haa95532_0          46 KB
+    jsonschema-4.25.1          |  py311haa95532_0         221 KB
+    jsonschema-path-0.4.5      |  py311haa95532_0          52 KB
+    jsonschema-specifications-2025.9.1|  py311haa95532_0          17 KB
+    keyring-25.7.0             |  py311haa95532_0         106 KB
+    libmambapy-2.3.2           |  py311h364efb6_1         443 KB
+    lupa-2.6                   |py311lua54h3e6a449_1         1.0 MB  conda-forge
+    markdown-it-py-4.0.0       |  py311haa95532_1         264 KB
+    markupsafe-3.0.2           |  py311h827c3e9_0          39 KB
+    marshmallow-4.2.0          |  py311haa95532_0         147 KB
+    mcp-1.26.0                 |  py311haa95532_0         432 KB
+    mdurl-0.1.2                |  py311haa95532_0          27 KB
+    menuinst-2.4.2             |  py311h885b0b7_1         250 KB
+    more-itertools-10.8.0      |  py311haa95532_0         158 KB
+    msgpack-python-1.1.1       |  py311h5da7b33_0         112 KB
+    openapi-pydantic-0.5.1     |  py311haa95532_0          80 KB
+    opentelemetry-api-1.38.0   |  py311haa95532_0          99 KB
+    opentelemetry-exporter-otlp-proto-common-1.38.0|  py311haa95532_0          38 KB
+    opentelemetry-exporter-otlp-proto-grpc-1.38.0|  py311haa95532_0          43 KB
+    opentelemetry-exporter-otlp-proto-http-1.38.0|  py311haa95532_0          33 KB
+    opentelemetry-instrumentation-0.59b0|  py311haa95532_0          83 KB
+    opentelemetry-proto-1.38.0 |  py311haa95532_0          56 KB
+    opentelemetry-sdk-1.38.0   |  py311haa95532_0         268 KB
+    opentelemetry-semantic-conventions-0.59b0|  py311haa95532_0         176 KB
+    orjson-3.11.7              |  py311h51239a8_0         228 KB
+    packaging-25.0             |  py311haa95532_1         190 KB
+    pathable-0.5.0             |  py311haa95532_0          51 KB
+    pkce-1.0.3                 |  py311haa95532_0          10 KB
+    platformdirs-4.5.0         |  py311haa95532_0          42 KB
+    pluggy-1.5.0               |  py311haa95532_0          48 KB
+    prometheus_client-0.24.1   |  py311haa95532_0         170 KB
+    protobuf-6.33.5            |  py311h854c0a0_0         481 KB
+    psutil-7.0.0               |  py311h02ab6af_1         570 KB
+    pycosat-0.6.6              |  py311h827c3e9_2          91 KB
+    pycparser-2.23             |  py311haa95532_0         264 KB
+    pydantic-2.12.4            |  py311haa95532_0         1.1 MB
+    pydantic-core-2.41.5       |  py311h114bc41_1         1.8 MB
+    pydantic-extra-types-2.11.0|  py311haa95532_0         155 KB
+    pydantic-settings-2.12.0   |  py311haa95532_0         149 KB
+    pygments-2.19.2            |  py311haa95532_0         4.7 MB
+    pyjwt-2.10.1               |  py311haa95532_1          87 KB
+    pysocks-1.7.1              |  py311haa95532_1          36 KB
+    python-3.11.14             |       h981015d_0        17.7 MB
+    python-dotenv-1.2.1        |  py311haa95532_0          75 KB
+    python-multipart-0.0.22    |  py311haa95532_0          62 KB
+    python_abi-3.11            |          3_cp311           6 KB
+    pywin32-311                |  py311h885b0b7_0        11.6 MB
+    pywin32-ctypes-0.2.3       |  py311haa95532_0          57 KB
+    pyyaml-6.0.3               |  py311hb9a58be_0         233 KB
+    readchar-4.2.1             |  py311haa95532_0          20 KB
+    referencing-0.37.0         |  py311haa95532_0          82 KB
+    requests-2.32.5            |  py311haa95532_1         167 KB
+    rich-14.2.0                |  py311haa95532_0         595 KB
+    rich-rst-1.3.2             |  py311haa95532_0          34 KB
+    rich-toolkit-0.17.1        |  py311haa95532_0          71 KB
+    rpds-py-0.28.0             |  py311h114bc41_0         213 KB
+    ruamel.yaml-0.18.16        |  py311hb9a58be_0         268 KB
+    ruamel.yaml.clib-0.2.14    |  py311hb9a58be_0         109 KB
+    semver-3.0.4               |  py311haa95532_0          68 KB
+    setuptools-80.10.2         |  py311haa95532_0         1.7 MB
+    shellingham-1.5.4          |  py311haa95532_0          23 KB
+    sniffio-1.3.1              |  py311haa95532_0          17 KB
+    sse-starlette-2.2.1        |  py311haa95532_0          22 KB
+    starlette-0.47.3           |  py311haa95532_0         172 KB
+    tomli-2.4.0                |  py311haa95532_0          82 KB
+    tqdm-4.67.3                |  py311h4442805_1         183 KB
+    truststore-0.10.1          |  py311haa95532_1          49 KB
+    typer-0.20.0               |  py311haa95532_1         180 KB
+    typer-slim-0.20.0          |  py311haa95532_1         112 KB
+    typer-slim-standard-0.20.0 |  py311haa95532_1           7 KB
+    typing-extensions-4.15.0   |  py311haa95532_0          12 KB
+    typing-inspection-0.4.2    |  py311haa95532_0          31 KB
+    typing_extensions-4.15.0   |  py311haa95532_0         101 KB
+    urllib3-2.6.3              |  py311haa95532_0         348 KB
+    uvicorn-0.40.0             |  py311haa95532_0         163 KB
+    uvicorn-standard-0.40.0    |  py311haa95532_0          39 KB
+    watchfiles-1.1.1           |  py311h114bc41_1         309 KB
+    websockets-15.0.1          |  py311h827c3e9_0         381 KB
+    wheel-0.46.3               |  py311haa95532_0          95 KB
+    win_inet_pton-1.1.0        |  py311haa95532_1          10 KB
+    wrapt-1.17.0               |  py311h827c3e9_0          74 KB
+    zipp-3.23.0                |  py311haa95532_0          32 KB
+    zstandard-0.24.0           |  py311he335c29_0         325 KB
+    ------------------------------------------------------------
+                                           Total:        62.1 MB
+
+The following NEW packages will be INSTALLED:
+
+  aiofile            conda-forge/noarch::aiofile-3.9.0-pyhd8ed1ab_2
+  anaconda-auth      anaconda-cloud/label/dev/noarch::anaconda-auth-0.10.0rc1-py_0
+  anaconda-cli-base  anaconda-cloud/label/dev/noarch::anaconda-cli-base-0.7.0rc1.dev1+g8024904-py_0
+  anaconda-connecto~ anaconda-connector/noarch::anaconda-connector-conda-0.1.10-pypy_0
+  anaconda-connecto~ anaconda-connector/noarch::anaconda-connector-core-0.1.10-pypy_0
+  anaconda-connecto~ anaconda-connector/noarch::anaconda-connector-utilities-0.1.10-pypy_0
+  anaconda-mcp       anaconda-cloud/label/dev/noarch::anaconda-mcp-1.0.0.rc.1-py_0
+  anaconda-opentele~ pkgs/main/win-64::anaconda-opentelemetry-1.0.1-py311haa95532_0
+  annotated-doc      pkgs/main/win-64::annotated-doc-0.0.4-py311haa95532_0
+  annotated-types    pkgs/main/win-64::annotated-types-0.6.0-py311haa95532_1
+  anyio              pkgs/main/win-64::anyio-4.10.0-py311haa95532_0
+  archspec           pkgs/main/noarch::archspec-0.2.5-pyhd3eb1b0_0
+  attrs              pkgs/main/win-64::attrs-25.4.0-py311haa95532_2
+  authlib            pkgs/main/win-64::authlib-1.6.6-py311haa95532_0
+  backports.tarfile  pkgs/main/win-64::backports.tarfile-1.2.0-py311haa95532_0
+  beartype           pkgs/main/win-64::beartype-0.22.9-py311haa95532_0
+  boltons            pkgs/main/win-64::boltons-25.0.0-py311haa95532_0
+  brotlicffi         pkgs/main/win-64::brotlicffi-1.2.0.0-py311h885b0b7_0
+  bzip2              pkgs/main/win-64::bzip2-1.0.8-h2bbff1b_6
+  c-ares             pkgs/main/win-64::c-ares-1.34.6-h2c209ce_0
+  ca-certificates    pkgs/main/win-64::ca-certificates-2025.12.2-haa95532_0
+  cachetools         pkgs/main/win-64::cachetools-6.2.2-py311haa95532_0
+  caio               conda-forge/win-64::caio-0.9.25-py311hf893f09_0
+  certifi            pkgs/main/win-64::certifi-2026.01.04-py311haa95532_0
+  cffi               pkgs/main/win-64::cffi-2.0.0-py311h02ab6af_1
+  charset-normalizer pkgs/main/win-64::charset-normalizer-3.4.4-py311haa95532_0
+  click              pkgs/main/win-64::click-8.2.1-py311haa95532_1
+  colorama           pkgs/main/win-64::colorama-0.4.6-py311haa95532_0
+  conda              pkgs/main/win-64::conda-26.1.1-py311haa95532_0
+  conda-libmamba-so~ pkgs/main/noarch::conda-libmamba-solver-26.3.0-pyh3785b3c_0
+  conda-package-han~ pkgs/main/win-64::conda-package-handling-2.4.0-py311haa95532_1
+  conda-package-str~ pkgs/main/win-64::conda-package-streaming-0.12.0-py311haa95532_1
+  cpp-expected       pkgs/main/win-64::cpp-expected-1.1.0-h214f63a_0
+  cryptography       pkgs/main/win-64::cryptography-46.0.5-py311hbfe00f4_1 
+  cyclopts           pkgs/main/win-64::cyclopts-4.6.0-py311haa95532_0
+  distro             pkgs/main/win-64::distro-1.9.0-py311haa95532_0
+  dnspython          pkgs/main/win-64::dnspython-2.8.0-py311haa95532_0
+  docstring_parser   pkgs/main/win-64::docstring_parser-0.17.0-py311haa95532_0
+  docutils           pkgs/main/win-64::docutils-0.21.2-py311haa95532_1
+  email-validator    pkgs/main/win-64::email-validator-2.3.0-py311haa95532_0
+  environments-mcp-~ anaconda-cloud/label/dev/noarch::environments-mcp-server-1.0.0.rc.1-py_0
+  environs           conda-forge/noarch::environs-11.2.1-pyhd8ed1ab_1
+  exceptiongroup     pkgs/main/win-64::exceptiongroup-1.3.0-py311haa95532_0
+  expat              pkgs/main/win-64::expat-2.7.4-hd7fb8db_0
+  fastapi            pkgs/main/win-64::fastapi-0.128.0-py311haa95532_0
+  fastapi-cli        pkgs/main/win-64::fastapi-cli-0.0.20-py311haa95532_0
+  fastapi-core       pkgs/main/win-64::fastapi-core-0.128.0-py311haa95532_0
+  fastmcp            conda-forge/noarch::fastmcp-3.0.2-pyhc364b38_1
+  fmt                pkgs/main/win-64::fmt-11.2.0-h58b7f6e_0
+  frozendict         pkgs/main/win-64::frozendict-2.4.6-py311h02ab6af_0
+  googleapis-common~ pkgs/main/win-64::googleapis-common-protos-1.72.0-py311haa95532_0
+  grpcio             pkgs/main/win-64::grpcio-1.78.0-py311ha1f0e13_0
+  h11                pkgs/main/win-64::h11-0.16.0-py311haa95532_1
+  httpcore           pkgs/main/win-64::httpcore-1.0.9-py311haa95532_0
+  httptools          pkgs/main/win-64::httptools-0.7.1-py311h02ab6af_0
+  httpx              pkgs/main/win-64::httpx-0.28.1-py311haa95532_1
+  httpx-sse          pkgs/main/win-64::httpx-sse-0.4.0-py311haa95532_0
+  idna               pkgs/main/win-64::idna-3.11-py311haa95532_0
+  importlib-metadata pkgs/main/win-64::importlib-metadata-8.7.1-py311haa95532_0
+  jaraco.classes     pkgs/main/win-64::jaraco.classes-3.4.0-py311haa95532_0
+  jaraco.context     pkgs/main/win-64::jaraco.context-6.1.0-py311haa95532_0
+  jaraco.functools   pkgs/main/win-64::jaraco.functools-4.4.0-py311haa95532_0
+  jinja2             pkgs/main/win-64::jinja2-3.1.6-py311haa95532_0
+  jsonpatch          pkgs/main/win-64::jsonpatch-1.33-py311haa95532_1
+  jsonpointer        pkgs/main/win-64::jsonpointer-3.0.0-py311haa95532_0
+  jsonref            conda-forge/noarch::jsonref-1.1.0-pyhd8ed1ab_0
+  jsonschema         pkgs/main/win-64::jsonschema-4.25.1-py311haa95532_0
+  jsonschema-path    pkgs/main/win-64::jsonschema-path-0.4.5-py311haa95532_0
+  jsonschema-specif~ pkgs/main/win-64::jsonschema-specifications-2025.9.1-py311haa95532_0
+  keyring            pkgs/main/win-64::keyring-25.7.0-py311haa95532_0
+  libabseil          pkgs/main/win-64::libabseil-20260107.0-cxx17_hc587421_0
+  libarchive         pkgs/main/win-64::libarchive-3.8.2-h6c023e8_0
+  libbrotlicommon    pkgs/main/win-64::libbrotlicommon-1.2.0-h907acca_0
+  libbrotlidec       pkgs/main/win-64::libbrotlidec-1.2.0-h02c67a5_0
+  libbrotlienc       pkgs/main/win-64::libbrotlienc-1.2.0-h483e6b9_0
+  libcurl            pkgs/main/win-64::libcurl-8.18.0-he215731_0
+  libexpat           pkgs/main/win-64::libexpat-2.7.4-hd7fb8db_0
+  libffi             pkgs/main/win-64::libffi-3.4.4-hd77b12b_1
+  libgrpc            pkgs/main/win-64::libgrpc-1.78.0-hecd3d80_0
+  libiconv           pkgs/main/win-64::libiconv-1.18-hc89ec93_0
+  libkrb5            pkgs/main/win-64::libkrb5-1.22.1-hb237eb7_0
+  libmamba           pkgs/main/win-64::libmamba-2.3.2-hc213065_1
+  libmambapy         pkgs/main/win-64::libmambapy-2.3.2-py311h364efb6_1
+  libprotobuf        pkgs/main/win-64::libprotobuf-6.33.5-h65d7223_0
+  libre2-11          pkgs/main/win-64::libre2-11-2025.11.05-h797e85b_1
+  libsolv            pkgs/main/win-64::libsolv-0.7.30-h23a355e_2
+  libssh2            pkgs/main/win-64::libssh2-1.11.1-h2addb87_0
+  libxml2            pkgs/main/win-64::libxml2-2.13.9-h6201b9f_0
+  libzlib            pkgs/main/win-64::libzlib-1.3.1-h02ab6af_0
+  lua                conda-forge/win-64::lua-5.4.8-h1839187_1
+  luajit             conda-forge/win-64::luajit-2.1.1744318430-h1839187_0
+  lupa               conda-forge/win-64::lupa-2.6-py311lua54h3e6a449_1
+  lz4-c              pkgs/main/win-64::lz4-c-1.9.4-h2bbff1b_1
+  markdown-it-py     pkgs/main/win-64::markdown-it-py-4.0.0-py311haa95532_1
+  markupsafe         pkgs/main/win-64::markupsafe-3.0.2-py311h827c3e9_0
+  marshmallow        pkgs/main/win-64::marshmallow-4.2.0-py311haa95532_0
+  mcp                pkgs/main/win-64::mcp-1.26.0-py311haa95532_0
+  mcp-compose        datalayer/noarch::mcp-compose-0.1.11-py_0
+  mdurl              pkgs/main/win-64::mdurl-0.1.2-py311haa95532_0
+  menuinst           pkgs/main/win-64::menuinst-2.4.2-py311h885b0b7_1
+  more-itertools     pkgs/main/win-64::more-itertools-10.8.0-py311haa95532_0
+  msgpack-python     pkgs/main/win-64::msgpack-python-1.1.1-py311h5da7b33_0
+  nlohmann_json      pkgs/main/win-64::nlohmann_json-3.11.2-h6c2663c_0
+  openapi-pydantic   pkgs/main/win-64::openapi-pydantic-0.5.1-py311haa95532_0
+  openssl            pkgs/main/win-64::openssl-3.5.5-hbb43b14_0
+  opentelemetry-api  pkgs/main/win-64::opentelemetry-api-1.38.0-py311haa95532_0
+  opentelemetry-exp~ pkgs/main/win-64::opentelemetry-exporter-otlp-proto-common-1.38.0-py311haa95532_0
+  opentelemetry-exp~ pkgs/main/win-64::opentelemetry-exporter-otlp-proto-grpc-1.38.0-py311haa95532_0
+  opentelemetry-exp~ pkgs/main/win-64::opentelemetry-exporter-otlp-proto-http-1.38.0-py311haa95532_0
+  opentelemetry-ins~ pkgs/main/win-64::opentelemetry-instrumentation-0.59b0-py311haa95532_0
+  opentelemetry-pro~ pkgs/main/win-64::opentelemetry-proto-1.38.0-py311haa95532_0
+  opentelemetry-sdk  pkgs/main/win-64::opentelemetry-sdk-1.38.0-py311haa95532_0
+  opentelemetry-sem~ pkgs/main/win-64::opentelemetry-semantic-conventions-0.59b0-py311haa95532_0
+  orjson             pkgs/main/win-64::orjson-3.11.7-py311h51239a8_0
+  packaging          pkgs/main/win-64::packaging-25.0-py311haa95532_1
+  pathable           pkgs/main/win-64::pathable-0.5.0-py311haa95532_0
+  pcre2              pkgs/main/win-64::pcre2-10.46-h5740b90_0
+  pip                pkgs/main/noarch::pip-26.0.1-pyhc872135_0
+  pkce               pkgs/main/win-64::pkce-1.0.3-py311haa95532_0
+  platformdirs       pkgs/main/win-64::platformdirs-4.5.0-py311haa95532_0
+  pluggy             pkgs/main/win-64::pluggy-1.5.0-py311haa95532_0
+  prometheus_client  pkgs/main/win-64::prometheus_client-0.24.1-py311haa95532_0
+  protobuf           pkgs/main/win-64::protobuf-6.33.5-py311h854c0a0_0
+  psutil             pkgs/main/win-64::psutil-7.0.0-py311h02ab6af_1
+  py-key-value-aio   conda-forge/noarch::py-key-value-aio-0.4.4-pyhc364b38_0
+  pybind11-abi       pkgs/main/noarch::pybind11-abi-5-hd3eb1b0_0
+  pycosat            pkgs/main/win-64::pycosat-0.6.6-py311h827c3e9_2
+  pycparser          pkgs/main/win-64::pycparser-2.23-py311haa95532_0
+  pydantic           pkgs/main/win-64::pydantic-2.12.4-py311haa95532_0
+  pydantic-core      pkgs/main/win-64::pydantic-core-2.41.5-py311h114bc41_1
+  pydantic-extra-ty~ pkgs/main/win-64::pydantic-extra-types-2.11.0-py311haa95532_0
+  pydantic-settings  pkgs/main/win-64::pydantic-settings-2.12.0-py311haa95532_0
+  pygments           pkgs/main/win-64::pygments-2.19.2-py311haa95532_0
+  pyjwt              pkgs/main/win-64::pyjwt-2.10.1-py311haa95532_1
+  pyperclip          conda-forge/noarch::pyperclip-1.11.0-pyh7428d3b_0
+  pysocks            pkgs/main/win-64::pysocks-1.7.1-py311haa95532_1
+  python             pkgs/main/win-64::python-3.11.14-h981015d_0
+  python-dotenv      pkgs/main/win-64::python-dotenv-1.2.1-py311haa95532_0
+  python-multipart   pkgs/main/win-64::python-multipart-0.0.22-py311haa95532_0
+  python_abi         pkgs/main/win-64::python_abi-3.11-3_cp311
+  pywin32            pkgs/main/win-64::pywin32-311-py311h885b0b7_0
+  pywin32-ctypes     pkgs/main/win-64::pywin32-ctypes-0.2.3-py311haa95532_0
+  pyyaml             pkgs/main/win-64::pyyaml-6.0.3-py311hb9a58be_0
+  re2                pkgs/main/win-64::re2-2025.11.05-hca2749c_1
+  readchar           pkgs/main/win-64::readchar-4.2.1-py311haa95532_0
+  referencing        pkgs/main/win-64::referencing-0.37.0-py311haa95532_0
+  reproc             pkgs/main/win-64::reproc-14.2.4-hd77b12b_2
+  reproc-cpp         pkgs/main/win-64::reproc-cpp-14.2.4-hd77b12b_2
+  requests           pkgs/main/win-64::requests-2.32.5-py311haa95532_1
+  rich               pkgs/main/win-64::rich-14.2.0-py311haa95532_0
+  rich-rst           pkgs/main/win-64::rich-rst-1.3.2-py311haa95532_0
+  rich-toolkit       pkgs/main/win-64::rich-toolkit-0.17.1-py311haa95532_0
+  rpds-py            pkgs/main/win-64::rpds-py-0.28.0-py311h114bc41_0
+  ruamel.yaml        pkgs/main/win-64::ruamel.yaml-0.18.16-py311hb9a58be_0
+  ruamel.yaml.clib   pkgs/main/win-64::ruamel.yaml.clib-0.2.14-py311hb9a58be_0
+  semver             pkgs/main/win-64::semver-3.0.4-py311haa95532_0
+  setuptools         pkgs/main/win-64::setuptools-80.10.2-py311haa95532_0
+  shellingham        pkgs/main/win-64::shellingham-1.5.4-py311haa95532_0
+  simdjson           pkgs/main/win-64::simdjson-3.10.1-h214f63a_0
+  sniffio            pkgs/main/win-64::sniffio-1.3.1-py311haa95532_0
+  sqlite             pkgs/main/win-64::sqlite-3.51.1-hee5a0db_1
+  sse-starlette      pkgs/main/win-64::sse-starlette-2.2.1-py311haa95532_0
+  starlette          pkgs/main/win-64::starlette-0.47.3-py311haa95532_0
+  tk                 pkgs/main/win-64::tk-8.6.15-hf199647_0
+  toml               pkgs/main/noarch::toml-0.10.2-pyhd3eb1b0_0
+  tomli              pkgs/main/win-64::tomli-2.4.0-py311haa95532_0
+  tqdm               pkgs/main/win-64::tqdm-4.67.3-py311h4442805_1
+  truststore         pkgs/main/win-64::truststore-0.10.1-py311haa95532_1
+  typer              pkgs/main/win-64::typer-0.20.0-py311haa95532_1
+  typer-slim         pkgs/main/win-64::typer-slim-0.20.0-py311haa95532_1
+  typer-slim-standa~ pkgs/main/win-64::typer-slim-standard-0.20.0-py311haa95532_1
+  typing-extensions  pkgs/main/win-64::typing-extensions-4.15.0-py311haa95532_0
+  typing-inspection  pkgs/main/win-64::typing-inspection-0.4.2-py311haa95532_0
+  typing_extensions  pkgs/main/win-64::typing_extensions-4.15.0-py311haa95532_0
+  tzdata             pkgs/main/noarch::tzdata-2026a-he532380_0
+  ucrt               pkgs/main/win-64::ucrt-10.0.22621.0-haa95532_0
+  urllib3            pkgs/main/win-64::urllib3-2.6.3-py311haa95532_0
+  uvicorn            pkgs/main/win-64::uvicorn-0.40.0-py311haa95532_0
+  uvicorn-standard   pkgs/main/win-64::uvicorn-standard-0.40.0-py311haa95532_0
+  vc                 pkgs/main/win-64::vc-14.3-h2df5915_10
+  vc14_runtime       pkgs/main/win-64::vc14_runtime-14.44.35208-h4927774_10
+  vs2015_runtime     pkgs/main/win-64::vs2015_runtime-14.44.35208-ha6b5a95_10
+  watchfiles         pkgs/main/win-64::watchfiles-1.1.1-py311h114bc41_1
+  websockets         pkgs/main/win-64::websockets-15.0.1-py311h827c3e9_0
+  wheel              pkgs/main/win-64::wheel-0.46.3-py311haa95532_0
+  win_inet_pton      pkgs/main/win-64::win_inet_pton-1.1.0-py311haa95532_1
+  wrapt              pkgs/main/win-64::wrapt-1.17.0-py311h827c3e9_0
+  xz                 pkgs/main/win-64::xz-5.8.2-h53af0af_0
+  yaml               pkgs/main/win-64::yaml-0.2.5-he774522_0
+  yaml-cpp           pkgs/main/win-64::yaml-cpp-0.8.0-hd77b12b_1
+  zipp               pkgs/main/win-64::zipp-3.23.0-py311haa95532_0
+  zlib               pkgs/main/win-64::zlib-1.3.1-h02ab6af_0
+  zstandard          pkgs/main/win-64::zstandard-0.24.0-py311he335c29_0
+  zstd               pkgs/main/win-64::zstd-1.5.7-h56299aa_0
+
+
+Proceed ([y]/n)? y
+
+
+Downloading and Extracting Packages:
+                                                                                                                                                                                
+Preparing transaction: done                                                                                                                                                     
+Verifying transaction: done                                                                                                                                                     
+Executing transaction: done                                                                                                                                                     
+#
+# To activate this environment, use                                                                                                                                             
+#                                                                                                                                                                               
+#     $ conda activate anaconda-mcp-rc-py311                                                                                                                                    
+#                                                                                                                                                                               
+# To deactivate an active environment, use                                                                                                                                      
+#                                                                                                                                                                               
+#     $ conda deactivate                                                                                                                                                        
+                                                                                                                                                                                
+PS C:\projects\anaconda-desktop> conda activate anaconda-mcp-rc-py311                                                                                                           
+PS C:\projects\anaconda-desktop> conda list | findstr /R "anaconda-mcp environments-mcp anaconda-connector python"                                                              
+gitpython                        3.1.45                py313haa95532_0
+ipython                          9.7.0                 py313haa95532_0
+ipython_pygments_lexers          1.1.1                 py313haa95532_0
+msgpack-python                   1.1.1                 py313h5da7b33_0
+python                           3.13.9                h260b955_100_cp313
+python-dateutil                  2.9.0post0            py313haa95532_2
+python-dotenv                    1.1.0                 py313haa95532_0
+python-fastjsonschema            2.21.2                py313haa95532_0
+python-json-logger               3.2.1                 py313haa95532_0
+python-libarchive-c              5.1                   pyhd3eb1b0_0
+python-lmdb                      1.7.5                 py313h5823743_0
+python-lsp-black                 2.0.0                 py313haa95532_1
+python-lsp-jsonrpc               1.1.2                 pyhd3eb1b0_0
+python-lsp-ruff                  2.3.0                 py313haa95532_0
+python-lsp-server                1.13.1                py313h4442805_0
+python-slugify                   8.0.4                 py313haa95532_0
+python-tzdata                    2025.2                pyhd3eb1b0_0
+python_abi                       3.13                  2_cp313
+PS C:\projects\anaconda-desktop> 
