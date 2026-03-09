@@ -322,6 +322,72 @@ and observe its terminal output directly:
 
 ---
 
+### PI-003: `anaconda-connector` Packages Fail to Download — `conda-anaconda-telemetry` Sends Oversized Headers to S3
+
+**Status**: Root cause confirmed — workaround available; bug to be filed against `conda-anaconda-telemetry`
+**Severity**: Critical (blocks environment creation without workaround)
+**Platform**: Any OS — triggered by full Anaconda install (large base env), not by OS. Confirmed on Windows (full Anaconda). Not reproduced on Mac (trimmed ~130-package base). Would reproduce on Mac with full Anaconda too.
+**Discovered**: Mar 2026, Windows testing with full Anaconda
+
+**Root cause**: The `conda-anaconda-telemetry` plugin (present in the Anaconda base environment as `conda-anaconda-telemetry-0.1.2`) injects an `Anaconda-Telemetry-Packages` header into every conda HTTP request. This header contains the full package list of the base environment — on a full Anaconda installation this is hundreds of packages and several kilobytes of text.
+
+The `anaconda-connector` packages are served via `conda.anaconda.org`, which issues a **302 redirect** to `binstar-cio-packages-prod.s3.amazonaws.com`. When conda follows that redirect it carries all its headers (including the large telemetry headers) to S3. **AWS S3 has a hard 8192-byte limit on request header sections.** The telemetry payload exceeds this limit and S3 responds with:
+
+```xml
+<Error>
+  <Code>RequestHeaderSectionTooLarge</Code>
+  <Message>Your request header section exceeds the maximum allowed size.</Message>
+  <MaxSizeAllowed>8192</MaxSizeAllowed>
+</Error>
+```
+
+Conda surfaces this as `HTTP 400 BAD REQUEST`. Packages from `repo.anaconda.com` (Cloudflare CDN) succeed because Cloudflare does not enforce the same strict limit. Only `anaconda-connector-*` packages are affected because they are the only ones whose channel redirects to S3.
+
+**Evidence from `conda create -vvv` log**:
+- `conda.anaconda.org` returns `302` for all three packages — token is valid ✓
+- Conda follows redirect to `binstar-cio-packages-prod.s3.amazonaws.com` and sends multi-kilobyte `Anaconda-Telemetry-Packages` header
+- S3 responds `RequestHeaderSectionTooLarge` (max 8192 bytes) → conda reports `HTTP 400`
+
+**Workaround — disable conda telemetry before creating the environment**:
+```bat
+conda config --set anaconda_anon_usage false
+conda create --name anaconda-mcp-rc-py310 -c datalayer -c anaconda-cloud/label/dev -c defaults -c conda-forge --channel "https://conda.anaconda.org/t/an-19ec59a6-f3b4-4d62-a686-a882d9c1f209/anaconda-connector/" python=3.10 anaconda-mcp=1.0.0.rc.1 environments-mcp-server=1.0.0.rc.1
+```
+
+Re-enable after if desired:
+```bat
+conda config --set anaconda_anon_usage true
+```
+
+Or set for just the one command (no permanent config change):
+```bat
+set CONDA_ANACONDA_ANON_USAGE=false
+conda create ...
+```
+
+**Trigger condition — base environment size**: The `Anaconda-Telemetry-Packages` header is built from the *base* environment's installed package list. The issue triggers when that list is large enough to push the total request header section over S3's 8192-byte limit.
+
+| conda install type | Base env packages | Reproduces? |
+|--------------------|-------------------|-------------|
+| Full Anaconda | ~500+ | ✗ Yes — HTTP 400 |
+| Trimmed / partial conda | ~130 (confirmed on Mac) | ✓ No — downloads succeed |
+| Miniconda | ~30–50 | ✓ No — downloads succeed |
+
+**This is not an OS issue.** Full Anaconda on Mac would reproduce the same failure. Miniconda on Windows would not. Run `conda list -n base | wc -l` before testing — if significantly above ~130, apply the workaround.
+
+**Bug to file**: Against `conda-anaconda-telemetry` — it should not forward `Anaconda-Telemetry-*` headers when following redirects to non-Anaconda hosts (e.g. S3 presigned URLs). The fix should strip these headers before any cross-domain redirect.
+
+**Impact**:
+- Without workaround: environment creation fully blocked on systems with a large Anaconda base install
+- With workaround: creation should succeed
+
+**Ruled out**:
+- Token validity — `conda.anaconda.org` returns `302` correctly; token is valid ✓
+- Conda cache — same failure after `conda clean --all -y`
+- SSL/TLS — not the cause
+
+---
+
 ### PI-002: Claude Desktop on Windows 365 (Managed Corporate Device) Likely Blocked by Org Policy
 
 **Status**: Under Investigation
