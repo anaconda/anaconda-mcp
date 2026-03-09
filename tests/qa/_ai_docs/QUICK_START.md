@@ -30,6 +30,7 @@ For general installation options (latest release, specific versions, from source
 
 Run once per Python version required (3.10, 3.11, 3.12, 3.13). Replace `X.Y` with the target version:
 
+**macOS / Linux** (bash — `\` for line continuation, single quotes ok):
 ```bash
 # Replace X.Y with: 3.10 | 3.11 | 3.12 | 3.13
 conda create --name anaconda-mcp-rc-pyXY \
@@ -48,6 +49,30 @@ conda activate anaconda-mcp-rc-pyXY
 anaconda-mcp --help
 conda list | grep -E "anaconda-mcp|environments-mcp|anaconda-connector|python"
 ```
+
+**Windows** (Anaconda Prompt — `^` for line continuation, double quotes required):
+```bat
+:: Replace X.Y with: 3.10 | 3.11 | 3.12 | 3.13
+conda create --name anaconda-mcp-rc-pyXY ^
+  -c datalayer ^
+  -c anaconda-cloud/label/dev ^
+  -c defaults ^
+  -c conda-forge ^
+  --channel "https://conda.anaconda.org/t/an-19ec59a6-f3b4-4d62-a686-a882d9c1f209/anaconda-connector/" ^
+  python=X.Y ^
+  anaconda-mcp=1.0.0.rc.1 ^
+  environments-mcp-server=1.0.0.rc.1
+
+conda activate anaconda-mcp-rc-pyXY
+
+:: Verify installed versions (anaconda-connector is a transitive dependency — confirm it resolved)
+python -m anaconda_mcp --help
+conda list | findstr /R "anaconda-mcp environments-mcp anaconda-connector python"
+```
+
+> **Windows note**: Do NOT paste multi-line commands one line at a time. Copy the entire block and paste it at once into Anaconda Prompt, or run it as a single line (replace `^` and newlines with spaces).
+>
+> **If the private channel returns HTTP 404**: the token embedded in the `--channel` URL may be expired. Contact the release team to obtain a fresh token and substitute it in the URL above.
 
 > **Note on `anaconda-connector`**: it cannot be requested explicitly — it is not published as a standalone package in the configured channels. It is pulled in as a transitive dependency of `anaconda-mcp`. The version resolved is whatever the RC package declares as compatible. Record the version from `conda list` output for traceability.
 >
