@@ -1,8 +1,0 @@
-channels:
-  - https://conda.anaconda.org/t/an-19ec59a6-f3b4-4d62-a686-a882d9c1f209/anaconda-connector/
-  - anaconda-cloud/label/dev
-  - datalayer
-  - conda-forge
-  - defaults
-anaconda_anon_usage: false
-anaconda_heartbeat: false

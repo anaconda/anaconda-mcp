@@ -262,9 +262,6 @@ lsof -ti:4041 | xargs kill -9 2>/dev/null
 sleep 2
 ./tests/qa/_ai_docs/scripts/start-http-server.sh 8888
 ```
-
-**Investigation**: [hang_issue/](./hang_issue/)
-
 ---
 
 ### KI-012: MCP Server Initialization Hangs When Port 4041 Is Occupied by a Non-Responsive Process
@@ -466,7 +463,6 @@ conda_config = await get_conda_config(environment_root_path)
 **Version**: 1.0.0.rc.3
 **Discovered**: 2026-03-10
 **Transports Affected**: HTTP and STDIO (transport-independent)
-**Bug Report**: [BUG_REPORT_KI011.md](./investigation_ki013_delays/BUG_REPORT_KI011.md)
 
 **Description**: Repeated calls to `logger.exception()` in exception handlers cause the `environments_mcp_server` to stop processing new requests after approximately 15 calls. The server accepts HTTP connections but never dispatches requests to tool functions.
 
