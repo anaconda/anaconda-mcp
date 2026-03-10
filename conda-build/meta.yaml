@@ -38,8 +38,7 @@ about:
   home: https://github.com/anaconda/anaconda-mcp
   dev_url: https://github.com/anaconda/anaconda-mcp
   doc_url: https://github.com/anaconda/anaconda-mcp
-  license: LicenseRef-Proprietary
-  license_file: ../EULA.txt
+  license: "Apache-2.0"
 
 extra:
   recipe-maintainers:
