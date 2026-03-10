@@ -230,8 +230,23 @@ conda run -n anaconda-mcp-rc-py313 pip install --force-reinstall environments-mc
 
 ---
 
+## Windows Notes
+
+Replace macOS/Linux commands as follows:
+
+| macOS / Linux | Windows |
+|---|---|
+| `conda run -n ENV pip ...` | Same (works in Miniconda Prompt) |
+| `grep -E "..."` | `findstr /R "..."` |
+| `pkill -9 -f "..."` | Use Task Manager or `taskkill /IM python.exe /F` |
+| `./scripts/start-http-server.sh` | `python -m anaconda_mcp serve --http --port 8888` |
+
+For full Windows setup including Claude Desktop config workarounds, see [WINDOWS_SETUP.md](./WINDOWS_SETUP.md).
+
+---
+
 ## Related Documentation
 
 - [HTTP Transport Tests README](../http_tools/README.md)
 - [STDIO Transport Tests README](../stdio_tools/README.md)
-- [KI-011 Hang Issue Analysis](./hang_issue/KI-011-HTTP-PROXY-HANG.md)
+- [Known Issues](./KNOWN_ISSUES.md)
