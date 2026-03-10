@@ -54,12 +54,22 @@
 | 5 | 5s/call | Fewer | 5 pass / 3 fail |
 | 60 | None | More | 4 pass / 4 fail |
 
+
 ### KI-011 (hangs): PARTIALLY FIXED
 - PR #28 merged in mcp-compose 0.1.11
-- HANG-001: ✅ Passes (all 20 iterations)
-- HANG-002: ❌ Fails at iteration ~16 (improved from iteration 4)
-- **Root cause**: Connection pool corrupts under rapid sequential calls
-- **KI-013 delays accidentally help** by acting as cooldown between calls
+- **Updated 2026-03-10**: Hang threshold improved but issue persists
+
+| Test | Before Fix | After Fix (0.1.11) |
+|------|------------|-------------------|
+| HANG-001 | Fails at 4 | ✅ Passes (all 20) |
+| HANG-002 | Fails at 4 | ❌ Fails at iteration ~16-17 |
+
+**Debug logging reveals**:
+- SSE response handler receives 0 events for 60 seconds
+- Server sends 200 OK with `text/event-stream` but no SSE events follow
+- `[SSE_RESP] EXCEPTION: after 0 events elapsed=60.001s`
+
+**Root cause hypothesis**: Downstream server (environments_mcp_server) sends headers but fails to write SSE body under rapid sequential load.
 
 ---
 
@@ -74,3 +84,19 @@ File follow-up issue:
 - But hang still occurs after ~16 rapid sequential error-triggering calls
 - "GET stream disconnected, reconnecting..." appears before hang
 - Need further investigation of connection pool management
+
+---
+## Summary
+  1. Debug logging added to
+  /Users/iiliukhina/projects/mcp-compose/mcp_compose/http_client.py with
+  [HTTP_CLIENT #N] markers
+  2. Debug logging added to the MCP SDK at /opt/miniconda3/envs/anaconda-mcp-dev
+  /lib/python3.13/site-packages/mcp/client/streamable_http.py with [POST_REQ]
+  and [SSE_RESP] markers
+  3. Documentation updated in KNOWN_ISSUES.md and
+  investigation_ki013_delays/todo.md
+
+  The key finding is that KI-011 occurs when the downstream server sends HTTP
+  200 OK but then fails to write any SSE events - the client waits 60 seconds
+  with 0 events before timing out. This happens consistently around iteration
+  16-17.

@@ -227,20 +227,27 @@ But this command starts server in **STDIO mode**, not HTTP mode. Claude Desktop 
 **Fix status** (as of 2026-03-10):
 - PR #28 merged into mcp-compose 0.1.11 on 2026-03-07
 - Fix replaces deprecated `streamablehttp_client` with `streamable_http_client` + explicit `httpx.AsyncClient`
-- **Partial improvement**: Hang threshold improved from ~4 iterations to ~16 iterations
-- **Still failing**: After ~16 rapid sequential error-triggering calls, the hang still occurs
+- **Improvement**: Hang threshold improved from ~4 iterations to ~16-17 iterations
+- **Still failing**: After ~16-17 rapid sequential calls, the hang still occurs
 
 **Test results** (mcp-compose 0.1.11, MCP SDK 1.26.0, 2026-03-10):
 
 | Test | Before Fix | After Fix (0.1.11) |
 |------|------------|-------------------|
 | HANG-001 (remove_environment × 20) | Hangs at iteration 4 | ✅ **Passed** (all 20) |
-| HANG-002 (install_packages × 20) | Hangs at iteration 4 | ❌ Hangs at iteration ~9-16 |
-| HANG-003 (mixed error + health × 40) | Hangs early | ❌ Hangs (pool corrupted by HANG-002) |
+| HANG-002 (install_packages × 20) | Hangs at iteration 4 | ❌ Hangs at iteration ~16-17 |
+| HANG-003 (mixed error + health × 40) | Hangs early | ❌ Other error (see below) |
 
-**Note**: When HANG-002 is run in isolation (fresh server, no prior tests), it reaches iteration 16 before hanging. When run after HANG-001, pool state accumulates and it hangs earlier (~iteration 9).
+**HANG-003 note**: Now fails with `'NoneType' object has no attribute 'kill'` — this is an unrelated bug in `environments_mcp_server`, not KI-011.
 
-**Remaining issue**: The MCP SDK's connection pool still accumulates state under rapid sequential calls. The "GET stream disconnected, reconnecting..." log message appears before the hang, indicating an SSE reconnection issue.
+**Remaining issue**: The SSE response handler receives 0 events and times out after 60 seconds. Debug logging shows:
+1. `POST tools/call` returns 200 OK with `content-type: text/event-stream`
+2. `EventSource created, starting aiter_sse loop...`
+3. 60 seconds pass with no events
+4. `[SSE_RESP] EXCEPTION: after 0 events elapsed=60.001s`
+5. `GET stream disconnected, reconnecting in 1000ms...`
+
+**Root cause hypothesis**: The downstream server (environments_mcp_server) sends the HTTP headers but fails to write the SSE event body when rapid sequential calls exhaust some resource (connection pool, file descriptors, etc.).
 
 **Workaround**: Restart `mcp-compose` when hangs occur:
 ```bash
