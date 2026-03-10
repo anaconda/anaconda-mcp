@@ -29,7 +29,6 @@ from anaconda_mcp.claude_desktop import (
     remove_claude_desktop_config,
     show_claude_desktop_config,
 )
-from anaconda_mcp.eula import check_eula
 from anaconda_mcp.utils import _render_config_template
 
 logger = logging.getLogger(__name__)
@@ -48,7 +47,6 @@ def cli(ctx, verbose: bool):
     ctx.ensure_object(dict)
     ctx.obj["verbose"] = verbose
     setup_logging(verbose)
-    check_eula()
 
 
 @cli.command(help="Start MCP servers from configuration file.")
