@@ -29,19 +29,15 @@ See [TEST_MATRIX.md](./TEST_MATRIX.md) for full assignment rationale.
 | QA | OS | Client | Python | Transport | Suite | Status | Result | Notes |
 |----|----|--------|--------|-----------|-------|--------|--------|-------|
 | QA 2 | macOS | Cursor | 3.13 | HTTP | TESTS_E2E.md | ✅ Done | 3 passed / 3 failed / 1 blocked | DESK-1358; DESK-1342; DESK-1355; DESK-1341 |
-| QA 1 | macOS | Claude Desktop | 3.10 | STDIO | TESTS_E2E.md | 🔶 Partial | 1 failed / 6 not run | GUARD-001 run; DESK-1341 |
-| QA 1 | macOS | Claude Desktop | 3.11 | STDIO | TESTS_E2E.md | ⬜ Not started | — | |
-| QA 1 | macOS | Claude Desktop | 3.12 | STDIO | TESTS_E2E.md | ⬜ Not started | — | |
-| QA 1 | macOS | Claude Desktop | 3.13 | STDIO | TESTS_E2E.md | ⬜ Not started | — | |
+| QA 1 | macOS | Claude Desktop | 3.10 | STDIO | TESTS_E2E.md | ✅ Done  | 3 passed / 4 failed | DESK-1358; DESK-1342; DESK-1341  |
+| QA 1 | macOS | Claude Desktop | 3.11 | STDIO | TESTS_E2E.md | ✅ Done | 4 passed / 2 failed | DESK-1342; DESK-1341 |
+| QA 1 | macOS | Claude Desktop | 3.12 | STDIO | TESTS_E2E.md | ✅ Done | 4 passed / 2 failed | DESK-1342; DESK-1341 |
+| QA 1 | macOS | Claude Desktop | 3.13 | STDIO | TESTS_E2E.md | ✅ Done | 3 passed / 3 failed | DESK-1358; DESK-1342 |
 | QA 2 | macOS | Cursor | 3.12 | STDIO | TESTS_E2E.md | ✅ Done | 2 passed / 3 failed / 1 blocked | DESK-1538; DESK-1539; DESK-1355; DESK-1341|
-| QA 3 | Windows | Claude Desktop | 3.13 | STDIO | TESTS_E2E.md | 🔶 Partial | — | DESK-1344; [PI-002: MCP servers are not available in Claude Desktop on managed Windows 365; can switch to alternative config (Cursor/VS Code)](./KNOWN_ISSUES.md#pi-002-claude-desktop-on-windows-365-managed-corporate-device-likely-blocked-by-org-policy) |
-
-### Optional (if time allows)
-
-| QA | OS | Client | Python | Transport | Suite | Status | Result | Notes |
-|----|----|--------|--------|-----------|-------|--------|--------|-------|
 | QA 2 | macOS | Claude Code | 3.10 | HTTP | TESTS_E2E.md | ✅ Done | 3 passed / 3 failed / 1 blocked | DESK-1358; DESK-1342; DESK-1355; DESK-1341 |
-| QA 3 | Windows | Claude Desktop | 3.10 | STDIO | TESTS_E2E.md | ⬜ Not started | — | DESK-1344; [PI-002: MCP servers are not available in Claude Desktop on managed Windows 365; can switch to alternative config (Cursor/VS Code)](./KNOWN_ISSUES.md#pi-002-claude-desktop-on-windows-365-managed-corporate-device-likely-blocked-by-org-policy) |
+| QA 1 | Windows | Claude Desktop | 3.13 | STDIO | TESTS_E2E.md | 🔶 Partial | 0 passed / 1 failed / 5 unexecuted | DESK-1344; DESK-1364; DESK-1365 |
+| QA ? | Windows | Claude Desktop | 3.10 | STDIO | TESTS_E2E.md | ⬜ Not started  | 0 passed / 0 failed / 6 unexecuted | |
+
 
 ---
 
