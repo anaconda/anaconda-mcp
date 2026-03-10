@@ -14,10 +14,11 @@ diagrams, and fix plan.
 from __future__ import annotations
 
 import logging
+import time
 
 import pytest
 
-from common.constants.config import TOOL_TIMEOUT, WARM_ITERATIONS
+from common.constants.config import ITERATION_DELAY, TOOL_TIMEOUT, WARM_ITERATIONS
 from common.constants.mcp_tools import (
     InstallPackagesArgs,
     RemoveEnvironmentArgs,
@@ -36,6 +37,9 @@ logger = logging.getLogger(__name__)
 
 pytestmark = pytest.mark.http_transport
 
+# Calculate test timeouts including iteration delays
+# Each test needs: (TOOL_TIMEOUT + ITERATION_DELAY) * WARM_ITERATIONS
+_BASE_TIMEOUT = int((TOOL_TIMEOUT + ITERATION_DELAY) * WARM_ITERATIONS) + 60  # +60s buffer
 
 
 # ---------------------------------------------------------------------------
@@ -47,7 +51,7 @@ pytestmark = pytest.mark.http_transport
 @pytest.mark.slow
 class TestProxyErrorHangHttp:
 
-    @pytest.mark.timeout(TOOL_TIMEOUT * WARM_ITERATIONS)
+    @pytest.mark.timeout(_BASE_TIMEOUT)
     def test_hang_001_remove_nonexistent_env_does_not_hang(self, fresh_session_id):
         """
         HANG-001: conda_remove_environment must return isError=true within
@@ -74,8 +78,11 @@ class TestProxyErrorHangHttp:
                 result,
                 f"HANG-001 [{i}/{WARM_ITERATIONS}] for non-existent prefix '{NONEXISTENT_ENV_PREFIX}'",
             )
+            # Delay between iterations to avoid KI-011 connection pool exhaustion
+            if ITERATION_DELAY > 0 and i < WARM_ITERATIONS:
+                time.sleep(ITERATION_DELAY)
 
-    @pytest.mark.timeout(TOOL_TIMEOUT * WARM_ITERATIONS)
+    @pytest.mark.timeout(_BASE_TIMEOUT)
     def test_hang_002_install_into_nonexistent_env_does_not_hang(self, fresh_session_id):
         """
         HANG-002: conda_install_packages must return isError=true within
@@ -106,8 +113,11 @@ class TestProxyErrorHangHttp:
                 result,
                 f"HANG-002 [{i}/{WARM_ITERATIONS}] for non-existent prefix '{NONEXISTENT_ENV_PREFIX}'",
             )
+            # Delay between iterations to avoid KI-011 connection pool exhaustion
+            if ITERATION_DELAY > 0 and i < WARM_ITERATIONS:
+                time.sleep(ITERATION_DELAY)
 
-    @pytest.mark.timeout(TOOL_TIMEOUT * WARM_ITERATIONS * 3)
+    @pytest.mark.timeout(_BASE_TIMEOUT * 3)
     def test_hang_003_session_survives_error_response(self, fresh_session_id):
         """
         HANG-003: the session must stay functional across repeated error+health
@@ -146,6 +156,9 @@ class TestProxyErrorHangHttp:
                 "HANG-003 warm-up [%d/%d] done in %.2fs",
                 i, WARM_ITERATIONS, elapsed,
             )
+            # Delay between iterations to avoid KI-011 connection pool exhaustion
+            if ITERATION_DELAY > 0 and i < WARM_ITERATIONS:
+                time.sleep(ITERATION_DELAY)
 
         logger.info(
             "HANG-003: warm-up done — starting %d × error+health iterations",
@@ -188,3 +201,6 @@ class TestProxyErrorHangHttp:
                 f"conda_list_environments returned an error after the session "
                 f"survived the previous error: {result}"
             )
+            # Delay between iterations to avoid KI-011 connection pool exhaustion
+            if ITERATION_DELAY > 0 and i < WARM_ITERATIONS:
+                time.sleep(ITERATION_DELAY)

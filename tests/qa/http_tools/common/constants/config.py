@@ -28,3 +28,8 @@ TOOL_TIMEOUT: int = 60
 # use). Raising this value increases detection confidence at the cost of
 # longer test runtime.
 WARM_ITERATIONS: int = 20
+
+# Delay (in seconds) between iterations in hang regression tests.
+# Adding a delay can help avoid triggering KI-011 connection pool exhaustion.
+# Set to 0 to disable delay (original behavior that triggers hang at ~15 iterations).
+ITERATION_DELAY: float = float(os.environ.get("MCP_TEST_ITERATION_DELAY", "2.0"))

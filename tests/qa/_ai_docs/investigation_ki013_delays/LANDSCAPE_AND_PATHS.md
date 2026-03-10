@@ -2,7 +2,7 @@
 
 **Date**: 2026-03-10
 **Status**: Active Investigation
-**Last Updated**: 2026-03-10 — Added concurrent IDE interference finding
+**Last Updated**: 2026-03-10 — Phase 4: Confirmed delays do NOT prevent hang
 
 ---
 
@@ -334,30 +334,38 @@ sudo tcpdump -i lo0 port 4041 -w hang_capture.pcap
 
 ### Completed
 - ✅ Phase 1: Clean baseline established
-- ✅ Phase 2: Delay testing (delays help but don't eliminate issue)
+- ✅ Phase 2: Delay testing (initial results)
 - ✅ Phase 3: Test client investigation (client code is correct)
+- ✅ Phase 4: **Delays do NOT prevent hang** — call-count-based, not timing-based
+
+### Current Understanding
+
+The hang is a **call-count-based server bug**, not a race condition:
+- Occurs after ~15 tool calls regardless of timing
+- "GET stream disconnected" is the failure signature
+- Requires server restart to clear
 
 ### Next Steps
 
-1. **Report to mcp-compose maintainers (Path F)**
-   - Create minimal reproduction case
-   - Include evidence: server state corruption after N calls
-   - Reference this investigation document
+1. **Report to mcp-compose maintainers (Path F)** — HIGH PRIORITY
+   - Evidence: hang is call-count-based, delays don't help
+   - Provide reproduction: 15 sequential tool calls → hang
+   - Key log message: "GET stream disconnected, reconnecting in 1000ms..."
 
-2. **Investigate environments_mcp_server**
-   - The downstream server also hangs after corruption
-   - May need fixes in both mcp-compose AND environments_mcp_server
+2. **Resource monitoring during test** — NEW
+   - Track file descriptors, connections, memory per iteration
+   - Identify what accumulates (FDs? async tasks? SSE handlers?)
 
-3. **Consider test infrastructure changes**
-   - Add server restart between test runs (function-scoped fixture)
-   - Accept that hang tests may need isolated execution
+3. **Server code analysis**
+   - Find what counter/resource hits limit at ~15
+   - Check httpx Limits configuration
+   - Check SSE stream cleanup code
 
 ### Workarounds for Now
 
-1. **For CI**: Restart servers between hang test runs
+1. **For CI**: Restart servers between hang test runs (no delay workaround available)
 2. **For development**: Use STDIO transport tests (may have different behavior)
-3. **For production**: Real clients (Cursor, Claude Desktop) may not hit this issue
-   as they don't make 20 rapid sequential error-triggering calls
+3. **For production**: Real clients may hit this issue if they make >15 tool calls per session
 
 ---
 
@@ -389,17 +397,22 @@ sudo tcpdump -i lo0 port 4041 -w hang_capture.pcap
 
 ## Phase 2 Results (2026-03-10)
 
+> ⚠️ **NOTE**: These results were **INVALIDATED** by Phase 4. The custom script was using
+> the wrong tool name (`conda__conda_install_packages` with prefix) which returned instant
+> "Unknown tool" errors without exercising the full tool execution path. See Phase 4 for
+> definitive results showing delays do NOT prevent the hang.
+
 ### Delay Testing
 
 | Test | Delay | Iterations | Result |
 |------|-------|------------|--------|
 | pytest HANG-002 | 0ms | 20 | ❌ Fails at iteration 16 |
-| Custom script | 0ms | 50 | ✅ All pass |
-| Custom script | 10ms | 20 | ✅ All pass |
-| Custom script | 20ms | 20 | ✅ All pass |
-| Custom script | 50ms | 20 | ✅ All pass |
-| Custom script | 100ms | 20 | ✅ All pass |
-| Custom script | 500ms | 20 | ✅ All pass |
+| Custom script | 0ms | 50 | ✅ All pass ⚠️ (wrong tool name) |
+| Custom script | 10ms | 20 | ✅ All pass ⚠️ (wrong tool name) |
+| Custom script | 20ms | 20 | ✅ All pass ⚠️ (wrong tool name) |
+| Custom script | 50ms | 20 | ✅ All pass ⚠️ (wrong tool name) |
+| Custom script | 100ms | 20 | ✅ All pass ⚠️ (wrong tool name) |
+| Custom script | 500ms | 20 | ✅ All pass ⚠️ (wrong tool name) |
 
 **Key finding**: Custom script with identical HTTP calls (same headers, same payload, same session handling) passes 50 iterations with NO delay, while pytest test fails at iteration 16.
 
@@ -535,6 +548,95 @@ This is correct behavior - the hang is not a test artifact.
 | `LANDSCAPE_AND_PATHS.md` | This file — overview and next steps |
 | `test_logs/` | Raw test output logs |
 | `config_snapshots/` | Environment configuration captures |
+
+---
+
+## Phase 4 Results (2026-03-10)
+
+### Delay Testing — Definitive Results
+
+**Hypothesis tested**: Adding delays between iterations prevents hang by allowing connection pool recovery.
+
+**Method**: Added 2-second `ITERATION_DELAY` between each iteration in pytest tests.
+
+**Configuration**:
+- Test ports: 9888 (proxy), 5041 (downstream) — isolated from IDEs
+- IDEs: Cursor restarted, no anaconda-mcp in MCP config
+- Delay: 2 seconds between iterations
+- Total iterations: 20
+
+**Results**:
+
+| Test | Delay | Outcome | Hang Iteration |
+|------|-------|---------|----------------|
+| HANG-002 (no delay) | 0s | ❌ Hang | ~15-16 |
+| HANG-002 (with delay) | 2s | ❌ **Hang** | ~15-16 |
+
+**Server log evidence** (with 2s delays):
+```
+17:29:12 — Iteration 1: conda_install_packages ✅
+17:29:15 — Iteration 2: ✅
+17:29:17 — Iteration 3: ✅
+... (properly spaced ~2s apart)
+17:30:41 — Iteration 15: ✅
+17:30:41 — "GET stream disconnected, reconnecting in 1000ms..."
+[HANG — no further responses]
+```
+
+### Critical Finding
+
+**Delays do NOT prevent the hang.** The issue is NOT about:
+- ❌ Rapid sequential calls overwhelming connection pool
+- ❌ Insufficient time for connection cleanup
+- ❌ httpx connection reuse timing
+
+The hang occurs at **~15 iterations regardless of timing**:
+- With 0s delay: hangs at iteration 15-16
+- With 2s delay: hangs at iteration 15-16
+
+### Revised Understanding
+
+The hang is caused by **cumulative state corruption** that:
+1. Increments with each tool call (not time-based)
+2. Triggers after ~15-16 calls regardless of pacing
+3. Manifests as "GET stream disconnected" in mcp-compose logs
+4. Requires full server restart to clear
+
+This contradicts Phase 2 findings that showed custom scripts passing with delays. The difference:
+- Phase 2 custom script: Used wrong tool name (`conda__conda_install_packages`), got instant "Unknown tool" errors
+- Phase 4 pytest: Uses correct tool name (`conda_install_packages`), exercises full tool execution path
+
+### Implications
+
+1. **Workarounds**: Delays are NOT a viable workaround
+2. **Root cause**: Server-side counter/resource that accumulates per-call
+3. **Next steps**: Need to investigate what accumulates after each successful tool call
+4. **Possible culprits**:
+   - SSE stream handlers not being released
+   - httpx connection pool marking connections as unusable
+   - Starlette/FastMCP session state growing unbounded
+   - File descriptors or async tasks not being cleaned up
+
+### Recommended Next Actions
+
+1. **Add resource monitoring** during test:
+   ```bash
+   # Monitor file descriptors
+   lsof -p $(pgrep -f environments_mcp) | wc -l
+
+   # Monitor connections
+   netstat -an | grep 5041 | wc -l
+   ```
+
+2. **Binary search for hang threshold** with fresh server:
+   - Start server, run exactly 10 iterations, check if hang
+   - If pass: run 15 more, check if hang
+   - Find exact threshold
+
+3. **Report to mcp-compose maintainers** with this evidence:
+   - Hang is call-count-based, not timing-based
+   - Occurs at ~15 calls regardless of delays
+   - "GET stream disconnected" message is the failure signature
 
 ---
 
