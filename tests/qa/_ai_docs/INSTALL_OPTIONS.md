@@ -95,3 +95,21 @@ make test
 # Run with coverage
 make test-coverage
 ```
+
+### Windows Notes
+
+On Windows, use `python -m anaconda_mcp` instead of `anaconda-mcp` CLI (see [PI-001](./KNOWN_ISSUES.md#pi-001)).
+
+```cmd
+REM Create dev environment
+conda env create -f environment-dev.yml
+conda activate anaconda-mcp-dev
+
+REM Install in editable mode
+pip install -e .
+
+REM Run from source
+python -m anaconda_mcp serve --delay 5
+```
+
+See [WINDOWS_SETUP.md](./WINDOWS_SETUP.md) for detailed Windows instructions.

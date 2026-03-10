@@ -192,6 +192,31 @@ python -m pytest tests/qa/http_tools/ -v --server-url http://localhost:9999/mcp
 python -m pytest tests/qa/http_tools/ -v --server-url http://myserver:8888/mcp
 ```
 
+### Verbose logging for debugging hangs
+
+When debugging KI-011 or other hang issues, use verbose logging to see detailed HTTP request/response timing:
+
+```bash
+# INFO level — see request/response timing and session info
+python -m pytest tests/qa/http_tools/ -v --log-cli-level=INFO
+
+# DEBUG level — full request/response headers and bodies
+python -m pytest tests/qa/http_tools/ -v --log-cli-level=DEBUG -s
+
+# Single test with maximum verbosity
+python -m pytest tests/qa/http_tools/test_env_name_resolution.py::TestEnvironmentNameResolution::test_ki003_remove_environment_by_name \
+  -v --log-cli-level=DEBUG -s
+```
+
+Example log output when debugging a hang:
+```
+[CALL] tool=conda_remove_environment args={'environment_name': 'guard-env-remove-test'} session_id=abc12345... timeout=60s
+[TIMING] request started at t=0
+[TIMING] SIGALRM set for 60s
+...
+[TIMEOUT] SIGALRM fired after 60.0s — no response received, likely KI-011 hang
+```
+
 ---
 
 ## HTML report
