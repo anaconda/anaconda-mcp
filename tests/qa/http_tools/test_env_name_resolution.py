@@ -37,18 +37,29 @@ def removable_env():
     Module-scoped so the env is created once. The test itself removes it via
     MCP; teardown cleans up with the conda CLI in case the MCP call fails.
     """
-    logger.info("Creating removable conda environment '%s'", REMOVABLE_ENV_NAME)
-    subprocess.run(
+    import time as _time
+    t0 = _time.monotonic()
+    logger.info("[FIXTURE] removable_env: creating conda env '%s'...", REMOVABLE_ENV_NAME)
+    result = subprocess.run(
         ["conda", "create", "-n", REMOVABLE_ENV_NAME, "python=3.11", "-y"],
         check=True,
+        capture_output=True,
+        text=True,
     )
+    logger.info(
+        "[FIXTURE] removable_env: conda create completed in %.1fs",
+        _time.monotonic() - t0,
+    )
+    logger.debug("[FIXTURE] conda create stdout: %s", result.stdout[-500:] if result.stdout else "")
     prefix = _conda_env_prefix(REMOVABLE_ENV_NAME)
-    logger.debug("Removable env '%s' prefix: %s", REMOVABLE_ENV_NAME, prefix)
+    logger.info("[FIXTURE] removable_env: name=%r prefix=%r", REMOVABLE_ENV_NAME, prefix)
     yield {"name": REMOVABLE_ENV_NAME, "prefix": prefix}
+    logger.info("[FIXTURE] removable_env: teardown — removing env '%s'", REMOVABLE_ENV_NAME)
     subprocess.run(
         ["conda", "remove", "-n", REMOVABLE_ENV_NAME, "--all", "-y"],
         check=False,  # env may already be gone if MCP removal succeeded
     )
+    logger.info("[FIXTURE] removable_env: teardown complete")
 
 
 @pytest.mark.regression
@@ -71,12 +82,17 @@ class TestEnvironmentNameResolution:
         guard-api-test), calls conda_list_environments, finds the entry by
         prefix, and asserts the reported name matches the actual env name.
         """
+        import time as _time
+        t0 = _time.monotonic()
         logger.info(
-            "KI-002: listing environments, expecting name=%r at prefix %r",
+            "[KI-002] START: listing environments, expecting name=%r at prefix %r session_id=%s",
             conda_env["name"],
             conda_env["prefix"],
+            session_id[:8] + "..." if session_id else None,
         )
+        logger.info("[KI-002] t=%.2fs: calling _call_tool...", _time.monotonic() - t0)
         response = _call_tool(Tools.CONDA_LIST_ENVIRONMENTS, {}, session_id)
+        logger.info("[KI-002] t=%.2fs: _call_tool returned", _time.monotonic() - t0)
         result = _tool_result(response)
 
         assert not result.get(ToolResultFields.IS_ERROR), (
@@ -111,17 +127,31 @@ class TestEnvironmentNameResolution:
         EnvironmentLocationNotFound is raised even though the env exists.
         The environment can only be removed by passing prefix directly.
         """
+        import time as _time
+        t0 = _time.monotonic()
         logger.info(
-            "KI-003: removing env %r by name (prefix: %r)",
+            "[KI-003] START: removing env %r by name (prefix: %r) session_id=%s",
             removable_env["name"],
             removable_env["prefix"],
+            session_id[:8] + "..." if session_id else None,
         )
+        logger.info("[KI-003] t=%.2fs: calling _call_tool...", _time.monotonic() - t0)
         response = _call_tool(
             Tools.CONDA_REMOVE_ENVIRONMENT,
             {RemoveEnvironmentArgs.ENVIRONMENT_NAME: removable_env["name"]},
             session_id,
         )
+        logger.info(
+            "[KI-003] t=%.2fs: _call_tool returned, parsing result...",
+            _time.monotonic() - t0,
+        )
         result = _tool_result(response)
+        logger.info(
+            "[KI-003] t=%.2fs: DONE is_error=%s result=%s",
+            _time.monotonic() - t0,
+            result.get(ToolResultFields.IS_ERROR),
+            result,
+        )
 
         assert not result.get(ToolResultFields.IS_ERROR), (
             f"KI-003: conda_remove_environment by name {removable_env['name']!r} failed. "

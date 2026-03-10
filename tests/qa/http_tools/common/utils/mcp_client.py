@@ -87,30 +87,42 @@ def _call_tool(tool_name: str, arguments: dict, session_id: str | None) -> dict:
 
     Raises httpx.HTTPStatusError on non-2xx responses.
     """
-    logger.info("Calling MCP tool '%s' with arguments: %s", tool_name, arguments)
+    logger.info(
+        "[CALL] tool=%s args=%s session_id=%s timeout=%ds url=%s",
+        tool_name, arguments, session_id[:8] + "..." if session_id else None,
+        TOOL_TIMEOUT, BASE_URL,
+    )
 
     headers = {"Accept": "application/json, text/event-stream"}
     if session_id:
         headers["Mcp-Session-Id"] = session_id
 
+    request_body = {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "tools/call",
+        "params": {"name": tool_name, "arguments": arguments},
+    }
+    logger.debug("[REQUEST] headers=%s body=%s", headers, request_body)
+
     def _do_post() -> httpx.Response:
         return httpx.post(
             BASE_URL,
-            json={
-                "jsonrpc": "2.0",
-                "id": 1,
-                "method": "tools/call",
-                "params": {"name": tool_name, "arguments": arguments},
-            },
+            json=request_body,
             headers=headers,
             timeout=httpx.Timeout(connect=10, read=TOOL_TIMEOUT, write=10, pool=10),
         )
 
     t0 = time.monotonic()
+    logger.debug("[TIMING] request started at t=0")
 
     if _HAS_SIGALRM:
         def _alarm_handler(signum, frame):
             elapsed = time.monotonic() - t0
+            logger.error(
+                "[TIMEOUT] SIGALRM fired after %.1fs — no response received, likely KI-011 hang",
+                elapsed,
+            )
             raise httpx.ReadTimeout(
                 f"_call_tool: no complete response within {TOOL_TIMEOUT}s "
                 f"(SIGALRM fired after {elapsed:.1f}s — "
@@ -119,15 +131,23 @@ def _call_tool(tool_name: str, arguments: dict, session_id: str | None) -> dict:
 
         old_handler = signal.signal(signal.SIGALRM, _alarm_handler)
         signal.alarm(TOOL_TIMEOUT)
+        logger.debug("[TIMING] SIGALRM set for %ds", TOOL_TIMEOUT)
         try:
             response = _do_post()
         finally:
             signal.alarm(0)
             signal.signal(signal.SIGALRM, old_handler)
     else:
+        logger.debug("[TIMING] SIGALRM not available (Windows) — using httpx timeout only")
         response = _do_post()
 
     elapsed_s = time.monotonic() - t0
+    logger.info(
+        "[RESPONSE] status=%d elapsed=%.2fs content-type=%s body_len=%d",
+        response.status_code, elapsed_s,
+        response.headers.get("content-type", "?"), len(response.text),
+    )
+    logger.debug("[RESPONSE] headers=%s", dict(response.headers))
     response.raise_for_status()
     return _parse_mcp_response(response, elapsed_s)
 
@@ -161,7 +181,8 @@ def _initialize_session(server_url: str, client_name: str = "api-tools-test") ->
 
     Use this instead of duplicating the two-request sequence in fixtures.
     """
-    logger.info("Initializing MCP session at %s", server_url)
+    logger.info("[INIT] starting MCP session at %s (client=%s)", server_url, client_name)
+    t0 = time.monotonic()
     response = httpx.post(
         server_url,
         json={
@@ -177,8 +198,13 @@ def _initialize_session(server_url: str, client_name: str = "api-tools-test") ->
         headers={"Accept": "application/json, text/event-stream"},
         timeout=10,
     )
+    elapsed = time.monotonic() - t0
     sid = response.headers.get("mcp-session-id")
-    logger.debug("MCP session established (session-id present: %s)", sid is not None)
+    logger.info(
+        "[INIT] initialize response: status=%d elapsed=%.2fs session_id=%s",
+        response.status_code, elapsed, sid[:8] + "..." if sid else None,
+    )
+    logger.debug("[INIT] response headers=%s", dict(response.headers))
 
     headers: dict[str, str] = {"Accept": "application/json, text/event-stream"}
     if sid:
