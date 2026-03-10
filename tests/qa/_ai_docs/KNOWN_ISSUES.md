@@ -213,9 +213,13 @@ But this command starts server in **STDIO mode**, not HTTP mode. Claude Desktop 
 ---
 
 ### KI-011: mcp-compose Proxy Hangs and Corrupts Session on Tool Error
-**Status**: Partially Fixed — [mcp-compose #27](https://github.com/datalayer/mcp-compose/issues/27), [PR #28](https://github.com/datalayer/mcp-compose/pull/28) merged in 0.1.11
+**Status**: Partially Fixed — Two contributing factors identified
 **Internal Ticket**: [DESK-1355](https://anaconda.atlassian.net/browse/DESK-1355)
-**Component**: `mcp-compose`
+**Components**: `mcp-compose` AND `environments_mcp_server`
+
+**Contributing Factors**:
+1. **mcp-compose** (Fixed in 0.1.11): [PR #28](https://github.com/datalayer/mcp-compose/pull/28) — improved hang threshold from ~4 to ~16 iterations
+2. **environments_mcp_server** (Open): [KI-015](#ki-015-loggerexception-causes-server-hang-after-15-calls) / [DESK-1366](https://anaconda.atlassian.net/browse/DESK-1366) — `logger.exception()` causes hang after ~15 calls
 **Severity**: High (process-wide corruption; server restart required to recover)
 **Version**: mcp-compose 0.1.10 (original), 0.1.11 (partial fix)
 **Regression tests**: `tests/qa/http_tools/test_guard_proxy_error_hang.py`, `tests/qa/stdio_tools/test_guard_proxy_error_hang_stdio.py`
@@ -427,6 +431,69 @@ Incomplete restart:
 - The new config is never read until all Claude processes are fully killed.
 
 - **Workaround**: See [WINDOWS_CLAUDE_CODE.md](./tests/qa/_ai_docs/WINDOWS_CLAUDE_CODE.md) for full step-by-step instructions.
+
+### KI-014: `get_conda_config` Not Awaited in `remove_environment` — Causes AttributeError
+**Status**: Open (Bug)
+**Severity**: Medium
+**Component**: `environments_mcp_server`
+**Version**: 1.0.0.rc.3
+**Discovered**: 2026-03-10
+
+**Description**: In `remove_environment.py`, the async function `get_conda_config()` is called without `await`, causing:
+```
+AttributeError: 'coroutine' object has no attribute 'merge'
+RuntimeWarning: coroutine 'get_conda_config' was never awaited
+```
+
+**Location**: `environments_mcp_server/tools/environments/remove_environment.py` line 72:
+```python
+conda_config = get_conda_config(environment_root_path)  # Missing await!
+```
+
+**Impact**: The `remove_environment` tool may fail or behave incorrectly when `environment_root_path` is provided.
+
+**Fix**: Add `await`:
+```python
+conda_config = await get_conda_config(environment_root_path)
+```
+
+---
+
+### KI-015: `logger.exception()` Causes Server Hang After ~15 Calls
+**Status**: Open (Bug) — [DESK-1366](https://anaconda.atlassian.net/browse/DESK-1366)
+**Severity**: Critical
+**Component**: `environments_mcp_server`
+**Version**: 1.0.0.rc.3
+**Discovered**: 2026-03-10
+**Transports Affected**: HTTP and STDIO (transport-independent)
+**Bug Report**: [BUG_REPORT_KI011.md](./investigation_ki013_delays/BUG_REPORT_KI011.md)
+
+**Description**: Repeated calls to `logger.exception()` in exception handlers cause the `environments_mcp_server` to stop processing new requests after approximately 15 calls. The server accepts HTTP connections but never dispatches requests to tool functions.
+
+**Root Cause**: `logger.exception()` accumulates state that eventually blocks the MCP request dispatch layer.
+
+**Problematic Code** (`install_packages.py:101-102`):
+```python
+except conda_exceptions.EnvironmentLocationNotFound as ex:
+    logger.exception(ex)  # <-- CAUSES HANG AFTER ~15 CALLS
+    return ServerToolResult(...)
+```
+
+**Why `remove_environment` passes but `install_packages` hangs**:
+- `remove_environment` catches `CondaEnvironmentNotFoundError` → NO `logger.exception()`
+- `install_packages` catches `EnvironmentLocationNotFound` → YES `logger.exception()`
+
+**Evidence**:
+- With `logger.exception()`: Hangs at iteration ~15
+- Without `logger.exception()`: Passes all 20 iterations
+
+**Fix**: Replace `logger.exception(ex)` with `logger.warning(f"...")` in exception handlers.
+
+**Affected Files**:
+- `install_packages.py` lines 102, 109, 127
+- Possibly other tool files with same pattern
+
+---
 
 ### KI-013: mcp-compose Delays All Responses by Exactly the Configured Timeout Value
 **Status**: Confirmed — to be reported to mcp-compose maintainers

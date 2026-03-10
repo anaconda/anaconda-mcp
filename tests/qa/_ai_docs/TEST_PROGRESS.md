@@ -2,8 +2,8 @@
 
 ## Summary
 
-- **Last updated**: 2026-03-07
-- **Bugs filed**: 7 (3 - minor, 2 - medium, 2 - high)
+- **Last updated**: 2026-03-10
+- **Bugs filed**: 8 (3 - minor, 2 - medium, 3 - high)
 
 | Phase | What | Status |
 |-------|------|--------|
@@ -19,6 +19,7 @@
 - [DESK-1356](https://anaconda.atlassian.net/browse/DESK-1356)
 - [DESK-1358](https://anaconda.atlassian.net/browse/DESK-1358)
 - [DESK-1359](https://anaconda.atlassian.net/browse/DESK-1359)
+- [DESK-1366](https://anaconda.atlassian.net/browse/DESK-1366)
 ---
 
 ## Phase 1: E2E Progress
@@ -66,3 +67,4 @@ See [TEST_MATRIX.md](./TEST_MATRIX.md) for full assignment rationale.
 | [DESK-1356](https://anaconda.atlassian.net/browse/DESK-1356) | HTTP setup wizard suggests wrong server command — starts STDIO mode instead of HTTP | High | [KI-008](./KNOWN_ISSUES.md#ki-008-http-setup-suggests-wrong-server-command) | Manual testing |
 | [DESK-1358](https://anaconda.atlassian.net/browse/DESK-1358) | Private channel requests routed to conda.anaconda.org instead of repo.anaconda.cloud — credentials never reached | Medium | [KI-005](./KNOWN_ISSUES.md#ki-005-channel-credentials-not-picked-up) | Manual testing |
 | [DESK-1359](https://anaconda.atlassian.net/browse/DESK-1359) | MCP server initialization hangs when port 4041 is occupied by a non-responsive process | Medium | [KI-012](./KNOWN_ISSUES.md#ki-012-mcp-server-initialization-hangs-when-port-4041-is-occupied-by-a-non-responsive-process) | Manual testing · macOS · Cursor · 3.12 · STDIO |
+| [DESK-1366](https://anaconda.atlassian.net/browse/DESK-1366) | `logger.exception()` causes server hang after ~15 calls | High | [KI-015](./KNOWN_ISSUES.md#ki-015-loggerexception-causes-server-hang-after-15-calls) | QA 2 · macOS · anaconda-mcp-dev · 3.13 · HTTP/STDIO |

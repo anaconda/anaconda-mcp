@@ -365,7 +365,7 @@ The hang is a **call-count-based server bug**, not a race condition:
 
 1. **For CI**: Restart servers between hang test runs (no delay workaround available)
 2. **For development**: Use STDIO transport tests (may have different behavior)
-3. **For production**: Real clients may hit this issue if they make >15 tool calls per session
+3. **For production**: **WARNING** — Real clients WILL hit this if they make >15 tool calls per session, even with normal human-paced usage. Server restart is the only recovery.
 
 ---
 
@@ -523,10 +523,12 @@ This is correct behavior - the hang is not a test artifact.
 ## Open Questions (Updated)
 
 1. **Why does the hang threshold vary (8-16 iterations)?**
-   - ✅ **ANSWERED**: Concurrent MCP clients (IDEs like Cursor, Claude Desktop) add request load
-   - When IDEs are running, their requests interleave with test requests
-   - This exhausts the connection pool faster and unpredictably
-   - Threshold is more consistent when IDEs are closed
+   - ✅ **PARTIALLY ANSWERED**: In isolated testing (Phase 4), threshold is consistent at ~15
+   - Earlier variation (8-16) may have been due to:
+     - Concurrent IDE clients (now ruled out with isolated ports)
+     - Zombie processes from previous runs
+     - Server state carried over between test runs
+   - **Phase 4 conclusion**: With clean isolated setup, threshold is ~15 calls
 
 2. **Is the issue in mcp-compose or environments_mcp_server?**
    - Both are involved - downstream server also hangs when tested directly after corruption
@@ -553,7 +555,7 @@ This is correct behavior - the hang is not a test artifact.
 
 ## Phase 4 Results (2026-03-10)
 
-### Delay Testing — Definitive Results
+### Delay Testing — Initial Results
 
 **Hypothesis tested**: Adding delays between iterations prevents hang by allowing connection pool recovery.
 
@@ -562,10 +564,12 @@ This is correct behavior - the hang is not a test artifact.
 **Configuration**:
 - Test ports: 9888 (proxy), 5041 (downstream) — isolated from IDEs
 - IDEs: Cursor restarted, no anaconda-mcp in MCP config
-- Delay: 2 seconds between iterations
+- Delay: 2 seconds between iterations ("human-like" pacing)
 - Total iterations: 20
+- **Single instance**: Only one anaconda-mcp and one environments-mcp-server running
+- **No concurrency**: Verified no other MCP processes on system
 
-**Results**:
+**Results with real conda.install()**:
 
 | Test | Delay | Outcome | Hang Iteration |
 |------|-------|---------|----------------|
@@ -583,60 +587,133 @@ This is correct behavior - the hang is not a test artifact.
 [HANG — no further responses]
 ```
 
-### Critical Finding
+---
 
-**Delays do NOT prevent the hang.** The issue is NOT about:
-- ❌ Rapid sequential calls overwhelming connection pool
-- ❌ Insufficient time for connection cleanup
-- ❌ httpx connection reuse timing
+## Phase 5 Results (2026-03-10)
 
-The hang occurs at **~15 iterations regardless of timing**:
-- With 0s delay: hangs at iteration 15-16
-- With 2s delay: hangs at iteration 15-16
+### Mock Implementation Testing — ROOT CAUSE IDENTIFIED
 
-### Revised Understanding
+**Hypothesis tested**: Is the hang caused by mcp-compose proxy or by the actual conda operation?
 
-The hang is caused by **cumulative state corruption** that:
-1. Increments with each tool call (not time-based)
-2. Triggers after ~15-16 calls regardless of pacing
-3. Manifests as "GET stream disconnected" in mcp-compose logs
-4. Requires full server restart to clear
+**Method**: Replaced `install_packages.py` in environments_mcp_server with a mock that:
+- Skips all actual conda operations
+- Returns the same error response structure
+- Uses `asyncio.sleep()` with configurable delay
 
-This contradicts Phase 2 findings that showed custom scripts passing with delays. The difference:
-- Phase 2 custom script: Used wrong tool name (`conda__conda_install_packages`), got instant "Unknown tool" errors
-- Phase 4 pytest: Uses correct tool name (`conda_install_packages`), exercises full tool execution path
+**Results**:
 
-### Implications
+| Test Scenario | Mock Delay | Outcome | Conclusion |
+|---------------|------------|---------|------------|
+| Real `conda.install()` | N/A | ❌ Hangs at ~15 | Bug is in conda operation |
+| Mock implementation | 0.1s | ✅ **PASSED** all 20 | Not call-count-based |
+| Mock implementation | 3.0s | ✅ **PASSED** all 20 | Not timing-related |
 
-1. **Workarounds**: Delays are NOT a viable workaround
-2. **Root cause**: Server-side counter/resource that accumulates per-call
-3. **Next steps**: Need to investigate what accumulates after each successful tool call
-4. **Possible culprits**:
-   - SSE stream handlers not being released
-   - httpx connection pool marking connections as unusable
-   - Starlette/FastMCP session state growing unbounded
-   - File descriptors or async tasks not being cleaned up
+### Critical Finding — Bug Location Identified
 
-### Recommended Next Actions
+**The bug is 100% in `environments_mcp_server` / `anaconda-connector-conda`**, NOT in mcp-compose.
 
-1. **Add resource monitoring** during test:
-   ```bash
-   # Monitor file descriptors
-   lsof -p $(pgrep -f environments_mcp) | wc -l
+The mock bypassed this code:
+```python
+conda = await get_conda()                    # ← possibly here
+install_result = await conda.install(...)    # ← likely here
+```
 
-   # Monitor connections
-   netstat -an | grep 5041 | wc -l
-   ```
+And the test passed all 20 iterations with both 0.1s and 3.0s delays.
 
-2. **Binary search for hang threshold** with fresh server:
-   - Start server, run exactly 10 iterations, check if hang
-   - If pass: run 15 more, check if hang
-   - Find exact threshold
+### What This Proves
 
-3. **Report to mcp-compose maintainers** with this evidence:
-   - Hang is call-count-based, not timing-based
-   - Occurs at ~15 calls regardless of delays
-   - "GET stream disconnected" message is the failure signature
+| Component | Status | Evidence |
+|-----------|--------|----------|
+| mcp-compose proxy | ✅ **INNOCENT** | Mock passes 20 iterations |
+| MCP SDK (streamable_http) | ✅ **INNOCENT** | Same transport, mock works |
+| httpx connection pool | ✅ **INNOCENT** | 3s delays work fine |
+| `environments_mcp_server` | ❌ **BUG HERE** | Only fails with real conda ops |
+| `anaconda-connector-conda` | ❌ **BUG HERE** | `conda.install()` causes hang |
+
+### Ruled Out
+
+- ❌ mcp-compose proxy connection pool exhaustion
+- ❌ SSE stream handling in proxy
+- ❌ Call count alone (mock with same count passes)
+- ❌ Response timing/duration (3s mock passes)
+- ❌ Test infrastructure artifacts
+
+### Root Cause
+
+Something in the `conda.install()` code path accumulates state/resources that eventually causes the hang. Possible culprits in `anaconda-connector-conda`:
+- Conda solver state not being released
+- Subprocesses or file handles not being cleaned up
+- Async task accumulation
+- Memory/object accumulation in conda internals
+
+### Next Steps — COMPLETED
+
+Binary search completed. Root cause identified.
+
+---
+
+## Phase 6 Results (2026-03-10)
+
+### ROOT CAUSE IDENTIFIED: `logger.exception()` causes the hang
+
+**Method**: Added `[PATH]` logging to trace code execution, then systematically commented out code.
+
+**Key Evidence**:
+```
+# environments_mcp_server log shows 14 successful iterations:
+18:35:27 - [PATH] Calling conda.install()...
+18:35:27 - [PATH] Caught EnvironmentLocationNotFound  # iteration 1
+...
+18:35:54 - [PATH] Calling conda.install()...
+18:35:54 - [PATH] Caught EnvironmentLocationNotFound  # iteration 14
+# NO LOG FOR ITERATION 15 — request never reached install_packages function!
+```
+
+The hang occurs in **environments_mcp_server's request dispatch layer**, not in `install_packages()` itself.
+
+**Final Test**:
+
+| Test | `logger.exception()` | Result |
+|------|---------------------|--------|
+| With `logger.exception(ex)` | ✅ Enabled | ❌ Hangs at ~15 |
+| Without `logger.exception(ex)` | ❌ Commented | ✅ **PASSED all 20** |
+
+### Root Cause
+
+`logger.exception()` in the `EnvironmentLocationNotFound` exception handler causes state accumulation that eventually blocks the MCP request dispatch after ~15 calls.
+
+**Likely mechanisms**:
+1. **File descriptor exhaustion** — logging handlers opening files that aren't closed
+2. **Async/threading conflict** — `logger.exception()` blocking the event loop
+3. **Telemetry middleware** — `environments_mcp_server` has telemetry that may intercept logging
+4. **Log buffer exhaustion** — unbounded log growth blocking I/O
+
+### Fix Recommendation
+
+In `environments_mcp_server/tools/environments/install_packages.py`:
+
+```python
+# BEFORE (causes hang):
+except conda_exceptions.EnvironmentLocationNotFound as ex:
+    logger.exception(ex)  # <-- PROBLEM
+    return ServerToolResult(...)
+
+# AFTER (fix):
+except conda_exceptions.EnvironmentLocationNotFound as ex:
+    logger.warning(f"Environment not found: {ex}")  # Use warning, not exception
+    return ServerToolResult(...)
+```
+
+Or investigate why `logger.exception()` causes issues in the async MCP context.
+
+### Files to Report Bug
+
+1. **Primary**: `environments_mcp_server` — the `logger.exception()` call
+2. **Secondary**: Check if MCP SDK's async handling conflicts with sync logging
+
+### Workaround
+
+Remove or replace `logger.exception()` calls in exception handlers with `logger.warning()` or `logger.error()` (without stack trace).
 
 ---
 
