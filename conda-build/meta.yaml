@@ -29,11 +29,10 @@ requirements:
 about:
   summary: Anaconda MCP — AI assistant integration for your computing environment
   description: |
-    The Anaconda MCP Server connects your conda environments to MCP-compatible AI assistants, 
-    enabling them to create, modify, and delete environments and packages on your machine.
-    The AI assistant you connect is an independent third-party model, not a product of Anaconda.
-    Anaconda provides the tooling only — it does not control or take responsibility for actions the AI directs within your system.
-    Install only if you trust the AI assistant you intend to connect and understand it can take real actions on your machine.
+    The Anaconda MCP Server connects your local conda environments to MCP-compatible AI assistants, enabling them to create, modify, and delete environments and packages on your machine. Install only if you trust the AI assistant you intend to connect and understand it can take real actions on your machine.
+    By installing you acknowledge:
+    * The AI assistant you connect to this MCP server is an independent third-party model, not a product or service of Anaconda.
+    * Anaconda is NOT responsible for the actions the AI assistant directs within your environment, including unintended changes or deletions.
 
   home: https://github.com/anaconda/anaconda-mcp
   dev_url: https://github.com/anaconda/anaconda-mcp
