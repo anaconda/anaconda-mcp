@@ -5,4 +5,4 @@ dependencies:
   - anaconda-auth>=0.8.6
   - environments-mcp-server
   - anaconda-opentelemetry
-  - mcp-compose
+  - mcp-compose>=0.1.11,<2.0.0
