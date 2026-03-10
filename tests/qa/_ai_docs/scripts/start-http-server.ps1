@@ -11,11 +11,18 @@ param(
 $DOWNSTREAM_PORT = 4041
 $CONFIG_FILE = "$env:TEMP\http-config.toml"
 
-# Find Python in current conda environment
-$PYTHON_PATH = (Get-Command python -ErrorAction SilentlyContinue).Source
-if (-not $PYTHON_PATH) {
-    Write-Error "Python not found. Make sure conda environment is activated."
+# Get Python from CONDA_PREFIX (active conda env), not PATH
+if ($env:CONDA_PREFIX) {
+    $PYTHON_PATH = Join-Path $env:CONDA_PREFIX "python.exe"
+} else {
+    Write-Error "No conda environment is active."
     Write-Host "Run: conda activate anaconda-mcp-rc-py311"
+    exit 1
+}
+
+if (-not (Test-Path $PYTHON_PATH)) {
+    Write-Error "Python not found at $PYTHON_PATH"
+    Write-Host "Make sure the conda environment has Python installed."
     exit 1
 }
 

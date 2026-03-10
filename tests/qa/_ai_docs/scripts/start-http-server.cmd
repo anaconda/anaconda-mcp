@@ -12,15 +12,20 @@ if "%PORT%"=="" set PORT=8888
 set DOWNSTREAM_PORT=4041
 set CONFIG_FILE=%TEMP%\http-config.toml
 
-REM Check Python is available
-where python >nul 2>&1
-if errorlevel 1 (
-    echo ERROR: Python not found. Make sure conda environment is activated.
+REM Get Python from CONDA_PREFIX (active conda env), not PATH
+if defined CONDA_PREFIX (
+    set "PYTHON_PATH=%CONDA_PREFIX%\python.exe"
+) else (
+    echo ERROR: No conda environment is active.
     echo Run: conda activate anaconda-mcp-rc-py311
     exit /b 1
 )
 
-for /f "tokens=*" %%i in ('where python') do set PYTHON_PATH=%%i
+if not exist "%PYTHON_PATH%" (
+    echo ERROR: Python not found at %PYTHON_PATH%
+    echo Make sure the conda environment has Python installed.
+    exit /b 1
+)
 
 echo === Cleanup ===
 REM Kill processes on ports (best effort)
