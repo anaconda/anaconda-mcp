@@ -19,16 +19,12 @@ IF EXIST "%ACCEPTANCE_FLAG%" EXIT /B 0
     IF EXIST "%EULA_FILE%" (
         type "%EULA_FILE%"
     ) ELSE (
-        echo Anaconda MCP connects an AI assistant (Claude, by Anthropic^)
-        echo to your computing environment. By using this software, you
-        echo acknowledge that:
-        echo.
-        echo   - Claude is developed by Anthropic, not Anaconda.
-        echo   - You are solely responsible for the permissions you grant.
-        echo   - Anaconda is NOT liable for any actions Claude takes in
-        echo     your environment, including unintended changes or deletions.
-        echo.
-        echo Full EULA: https://docs.anaconda.com/anaconda-mcp/eula
+        echo The Anaconda MCP Server is now installed. When connected to an MCP-compatible AI assistant, it can:
+        echo Create, update, and delete conda environments, install, update, and remove packages
+        echo Read your current environment state.
+        echo These actions occur on your machine based on AI instructions.
+        echo Anaconda is not responsible for changes made to your environments, including unintended modifications or deletions.
+        echo You can revoke access at any time by stopping or uninstalling the MCP server.
     )
 
     echo.
