@@ -30,8 +30,6 @@ IF EXIST "%ACCEPTANCE_FLAG%" EXIT /B 0
     echo.
     echo ============================================================
     echo.
-    echo Please run 'anaconda-mcp' to accept the EULA before first use.
-    echo.
 ) >> "%MSG_FILE%"
 
 EXIT /B 0
