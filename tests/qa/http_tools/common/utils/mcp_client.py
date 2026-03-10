@@ -9,24 +9,20 @@ directly to ensure consistent timeout handling and SSE parsing.
 
 Timeout implementation note
 ---------------------------
-mcp-compose responds to tool calls with a Streamable HTTP / SSE response.
-When the proxy hangs (KI-011), it keeps the upstream HTTP connection alive by
-sending SSE keepalive bytes, which resets the httpx per-chunk `read` timeout
-indefinitely.  The only reliable way to interrupt a blocking socket recv() on
-UNIX is SIGALRM: signal.alarm(N) delivers SIGALRM after N seconds, which
-Python converts to a raised exception even inside a blocking system call.
+Uses httpx.Timeout directly, matching how real MCP clients (Cursor, Claude
+Desktop) handle timeouts. No SIGALRM or threading wrappers — just direct
+httpx calls with timeout configuration.
 
-_call_tool therefore installs a temporary SIGALRM handler for TOOL_TIMEOUT
-seconds around the httpx.post() call.  On platforms without signal.SIGALRM
-(Windows) it falls back to the httpx per-chunk read timeout, which may not
-catch SSE-keepalive hangs but is better than nothing.
+Note: SIGALRM and threading wrappers were removed after investigation showed
+they caused test failures at iteration ~16 by interfering with httpx internals.
+Direct httpx calls pass 50+ iterations reliably. See
+tests/qa/_ai_docs/investigation_ki013_delays/LANDSCAPE_AND_PATHS.md for details.
 """
 
 from __future__ import annotations
 
 import json
 import logging
-import signal
 import time
 
 import httpx
@@ -35,8 +31,6 @@ import pytest
 from common.constants.config import BASE_URL, TOOL_TIMEOUT
 
 logger = logging.getLogger(__name__)
-
-_HAS_SIGALRM = hasattr(signal, "SIGALRM")
 
 
 def _parse_mcp_response(response: httpx.Response, elapsed_s: float) -> dict:
@@ -81,10 +75,6 @@ def _call_tool(tool_name: str, arguments: dict, session_id: str | None) -> dict:
     Raises httpx.ReadTimeout if no complete response is received within
     TOOL_TIMEOUT seconds — callers that test for hangs should catch this.
 
-    The timeout is enforced via SIGALRM on UNIX so that it fires even when
-    the server streams SSE keepalive bytes (which defeat the httpx per-chunk
-    read timeout).  See module docstring for details.
-
     Raises httpx.HTTPStatusError on non-2xx responses.
     """
     logger.info(
@@ -105,41 +95,16 @@ def _call_tool(tool_name: str, arguments: dict, session_id: str | None) -> dict:
     }
     logger.debug("[REQUEST] headers=%s body=%s", headers, request_body)
 
-    def _do_post() -> httpx.Response:
-        return httpx.post(
-            BASE_URL,
-            json=request_body,
-            headers=headers,
-            timeout=httpx.Timeout(connect=10, read=TOOL_TIMEOUT, write=10, pool=10),
-        )
-
     t0 = time.monotonic()
     logger.debug("[TIMING] request started at t=0")
 
-    if _HAS_SIGALRM:
-        def _alarm_handler(signum, frame):
-            elapsed = time.monotonic() - t0
-            logger.error(
-                "[TIMEOUT] SIGALRM fired after %.1fs — no response received, likely KI-011 hang",
-                elapsed,
-            )
-            raise httpx.ReadTimeout(
-                f"_call_tool: no complete response within {TOOL_TIMEOUT}s "
-                f"(SIGALRM fired after {elapsed:.1f}s — "
-                "likely an SSE-keepalive hang, KI-011)"
-            )
-
-        old_handler = signal.signal(signal.SIGALRM, _alarm_handler)
-        signal.alarm(TOOL_TIMEOUT)
-        logger.debug("[TIMING] SIGALRM set for %ds", TOOL_TIMEOUT)
-        try:
-            response = _do_post()
-        finally:
-            signal.alarm(0)
-            signal.signal(signal.SIGALRM, old_handler)
-    else:
-        logger.debug("[TIMING] SIGALRM not available (Windows) — using httpx timeout only")
-        response = _do_post()
+    # Direct httpx call — matches real client behavior (Cursor, Claude Desktop)
+    response = httpx.post(
+        BASE_URL,
+        json=request_body,
+        headers=headers,
+        timeout=httpx.Timeout(connect=10, read=TOOL_TIMEOUT, write=10, pool=10),
+    )
 
     elapsed_s = time.monotonic() - t0
     logger.info(

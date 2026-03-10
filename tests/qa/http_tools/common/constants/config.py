@@ -11,7 +11,12 @@ import os
 
 # Full URL of the MCP server endpoint.
 # Set by conftest from --server-url / MCP_SERVER_URL before test collection.
-BASE_URL: str = os.environ.get("MCP_SERVER_URL", "http://localhost:8888/mcp")
+# Default port 9888 avoids conflict with IDE MCP servers (Cursor, Claude Desktop use 8888).
+BASE_URL: str = os.environ.get("MCP_SERVER_URL", "http://localhost:9888/mcp")
+
+# Downstream server port (environments_mcp_server).
+# Default 5041 avoids conflict with IDE downstream servers (typically 4041).
+DOWNSTREAM_PORT: int = int(os.environ.get("MCP_DOWNSTREAM_PORT", "5041"))
 
 # Maximum seconds to wait for a single tool call response.
 # A normal error response takes <30 s; the hang bug lasted until the SSE

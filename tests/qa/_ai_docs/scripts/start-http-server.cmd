@@ -1,6 +1,7 @@
 @echo off
 REM Start anaconda-mcp HTTP server (Windows CMD/Anaconda Prompt version)
-REM Usage: start-http-server.cmd [port]
+REM Usage: start-http-server.cmd [port] [downstream_port]
+REM Default ports: 9888 (proxy), 5041 (downstream) - avoids conflict with IDE MCP servers (8888, 4041)
 REM
 REM Note: Uses `python -m anaconda_mcp` instead of `anaconda-mcp` CLI
 REM due to PI-001 (missing .exe wrapper on Windows)
@@ -8,8 +9,9 @@ REM due to PI-001 (missing .exe wrapper on Windows)
 setlocal enabledelayedexpansion
 
 set PORT=%1
-if "%PORT%"=="" set PORT=8888
-set DOWNSTREAM_PORT=4041
+if "%PORT%"=="" set PORT=9888
+set DOWNSTREAM_PORT=%2
+if "%DOWNSTREAM_PORT%"=="" set DOWNSTREAM_PORT=5041
 set CONFIG_FILE=%TEMP%\http-config.toml
 
 REM Get Python from CONDA_PREFIX (active conda env), not PATH

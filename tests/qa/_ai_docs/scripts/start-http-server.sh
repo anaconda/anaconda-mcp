@@ -1,9 +1,10 @@
 #!/bin/bash
 # Start anaconda-mcp HTTP server (keeps running)
-# Usage: ./start-http-server.sh [port]
+# Usage: ./start-http-server.sh [port] [downstream_port]
+# Default ports: 9888 (proxy), 5041 (downstream) - avoids conflict with IDE MCP servers (8888, 4041)
 
-PORT=${1:-8888}
-DOWNSTREAM_PORT=4041
+PORT=${1:-9888}
+DOWNSTREAM_PORT=${2:-5041}
 CONFIG_FILE="/tmp/http-config.toml"
 PYTHON_PATH=$(which python)
 

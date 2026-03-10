@@ -59,11 +59,12 @@ _SCRIPT_PATH = (
 def pytest_addoption(parser: pytest.Parser) -> None:
     parser.addoption(
         "--server-url",
-        default=os.environ.get("MCP_SERVER_URL", "http://localhost:8888/mcp"),
+        default=os.environ.get("MCP_SERVER_URL", "http://localhost:9888/mcp"),
         help=(
             "Full URL of the MCP server endpoint. "
             "Also reads MCP_SERVER_URL env var. "
-            "(default: http://localhost:8888/mcp)"
+            "Uses port 9888 by default to avoid conflict with IDE MCP servers. "
+            "(default: http://localhost:9888/mcp)"
         ),
     )
     parser.addoption(
@@ -270,11 +271,11 @@ def pytest_sessionstart(session: pytest.Session) -> None:
 # ---------------------------------------------------------------------------
 
 def _port_from_url(url: str) -> str:
-    """Extract the port string from a URL like http://localhost:8888/mcp."""
+    """Extract the port string from a URL like http://localhost:9888/mcp."""
     try:
         return url.rstrip("/").rsplit(":", 1)[-1].split("/")[0]
     except (IndexError, ValueError):
-        return "8888"
+        return "9888"
 
 
 def _wait_for_server(url: str, *, timeout: float, on_timeout) -> None:
@@ -300,6 +301,6 @@ def _assert_server_reachable(url: str) -> None:
         logger.error("MCP server not reachable at %s", url)
         pytest.skip(
             f"MCP server not reachable at {url}.\n"
-            "Start it first:  ./tests/qa/_ai_docs/scripts/start-http-server.sh 8888\n"
+            "Start it first:  ./tests/qa/_ai_docs/scripts/start-http-server.sh\n"
             "Or pass --start-server to start automatically."
         )

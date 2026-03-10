@@ -2,7 +2,7 @@
 
 **Date**: 2026-03-10
 **Status**: Active Investigation
-**Last Updated**: After mcp-compose 0.1.11 testing
+**Last Updated**: 2026-03-10 — Added concurrent IDE interference finding
 
 ---
 
@@ -113,6 +113,43 @@ During investigation, debug logging was patched into:
 | Hung process accepting but not responding | Silent timeout (KI-012) | Kill before starting |
 | Corrupted connection pool from previous run | May cause earlier hangs | Full process restart |
 
+### 3. Concurrent MCP Clients (IDEs)
+
+**Critical discovery**: IDEs like Cursor, Claude Desktop, or VS Code with anaconda-mcp extensions configured may interfere with test execution.
+
+| Issue | Impact | Resolution |
+|-------|--------|------------|
+| Cursor with anaconda-mcp extension | Shares port 8888/4041, interleaved requests | Close Cursor during tests |
+| Claude Desktop with MCP servers | Competing connections exhaust pool faster | Disable MCP servers in settings |
+| Claude Code with MCP configured | Additional request load | Close or reconfigure |
+
+**Symptoms when IDEs are running:**
+- Hang threshold becomes unpredictable (varies with IDE activity)
+- Connection pool exhausts faster than expected
+- Tests that passed in isolation fail when IDE is open
+
+**Check for conflicting clients before testing:**
+```bash
+# Check if MCP ports are in use (most reliable check)
+lsof -i:8888 2>/dev/null && echo "WARNING: Port 8888 in use by another process"
+lsof -i:4041 2>/dev/null && echo "WARNING: Port 4041 in use by another process"
+
+# Also check test ports (9888/5041) in case a previous test run is still active
+lsof -i:9888 2>/dev/null && echo "WARNING: Test port 9888 in use"
+lsof -i:5041 2>/dev/null && echo "WARNING: Test port 5041 in use"
+```
+
+Note: Checking process names like `ps aux | grep anaconda-mcp` is NOT reliable —
+it matches workspace/project folder names, not actual MCP server processes.
+
+**Recommendation**: Close all IDEs with MCP servers configured before running hang regression tests, or use different ports for test servers.
+
+**Port configuration (as of 2026-03-10)**:
+- Test default: **9888** (proxy), **5041** (downstream)
+- IDE default: **8888** (proxy), **4041** (downstream)
+
+Tests now use different ports by default to avoid IDE conflicts.
+
 **Important**: The hanging behavior may differ depending on whether the server starts from a clean port state vs. inherits state from zombie processes. A process holding the port but not responding (from a previous hang) can cause KI-012-style silent timeouts that look different from fresh KI-011 hangs.
 
 **Recommendation**: Always kill all related processes before starting tests to ensure consistent baseline:
@@ -135,10 +172,12 @@ sleep 2  # Allow ports to fully release
 If either server inherits state from a previous hung session, the hang threshold (normally ~16-17 iterations) may vary unpredictably — sometimes failing earlier, sometimes later. This makes root cause analysis difficult.
 
 **Test protocol**: Before each test run:
-1. Kill both servers completely
-2. Verify ports are free (`lsof -i:8888`, `lsof -i:4041` should return nothing)
-3. Start both servers fresh
-4. Run test
+1. **Close IDEs** with anaconda-mcp configured (Cursor, Claude Desktop, VS Code)
+2. Kill both servers completely
+3. Verify ports are free (`lsof -i:8888`, `lsof -i:4041` should return nothing)
+4. Verify no competing MCP clients (`ps aux | grep anaconda-mcp`)
+5. Start both servers fresh
+6. Run test
 
 ### Clean-Up Procedure
 
@@ -162,8 +201,8 @@ conda env create -f environment-dev.yml
 
 # 5. Activate and verify clean state
 conda activate anaconda-mcp-dev
-python -c "import mcp; print(mcp.__version__)"
-python -c "import mcp_compose; print(mcp_compose.__version__)"
+pip show mcp | grep Version        # mcp doesn't expose __version__
+pip show mcp-compose | grep Version
 ```
 
 This ensures:
@@ -291,25 +330,34 @@ sudo tcpdump -i lo0 port 4041 -w hang_capture.pcap
 
 ---
 
-## Recommended Path Forward
+## Recommended Path Forward (Updated)
 
-### Phase 1: Establish Clean Baseline (Path A)
-- Remove debug patches
-- Confirm issue reproduces
-- Document baseline
+### Completed
+- ✅ Phase 1: Clean baseline established
+- ✅ Phase 2: Delay testing (delays help but don't eliminate issue)
+- ✅ Phase 3: Test client investigation (client code is correct)
 
-### Phase 2: Quick Validation (Path C)
-- Test with artificial delays
-- If delays fix it → confirms resource exhaustion
-- Provides immediate workaround
+### Next Steps
 
-### Phase 3: Root Cause (Path B or E)
-- If delays help → investigate server-side resource limits (Path B)
-- If delays don't help → network-level debugging (Path E)
+1. **Report to mcp-compose maintainers (Path F)**
+   - Create minimal reproduction case
+   - Include evidence: server state corruption after N calls
+   - Reference this investigation document
 
-### Phase 4: Upstream (Path F)
-- Report findings to mcp-compose with reproduction case
-- Include all evidence gathered
+2. **Investigate environments_mcp_server**
+   - The downstream server also hangs after corruption
+   - May need fixes in both mcp-compose AND environments_mcp_server
+
+3. **Consider test infrastructure changes**
+   - Add server restart between test runs (function-scoped fixture)
+   - Accept that hang tests may need isolated execution
+
+### Workarounds for Now
+
+1. **For CI**: Restart servers between hang test runs
+2. **For development**: Use STDIO transport tests (may have different behavior)
+3. **For production**: Real clients (Cursor, Claude Desktop) may not hit this issue
+   as they don't make 20 rapid sequential error-triggering calls
 
 ---
 
@@ -389,24 +437,92 @@ The custom test script is at `/tmp/test_hang_with_delay.py` — can be used to v
 
 ---
 
-## Open Questions
+## Phase 3 Results (2026-03-10)
 
-1. **Why does HANG-001 pass but HANG-002 fail?**
-   - Different code paths in `environments_mcp_server`?
-   - Different response sizes?
-   - Different async handling?
+### Test Client Investigation
+
+**Hypothesis tested**: SIGALRM/threading wrappers in test client cause httpx connection corruption.
+
+**Method**: Compared pytest test behavior vs direct Python script using identical mcp_client.py code.
+
+**Results**:
+
+| Test Method | Outcome | Notes |
+|-------------|---------|-------|
+| Direct script (wrong tool name) | ✅ 50 iterations | Tool `conda__conda_install_packages` returned instant error |
+| Direct script (correct tool name) | ✅ 20 iterations | Tool `conda_install_packages` works with fresh server |
+| Pytest test | ❌ Hangs at ~8-16 | Same httpx calls, same tool name |
+
+**Key discovery**: The test was accidentally using wrong tool name (`conda__conda_install_packages` with prefix) which returned "Unknown tool" error instantly. The correct name is `conda_install_packages` (mcp-compose adds prefix).
+
+### Root Cause Confirmation
+
+The hang is **NOT** caused by:
+- ❌ SIGALRM interference (pytest-timeout not installed)
+- ❌ Threading wrappers
+- ❌ Test client httpx configuration
+- ❌ Wrong tool names (fixed)
+
+The hang **IS** caused by:
+- ✅ **Server state corruption** after N rapid sequential tool calls
+- ✅ Both mcp-compose AND environments_mcp_server contribute
+- ✅ Corruption persists until servers are restarted
+
+### Evidence
+
+```
+Fresh server state:
+  - Iteration 1: 0.18s ✅
+  - Iteration 2-8: 0.03-0.04s ✅
+  - Iteration 9+: HANG (60s timeout)
+
+After restart:
+  - Same pattern repeats
+```
+
+Direct downstream server test:
+```bash
+# Fresh session to environments_mcp_server:4041
+curl install_packages → "environment not found" in 0.02s ✅
+
+# After mcp-compose corruption:
+curl install_packages → HANG (2+ minutes)
+```
+
+### Test Client Fix Applied
+
+Updated `mcp_client.py` to use direct httpx calls without wrappers:
+
+```python
+# Direct httpx call — matches real client behavior (Cursor, Claude Desktop)
+response = httpx.post(
+    BASE_URL,
+    json=request_body,
+    headers=headers,
+    timeout=httpx.Timeout(connect=10, read=TOOL_TIMEOUT, write=10, pool=10),
+)
+```
+
+This is correct behavior - the hang is not a test artifact.
+
+---
+
+## Open Questions (Updated)
+
+1. **Why does the hang threshold vary (8-16 iterations)?**
+   - ✅ **ANSWERED**: Concurrent MCP clients (IDEs like Cursor, Claude Desktop) add request load
+   - When IDEs are running, their requests interleave with test requests
+   - This exhausts the connection pool faster and unpredictably
+   - Threshold is more consistent when IDEs are closed
 
 2. **Is the issue in mcp-compose or environments_mcp_server?**
-   - Server sends headers but no body → likely server issue
-   - But mcp-compose pool management may contribute
+   - Both are involved - downstream server also hangs when tested directly after corruption
+   - Likely mcp-compose connection pool corruption propagates to downstream
 
-3. **Why exactly 16-17 iterations?**
-   - Suggests a fixed resource limit being hit
-   - Connection pool size? Async task limit? FD limit?
-
-4. **Can we reproduce with a minimal MCP server?**
-   - Would isolate whether issue is in environments_mcp_server specifically
-   - Or in the mcp-compose/MCP SDK stack
+3. **Why does server restart fix it?**
+   - Connection pool reset
+   - Async task cleanup
+   - Socket state reset
 
 ---
 

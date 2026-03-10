@@ -1,14 +1,16 @@
 # Start anaconda-mcp HTTP server (Windows version)
-# Usage: .\start-http-server.ps1 [port]
+# Usage: .\start-http-server.ps1 [port] [downstream_port]
+# Default ports: 9888 (proxy), 5041 (downstream) - avoids conflict with IDE MCP servers (8888, 4041)
 #
 # Note: Uses `python -m anaconda_mcp` instead of `anaconda-mcp` CLI
 # due to PI-001 (missing .exe wrapper on Windows)
 
 param(
-    [int]$Port = 8888
+    [int]$Port = 9888,
+    [int]$DownstreamPort = 5041
 )
 
-$DOWNSTREAM_PORT = 4041
+$DOWNSTREAM_PORT = $DownstreamPort
 $CONFIG_FILE = "$env:TEMP\http-config.toml"
 
 # Get Python from CONDA_PREFIX (active conda env), not PATH
