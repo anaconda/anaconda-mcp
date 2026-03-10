@@ -1,0 +1,59 @@
+# Conda Binary and Environment State - 2026-03-09
+
+## Which conda is being used?
+
+$ type -a conda
+conda is a shell function from /Users/iiliukhina/.claude/shell-snapshots/snapshot-zsh-1773087163287-h2i7az.sh
+conda is /opt/miniconda3/bin/conda       <-- OLD miniconda binary!
+conda is /opt/miniconda3/condabin/conda
+
+## Conda info (from /opt/anaconda3/bin/conda)
+
+     active environment : /opt/miniconda3      <-- BROKEN! Points to non-env directory
+    active env location : /opt/miniconda3
+            shell level : 1
+       user config file : /Users/iiliukhina/.condarc
+ populated config files : /etc/conda/condarc
+                          /opt/anaconda3/.condarc
+                          /opt/anaconda3/condarc.d/anaconda-auth.yml
+                          /Users/iiliukhina/.condarc
+                          /opt/miniconda3/.condarc           <-- OLD config still loaded!
+                          /opt/miniconda3/condarc.d/anaconda-auth.yml
+          conda version : 25.11.1
+    conda-build version : 25.11.1
+         python version : 3.13.9.final.0
+                 solver : libmamba (default)
+       base environment : /opt/anaconda3  (writable)
+
+## Package counts
+
+/opt/anaconda3 base packages: 553 packages (FULL Anaconda installation)
+
+## Analysis
+
+CRITICAL FINDING: Hybrid installation state
+
+1. Shell initialization sources conda from /opt/miniconda3 (old)
+2. But base environment is set to /opt/anaconda3 (new)
+3. Config files from BOTH installations are being loaded
+4. Active environment points to /opt/miniconda3 which is NOT a valid conda env
+
+This could cause:
+- Config conflicts between the two installations
+- Telemetry plugin scanning wrong directory
+- Path resolution issues in MCP server
+- Unpredictable behavior depending on which conda binary runs
+
+## Telemetry Impact
+
+With 553 packages in /opt/anaconda3, the Anaconda-Telemetry-Packages header would be HUGE:
+- Each package name ~20-30 chars average
+- 553 packages × 25 chars = ~14KB just for package names
+- This FAR exceeds S3's 8KB header limit (PI-003)
+
+## Recommendation
+
+Clean up the hybrid state:
+1. Either remove /opt/miniconda3 entirely
+2. Or re-initialize shell to use /opt/anaconda3/bin/conda
+3. Update PATH to remove miniconda3 references

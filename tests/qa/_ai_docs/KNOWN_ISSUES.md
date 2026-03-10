@@ -213,20 +213,36 @@ But this command starts server in **STDIO mode**, not HTTP mode. Claude Desktop 
 ---
 
 ### KI-011: mcp-compose Proxy Hangs and Corrupts Session on Tool Error
-**Status**: Fix Proposed — [mcp-compose #27](https://github.com/datalayer/mcp-compose/issues/27), [PR #28](https://github.com/datalayer/mcp-compose/pull/28)
+**Status**: Partially Fixed — [mcp-compose #27](https://github.com/datalayer/mcp-compose/issues/27), [PR #28](https://github.com/datalayer/mcp-compose/pull/28) merged in 0.1.11
 **Internal Ticket**: [DESK-1355](https://anaconda.atlassian.net/browse/DESK-1355)
 **Component**: `mcp-compose`
 **Severity**: High (process-wide corruption; server restart required to recover)
-**Version**: mcp-compose 0.1.10
+**Version**: mcp-compose 0.1.10 (original), 0.1.11 (partial fix)
 **Regression tests**: `tests/qa/http_tools/test_guard_proxy_error_hang.py`, `tests/qa/stdio_tools/test_guard_proxy_error_hang_stdio.py`
 
 **Description**: When a tool returns quickly (validation errors, etc.), `mcp-compose`'s proxy hangs and corrupts the httpx connection pool. All subsequent calls block indefinitely. Only restarting `mcp-compose` recovers.
 
 **Root cause**: `mcp-compose` uses deprecated `streamablehttp_client` which has a hidden 5-minute SSE read timeout. When FastMCP serves results inline (200 OK) instead of via SSE, the SSE cleanup hangs waiting for the timeout, leaking the connection pool slot.
 
-**Fix**: Replace deprecated `streamablehttp_client` with non-deprecated `streamable_http_client` using explicit `httpx.AsyncClient`. See [PR #28](https://github.com/datalayer/mcp-compose/pull/28).
+**Fix status** (as of 2026-03-10):
+- PR #28 merged into mcp-compose 0.1.11 on 2026-03-07
+- Fix replaces deprecated `streamablehttp_client` with `streamable_http_client` + explicit `httpx.AsyncClient`
+- **Partial improvement**: Hang threshold improved from ~4 iterations to ~16 iterations
+- **Still failing**: After ~16 rapid sequential error-triggering calls, the hang still occurs
 
-**Workaround** (until fix is merged): Restart `mcp-compose`:
+**Test results** (mcp-compose 0.1.11, MCP SDK 1.26.0, 2026-03-10):
+
+| Test | Before Fix | After Fix (0.1.11) |
+|------|------------|-------------------|
+| HANG-001 (remove_environment × 20) | Hangs at iteration 4 | ✅ **Passed** (all 20) |
+| HANG-002 (install_packages × 20) | Hangs at iteration 4 | ❌ Hangs at iteration ~9-16 |
+| HANG-003 (mixed error + health × 40) | Hangs early | ❌ Hangs (pool corrupted by HANG-002) |
+
+**Note**: When HANG-002 is run in isolation (fresh server, no prior tests), it reaches iteration 16 before hanging. When run after HANG-001, pool state accumulates and it hangs earlier (~iteration 9).
+
+**Remaining issue**: The MCP SDK's connection pool still accumulates state under rapid sequential calls. The "GET stream disconnected, reconnecting..." log message appears before the hang, indicating an SSE reconnection issue.
+
+**Workaround**: Restart `mcp-compose` when hangs occur:
 ```bash
 pkill -9 -f "anaconda-mcp"
 pkill -9 -f "environments_mcp"
@@ -424,6 +440,65 @@ MCP servers failed to start when configured in Claude Desktop; subprocess spawn 
 **Current plan**: Attempt Windows testing using **Cursor** or **VS Code** (with AI chat) + HTTP transport. STDIO-only configs remain blocked until further notice.
 
 **Note**: This is a tester environment constraint, not an `anaconda-mcp` bug.
+
+---
+
+### KI-013: mcp-compose Delays All Responses by Exactly the Configured Timeout Value
+**Status**: Confirmed — to be reported to mcp-compose maintainers
+**Severity**: High
+**Component**: `mcp-compose`
+**Version**: mcp-compose 0.1.11 / mcp 1.26.0
+**Observed**: 2026-03-09, macOS, Python 3.13, anaconda-mcp-dev environment
+
+**Description**: After the "GET stream disconnected" message appears, every subsequent MCP tool call is delayed by exactly the `timeout` value configured in `mcp_compose.toml` — even simple, successful operations like `conda_list_environments` that should complete in <1 second.
+
+**Confirmed behavior** (2026-03-09):
+- With `timeout = 30`: all responses delayed by exactly ~30.01-30.03s
+- With `timeout = 5`: all responses delayed by exactly ~5.01-5.03s
+
+**Symptoms in test logs** (timeout=5):
+```
+[TIMING] tool=conda__conda_list_environments completed in 5.01s session_id=...
+[TIMING] tool=conda__conda_list_environments completed in 5.02s session_id=...
+[TIMING] tool=conda__conda_list_environments completed in 5.03s session_id=...
+... (all exactly ~5s, matching timeout config)
+```
+
+**Server-side behavior**:
+- `Processing request of type CallToolRequest` appears immediately
+- HTTP 200 OK with `text/event-stream` content-type sent immediately
+- But the SSE body (actual result) is delayed by exactly the configured timeout
+
+**Trigger** — key log line before the slowdown begins:
+```
+mcp.client.streamable_http - INFO - GET stream disconnected, reconnecting in 1000ms...
+```
+
+**Root cause**: After the GET stream disconnects, `mcp-compose` waits for the full `timeout` duration before forwarding SSE responses from the downstream server. This is a bug in the proxy's SSE response handling — it should forward responses immediately, not wait for timeout.
+
+**Relation to KI-011**: Different manifestation of the same underlying proxy state corruption:
+- KI-011: Proxy hangs indefinitely (no response) — tool returns error quickly
+- KI-013: Proxy delays response by exactly timeout value — tool returns success
+
+**Trade-off with KI-011** (discovered 2026-03-10):
+
+| timeout | KI-013 Delays | KI-011 Hangs | Test Results |
+|---------|---------------|--------------|--------------|
+| 5 | Yes (5s per call) | Fewer | 5 pass / 3 fail |
+| 60 | No | More | 4 pass / 4 fail |
+
+The KI-013 delays accidentally **prevent** KI-011 hangs by acting as a cooldown between calls, giving the connection pool time to recover. With `timeout=60`, calls happen rapidly and the pool corrupts faster.
+
+**Impact**:
+- Test suite takes 10+ minutes instead of <1 minute with timeout=30
+- Any interactive use becomes unusable
+- Reducing timeout trades speed for stability (fewer hangs)
+
+**Workaround**:
+- `timeout = 60`: Fast but more hangs (use for interactive work, restart when hang occurs)
+- `timeout = 5`: Slow but fewer hangs (use for long test runs)
+
+**To report**: File issue against `mcp-compose` — the root cause is connection pool management, not timeout handling
 
 ---
 

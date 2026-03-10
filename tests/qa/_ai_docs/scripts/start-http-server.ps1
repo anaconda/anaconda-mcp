@@ -66,7 +66,7 @@ sse_enabled = false
 [[servers.proxied.streamable-http]]
 name = "conda"
 url = "http://localhost:$DOWNSTREAM_PORT/mcp"
-timeout = 30
+timeout = 5
 keep_alive = true
 reconnect_on_failure = true
 max_reconnect_attempts = 10

@@ -1,0 +1,42 @@
+
+     active environment : base
+    active env location : /opt/miniconda3
+            shell level : 1
+       user config file : /Users/iiliukhina/.condarc
+ populated config files : /etc/conda/condarc
+                          /opt/miniconda3/.condarc
+                          /opt/miniconda3/condarc.d/anaconda-auth.yml
+                          /Users/iiliukhina/.condarc
+          conda version : 25.11.1
+    conda-build version : not installed
+         python version : 3.13.11.final.0
+                 solver : libmamba (default)
+       virtual packages : __archspec=1=m1
+                          __conda=25.11.1=0
+                          __osx=26.2=0
+                          __unix=0=0
+       base environment : /opt/miniconda3  (read only)
+      conda av data dir : /opt/miniconda3/etc/conda
+  conda av metadata url : None
+           channel URLs : https://conda.anaconda.org/t/<TOKEN>/anaconda-connector/osx-arm64
+                          https://conda.anaconda.org/t/<TOKEN>/anaconda-connector/noarch
+                          https://conda.anaconda.org/anaconda-cloud/label/dev/osx-arm64
+                          https://conda.anaconda.org/anaconda-cloud/label/dev/noarch
+                          https://conda.anaconda.org/datalayer/osx-arm64
+                          https://conda.anaconda.org/datalayer/noarch
+                          https://conda.anaconda.org/conda-forge/osx-arm64
+                          https://conda.anaconda.org/conda-forge/noarch
+                          https://repo.anaconda.com/pkgs/main/osx-arm64
+                          https://repo.anaconda.com/pkgs/main/noarch
+                          https://repo.anaconda.com/pkgs/r/osx-arm64
+                          https://repo.anaconda.com/pkgs/r/noarch
+          package cache : /opt/miniconda3/pkgs
+                          /Users/iiliukhina/.conda/pkgs
+       envs directories : /Users/iiliukhina/.conda/envs
+                          /opt/miniconda3/envs
+               platform : osx-arm64
+             user-agent : conda/25.11.1 requests/2.32.5 CPython/3.13.11 Darwin/25.2.0 OSX/26.2 solver/libmamba conda-libmamba-solver/25.11.0 libmambapy/2.3.2 aau/0.7.5
+                UID:GID : 502:20
+             netrc file : None
+           offline mode : False
+

@@ -1,0 +1,3 @@
+anaconda_anon_usage: false #!final
+anaconda_heartbeat: false #!final
+aggressive_update_packages: []

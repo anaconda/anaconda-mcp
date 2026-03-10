@@ -30,7 +30,7 @@ sse_enabled = false
 [[servers.proxied.streamable-http]]
 name = "conda"
 url = "http://localhost:$DOWNSTREAM_PORT/mcp"
-timeout = 30
+timeout = 60
 keep_alive = true
 reconnect_on_failure = true
 max_reconnect_attempts = 10
@@ -55,4 +55,4 @@ echo "Config: $CONFIG_FILE"
 echo "Press Ctrl+C to stop"
 echo ""
 
-anaconda-mcp serve --config "$CONFIG_FILE"
+python -m anaconda_mcp serve --config "$CONFIG_FILE"

@@ -54,7 +54,7 @@ echo.
 echo [[servers.proxied.streamable-http]]
 echo name = "conda"
 echo url = "http://localhost:%DOWNSTREAM_PORT%/mcp"
-echo timeout = 30
+echo timeout = 5
 echo keep_alive = true
 echo reconnect_on_failure = true
 echo max_reconnect_attempts = 10
