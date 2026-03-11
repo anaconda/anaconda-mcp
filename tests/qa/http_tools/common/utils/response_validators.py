@@ -24,6 +24,45 @@ def _validate_is_error(result: dict, context: str = "") -> None:
         raise AssertionError(" — ".join(parts))
 
 
+def _validate_no_pydantic_validation_error(
+    result: dict,
+    response: dict | None = None,
+    context: str = "",
+) -> None:
+    """
+    Assert that neither the parsed tool result nor the raw MCP response content
+    contains a Pydantic frozen_instance validation error.
+
+    KI-016: create_environment raised a frozen_instance ValidationError when
+    environment_root_path was provided. The error propagates past the try/except
+    block in create_environment.py (it is raised in get_conda_config() before the
+    try block), so fastmcp catches it and returns the raw exception text as a
+    plain-text content item — NOT as a JSON-wrapped tool result.
+
+    This means _tool_result() returns {} (the text doesn't start with '{'), and
+    checking only result["error_description"] misses the error entirely.
+    This validator checks both:
+      (a) result["error_description"] — for structured tool error results
+      (b) all raw content text items in the MCP response — for unhandled exceptions
+    """
+    # (a) structured tool result error_description
+    error_desc = result.get(ToolResultFields.ERROR_DESCRIPTION, "")
+
+    # (b) raw content text items from the MCP response (catches unhandled exceptions)
+    raw_texts: list[str] = []
+    if response is not None:
+        content = response.get("result", {}).get("content", [])
+        raw_texts = [c.get("text", "") for c in content if c.get("type") == "text"]
+
+    all_text = "\n".join([error_desc] + raw_texts)
+    if "frozen_instance" in all_text or "Instance is frozen" in all_text:
+        raise AssertionError(
+            f"Pydantic frozen_instance validation error in response (KI-016 regression). "
+            + (f"Context: {context}. " if context else "")
+            + f"error_description={error_desc!r}  raw_content_texts={raw_texts!r}"
+        )
+
+
 def _validate_package_resolution_error(result: dict, env_name: str) -> None:
     """
     Assert that the tool result describes a package-resolution failure,

@@ -11,9 +11,16 @@ from enum import Enum
 
 
 class Tools(str, Enum):
+    CONDA_CREATE_ENVIRONMENT = "conda_create_environment"
     CONDA_INSTALL_PACKAGES = "conda_install_packages"
     CONDA_LIST_ENVIRONMENTS = "conda_list_environments"
     CONDA_REMOVE_ENVIRONMENT = "conda_remove_environment"
+
+
+class CreateEnvironmentArgs(str, Enum):
+    ENVIRONMENT_NAME = "environment_name"
+    PACKAGES = "packages"
+    ENVIRONMENT_ROOT_PATH = "environment_root_path"
 
 
 class InstallPackagesArgs(str, Enum):
