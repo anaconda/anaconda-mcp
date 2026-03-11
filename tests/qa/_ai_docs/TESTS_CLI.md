@@ -1,182 +1,222 @@
-# CLI Flows (All Platforms)
+# CLI Tests — Design Document
 
-## Overview
+## Purpose
 
-CLI-only flows that can run on any platform without Claude Desktop.
+**Why this test layer exists:**
 
-**Platforms**: macOS, Windows (Win365, GitHub runners), Linux (GitHub runners)
+CLI tests verify that the `anaconda-mcp` command-line interface works correctly across all platforms. This layer tests the **user-facing CLI contract** — the commands users run in their terminal before connecting any MCP client.
+
+**What this layer catches:**
+- Command parsing and argument handling
+- Help text and version output
+- Exit codes for success/failure
+- Platform-specific path resolution
+- Config file generation (`setup-config`)
+
+**What this layer does NOT test:**
+- MCP protocol behavior (covered by API Tool tests)
+- Tool functionality (covered by API Tool tests)
+- Environment variable parsing (covered by Config tests)
+- LLM integration
 
 ---
 
-## Flow Summary
+## Design Rationale
 
-| Flow ID | Name | Priority | CI Automatable |
-|---------|------|----------|----------------|
-| CLI-001 | Server Discovery | P1 | Yes |
-| CLI-002 | Advanced Options | P1 | Yes |
-| CLI-003 | Config Management | P0 | Yes |
-| CLI-004 | Regression CLI | P0 | Yes |
+### Why a Separate CLI Test Layer?
 
-> **Note**: Error scenarios (negative tests) are in [TESTS_API_TOOLS.md](./TESTS_API_TOOLS.md#error-scenarios).
+1. **No server required**: Tests run against the CLI binary directly
+2. **Fast execution**: Milliseconds per test (no network, no server startup)
+3. **Installation verification**: Confirms the package is correctly installed
+4. **Platform parity**: Same commands must work on Linux, macOS, Windows
+5. **User experience**: Validates what users see before any MCP interaction
+
+### Test Categories
+
+| Category | Purpose | Example |
+|----------|---------|---------|
+| **Command structure** | Subcommands and flags work | `anaconda-mcp serve --help` |
+| **Path resolution** | OS-specific paths correct | `claude-desktop path` returns right location |
+| **Config generation** | Generate valid config files | `setup-config` creates valid JSON |
+| **Exit codes** | Proper return codes | Invalid args → non-zero exit |
 
 ---
 
-## CLI-001: Server Discovery
+## Architecture
 
-**Purpose**: Test CLI commands for server discovery and composition.
+### Test Independence
 
-**Steps**:
+CLI tests should be **stateless** and **independent**:
+- Each test starts fresh (no reliance on prior test state)
+- Tests clean up any files they create
+- No server processes required
 
-```bash
-# Phase 1: Discover
-anaconda-mcp discover
-# [EXPECTED] Lists discovered MCP servers
+### Subprocess Execution
 
-anaconda-mcp discover --output-format json
-# [EXPECTED] Valid JSON output
+Tests invoke the CLI as a subprocess to match real user behavior:
 
-# Phase 2: Compose
-anaconda-mcp compose
-# [EXPECTED] Shows composed server information
+```python
+def test_help_exits_zero():
+    result = subprocess.run(
+        ["anaconda-mcp", "--help"],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0
+    assert "usage:" in result.stdout.lower()
+```
 
-anaconda-mcp compose --conflict-resolution prefix
-# [EXPECTED] Tools prefixed with server name
+### CI Matrix Support
 
-anaconda-mcp compose --output-format json
-# [EXPECTED] Valid JSON output
+CLI tests run across OS and Python versions (no transport dimension — CLI tests don't need a server):
 
-# Phase 3: Verbose Logging
-anaconda-mcp -v serve --port 8888 &
-sleep 5
-kill %1
-# [EXPECTED] DEBUG level logs displayed
+```yaml
+strategy:
+  matrix:
+    os: [ubuntu-latest, macos-latest, windows-latest]
+    python-version: ["3.10", "3.11", "3.12", "3.13"]
 ```
 
 ---
 
-## CLI-002: Advanced Options
+## Platform Considerations
 
-**Purpose**: Test advanced CLI options and flags.
+### Shell and Process Differences
 
-**Steps**:
+| Aspect | Linux/macOS | Windows |
+|--------|-------------|---------|
+| Executable extension | none | `.exe` |
+| Background process | `&` | `start /b` |
+| Process group | `start_new_session=True` | `CREATE_NEW_PROCESS_GROUP` |
 
-```bash
-# Phase 1: Custom Config
-cat > /tmp/custom-mcp.toml << 'EOF'
-[composer]
-name = "test-server"
-port = 9876
-[transport]
-stdio_enabled = false
-streamable_http_enabled = true
-EOF
+For OS-specific config paths, see [TESTS_CONFIG.md](./TESTS_CONFIG.md#default-paths-by-os).
 
-anaconda-mcp serve --config /tmp/custom-mcp.toml &
-sleep 5
-curl -sf http://localhost:9876/mcp -X POST \
-  -H "Content-Type: application/json" \
-  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}'
-kill %1
-# [EXPECTED] Server on port 9876, tools listed
+---
 
-# Phase 2: Startup Delay
-time (anaconda-mcp serve --delay 3 --port 8887 &
-  sleep 5
-  kill %1 2>/dev/null)
-# [EXPECTED] ~3 second delay visible
+## Example Scenarios (Illustrative)
 
-# Phase 3: Skip Backup
-anaconda-mcp claude-desktop setup-config --no-backup --force
-# [EXPECTED] No backup file created
+### Command Structure Example
+```python
+def test_serve_requires_no_args():
+    """'serve' subcommand works with defaults."""
+    result = subprocess.run(
+        ["anaconda-mcp", "serve", "--help"],
+        capture_output=True,
+    )
+    assert result.returncode == 0
+    assert b"--port" in result.stdout
+```
 
-# Phase 4: Show Server Config
-anaconda-mcp claude-desktop show --name anaconda-mcp
-# [EXPECTED] Shows only anaconda-mcp config
+### Path Resolution Example
+```python
+def test_claude_desktop_path_matches_platform():
+    """'claude-desktop path' returns OS-appropriate path."""
+    result = subprocess.run(
+        ["anaconda-mcp", "claude-desktop", "path"],
+        capture_output=True,
+        text=True,
+    )
+    path = Path(result.stdout.strip())
+
+    if sys.platform == "darwin":
+        assert "Library/Application Support/Claude" in str(path)
+    elif sys.platform == "win32":
+        assert "Claude" in str(path) and "AppData" in str(path)
+    else:
+        assert ".config/Claude" in str(path)
+```
+
+### Config Generation Example
+```python
+def test_setup_config_creates_valid_json(tmp_path):
+    """'setup-config' generates parseable JSON."""
+    config_path = tmp_path / "claude_desktop_config.json"
+
+    # Mock the config path (platform-specific implementation)
+    result = subprocess.run(
+        ["anaconda-mcp", "claude-desktop", "setup-config"],
+        capture_output=True,
+        env={**os.environ, "CLAUDE_CONFIG_PATH": str(config_path)},
+    )
+
+    assert config_path.exists()
+    config = json.loads(config_path.read_text())
+    assert "mcpServers" in config
 ```
 
 ---
 
-## CLI-003: Config Management
+## Execution Model
 
-**Purpose**: Test Claude Desktop config management via CLI.
+### Test Isolation
 
-**Steps**:
+```
+┌─────────────────────────────────────────────────────────┐
+│                      Test Process                        │
+│  pytest runner (no server, no network)                   │
+└─────────────────────────────────────────────────────────┘
+                            │
+                            ▼ subprocess.run()
+┌─────────────────────────────────────────────────────────┐
+│                  anaconda-mcp CLI                        │
+│  Executes command, writes to stdout/stderr, exits        │
+└─────────────────────────────────────────────────────────┘
+```
 
-```bash
-# Phase 1: Show Config
-anaconda-mcp claude-desktop show
-# [EXPECTED] Displays mcpServers configuration
+### Fixture Strategy
 
-anaconda-mcp claude-desktop show --json
-# [EXPECTED] Valid JSON output
+| Fixture | Scope | Purpose |
+|---------|-------|---------|
+| `tmp_path` | function | pytest built-in for temp files |
+| `installed_cli` | session | Verify `anaconda-mcp` is in PATH |
 
-# Phase 2: Setup and Verify
-anaconda-mcp claude-desktop setup-config
-anaconda-mcp claude-desktop show | grep anaconda-mcp
-# [EXPECTED] anaconda-mcp entry present
+---
 
-# Phase 3: Force Overwrite
-anaconda-mcp claude-desktop setup-config --transport streamable-http --port 9999 --force
-anaconda-mcp claude-desktop show --json | grep "9999"
-# [EXPECTED] Port 9999 in config
+## Current Implementation Status
 
-# Phase 4: Remove Config
-anaconda-mcp claude-desktop remove-config
-anaconda-mcp claude-desktop show
-# [EXPECTED] anaconda-mcp removed
+### What Exists
+- Documentation of manual test flows
+- Some regression tests inline with API tests
 
-# Phase 5: Restore
-anaconda-mcp claude-desktop setup-config
-# [EXPECTED] STDIO config restored
+### What's Missing
+- Dedicated `tests/qa/cli/` directory
+- Systematic coverage of all subcommands
+- Windows-specific test paths
+
+### Recommended Structure
+```
+tests/qa/cli/
+├── conftest.py           # CLI-specific fixtures
+├── test_help.py          # --help, --version
+├── test_serve.py         # serve subcommand flags
+├── test_claude_desktop.py # config management
+└── test_env_vars.py      # environment variable handling
 ```
 
 ---
 
-## CLI-004: Regression CLI Tests
+## Running Tests
 
-**Purpose**: CLI-only regression tests for known issues.
-
-**Steps**:
-
+### Local Development
 ```bash
-# KI-004: Extra Environment Variables
-export OPENAI_API_KEY=test123
-export RANDOM_VAR=value
-anaconda-mcp --help
-# [EXPECTED] No pydantic ValidationError
+# Verify CLI is installed
+anaconda-mcp --version
 
-anaconda-mcp serve --port 8886 &
-sleep 5
-kill %1
-# [EXPECTED] Server starts without crash
+# Run CLI tests (no server needed)
+pytest tests/qa/cli/ -v
+```
 
-unset OPENAI_API_KEY RANDOM_VAR
+### CI Invocation (planned)
+```bash
+pytest tests/qa/cli/ \
+  --platform ${RUNNER_OS} \
+  --python-version ${PYTHON_VERSION}
 ```
 
 ---
 
-## CI Automation (Phase 2)
+## Related Documents
 
-Workflow template: [ci_workflows/cli-tests.yml](./ci_workflows/cli-tests.yml)
-
-Copy to `.github/workflows/` when ready to implement.
-
----
-
-## Platform Coverage
-
-| Flow | Linux | macOS | Windows |
-|------|-------|-------|---------|
-| CLI-001 | ✅ | ✅ | ✅ |
-| CLI-002 | ✅ | ✅ | ✅ |
-| CLI-003 | ✅ | ✅ | ✅ |
-| CLI-004 | ✅ | ✅ | ✅ |
-
----
-
-## Test Execution Order
-
-1. **CLI-004** - Regression (KI-004)
-2. **CLI-001** - Server discovery
-3. **CLI-002** - Advanced options
-4. **CLI-003** - Config management
+- [TESTS_API_TOOLS.md](./TESTS_API_TOOLS.md) — MCP protocol tests (requires server)
+- [TESTS_CONFIG.md](./TESTS_CONFIG.md) — Configuration and environment variable tests
+- [KNOWN_ISSUES.md](./KNOWN_ISSUES.md) — Bug references for regression tests

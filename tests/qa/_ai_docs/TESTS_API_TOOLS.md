@@ -1,296 +1,286 @@
-# API Tool Tests (All Platforms)
+# API Tool Tests — Design Document
 
-## Overview
+## Purpose
 
-Direct API calls to MCP tools - validates tool functionality without Claude Desktop.
+**Why this test layer exists:**
 
-- **Platforms**: macOS, Windows (Win365), Linux
-- **Priority**: Manual first (Win365), automation if time allows
+API Tool tests verify that MCP tools behave correctly when called directly via the MCP protocol (JSON-RPC over HTTP or STDIO). This layer tests the **server's contract with MCP clients** — the same interface used by Claude Desktop, Cursor, and other MCP-compatible tools.
 
----
+**What this layer catches:**
+- Tool input validation and error handling
+- Correct JSON-RPC response structure (success vs error)
+- Timeout and hang regressions (server must respond within reasonable time)
+- Session state corruption across multiple tool calls
+- Transport-specific edge cases (SSE streaming, connection pooling)
 
-## Setup
-
-### Start Server
-
-```bash
-# Start server in dev mode
-anaconda-mcp serve --port 8888
-
-# Or with debug logging
-ANACONDA_MCP_LOG_LEVEL=DEBUG anaconda-mcp serve --port 8888
-```
-
-### Verify Server Ready
-
-```bash
-# Initialize session
-curl -X POST http://localhost:8888/mcp \
-  -H "Content-Type: application/json" \
-  -d '{"jsonrpc":"2.0","id":0,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"api-test","version":"1.0"}}}'
-
-# List available tools
-curl -X POST http://localhost:8888/mcp \
-  -H "Content-Type: application/json" \
-  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}'
-```
-
-**Expected**: 6 conda tools listed
+**What this layer does NOT test:**
+- LLM behavior or prompt engineering
+- End-to-end user workflows through Claude Desktop UI
+- Installation and packaging
 
 ---
 
-## Tool Tests
+## Design Rationale
 
-### TOOL-001: List Environments
+### Why Test at the MCP Protocol Level?
 
-```bash
-curl -X POST http://localhost:8888/mcp \
-  -H "Content-Type: application/json" \
-  -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"conda_list_environments","arguments":{}}}'
-```
+1. **Deterministic**: No LLM variability — same input always produces same output
+2. **Fast feedback**: Seconds per test vs minutes for E2E flows
+3. **CI-friendly**: Can run in GitHub Actions without GUI or LLM API calls
+4. **Regression-focused**: Catches known issues (KI-002, KI-003, KI-010, KI-011) reliably
+5. **Transport-agnostic logic**: Same tool behavior expected over HTTP and STDIO
 
-**Expected**: JSON array of environments (at minimum: base)
+### Test Categories
 
----
-
-### TOOL-002: Create Environment
-
-```bash
-curl -X POST http://localhost:8888/mcp \
-  -H "Content-Type: application/json" \
-  -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"conda_create_environment","arguments":{"environment_name":"api-test-env","packages":["python=3.11"]}}}'
-```
-
-**Expected**: Success message, environment created
-
-**Verify**:
-```bash
-conda env list | grep api-test-env
-```
+| Category | Purpose | Example |
+|----------|---------|---------|
+| **Happy path** | Tools return expected results for valid inputs | `conda_list_environments` returns env list |
+| **Error handling** | Tools return proper errors for invalid inputs | Install nonexistent package → `is_error: true` |
+| **Regression guards** | Prevent recurrence of known bugs | KI-011: error response must not hang |
+| **Protocol compliance** | JSON-RPC structure, error codes, session handling | Invalid tool → error code -32601 |
 
 ---
 
-### TOOL-003: Install Packages
+## Architecture
 
-```bash
-curl -X POST http://localhost:8888/mcp \
-  -H "Content-Type: application/json" \
-  -d '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"conda_install_packages","arguments":{"environment":"api-test-env","packages":["numpy","requests"]}}}'
+### Transport Abstraction
+
+Tests should be **transport-agnostic** where possible. The same logical test runs over:
+- **Streamable HTTP**: `POST /mcp` with JSON-RPC body
+- **STDIO**: Newline-delimited JSON-RPC over stdin/stdout
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                    Test Specification                    │
+│  (what behavior we verify, transport-independent)        │
+└─────────────────────────────────────────────────────────┘
+                            │
+                            ▼
+┌─────────────────────────────────────────────────────────┐
+│                   Transport Adapter                      │
+│  HTTPClient | STDIOClient (how we send/receive)          │
+└─────────────────────────────────────────────────────────┘
+                            │
+                            ▼
+┌─────────────────────────────────────────────────────────┐
+│                  Server Under Test                       │
+│  anaconda-mcp serve (HTTP or STDIO mode)                 │
+└─────────────────────────────────────────────────────────┘
 ```
 
-**Expected**: Success message, packages installed
+### CI Matrix Support
 
-**Verify**:
-```bash
-conda list -n api-test-env | grep numpy
-conda list -n api-test-env | grep requests
+Tests support GitHub Actions matrix strategy with transport as a dimension:
+
+```yaml
+strategy:
+  matrix:
+    os: [ubuntu-latest, macos-latest, windows-latest]
+    python-version: ["3.10", "3.11", "3.12", "3.13"]
+    transport: [http, stdio]
 ```
+
+**Execution model**: Each matrix cell runs on a separate runner, so there are no cross-cell conflicts. Within each cell:
+
+1. Fixture starts ONE MCP server (transport and port configurable)
+2. Run ALL tests against that single server instance
+3. Fixture tears down server after all tests complete
+
+**Requirements:**
+- **Configurable transport**: Via `--transport` CLI option (http or stdio)
+- **Configurable port**: Via `--port` CLI option (for HTTP transport)
+- **Isolated conda env per cell**: Each Python version uses its own env
+- **Session-scoped server fixture**: Manages full server lifecycle
+
+### Server Lifecycle via Fixture
+
+The `mcp_server` fixture manages the full server lifecycle — no external scripts needed:
+
+```python
+@pytest.fixture(scope="session")
+def mcp_server(request):
+    """Start server, wait for ready, yield, teardown."""
+    transport = request.config.getoption("--transport")
+    port = request.config.getoption("--port")
+
+    if transport == "http":
+        proc = subprocess.Popen(
+            ["anaconda-mcp", "serve", "--port", str(port)],
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        )
+        _wait_for_ready(f"http://localhost:{port}/mcp")
+    else:  # stdio
+        proc = subprocess.Popen(
+            ["anaconda-mcp", "serve"],
+            stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+        )
+
+    yield proc
+    proc.terminate()
+    proc.wait(timeout=10)
+```
+
+**Benefits of fixture-only approach:**
+- **Platform-independent**: Python `subprocess` works on Linux, macOS, Windows
+- **Automatic cleanup**: pytest guarantees teardown even on test failure
+- **No script maintenance**: single source of truth for server startup
+- **Closer to reality**: starts server the same way a user would
+
+### Fixture Scopes
+
+| Fixture | Scope | Reason |
+|---------|-------|--------|
+| `mcp_server` | session | Server startup is expensive (~10s); one per test run |
+| `mcp_client` | session | Transport adapter (HTTP or STDIO); matches server |
+| `session_id` | module | Each test file gets isolated MCP session |
+| `conda_env` | module | Env creation is expensive (~30s) |
+| `fresh_session_id` | function | For tests that corrupt session state |
 
 ---
 
-### TOOL-004: Remove Packages
+## Platform Considerations
 
-```bash
-curl -X POST http://localhost:8888/mcp \
-  -H "Content-Type: application/json" \
-  -d '{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"conda_remove_packages","arguments":{"environment":"api-test-env","packages":["requests"]}}}'
-```
+### OS-Specific Behavior
 
-**Expected**: Success message, package removed
+| Aspect | Linux/macOS | Windows |
+|--------|-------------|---------|
+| Process signals | `SIGTERM` for cleanup | `taskkill` or process handle |
+| Path separators | `/` | `\` (use `pathlib`) |
+| Conda activation | `conda run -n env` | Same, but shell differences |
+| STDIO line endings | `\n` | `\r\n` possible |
 
-**Verify**:
-```bash
-conda list -n api-test-env | grep requests  # Should be empty
-conda list -n api-test-env | grep numpy     # Should still exist
-```
+### Python Version Differences
 
----
-
-### TOOL-005: List Environment Packages
-
-```bash
-curl -X POST http://localhost:8888/mcp \
-  -H "Content-Type: application/json" \
-  -d '{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"conda_list_environment_packages","arguments":{"environment":"api-test-env"}}}'
-```
-
-**Expected**: JSON list of packages in environment
+- **3.10**: Baseline — must work
+- **3.11-3.13**: May have asyncio/typing changes
+- Tests should not rely on version-specific features
 
 ---
 
-### TOOL-006: Remove Environment
+## Example Scenarios (Illustrative)
 
-```bash
-curl -X POST http://localhost:8888/mcp \
-  -H "Content-Type: application/json" \
-  -d '{"jsonrpc":"2.0","id":6,"method":"tools/call","params":{"name":"conda_remove_environment","arguments":{"environment_name":"api-test-env"}}}'
+These examples show the **type** of tests, not an exhaustive list:
+
+### Happy Path Example
+```python
+def test_list_environments_returns_base(session_id):
+    """conda_list_environments must include 'base' environment."""
+    response = call_tool("conda_list_environments", {}, session_id)
+    envs = parse_result(response)["environments"]
+    assert any(e["name"] == "base" for e in envs)
 ```
 
-**Expected**: Success message, environment deleted
-
-**Verify**:
-```bash
-conda env list | grep api-test-env  # Should be empty
+### Error Handling Example
+```python
+def test_install_nonexistent_package_returns_error(conda_env, session_id):
+    """Installing a fake package must return is_error=true, not hang."""
+    response = call_tool(
+        "conda_install_packages",
+        {"environment": conda_env["name"], "packages": ["nonexistent-xyz"]},
+        session_id,
+    )
+    assert parse_result(response)["is_error"] is True
 ```
 
----
-
-## Error Scenarios
-
-### ERR-001: Create Duplicate Environment
-
-```bash
-curl -X POST http://localhost:8888/mcp \
-  -H "Content-Type: application/json" \
-  -d '{"jsonrpc":"2.0","id":10,"method":"tools/call","params":{"name":"conda_create_environment","arguments":{"name":"base"}}}'
-```
-
-**Expected**: Error - environment already exists
-
----
-
-### ERR-002: Remove Non-Existent Environment
-
-```bash
-curl -X POST http://localhost:8888/mcp \
-  -H "Content-Type: application/json" \
-  -d '{"jsonrpc":"2.0","id":11,"method":"tools/call","params":{"name":"conda_remove_environment","arguments":{"environment_name":"nonexistent-env-xyz"}}}'
-```
-
-**Expected**: Error - environment not found
-
----
-
-### ERR-003: Install Non-Existent Package
-
-```bash
-curl -X POST http://localhost:8888/mcp \
-  -H "Content-Type: application/json" \
-  -d '{"jsonrpc":"2.0","id":12,"method":"tools/call","params":{"name":"conda_install_packages","arguments":{"environment":"base","packages":["fake-package-xyz123"]}}}'
-```
-
-**Expected**: Error - package not found (no pip fallback)
-
----
-
-### ERR-004: Invalid Tool Name (JSON-RPC Protocol)
-
-```bash
-curl -X POST http://localhost:8888/mcp \
-  -H "Content-Type: application/json" \
-  -d '{"jsonrpc":"2.0","id":13,"method":"tools/call","params":{"name":"invalid_tool"}}'
-```
-
-**Expected**: JSON-RPC error code -32601 (Method not found)
-
----
-
-### ERR-005: Malformed JSON (JSON-RPC Protocol)
-
-```bash
-curl -X POST http://localhost:8888/mcp \
-  -H "Content-Type: application/json" \
-  -d 'not valid json'
-```
-
-**Expected**: JSON-RPC error code -32700 (Parse error)
-
----
-
-## Quick Checklist
-
-### Happy Path (6 tools)
-- [ ] TOOL-001: List environments (`conda_list_environments`)
-- [ ] TOOL-002: Create environment (`conda_create_environment`)
-- [ ] TOOL-003: Install packages (`conda_install_packages`)
-- [ ] TOOL-004: Remove packages (`conda_remove_packages`)
-- [ ] TOOL-005: List environment packages (`conda_list_environment_packages`)
-- [ ] TOOL-006: Remove environment (`conda_remove_environment`)
-
-### Error Handling
-- [ ] ERR-001: Duplicate environment
-- [ ] ERR-002: Non-existent environment
-- [ ] ERR-003: Non-existent package
-- [ ] ERR-004: Invalid tool name (JSON-RPC -32601)
-- [ ] ERR-005: Malformed JSON (JSON-RPC -32700)
-
----
-
-## Full Test Script
-
-```bash
-#!/bin/bash
-# API Tool Test Script
-# Run on Win365 with Python 3.10
-
-set -e
-PORT=8888
-BASE_URL="http://localhost:$PORT/mcp"
-
-echo "=== Starting server ==="
-anaconda-mcp serve --port $PORT &
-SERVER_PID=$!
-sleep 10
-
-echo "=== Initialize ==="
-curl -sf $BASE_URL -X POST \
-  -H "Content-Type: application/json" \
-  -d '{"jsonrpc":"2.0","id":0,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"test","version":"1.0"}}}'
-
-echo -e "\n=== TOOL-001: List Environments ==="
-curl -sf $BASE_URL -X POST \
-  -H "Content-Type: application/json" \
-  -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"conda_list_environments","arguments":{}}}'
-
-echo -e "\n=== TOOL-002: Create Environment ==="
-curl -sf $BASE_URL -X POST \
-  -H "Content-Type: application/json" \
-  -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"conda_create_environment","arguments":{"environment_name":"api-test-env","packages":["python=3.11"]}}}'
-
-echo -e "\n=== TOOL-003: Install Packages ==="
-curl -sf $BASE_URL -X POST \
-  -H "Content-Type: application/json" \
-  -d '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"conda_install_packages","arguments":{"environment":"api-test-env","packages":["numpy"]}}}'
-
-echo -e "\n=== TOOL-004: Remove Packages ==="
-curl -sf $BASE_URL -X POST \
-  -H "Content-Type: application/json" \
-  -d '{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"conda_remove_packages","arguments":{"environment":"api-test-env","packages":["numpy"]}}}'
-
-echo -e "\n=== TOOL-005: List Environment Packages ==="
-curl -sf $BASE_URL -X POST \
-  -H "Content-Type: application/json" \
-  -d '{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"conda_list_environment_packages","arguments":{"environment":"api-test-env"}}}'
-
-echo -e "\n=== TOOL-006: Remove Environment ==="
-curl -sf $BASE_URL -X POST \
-  -H "Content-Type: application/json" \
-  -d '{"jsonrpc":"2.0","id":6,"method":"tools/call","params":{"name":"conda_remove_environment","arguments":{"environment_name":"api-test-env"}}}'
-
-echo -e "\n=== Cleanup ==="
-kill $SERVER_PID 2>/dev/null || true
-
-echo -e "\n=== All tests passed ==="
+### Regression Guard Example
+```python
+@pytest.mark.timeout(60)
+def test_error_response_does_not_hang(fresh_session_id):
+    """KI-011: server must respond within timeout after error."""
+    for _ in range(10):
+        response = call_tool(
+            "conda_remove_environment",
+            {"prefix": "/nonexistent/path"},
+            fresh_session_id,
+        )
+        assert parse_result(response)["is_error"] is True
 ```
 
 ---
 
-## CI Automation (Phase 2)
+## Current Implementation Status
 
-Workflow template: [ci_workflows/api-tool-tests.yml](./ci_workflows/api-tool-tests.yml)
+### What Exists
+- `tests/qa/http_tools/`: HTTP transport tests with pytest fixtures
+- `tests/qa/stdio_tools/`: STDIO transport tests (parallel structure)
+- Regression tests for KI-002, KI-003, KI-010, KI-011
 
-Copy to `.github/workflows/` when ready to implement.
+### Known Issues in Test Design
+1. **Duplication**: `http_tools/common/` and `stdio_tools/common/` have overlapping code
+2. **Transport coupling**: Tests organized by transport, not by functionality
+
+### Recommended Structure (Unified)
+
+```
+tests/qa/
+├── conftest.py                 # Server fixture, transport selection
+├── common/
+│   ├── clients/
+│   │   ├── base.py             # MCPClient protocol (interface)
+│   │   ├── http_client.py      # HTTP transport implementation
+│   │   └── stdio_client.py     # STDIO transport implementation
+│   ├── constants/              # Shared test data, tool names
+│   └── validators/             # Response validation helpers
+├── test_tools.py               # Tool tests (transport-agnostic)
+└── test_regressions.py         # KI-xxx regression tests
+```
+
+**Key changes:**
+- One test file, transport selected via `--transport` option
+- `mcp_client` fixture returns HTTPClient or STDIOClient based on transport
+- Tests use `mcp_client.call_tool()` — don't know which transport
+
+CLI and Config tests live in separate directories (`tests/qa/cli/`, `tests/qa/config/`) — see their respective design docs.
 
 ---
 
-## Platform Coverage
+## Running Tests
 
-| Test | Win365 (3.13) | macOS (3.10) | Linux CI (3.10 + 3.13) |
-|------|---------------|--------------|------------------------|
-| TOOL-001 | ✅ Manual | Optional | Phase 2 |
-| TOOL-002 | ✅ Manual | Optional | Phase 2 |
-| TOOL-003 | ✅ Manual | Optional | Phase 2 |
-| TOOL-004 | ✅ Manual | Optional | Phase 2 |
-| TOOL-005 | ✅ Manual | Optional | Phase 2 |
-| TOOL-006 | ✅ Manual | Optional | Phase 2 |
-| ERR-001-003 | ✅ Manual | Optional | Phase 2 |
+### Local Development
+```bash
+# HTTP transport
+pytest tests/qa/ --transport http --port 9888 -v
+
+# STDIO transport
+pytest tests/qa/ --transport stdio -v
+```
+
+### CI Invocation
+```bash
+pytest tests/qa/ \
+  --transport ${TRANSPORT} \
+  --port ${PORT} \
+  -v
+```
+
+The fixture handles server startup, readiness check, and teardown automatically.
+
+### Server Log Collection
+
+The fixture captures server logs for debugging test failures:
+
+```python
+@pytest.fixture(scope="session")
+def mcp_server(request, tmp_path_factory):
+    log_dir = tmp_path_factory.mktemp("logs")
+    log_file = log_dir / "mcp-server.log"
+
+    proc = subprocess.Popen(
+        ["anaconda-mcp", "serve", "--port", str(port)],
+        stdout=log_file.open("w"),
+        stderr=subprocess.STDOUT,
+        env={**os.environ, "ANACONDA_MCP_LOG_LEVEL": "DEBUG"},
+    )
+    yield proc
+    # Log file available for inspection on failure
+```
+
+Logs are attached to pytest HTML report on test failure.
+
+---
+
+## Related Documents
+
+- [TESTS_CLI.md](./TESTS_CLI.md) — CLI command tests (no server required)
+- [TESTS_CONFIG.md](./TESTS_CONFIG.md) — Configuration and environment variable tests
+- [KNOWN_ISSUES.md](./KNOWN_ISSUES.md) — Bug references for regression tests
