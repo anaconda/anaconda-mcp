@@ -64,6 +64,19 @@ Based on RC1 findings (10 bugs filed, Phase 1 complete):
 
 ---
 
+## Bug Fix Retesting
+
+RC1 filed 10 bugs. Fixed bugs require verification before release.
+
+| Activity | Scope | Est. Time |
+|----------|-------|-----------|
+| Verify fixed bugs | Per bug: reproduce original issue, confirm fix | ~10-15 min/bug |
+| Regression check | Ensure fix didn't break related functionality | Included in CORE-001 |
+
+**Note**: Actual retesting time depends on how many bugs are fixed in RC2. Not all RC1 bugs may be fixed for this release.
+
+---
+
 ## Eliminated Tests
 
 | Test | Reason |
@@ -81,7 +94,8 @@ Based on RC1 findings (10 bugs filed, Phase 1 complete):
 |--------|-----|-----|-----------|
 | Configurations | 9 | 4 | 56% |
 | Tests per config | 6 | 1-3 | 50-83% |
-| Total manual steps | ~92 | 38 | 59% |
+| E2E manual steps | ~92 | 38 | 59% |
+| Bug fix retesting | — | 0 - ~10 | Additional, depends on how many bugs are fixed and included to rc2 |
 
 ---
 
@@ -97,6 +111,12 @@ Based on RC1 findings (10 bugs filed, Phase 1 complete):
 ---
 
 ## Checklist
+
+### Bug Fix Retesting (both QAs)
+```
+[ ] Review RC2 release notes for fixed bugs
+[ ] Verify each fixed bug (reproduce → confirm fix)
+```
 
 ### QA 1 (3 configs)
 ```
