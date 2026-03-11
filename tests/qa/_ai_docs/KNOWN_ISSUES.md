@@ -453,7 +453,7 @@ Incomplete restart:
 - **Workaround**: See [WINDOWS_CLAUDE_CODE.md](./tests/qa/_ai_docs/WINDOWS_CLAUDE_CODE.md) for full step-by-step instructions.
 
 ### KI-016: `create_environment` Fails with `frozen_instance` Error When `environment_root_path` Is Provided
-**Status**: Open — not yet fixed in `main` or in any released package
+**Status**: Fixed locally — fix not yet committed or released
 **Jira**: [DESK-1384](https://anaconda.atlassian.net/browse/DESK-1384)
 **Bug introduced**: commit `b9184c8` ("feat: create environment with custom root", 2026-02-19) — added `environment_root_path` support with wrong implementation
 **Severity**: High (blocks environment creation when `environment_root_path` is supplied)

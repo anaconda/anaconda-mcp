@@ -30,8 +30,9 @@ _ENV_NAME = "ki016-regression-test"
 class TestCreateEnvironmentWithRootPath:
     """KI-016: conda_create_environment with environment_root_path must never return a frozen_instance error."""
 
-    def test_ki016_no_frozen_instance_error(self, session_id):
+    def test_ki016_no_frozen_instance_error(self, session_id, cleanup_conda_env):
         """No Pydantic frozen_instance error when environment_root_path is provided (KI-016)."""
+        cleanup_conda_env(_ENV_NAME)
         logger.info(
             "KI-016: create_environment with environment_root_path='%s'",
             NONEXISTENT_ENV_PREFIX,
@@ -53,7 +54,7 @@ class TestCreateEnvironmentWithRootPath:
         )
         logger.info("KI-016: result: %s", result)
 
-    def test_ki016_response_is_parseable_with_root_path(self, session_id):
+    def test_ki016_response_is_parseable_with_root_path(self, session_id, cleanup_conda_env):
         """
         Response must be a parseable tool result, not a raw JSON-RPC error body (KI-016).
 
@@ -61,6 +62,7 @@ class TestCreateEnvironmentWithRootPath:
         dispatcher, causing _tool_result() to return {}.  A conda-level error or
         a success result are both acceptable; an empty dict is not.
         """
+        cleanup_conda_env(_ENV_NAME)
         logger.info(
             "KI-016: create_environment with environment_root_path='%s'",
             NONEXISTENT_ENV_PREFIX,

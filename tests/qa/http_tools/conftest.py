@@ -248,6 +248,29 @@ def conda_env():
     )
 
 
+@pytest.fixture(scope="module")
+def cleanup_conda_env():
+    """
+    Return a callable that registers conda environment names for removal after the module.
+
+    Usage in a test or fixture::
+
+        def test_something(cleanup_conda_env):
+            cleanup_conda_env("my-env")   # registered; removed after the module
+    """
+    registered: list[str] = []
+
+    yield registered.append
+
+    for name in registered:
+        logger.info("Removing conda environment '%s'", name)
+        subprocess.run(
+            ["conda", "env", "remove", "-n", name, "-y"],
+            check=False,
+            capture_output=True,
+        )
+
+
 # ---------------------------------------------------------------------------
 # HTML report metadata
 # ---------------------------------------------------------------------------
