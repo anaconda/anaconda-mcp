@@ -212,6 +212,30 @@ But this command starts server in **STDIO mode**, not HTTP mode. Claude Desktop 
 
 ---
 
+### KI-018: First `conda_list_environments` Call Always Hangs on Windows (Cold-Start Timeout)
+**Status**: Open — [DESK-1385](https://anaconda.atlassian.net/browse/DESK-1385)
+**Severity**: High
+**Component**: `environments_mcp_server`
+**Platform**: Windows only
+**Auth state**: Any (logged in or logged out)
+**Bug report**: [`KI-018-bug-report.md`](win_start/KI-018-bug-report.md)
+
+The first conda tool call after server startup always exceeds the 30-second GET SSE stream timeout on Windows. Windows cold-start overhead (DLL loading, Windows Defender scanning, conda batch script activation) makes the first `conda` invocation take >30 seconds. The result is computed and returned by the server ("duplicate response suppressed") but is lost in the proxy layer. On macOS the identical call completes in <1 second. Fix: pre-warm conda in `environments_mcp_server` at startup time.
+
+---
+
+### KI-019: After First-Call Hang on Windows, Retry Also Fails When User Is Logged In
+**Status**: Open — [DESK-1386](https://anaconda.atlassian.net/browse/DESK-1386)
+**Severity**: High
+**Component**: `environments_mcp_server` / `anaconda_mcp` auth/telemetry
+**Platform**: Windows only
+**Auth state**: Logged in (telemetry initialized)
+**Bug report**: [`KI-019-bug-report.md`](win_start/KI-019-bug-report.md)
+
+When the user is logged in, the retry after the KI-018 first-call hang also fails with `unhandled errors in a TaskGroup`. Telemetry initialization causes additional background work per tool call; after the GET SSE stream disconnects and reconnects, this work encounters an unhandled error that corrupts the async task group. Logged-out sessions recover on retry (no telemetry work → no corruption). Fix KI-018 to eliminate the trigger; additionally harden telemetry error handling to degrade gracefully on session invalidation.
+
+---
+
 ### KI-011: mcp-compose Proxy Hangs and Corrupts Session on Tool Error
 **Status**: Partially Fixed — Two contributing factors identified
 **Internal Ticket**: [DESK-1355](https://anaconda.atlassian.net/browse/DESK-1355)
@@ -276,22 +300,7 @@ This confirms `mcp-compose` **received the result from `environments_mcp_server`
 
 **Note on March 10 session**: A similar first-call hang with "duplicate response suppressed" was observed on 2026-03-10 (rapid init/close cycles, full Anaconda install). Same proxy response-loss pattern; different precondition.
 
-**Note on March 11 session (Windows, stdio transport, 2026-03-11)**: Same first-call hang observed on Windows with Claude Desktop (stdio transport, `mcp-compose` in STDIO mode connecting to `environments_mcp_server` on `localhost:4041`).
-
-**Exact sequence**:
-
-1. Claude Desktop started; two rapid init/shutdown cycles fired before server stabilized (21:49:13–21:49:16)
-2. Server came up at 21:49:26 with 6 tools registered; `anaconda_mcp serve --delay 5` was the configured command
-3. First tool call `conda_list_environments` (request 4) sent at 17:50:16
-4. `mcp-compose` opened a new session to `environments_mcp_server`, POST → 200 OK, GET SSE stream opened
-5. GET SSE stream disconnected at 17:50:46 (~30s after call); reconnected at 17:51:17
-6. In parallel: auth login timed out at 17:50:22 (`Timed out waiting for login; telemetry not initialized`) — unrelated to the hang, see KI-014
-7. Claude Desktop sent cancellation at 21:54:16 (4-minute client timeout): `MCP error -32001: Request timed out`
-8. `Request 4 cancelled - duplicate response suppressed` — server had already computed the result, but the GET stream was on a new connection; response discarded
-9. Claude reported "No result received from client-side tool execution" with generic troubleshooting suggestions
-10. User asked to retry; second call (request 5) at 17:54:56 succeeded in ~2 seconds
-
-Same proxy response-loss mechanism as Mac observations: result was computed and received by `mcp-compose`, but the GET SSE stream had disconnected and reconnected by the time it arrived, so it was suppressed. Trigger: degraded startup (rapid init/close cycles). The auth timeout coincided with the call window but was not a contributing cause.
+**Windows first-call hang (2026-03-11)**: The same `duplicate response suppressed` mechanism was reproduced on Windows (stdio transport, Claude Desktop). Root cause and full investigation — including 5 test sessions, macOS comparison, and auth-state analysis — are documented in [KI-018](win_start/KI-018-bug-report.md) (cold-start hang, any auth state) and [KI-019](win_start/KI-019-bug-report.md) / [DESK-1386](https://anaconda.atlassian.net/browse/DESK-1386) (telemetry blocks retry when logged in).
 
 **Workaround**: Restart `mcp-compose` when hangs occur:
 ```bash
@@ -729,6 +738,89 @@ The KI-013 delays accidentally **prevent** KI-011 hangs by acting as a cooldown 
 ---
 
 ## Setup Quirks
+
+### KI-017: `environments_mcp_server` Survives Claude Desktop Shutdown on Windows — Port 4041 Held by Stale Process on Restart
+**Status**: Open — to be filed (mcp-compose + defensive fix in our code)
+**Severity**: Medium
+**Component**: `mcp-compose` (primary) / `anaconda_mcp` startup (secondary)
+**Platform**: Windows (process orphaning is default OS behavior; Unix signal propagation makes this less likely on macOS/Linux)
+**Observed**: 2026-03-11, Windows, Claude Desktop (stdio transport)
+
+**Description**: When Claude Desktop is closed, the STDIO pipe to `python -m anaconda_mcp serve` breaks, but `environments_mcp_server` (a grandchild process) is not terminated. On Windows, processes orphan by default when their parent exits unless the parent explicitly cleans them up. `mcp-compose` does not do this. On next Claude Desktop startup, `mcp-compose` attempts to start a new `environments_mcp_server` on port 4041 — but the stale process from the previous session still holds the port.
+
+**Observed failure sequence (2026-03-11)**:
+```
+# Previous session: environments_mcp_server PID 3580 running on port 4041
+# Claude Desktop closed — PID 3580 survived
+# Claude Desktop reopened:
+Process started (PID: 11612)                        ← new process can't bind port 4041
+POST http://localhost:4041/mcp → 200 OK             ← connects to stale PID 3580, gets session
+POST http://localhost:4041/mcp → 404 Not Found      ← stale process rejects new requests
+GET  http://localhost:4041/mcp → 404 Not Found
+GET stream disconnected, reconnecting in 1000ms...
+Streamable HTTP server conda failed during tool registration: unhandled errors in a TaskGroup
+Total tools: 0                                       ← no tools registered
+```
+Claude Desktop showed anaconda-mcp as non-active with a warning.
+
+**Process tree**:
+```
+Claude Desktop (Electron)
+  └── Node.js [anaconda-mcp] wrapper          ← killed on Claude Desktop exit ✓
+        └── python -m anaconda_mcp serve      ← killed when STDIO pipe closes ✓
+              └── environments_mcp_server     ← NOT killed — orphaned on Windows ✗
+```
+
+**Root cause — two layers**:
+
+1. **mcp-compose** (primary): Does not register an `atexit` handler or Windows Job Object to terminate child processes on shutdown. On Unix, process group signals propagate; on Windows they do not. This is a mcp-compose bug.
+
+2. **Our code** (defensive gap): `mcp-compose` startup does not check whether port 4041 is already bound before connecting. It connects to whatever is on the port, gets a session from the stale process, and only fails later during tool registration. A pre-startup port check (detect stale process → kill it → retry) would prevent the cascade.
+
+**Not a Claude Desktop issue**: Claude Desktop correctly closes the STDIO pipe on exit. It has no visibility into grandchild processes.
+
+**macOS not affected**: Verified 2026-03-11 — port 4041 is empty after closing Claude Desktop on macOS. Unix process group signaling propagates termination to child processes correctly. KI-017 is Windows-only.
+
+> **Note on macOS process check**: `pgrep -fa "anaconda_mcp"` and `pgrep -fa "environments_mcp"` produce false positives on macOS when the project directories are open in Cursor IDE (directory paths contain those strings). Use `lsof -ti:4041` as the reliable indicator, or filter specifically with `pgrep -fa "python.*-m anaconda_mcp"` / `pgrep -fa "python.*-m environments_mcp"`.
+
+**Workaround**: Kill the stale process(es) manually before restarting Claude Desktop.
+
+> **Note**: `taskkill /FI "WINDOWTITLE eq ..."` does **not** work for background Python processes — they have no window title and the filter matches nothing. Use command-line or port-based lookup instead.
+
+> **Note**: Multiple stale processes can accumulate across sessions. `netstat` may show **two** listeners on port 4041 — one bound to `0.0.0.0:4041` and one to `127.0.0.1:4041`. Windows allows this when bindings differ by interface. `mcp-compose` connects to `127.0.0.1:4041` and hits whichever process responds first, making failures unpredictable. Kill **all** PIDs shown by `findstr :4041`.
+>
+> Observed (2026-03-11):
+> ```
+> TCP    0.0.0.0:4041    0.0.0.0:0    LISTENING    9664   ← stale from earlier session
+> TCP    127.0.0.1:4041  0.0.0.0:0    LISTENING    11612  ← stale from previous session
+> ```
+
+**Option 1 — by port** (most precise — kills exactly what holds port 4041):
+```cmd
+netstat -ano | findstr :4041
+taskkill /F /PID <first PID>
+taskkill /F /PID <second PID if present>
+```
+
+**Option 2 — by command line (PowerShell, Windows 11)**:
+> `wmic` is removed in Windows 11 22H2+; use `Get-CimInstance` instead.
+```powershell
+Get-CimInstance Win32_Process | Where-Object {$_.CommandLine -like "*environments_mcp*"} | Select-Object ProcessId, CommandLine
+taskkill /F /PID <PID from above>
+```
+
+**Option 3 — PowerShell one-liner** (find and kill in one step):
+```powershell
+Get-CimInstance Win32_Process | Where-Object {$_.CommandLine -like "*environments_mcp*"} | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }
+```
+
+**Relation to KI-011**: Fixing KI-017 (killing stale processes) prevents the "0 tools registered" failure but does **not** prevent the first-call hang (KI-011 pattern). The rapid init/shutdown cycles that trigger KI-011 are inherent to Claude Desktop's startup protocol negotiation and occur regardless of process state.
+
+**To file**:
+- Against `mcp-compose`: add Windows-safe child process cleanup on STDIO EOF / process exit
+- Against `anaconda_mcp`: add port 4041 availability check at startup; kill stale process if found
+
+---
 
 ### SQ-001: Claude Desktop Capability Setting
 **Description**: Users must enable "Code execution and file creation" in Claude Desktop settings.
