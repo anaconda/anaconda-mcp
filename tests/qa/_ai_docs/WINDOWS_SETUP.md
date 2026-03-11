@@ -105,6 +105,41 @@ pip install --force-reinstall anaconda-mcp==1.0.0.rc.1 environments-mcp-server==
 
 ---
 
+## Use a Specific Branch or Local Fix with Claude Desktop
+
+Use this when you want Claude Desktop to run against a specific branch — e.g. latest `main` for `anaconda-mcp` and a bug-fix branch for `environments-mcp`.
+
+**Prerequisites:** repos cloned locally and the desired branch checked out.
+
+**Step 1 — Install both packages from local source (no activation needed):**
+
+```bat
+conda run -n anaconda-mcp-rc-pyXY pip install -e C:\projects\anaconda-mcp
+conda run -n anaconda-mcp-rc-pyXY pip install -e C:\projects\environments-mcp
+```
+
+**Step 2 — Verify both show local paths and dev versions:**
+
+```bat
+conda run -n anaconda-mcp-rc-pyXY pip list | findstr /R "anaconda-mcp environments-mcp"
+```
+
+Expected:
+```
+anaconda-mcp              1.0.0rc2.dev1+g...  C:\projects\anaconda-mcp
+environments-mcp-server   0.1.dev223+g...     C:\projects\environments-mcp
+```
+
+**Step 3 — Restart Claude Desktop** so it picks up the new code. See [WINDOWS_CLAUDE_CODE.md](./WINDOWS_CLAUDE_CODE.md) for how to fully kill and relaunch it.
+
+**To revert to the released RC version:**
+
+```bat
+conda run -n anaconda-mcp-rc-pyXY pip install --force-reinstall anaconda-mcp==1.0.0.rc.1 environments-mcp-server==1.0.0.rc.1
+```
+
+---
+
 ## Troubleshooting Windows-Specific Issues
 
 ### Server hangs or tests timeout

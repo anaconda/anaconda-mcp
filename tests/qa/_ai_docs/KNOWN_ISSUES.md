@@ -276,6 +276,23 @@ This confirms `mcp-compose` **received the result from `environments_mcp_server`
 
 **Note on March 10 session**: A similar first-call hang with "duplicate response suppressed" was observed on 2026-03-10 (rapid init/close cycles, full Anaconda install). Same proxy response-loss pattern; different precondition.
 
+**Note on March 11 session (Windows, stdio transport, 2026-03-11)**: Same first-call hang observed on Windows with Claude Desktop (stdio transport, `mcp-compose` in STDIO mode connecting to `environments_mcp_server` on `localhost:4041`).
+
+**Exact sequence**:
+
+1. Claude Desktop started; two rapid init/shutdown cycles fired before server stabilized (21:49:13–21:49:16)
+2. Server came up at 21:49:26 with 6 tools registered; `anaconda_mcp serve --delay 5` was the configured command
+3. First tool call `conda_list_environments` (request 4) sent at 17:50:16
+4. `mcp-compose` opened a new session to `environments_mcp_server`, POST → 200 OK, GET SSE stream opened
+5. GET SSE stream disconnected at 17:50:46 (~30s after call); reconnected at 17:51:17
+6. In parallel: auth login timed out at 17:50:22 (`Timed out waiting for login; telemetry not initialized`) — unrelated to the hang, see KI-014
+7. Claude Desktop sent cancellation at 21:54:16 (4-minute client timeout): `MCP error -32001: Request timed out`
+8. `Request 4 cancelled - duplicate response suppressed` — server had already computed the result, but the GET stream was on a new connection; response discarded
+9. Claude reported "No result received from client-side tool execution" with generic troubleshooting suggestions
+10. User asked to retry; second call (request 5) at 17:54:56 succeeded in ~2 seconds
+
+Same proxy response-loss mechanism as Mac observations: result was computed and received by `mcp-compose`, but the GET SSE stream had disconnected and reconnected by the time it arrived, so it was suppressed. Trigger: degraded startup (rapid init/close cycles). The auth timeout coincided with the call window but was not a contributing cause.
+
 **Workaround**: Restart `mcp-compose` when hangs occur:
 ```bash
 pkill -9 -f "anaconda-mcp"
@@ -662,6 +679,52 @@ The KI-013 delays accidentally **prevent** KI-011 hangs by acting as a cooldown 
 - `timeout = 5`: Slow but fewer hangs (use for long test runs)
 
 **To report**: File issue against `mcp-compose` — the root cause is connection pool management, not timeout handling
+
+---
+
+### KI-014: Anaconda Login Initiated on Every Startup Without User Request; Telemetry Silently Uninitialized When Skipped
+**Status**: Open — to be filed
+**Severity**: Medium
+**Component**: `anaconda_mcp` — auth / telemetry initialization
+**Observed**: 2026-03-11, Windows, Claude Desktop (stdio transport)
+
+**Description**: On every server startup `anaconda_mcp` immediately launches an Anaconda login flow in the background, opening a browser authentication page without any user request. If the user ignores the browser window (e.g. is working with local conda environments and does not use Anaconda cloud), the auth poll times out after ~60 seconds and telemetry is left uninitialized for the entire session — silently, with no user-facing indication.
+
+**Observed log sequence**:
+```
+2026-03-11 17:49:21 - anaconda_mcp.auth - INFO - Starting Anaconda login in background
+2026-03-11 17:50:22 - anaconda_mcp.auth - INFO - Timed out waiting for login; telemetry not initialized
+```
+
+**Problems**:
+1. **Uninvited browser window**: Browser opens on every startup regardless of whether the user is authenticated or intends to authenticate. Unexpected for users doing local, offline, or unauthenticated conda work.
+2. **~60-second background wait**: Auth polling runs through the first tool call window, adding unnecessary background activity during a sensitive startup period.
+3. **Silent telemetry failure**: After timeout, telemetry is uninitialized with no user-visible message — analytics and error-reporting are silently dropped for the whole session.
+4. **Unauthenticated use case not handled**: Users with no Anaconda cloud account (or who simply skip login) get a browser popup + a timeout log on every restart.
+
+**Expected behavior**:
+- If a cached token exists and is valid: re-use it silently; do not open a browser.
+- If no token exists: do not open a browser unprompted; either skip auth entirely or surface a non-blocking, opt-in prompt.
+- Telemetry initialization should not depend on a 60-second interactive login wait; it should degrade gracefully and immediately when auth is unavailable.
+
+**Impact**: Poor UX for unauthenticated users; browser window opened without consent; silent telemetry loss for every non-authenticated session.
+
+**Workaround (authenticated users)**:
+1. Fully close Claude Desktop
+2. Kill leftover server processes — on Windows, closing Claude Desktop does **not** reliably terminate child processes; `environments_mcp_server` keeps running and holds port 4041:
+   ```
+   taskkill /F /IM python.exe /FI "WINDOWTITLE eq environments_mcp*"
+   ```
+   Or identify and kill the PID directly (visible in the previous `mcp_server.log` as `Process started (PID: XXXX)`).
+3. Complete the Anaconda login in the browser (already open, or navigate to `anaconda.cloud` manually)
+4. Reopen Claude Desktop — the cached token is picked up on startup, auth completes silently, telemetry initializes normally
+
+**Confirmed (2026-03-11, Windows test)**:
+- Step 1–4 above: auth fix **confirmed** — log opened with `Initializing telemetry` immediately; no browser window, no timeout
+- However: port 4041 was still held by the previous `environments_mcp_server` (step 2 was skipped) → new session returned HTTP 404 on all requests after initial handshake → tool registration failed → **0 tools registered** → Claude Desktop showed anaconda-mcp as non-active with a warning
+- This confirms that killing leftover processes (step 2) is required as part of the workaround; see also KI-012 (port 4041 occupied by stale process)
+
+**Note for unauthenticated / non-auth testing**: No clean workaround exists. Closing the browser window or ignoring it always results in the 60-second timeout and uninitialized telemetry. The fix must come from the server side (graceful degradation when no credentials are present).
 
 ---
 
