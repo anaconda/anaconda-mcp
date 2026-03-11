@@ -253,6 +253,29 @@ But this command starts server in **STDIO mode**, not HTTP mode. Claude Desktop 
 
 **Root cause hypothesis**: The downstream server (environments_mcp_server) sends the HTTP headers but fails to write the SSE event body when rapid sequential calls exhaust some resource (connection pool, file descriptors, etc.).
 
+**Additional observation — hang on first single call (2026-03-11, one-time, not reproducible)**:
+
+The hang was observed **once** on the very first `conda_list_environments` tool call — no prior error-returning calls, no prior disconnects. Observed once, not reproduced in subsequent sessions. Kept here as field evidence supporting KI-011/KI-013, not as a standalone reproducible bug.
+
+**Exact sequence (2026-03-11, first Claude session of the day)**:
+
+1. Claude Desktop had `anaconda3\envs\anaconda-mcp-rc-py311\python.exe` in config — that env no longer existed
+2. PI-004 ENOENT retry loop fired: 3 rapid failed spawns (18:42:53–18:42:58)
+3. Config updated to `miniconda3\envs\anaconda-mcp-rc-py310\python.exe`; Claude Desktop reconnected with several rapid init/shutdown cycles
+4. Server eventually came up; tools registered
+5. First tool call `conda_list_environments` → hung: GET stream dropped at ~30s (= `timeout=30`), reconnect succeeded, result never arrived
+6. Claude Desktop restarted; all subsequent sessions ran `conda_list_environments` successfully in ~1s
+
+**Key evidence — "duplicate response suppressed"**:
+
+```
+Request 4 cancelled - duplicate response suppressed
+```
+
+This confirms `mcp-compose` **received the result from `environments_mcp_server`** but discarded it because the GET SSE stream had already disconnected and Claude had timed out. The server did its job — the response was lost in the proxy layer. This is the same response-loss mechanism documented in KI-011/KI-013, triggered here by a degraded startup (ENOENT loop + rapid init/close cycles) rather than many rapid error calls.
+
+**Note on March 10 session**: A similar first-call hang with "duplicate response suppressed" was observed on 2026-03-10 (rapid init/close cycles, full Anaconda install). Same proxy response-loss pattern; different precondition.
+
 **Workaround**: Restart `mcp-compose` when hangs occur:
 ```bash
 pkill -9 -f "anaconda-mcp"
@@ -428,6 +451,97 @@ Incomplete restart:
 - The new config is never read until all Claude processes are fully killed.
 
 - **Workaround**: See [WINDOWS_CLAUDE_CODE.md](./tests/qa/_ai_docs/WINDOWS_CLAUDE_CODE.md) for full step-by-step instructions.
+
+### KI-016: `create_environment` Fails with `frozen_instance` Error When `environment_root_path` Is Provided
+**Status**: Fixed in main — not yet in a released package
+**Fix**: commit `b9184c8` ("feat: create environment with custom root", 2026-02-19), merged via PR #36 (DESK-1329) on 2026-03-09
+**Severity**: High (blocks environment creation when `environment_root_path` is supplied)
+**Component**: `environments_mcp_server`
+**Affected versions**: 1.0.0.rc.1 and earlier (bug still present in installed packages)
+**Discovered**: March 2026, Windows QA
+**Regression test**: `tests/qa/http_tools/test_create_environment_root_path.py`
+
+**Description**: Calling `create_environment` with a non-null `environment_root_path` raises a Pydantic validation error and the tool returns an unhandled exception. The LLM receives no meaningful error message.
+
+**Error**:
+```
+1 validation error for ContextConfig
+root_path
+  Instance is frozen [type=frozen_instance, input_value=WindowsPath('C:/Users/.../miniconda3/envs'), input_type=WindowsPath]
+```
+
+**Root cause** — two bugs on the same line in `create_environment.py`:
+
+1. **Wrong field name**: `ContextConfig` has no `root_path` field. The correct field is `root_prefix`.
+2. **Frozen model mutation**: `ContextConfig` uses `model_config = ConfigDict(frozen=True)`, so direct attribute assignment always raises `frozen_instance`. The correct pattern is the `.merge()` method, which is already used correctly in the `else` branch.
+
+**Buggy code** (`create_environment.py`):
+```python
+if environment_root_path is not None:
+    conda_config.root_path = Path(environment_root_path)  # wrong field + frozen model
+```
+
+**Fix**:
+```python
+if environment_root_path is not None:
+    conda_config = conda_config.merge(root_prefix=Path(environment_root_path))
+```
+
+**Actual call sequence observed in logs (2026-03-11)**:
+
+This bug is a *secondary* failure — the LLM's self-recovery attempt after a prior silent failure. The full sequence:
+
+1. `conda_list_environments` → returns environments, but **KI-002 is active**: the server's own env (`anaconda-mcp-rc-py310`) is labeled `"name": "base"`, and the real conda root (`miniconda3`) is labeled `"name": "miniconda3"`.
+
+2. `conda_create_environment(environment_name="e2e-test", packages=["python=3.11"])` — **no `environment_root_path`** → silent `"There was an error while creating the environment."` (id=5). **This first failure is caused by KI-002/KI-003**: `get_distributions()` returns the server's own env as the first distribution (misclassified as "base"), so `root_prefix` is set to `miniconda3\envs\anaconda-mcp-rc-py310` (wrong). Conda tries to create the env under that path, fails, and the broad `except Exception` swallows the real error.
+
+3. LLM self-recovers by retrying with an explicit `environment_root_path: "C:\\Users\\...\\miniconda3\\envs"` (id=6) → hits the frozen_instance bug (KI-016).
+
+```
+conda_list_environments → KI-002: wrong "base" label
+  ↓
+create_environment (no environment_root_path)
+  → get_distributions() returns wrong prefix (KI-003)
+  → conda fails under wrong root
+  → broad except swallows real error
+  → "There was an error while creating the environment."
+  ↓
+LLM retries with environment_root_path
+  → frozen_instance bug (KI-016) ← THIS IS WHAT THE USER SEES
+```
+
+**Why `environment_root_path` is never passed on macOS**: On macOS, `get_distributions()` returns the correct conda root (KI-002 does not trigger, or the default distribution resolution works correctly), so the first create attempt succeeds and the LLM never reaches the retry with `environment_root_path`. The KI-016 code path is never hit.
+
+**Affected tools**: `create_environment` only (when `environment_root_path` is provided).
+
+**Related**: KI-002/KI-003 (root cause of the first silent failure that triggers the LLM retry), KI-014 (same `get_conda_config` area).
+
+---
+
+### PI-004: Claude Desktop Retries Indefinitely with Deleted Environment Path (`ENOENT`)
+**Status**: Open — configuration/UX issue
+**Severity**: Medium
+**Platform**: Windows (Claude Desktop)
+**Discovered**: 2026-03-11
+
+**Description**: When the Python executable referenced in Claude Desktop's MCP config no longer exists (e.g. the conda environment was deleted or renamed), Claude Desktop reports `spawn ENOENT` but immediately retries with the same broken path in a tight loop, printing the error 3+ times in rapid succession before giving up.
+
+**Observed in logs (2026-03-11 18:42)**:
+```
+spawn C:\Users\JuliaIliukhina\anaconda3\envs\anaconda-mcp-rc-py311\python.exe ENOENT
+... (repeated 3 times)
+Server disconnected.
+```
+
+**Context**: The `anaconda3\envs\anaconda-mcp-rc-py311` environment had been deleted (replaced by a `miniconda3`-based env), but the Claude Desktop config (`claude_desktop_config.json`) still pointed to the old path. Claude Desktop does not validate the path before spawning or surface a clear "file not found" message to the user.
+
+**Impact**: MCP server is completely non-functional until the config is updated to point to the new environment path. The repeated retry loop provides no additional diagnostic value.
+
+**Fix required**: Update `claude_desktop_config.json` to point to the correct Python executable. On Windows MSIX this requires writing to the virtualized config path (see PI-002 / WINDOWS_CLAUDE_CODE.md).
+
+**Workaround**: After deleting or renaming the conda environment used by the MCP server, update the config manually and do a full Claude Desktop restart (kill all processes — see PI-002).
+
+---
 
 ### KI-014: `get_conda_config` Not Awaited in `remove_environment` — Causes AttributeError
 **Status**: Open (Bug)

@@ -68,6 +68,43 @@ Windows-specific notes are included at the bottom of that guide.
 
 ---
 
+## Install Latest Main into an Existing RC Environment
+
+If you already have the RC environment created (via the `conda create` above) and want to replace the released packages with the latest `main` from local clones of both repos:
+
+**Step 1 — Activate the environment and install from local source:**
+
+```bat
+conda activate anaconda-mcp-rc-pyXY
+
+pip install -e C:\path\to\anaconda-mcp
+pip install -e C:\path\to\environments-mcp
+```
+
+Replace `C:\path\to\...` with the actual clone paths on your machine, e.g. `C:\Users\JuliaIliukhina\projects\anaconda-mcp`.
+
+**Step 2 — Verify the local versions are active:**
+
+```bat
+pip list | findstr /R "anaconda-mcp environments-mcp"
+```
+
+Expected output shows the local path instead of a version number:
+```
+anaconda-mcp              0.1.dev...  C:\path\to\anaconda-mcp
+environments-mcp-server   0.1.dev...  C:\path\to\environments-mcp
+```
+
+**Step 3 — Restart Claude Desktop** (kill all processes — see [WINDOWS_CLAUDE_CODE.md](./WINDOWS_CLAUDE_CODE.md)) so it picks up the updated packages.
+
+**To reset back to the released RC versions:**
+
+```bat
+pip install --force-reinstall anaconda-mcp==1.0.0.rc.1 environments-mcp-server==1.0.0.rc.1
+```
+
+---
+
 ## Troubleshooting Windows-Specific Issues
 
 ### Server hangs or tests timeout
