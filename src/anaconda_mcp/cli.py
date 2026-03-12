@@ -64,9 +64,9 @@ def serve(ctx, config, host, port, delay):
     def _handle_sigterm(signum, frame):
         logger.info("Received SIGTERM, shutting down...")
         sys.exit(0)
-    
+
     signal.signal(signal.SIGTERM, _handle_sigterm)
-    
+
     if not config:
         default_path = Path(__file__).resolve().parent / "mcp_compose.toml"
         if default_path.exists():
@@ -77,7 +77,7 @@ def serve(ctx, config, host, port, delay):
                 err=True,
             )
             sys.exit(1)
-    
+
     rendered_config = _render_config_template(config)
     time.sleep(delay)
     start_login(lambda x: x)
@@ -245,7 +245,6 @@ def claude_configure(config_path, server_name, transport, host, port, no_backup,
             force=force,
         )
 
-        # Convert paths to strings for output
         output = {
             "config_path": str(result["config_path"]),
             "backup_path": str(result["backup_path"]) if result["backup_path"] else None,
@@ -268,21 +267,18 @@ def claude_configure(config_path, server_name, transport, host, port, no_backup,
             if result["backup_path"]:
                 click.echo(f"[Backup] Saved to: {result['backup_path']}")
 
-            # Show diff
             click.echo("\n[Changes]")
             old_server = result.get("old_config", {}).get("mcpServers", {}).get(server_name)
             new_server = result.get("new_config", {}).get("mcpServers", {}).get(server_name)
-            
+
             if old_server is None:
                 click.echo(f"  + Added server '{server_name}'")
             elif old_server != new_server:
                 click.echo(f"  ~ Updated server '{server_name}'")
-            
-            # Show the specific server config
+
             click.echo(f"\n[Server Configuration: {server_name}]")
             click.echo(json.dumps(new_server, indent=2))
 
-            # Show complete config file
             click.echo("\n[Complete Configuration File]")
             click.echo(json.dumps(result.get("new_config", {}), indent=2))
 
@@ -348,7 +344,6 @@ def claude_remove_config(config_path, server_name, no_backup, output_json):
             backup=not no_backup,
         )
 
-        # Convert paths to strings for output
         output = {
             "config_path": str(result["config_path"]),
             "backup_path": str(result["backup_path"]) if result["backup_path"] else None,
