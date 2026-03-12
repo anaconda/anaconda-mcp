@@ -2,14 +2,15 @@
 
 ## Rationale for Reduced Matrix
 
-Based on RC1 findings (10 bugs filed, Phase 1 complete):
+Based on RC1 findings (13 bugs filed, Phase 1 complete):
 
 | Finding | Implication |
 |---------|-------------|
 | No transport-specific bugs | HTTP issues were config/proxy bugs, not transport layer |
 | No Python-version-specific bugs | Bugs reproduced across all versions |
 | Target client is Claude Desktop | STDIO transport only; HTTP is secondary |
-| Windows has unique bugs | Keep Windows coverage (DESK-1344, DESK-1363) |
+| Windows has unique bugs | Keep Windows coverage (DESK-1344, DESK-1363, DESK-1385, DESK-1386) |
+| **Auth state affects behavior on Windows** | DESK-1386 only manifests when logged in — RC1 missed this; Windows E2E must be run in both logged-in and logged-out states |
 
 ### What We Cut
 
@@ -37,12 +38,18 @@ Based on RC1 findings (10 bugs filed, Phase 1 complete):
 
 ### Configurations (4 total)
 
-| # | OS | Client | Python | Transport | QA |
-|---|-----|--------|--------|-----------|-----|
-| 1 | macOS | Claude Desktop | 3.13 | STDIO | QA 1 |
-| 2 | macOS | Claude Desktop | 3.10 | STDIO | QA 1 |
-| 3 | Windows | Claude Desktop | 3.13 | STDIO | QA 2 |
-| 4 | Windows | Claude Desktop | 3.10 | STDIO | QA 1 |
+| # | OS | Client | Python | Transport | Auth state | QA |
+|---|-----|--------|--------|-----------|------------|----|
+| 1 | macOS | Claude Desktop | 3.13 | STDIO | Logged in + **logged out if DESK-1385/1386 fixed** | QA 1 |
+| 2 | macOS | Claude Desktop | 3.10 | STDIO | Logged in | QA 1 |
+| 3 | Windows | Claude Desktop | 3.13 | STDIO | **Both** (see below) | QA 2 |
+| 4 | Windows | Claude Desktop | 3.10 | STDIO | **Both** (see below) | QA 1 |
+
+**Auth state on Windows**: each Windows config requires two passes — one logged out, one logged in. Required to catch regressions of [DESK-1386](https://anaconda.atlassian.net/browse/DESK-1386) (retry failure when logged in) and [DESK-1385](https://anaconda.atlassian.net/browse/DESK-1385) (first-call hang in any state).
+
+**Auth state on macOS**: currently safe to test logged-in only — DESK-1385/1386 trigger (GET stream disconnect) never fires on macOS as the first call completes in <1s. However, the fixes for DESK-1385/1386 will change `environments_mcp_server` startup (warmup) and telemetry error handling — code paths that run on macOS too. **Add one logged-out pass on macOS config 1 when DESK-1385/1386 fixes are included in RC2**, to catch any regressions introduced by those changes.
+
+> Until DESK-1385 and DESK-1386 are fixed, run Windows in **logged-out state only** as a workaround (see [WINDOWS_SETUP.md](./WINDOWS_SETUP.md#3-open-claude-desktop-and-wait-for-connection)).
 
 **Rationale**:
 - QA 1 takes 3 configs (71%) — macOS both + Windows 3.10
@@ -50,17 +57,19 @@ Based on RC1 findings (10 bugs filed, Phase 1 complete):
 
 ### Tests Per Configuration
 
-| Config | CORE-001 | AUTH-002 | GUARD-001 | Total Steps |
-|--------|----------|----------|-----------|-------------|
-| 1 (macOS, 3.13) | Yes | Yes | Yes | 13 |
-| 2 (macOS, 3.10) | Yes | — | — | 7 |
-| 3 (Windows, 3.13) | Yes | Yes | — | 11 |
-| 4 (Windows, 3.10) | Yes | — | — | 7 |
+| Config | CORE-001 logged out | CORE-001 logged in | AUTH-002 | GUARD-001 | Total tests |
+|--------|--------------------|--------------------|----------|-----------|-------------|
+| 1 (macOS, 3.13) | Yes | Yes | Yes | Yes | 4 |
+| 2 (macOS, 3.10) | — | Yes | — | — | 1 |
+| 3 (Windows, 3.13) | Yes | Yes | logged in only | Yes | 4 |
+| 4 (Windows, 3.10) | Yes | Yes | — | — | 2 |
 
 **Rationale**:
-- CORE-001: All configs — covers all 6 tools, catches regressions
-- AUTH-002: One per OS — credential pickup is OS-specific (different keychain/credential store)
-- GUARD-001: macOS only — guardrails are config-independent, run once
+- CORE-001 logged out (Windows): verifies DESK-1385 fix — first call must complete without hang
+- CORE-001 logged in (Windows): verifies DESK-1386 fix — retry after first-call hang must succeed; also the normal user scenario
+- CORE-001 (macOS config 1): both auth states — one pass catches any auth-state-dependent regressions introduced by DESK-1385/1386 fixes; config 2 logged-in only (baseline coverage sufficient)
+- AUTH-002: logged-in only by definition — tests credential pickup; running logged-out would duplicate CORE-001
+- GUARD-001: macOS config 1 + Windows config 3 — guardrails are config-independent but Windows has shown enough unexpected behavior to warrant explicit coverage there too
 
 ---
 
@@ -107,6 +116,9 @@ RC1 filed 10 bugs. Fixed bugs require verification before release.
 | HTTP transport | Low | Target is STDIO; HTTP bugs were config issues |
 | Cursor, Claude Code | Low | Same MCP protocol; client-specific bugs unlikely |
 | REGRESS-001 separate run | None | CORE-001 covers same flows |
+| Auth state on macOS (current code) | Low | DESK-1385/1386 trigger never fires on macOS; first call <1s, no auth-state-dependent behavior observed |
+| Auth state on macOS (after DESK-1385/1386 fix) | Medium | Fix touches startup warmup + telemetry error handling — both run on macOS; add logged-out pass on config 1 when fix is included |
+| ~~Auth state on Windows~~ | **Covered** | Added as explicit dimension in RC2 — both logged-in and logged-out passes required for all Windows configs |
 
 ---
 
@@ -130,15 +142,23 @@ macOS, Python 3.10:
 [ ] Setup: Install anaconda-mcp RC2, configure Claude Desktop
 [ ] CORE-001: Full tools flow
 
-Windows, Python 3.10:
-[ ] Setup: Install anaconda-mcp RC2, configure Claude Desktop
-[ ] CORE-001: Full tools flow
+Windows, Python 3.10 — logged out:
+[ ] Setup: kill Claude + port 4041, log out of Anaconda, install RC2, configure Claude Desktop
+[ ] CORE-001: Full tools flow (verifies DESK-1385 fix — first call must succeed without hang)
+
+Windows, Python 3.10 — logged in:
+[ ] Setup: kill Claude + port 4041, log in to Anaconda, install RC2, configure Claude Desktop
+[ ] CORE-001: Full tools flow (verifies DESK-1386 fix — retry after any hang must succeed)
 ```
 
 ### QA 2 (1 config)
 ```
-Windows, Python 3.13:
-[ ] Setup: Install anaconda-mcp RC2, configure Claude Desktop
-[ ] CORE-001: Full tools flow (if DESK-1344 fixed)
+Windows, Python 3.13 — logged out:
+[ ] Setup: kill Claude + port 4041, log out of Anaconda, install RC2, configure Claude Desktop
+[ ] CORE-001: Full tools flow (if DESK-1344 fixed; verifies DESK-1385 fix)
+
+Windows, Python 3.13 — logged in:
+[ ] Setup: kill Claude + port 4041, log in to Anaconda, install RC2, configure Claude Desktop
+[ ] CORE-001: Full tools flow (verifies DESK-1386 fix)
 [ ] AUTH-002: Authenticated mode
 ```

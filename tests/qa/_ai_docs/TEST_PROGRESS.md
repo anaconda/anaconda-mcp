@@ -2,8 +2,8 @@
 
 ## Summary
 
-- **Last updated**: 2026-03-10
-- **Bugs filed**: 10 (4 major / 1 moderate / 5 minor)
+- **Last updated**: 2026-03-11
+- **Bugs filed**: 13 (6 major / 2 moderate / 5 minor)
 
 | Phase | What | Status |
 |-------|------|--------|
@@ -22,6 +22,27 @@
 - [DESK-1363](https://anaconda.atlassian.net/browse/DESK-1363)
 - [DESK-1364](https://anaconda.atlassian.net/browse/DESK-1364)
 - [DESK-1366](https://anaconda.atlassian.net/browse/DESK-1366)
+- [DESK-1384](https://anaconda.atlassian.net/browse/DESK-1384)
+- [DESK-1385](https://anaconda.atlassian.net/browse/DESK-1385)
+- [DESK-1386](https://anaconda.atlassian.net/browse/DESK-1386)
+---
+
+## Windows Testing — Status & Recommendation (2026-03-11)
+
+Three Windows-specific bugs found during exploratory testing on 2026-03-11:
+
+| ID | Summary | Impact | Prerequisite for Windows testing |
+|----|---------|--------|----------------------------------|
+| [DESK-1384](https://anaconda.atlassian.net/browse/DESK-1384) | `conda_create_environment` fails with Pydantic `frozen_instance` error when `environment_root_path` is provided | `create_environment` always fails on Windows (LLM triggers the path because conda root is non-standard). `environment_root_path` is only a parameter of `create_environment` — other tools unaffected. | Fix must be merged before testing `create_environment` on Windows; `list`, `install`, `remove` can be tested without it |
+| [DESK-1385](https://anaconda.atlassian.net/browse/DESK-1385) | First tool call always hangs on Windows — Windows cold-start overhead exceeds 30s SSE timeout | Every Windows session: first request fails, ~4-minute wait, retry needed | Blocks all Windows E2E testing — every test starts with a failed first call |
+| [DESK-1386](https://anaconda.atlassian.net/browse/DESK-1386) | After first-call hang, retry also fails when user is logged in | Logged-in users: server fully unusable after startup until restarted | Makes Windows testing with auth impossible until fixed |
+
+**Recommendation**:
+
+- **DESK-1384 blocks `create_environment` testing on Windows only** — `environment_root_path` is exclusive to that tool; `list_environments`, `install_packages`, `remove_environment`, and `list_environment_packages` are unaffected and can be tested now.
+- **DESK-1385 and DESK-1386 should be treated as release blockers if Windows support is in scope for this release**: DESK-1385 means every Windows user hits a 4-minute hang on their very first action; DESK-1386 means logged-in users (the primary target audience) cannot use the product at all after that hang. Both require fixes in `environments_mcp_server` before Windows can be considered shippable.
+- If Windows is not in scope for this release, document DESK-1385 and DESK-1386 as known Windows limitations in the release notes.
+
 ---
 
 ## Phase 1: E2E Progress
@@ -38,7 +59,7 @@ See [TEST_MATRIX.md](./TEST_MATRIX.md) for full assignment rationale.
 | QA 2 | macOS | Cursor | 3.12 | STDIO | TESTS_E2E.md | ✅ Done | 2 passed / 3 failed / 1 blocked | DESK-1538; DESK-1539; DESK-1355; DESK-1341|
 | QA 2 | macOS | Claude Code | 3.10 | HTTP | TESTS_E2E.md | ✅ Done | 3 passed / 3 failed / 1 blocked | DESK-1358; DESK-1342; DESK-1355; DESK-1341 |
 | QA 1 | Windows | Claude Desktop | 3.13 | STDIO | TESTS_E2E.md | 🔶 Partial | 0 passed / 1 failed / 5 unexecuted | DESK-1344; DESK-1363; DESK-1364; DESK-1365 |
-| QA ? | Windows | Claude Desktop | 3.10 | STDIO | TESTS_E2E.md | ⬜ Not started  | 0 passed / 0 failed / 6 unexecuted | |
+| QA 2 | Windows | Claude Desktop | 3.10 | STDIO | TESTS_E2E.md | 🔶 Partial | 0 passed / 1 failed / 5 unexecuted | DESK-1384; DESK-1385; DESK-1386; DESK-1363 |
 
 
 ---
@@ -68,3 +89,6 @@ See [TEST_MATRIX.md](./TEST_MATRIX.md) for full assignment rationale.
 | [DESK-1363](https://anaconda.atlassian.net/browse/DESK-1363) | [Windows] claude-desktop setup-config writes config to wrong location and doesn't restart Claude Desktop | Minor | — | QA 1 · Windows · Claude Desktop · 3.13 · STDIO |
 | [DESK-1364](https://anaconda.atlassian.net/browse/DESK-1364) | Generic error message for: conda_create_environment | Minor | — | QA 1 · Windows · Claude Desktop · 3.13 · STDIO |
 | [DESK-1366](https://anaconda.atlassian.net/browse/DESK-1366) | `logger.exception()` causes server hang after ~15 calls | Major | [KI-015](./KNOWN_ISSUES.md#ki-015-loggerexception-causes-server-hang-after-15-calls) | QA 2 · macOS · anaconda-mcp-dev · 3.13 · HTTP/STDIO |
+| [DESK-1384](https://anaconda.atlassian.net/browse/DESK-1384) | `create_environment` fails with Pydantic `frozen_instance` error when `environment_root_path` provided | High | [KI-016](./KNOWN_ISSUES.md#ki-016) | QA 1 · Windows · Claude Desktop · 3.10 · STDIO |
+| [DESK-1385](https://anaconda.atlassian.net/browse/DESK-1385) | First tool call always hangs on Windows — cold-start overhead exceeds 30s SSE timeout | High | [KI-018](./KNOWN_ISSUES.md#ki-018) | QA 1 · Windows · Claude Desktop · 3.10 · STDIO |
+| [DESK-1386](https://anaconda.atlassian.net/browse/DESK-1386) | After first-call hang, retry also fails when user is logged in (telemetry blocks recovery) | High | [KI-019](./KNOWN_ISSUES.md#ki-019) | QA 1 · Windows · Claude Desktop · 3.10 · STDIO |

@@ -4,6 +4,86 @@ Before running anything on Windows, check your conda installation: [CONDA_SETUP.
 
 ---
 
+## Before Every Test Session
+
+Follow this checklist at the start of every session to avoid interference from previous runs.
+
+### 1. Kill Claude Desktop and leftover processes
+
+**Do not just click the X button** — Claude Desktop may keep running in the system tray or background.
+
+Fully terminate Claude Desktop via Task Manager:
+1. Press `Ctrl + Shift + Esc` to open Task Manager
+2. Find all **Claude** entries in the Processes list
+3. Right-click each → **End Task**
+4. Confirm no Claude processes remain before continuing
+
+Then clear any orphaned server processes on port 4041 (Claude Desktop does not kill child processes on Windows — see [KI-017](./KNOWN_ISSUES.md#ki-017)):
+
+```cmd
+netstat -ano | findstr :4041
+taskkill /F /PID <each PID listed>
+```
+
+Verify the port is clear before continuing — it should return no output:
+
+```cmd
+netstat -ano | findstr :4041
+```
+
+### 2. [If needed] Install the version under test
+
+To test a specific branch or local fix for either MCP, install both packages from local source into the RC environment:
+
+```bat
+conda run -n anaconda-mcp-rc-pyXY pip install -e C:\projects\anaconda-mcp
+conda run -n anaconda-mcp-rc-pyXY pip install -e C:\projects\environments-mcp
+```
+
+Verify:
+
+```bat
+conda run -n anaconda-mcp-rc-pyXY pip list | findstr /R "anaconda-mcp environments-mcp"
+```
+
+Expected output shows local paths and dev versions:
+```
+anaconda-mcp              1.0.0rc2.dev1+g...  C:\projects\anaconda-mcp
+environments-mcp-server   0.1.dev...          C:\projects\environments-mcp
+```
+
+To revert to the released RC:
+```bat
+conda run -n anaconda-mcp-rc-pyXY pip install --force-reinstall anaconda-mcp==1.0.0.rc.1 environments-mcp-server==1.0.0.rc.1
+```
+
+### 3. Open Claude Desktop and wait for connection
+
+Open Claude Desktop and wait until anaconda-mcp shows as **connected** (~10–13 seconds). Do not send any requests until it is connected.
+
+> **⚠️ Use Anaconda logged-out state for testing** ([DESK-1386](https://anaconda.atlassian.net/browse/DESK-1386)): when the user is logged in to Anaconda, the retry after the first-call hang also fails — making the session fully unusable. Until DESK-1386 is fixed, **log out of Anaconda before opening Claude Desktop** to ensure the retry recovers successfully.
+>
+> **Known**: The first tool call after startup always hangs on Windows ([DESK-1385](https://anaconda.atlassian.net/browse/DESK-1385)). This affects both logged-in and logged-out users. Wait for the timeout (~4 minutes), then retry — the retry succeeds when logged out.
+
+---
+
+## Collecting Evidence for Bug Reports
+
+When filing a bug, attach:
+
+### Conversation log
+Copy the full Claude conversation text from the chat window (select all, copy).
+
+### MCP server log
+1. In Claude Desktop: **File → Settings → Developer → anaconda-mcp → Open Logs**
+2. The log file opens in your default text editor
+3. Copy only the portion covering the time window of your test (timestamps are included on every line)
+4. Save as a `.log` file and attach to the ticket
+
+The log contains both the Claude Desktop transport layer (`[anaconda-mcp] [info] ...`) and the `mcp-compose` / `environments_mcp_server` output — everything needed to diagnose hangs, errors, and session issues.
+
+---
+
 ## Create the RC Environment
 
 Use **Miniconda Prompt** or **PowerShell** (not plain `cmd`). Paste the entire block at once — do not run line by line.
