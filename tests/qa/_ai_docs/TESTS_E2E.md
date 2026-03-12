@@ -139,6 +139,8 @@ conda remove -n anon-test --all -y
 
 **Why AUTH-001 does not cover this**: AUTH-001 step 3 hits an HTTP 404 due to a URL routing bug — conda resolves `repo.anaconda.cloud` to `conda.anaconda.org` before credentials are ever checked. This error is identical for authenticated and unauthenticated users and therefore cannot prove auth gating.
 
+**Root cause (per [DESK-1358](https://anaconda.atlassian.net/browse/DESK-1358) comments)**: The bug is not just a URL routing issue. `anaconda token install` does not set `channel_alias`, so conda cannot resolve private channel short names (e.g. `anaconda-internal/msys2`) to `repo.anaconda.cloud` by default. Even with a valid login, short channel names are routed to `conda.anaconda.org/<name>` — a non-existent address — producing HTTP 404. This makes the failure indistinguishable between authenticated and unauthenticated users.
+
 **What KI-005 must fix for this test to be executable**: The request to a private channel (e.g. `repo.anaconda.cloud` or `anaconda-internal/msys2`) must reach the actual channel endpoint, where an unauthenticated request should receive a `401 Unauthorized` or equivalent auth error.
 
 ### Prep
@@ -159,32 +161,60 @@ conda remove -n anon-test --all -y 2>/dev/null
 
 ## AUTH-002: Authenticated Mode
 
-**Purpose**: Verify the login flow works and the server picks up credentials for private Anaconda channels after authentication.
+**Purpose**: Verify the full authentication and token configuration flow works, and that conda routes package installs through `repo.anaconda.cloud` after proper token setup.
+
+> **Account requirement**: Use an account that has access to internal or private Anaconda channels — e.g. an Anaconda employee personal account or any account with `repo.anaconda.cloud` org channel access. A standard free account will produce the same results as an anonymous user, making step 4 unverifiable.
+
+> **Tool constraint**: `conda_install_packages` does not expose a channel parameter in its schema (`packages`, `environment`, `prefix` only). It is not possible to target a specific channel via MCP at install time. Auth proof therefore relies on terminal-side pre/post checks — not on anything the MCP tool itself asserts.
 
 ### Prep
+
+**Full token setup is required — `anaconda login` alone is not sufficient.**
+
+Per [DESK-1358](https://anaconda.atlassian.net/browse/DESK-1358), `anaconda auth` adds `channel_settings` to `.condarc` mapping `https://repo.anaconda.cloud/*` to use `anaconda-auth`, but does not configure `default_channels`. Without `anaconda token install` + `anaconda token config`, conda still routes `defaults` calls to `repo.anaconda.com` instead of `repo.anaconda.cloud`.
+
 ```bash
-# Login to Anaconda (browser will open)
+# Step 1: Login
 anaconda login
 
 # Verify logged in
 anaconda whoami
 # [EXPECTED] Shows your username
+
+# Step 2: Apply token configuration (required — not done by login alone)
+anaconda token install
+anaconda token config
+
+# Step 3: Verify default_channels now point to repo.anaconda.cloud
+conda config --show default_channels
+# [EXPECTED]
+#   - https://repo.anaconda.cloud/repo/main
+#   - https://repo.anaconda.cloud/repo/r
+#   - https://repo.anaconda.cloud/repo/msys2
+
+# Step 4: Verify channel_settings in .condarc
+conda config --show channel_settings
+# [EXPECTED] Entry for 'https://repo.anaconda.cloud/*' → 'anaconda-auth'
 ```
 
-> **Account requirement**: Use an account that has access to internal or private Anaconda channels — e.g. an Anaconda employee personal account or any account with `repo.anaconda.cloud` org channel access. A standard free account may not have private channel access and will produce the same results as an anonymous user, making step 3a unverifiable.
+> **Gate**: If `default_channels` still points to `repo.anaconda.com` or is unset after running the above, `anaconda token config` did not apply correctly. Do not proceed — results will be equivalent to anonymous mode and step 4 will be unverifiable.
 
-> Restart your client (Claude Desktop: Cmd+Q then reopen; Cursor: reload window; Claude Code: exit and restart the session) to pick up the new auth state.
+> Restart your client after completing prep (Claude Desktop: Cmd+Q then reopen; Cursor: reload window; Claude Code: exit and restart the session) to pick up the updated `.condarc`.
+
+### Steps
 
 | Step | Action | Expected |
 |------|--------|----------|
 | 1 | Ask: "List my conda environments" | Works |
 | 2 | Ask: "Create environment auth-test with Python 3.11" | Environment created |
 | 3 | Ask: "Install numpy in auth-test" | Package installed |
-| 3a | Run: `conda list -n auth-test --show-channel-urls \| grep numpy` | numpy URL contains `repo.anaconda.cloud` (confirms credentials were picked up). If URL only shows `pkgs/main` or `conda-forge`, credentials were **not** picked up — **fail**. |
+| 4 | Run: `conda list -n auth-test --show-channel-urls \| grep numpy` | numpy URL contains `repo.anaconda.cloud`. If URL shows only `pkgs/main` or `conda-forge`, token config did not take effect — **fail**. |
 
-> **Note on Step 2 (fresh environment required)**: Same constraint as AUTH-001 — the channel URL check in step 3a is only meaningful for a freshly created environment. Packages installed in a prior run while authenticated retain their `repo.anaconda.cloud` metadata even after logout. Always run the cleanup step between test runs.
+> **What step 4 actually proves**: The channel URL in the post-install check reflects where conda resolved the package from, which is determined by `default_channels` — configured in Prep, outside MCP. This is an indirect signal: it proves `anaconda token config` correctly redirected `defaults` to `repo.anaconda.cloud`, and that the MCP install call respected the conda config. It does **not** prove that MCP actively passed credentials — only that it used the system conda config, which had credentials wired in.
 
-> **Note on Step 3a**: This step is the *intended* auth signal, but whether authenticated users actually see `repo.anaconda.cloud` in channel URLs is **unconfirmed** — the credential routing issue tracked in [KI-005](./KNOWN_ISSUES.md#ki-005-channel-credentials-not-picked-up) / [DESK-1358](https://anaconda.atlassian.net/browse/DESK-1358) may prevent this. If step 3a shows only public channels even after confirmed login, treat it as a KI-005 symptom rather than a test failure.
+> **Note (fresh environment required)**: Step 4 is only a reliable signal for freshly created environments. Packages installed in a prior run while authenticated retain their `repo.anaconda.cloud` metadata even after logout. Always run the cleanup step between test runs.
+
+> **Note on KI-005**: If step 4 shows only public channels even after confirmed token setup, treat it as a KI-005 symptom rather than a test failure and record in your run notes.
 
 ### Cleanup
 ```bash
@@ -256,7 +286,7 @@ conda remove -n regress-remove-test --all -y 2>/dev/null
 2. CORE-001 - Full happy path
 3. GUARD-001 - Guardrails
 4. AUTH-001 - Anonymous mode
-5. AUTH-002 - Authenticated mode
+5. AUTH-002 - Authenticated mode (full token setup required)
 
 ---
 
@@ -268,4 +298,5 @@ conda remove -n guard-test --all -y 2>/dev/null
 conda remove -n regress-test --all -y 2>/dev/null
 conda remove -n regress-remove-test --all -y 2>/dev/null
 conda remove -n anon-test --all -y 2>/dev/null
+conda remove -n auth-test --all -y 2>/dev/null
 ```
