@@ -32,6 +32,15 @@ Based on RC1 findings (13 bugs filed, Phase 1 complete):
 
 **Manual split**: QA 1 takes majority (~3/4), QA 2 takes remainder (~1/4)
 
+## Documentation
+
+| Document | Purpose |
+|----------|---------|
+| [TESTS_E2E_RC2.md](./TESTS_E2E_RC2.md) | RC2-specific test definitions and modifications |
+| [TESTS_E2E.md](./TESTS_E2E.md) | Base E2E test definitions (reference) |
+| [KNOWN_ISSUES.md](./KNOWN_ISSUES.md) | Bug details and workarounds |
+| [WINDOWS_SETUP.md](./WINDOWS_SETUP.md) | Windows-specific setup instructions |
+
 ---
 
 ## E2E Test Matrix
@@ -49,7 +58,7 @@ Based on RC1 findings (13 bugs filed, Phase 1 complete):
 
 **Auth state on macOS**: currently safe to test logged-in only — DESK-1385/1386 trigger (GET stream disconnect) never fires on macOS as the first call completes in <1s. However, the fixes for DESK-1385/1386 will change `environments_mcp_server` startup (warmup) and telemetry error handling — code paths that run on macOS too. **Add one logged-out pass on macOS config 1 when DESK-1385/1386 fixes are included in RC2**, to catch any regressions introduced by those changes.
 
-> Until DESK-1385 and DESK-1386 are fixed, run Windows in **logged-out state only** as a workaround (see [WINDOWS_SETUP.md](./WINDOWS_SETUP.md#3-open-claude-desktop-and-wait-for-connection)).
+> **DESK-1385/1386 status**: Not confirmed fixed in RC2. Test both auth states on Windows and document failures explicitly — anaconda-connector changes may have affected behavior. See [WINDOWS_SETUP.md](./WINDOWS_SETUP.md#3-open-claude-desktop-and-wait-for-connection) for setup.
 
 **Rationale**:
 - QA 1 takes 3 configs (71%) — macOS both + Windows 3.10
@@ -57,19 +66,24 @@ Based on RC1 findings (13 bugs filed, Phase 1 complete):
 
 ### Tests Per Configuration
 
-| Config | CORE-001 logged out | CORE-001 logged in | AUTH-002 | GUARD-001 | Total tests |
-|--------|--------------------|--------------------|----------|-----------|-------------|
-| 1 (macOS, 3.13) | Yes | Yes | Yes | Yes | 4 |
-| 2 (macOS, 3.10) | — | Yes | — | — | 1 |
-| 3 (Windows, 3.13) | Yes | Yes | logged in only | Yes | 4 |
-| 4 (Windows, 3.10) | Yes | Yes | — | — | 2 |
+| Config | SETUP-001 | CORE-001 logged out | CORE-001 logged in | AUTH-002 | GUARD-001 | CHAN-001 | REGRESS-002 | Total tests |
+|--------|-----------|--------------------|--------------------|----------|-----------|----------|-------------|-------------|
+| 1 (macOS, 3.13) | Yes | Yes | Yes | Yes | Yes | Yes | Yes | 8 |
+| 2 (macOS, 3.10) | Yes | — | Yes | — | — | — | — | 2 |
+| 3 (Windows, 3.13) | Yes | Yes | Yes | logged in only | Yes | — | — | 5 |
+| 4 (Windows, 3.10) | Yes | Yes | Yes | — | — | — | — | 3 |
+
+> **New tests for RC2**: SETUP-001 (installation disclaimer), CHAN-001 (override_channels behavior), REGRESS-002 (DESK-1342 fix). See [TESTS_E2E_RC2.md](./TESTS_E2E_RC2.md) for details.
 
 **Rationale**:
+- SETUP-001: all configs — verifies terms & conditions disclaimer appears during installation (new RC2 feature)
 - CORE-001 logged out (Windows): verifies DESK-1385 fix — first call must complete without hang
 - CORE-001 logged in (Windows): verifies DESK-1386 fix — retry after first-call hang must succeed; also the normal user scenario
 - CORE-001 (macOS config 1): both auth states — one pass catches any auth-state-dependent regressions introduced by DESK-1385/1386 fixes; config 2 logged-in only (baseline coverage sufficient)
 - AUTH-002: logged-in only by definition — tests credential pickup; running logged-out would duplicate CORE-001
 - GUARD-001: macOS config 1 + Windows config 3 — guardrails are config-independent but Windows has shown enough unexpected behavior to warrant explicit coverage there too
+- CHAN-001: macOS config 1 only — verifies `override_channels` disabled by default (new RC2 behavior); config-independent, single config sufficient
+- REGRESS-002: macOS config 1 only — explicit DESK-1342 fix verification (environment name operations); critical RC2 claim
 
 ---
 
@@ -91,20 +105,12 @@ RC1 filed 10 bugs. Fixed bugs require verification before release.
 | Test | Reason |
 |------|--------|
 | REGRESS-001 | Fully overlaps with CORE-001 (same tools, same flows) |
-| REGRESS-002 | KI-003 regression covered by CORE-001 step 6 (delete by name) |
 | AUTH-001 | Anonymous mode = CORE-001 without login; implicit coverage |
 | AUTH-001a | Blocked by KI-005; still blocked in RC2 |
 
+> **Note**: REGRESS-002 was previously eliminated but is **reinstated for RC2** to explicitly verify the DESK-1342 fix (environment name operations). See [TESTS_E2E_RC2.md](./TESTS_E2E_RC2.md#regress-002-remove-environment-by-name-desk-1342-verification).
+
 ---
-
-## Comparison: RC1 vs RC2
-
-| Metric | RC1 | RC2 | Reduction |
-|--------|-----|-----|-----------|
-| Configurations | 9 | 4 | 56% |
-| Tests per config | 6 | 1-3 | 50-83% |
-| E2E manual steps | ~92 | 38 | 59% |
-| Bug fix retesting | — | 0 - ~10 | Additional, depends on how many bugs are fixed and included to rc2 |
 
 ---
 
@@ -116,9 +122,9 @@ RC1 filed 10 bugs. Fixed bugs require verification before release.
 | HTTP transport | Low | Target is STDIO; HTTP bugs were config issues |
 | Cursor, Claude Code | Low | Same MCP protocol; client-specific bugs unlikely |
 | REGRESS-001 separate run | None | CORE-001 covers same flows |
-| Auth state on macOS (current code) | Low | DESK-1385/1386 trigger never fires on macOS; first call <1s, no auth-state-dependent behavior observed |
-| Auth state on macOS (after DESK-1385/1386 fix) | Medium | Fix touches startup warmup + telemetry error handling — both run on macOS; add logged-out pass on config 1 when fix is included |
-| ~~Auth state on Windows~~ | **Covered** | Added as explicit dimension in RC2 — both logged-in and logged-out passes required for all Windows configs |
+| Auth state on macOS | Low | DESK-1385/1386 trigger never fires on macOS; first call <1s |
+
+> **Note on Windows auth state**: Not eliminated — explicitly tested in both logged-in and logged-out states. DESK-1385/1386 are not confirmed fixed, but anaconda-connector changes may affect behavior. Document failures explicitly.
 
 ---
 
@@ -134,16 +140,21 @@ RC1 filed 10 bugs. Fixed bugs require verification before release.
 ```
 macOS, Python 3.13:
 [ ] Setup: Install anaconda-mcp RC2, configure Claude Desktop
-[ ] CORE-001: Full tools flow
+[ ] SETUP-001: Installation disclaimer verification
+[ ] CORE-001: Full tools flow (with RC2 tool count verification)
 [ ] AUTH-002: Authenticated mode
-[ ] GUARD-001: Guardrails
+[ ] GUARD-001: Guardrails (with RC2 confirmation verification)
+[ ] CHAN-001: Override channels behavior (both parts A and B)
+[ ] REGRESS-002: DESK-1342 fix verification
 
 macOS, Python 3.10:
 [ ] Setup: Install anaconda-mcp RC2, configure Claude Desktop
+[ ] SETUP-001: Installation disclaimer verification
 [ ] CORE-001: Full tools flow
 
 Windows, Python 3.10 — logged out:
 [ ] Setup: kill Claude + port 4041, log out of Anaconda, install RC2, configure Claude Desktop
+[ ] SETUP-001: Installation disclaimer verification
 [ ] CORE-001: Full tools flow (verifies DESK-1385 fix — first call must succeed without hang)
 
 Windows, Python 3.10 — logged in:
@@ -155,10 +166,12 @@ Windows, Python 3.10 — logged in:
 ```
 Windows, Python 3.13 — logged out:
 [ ] Setup: kill Claude + port 4041, log out of Anaconda, install RC2, configure Claude Desktop
+[ ] SETUP-001: Installation disclaimer verification
 [ ] CORE-001: Full tools flow (if DESK-1344 fixed; verifies DESK-1385 fix)
 
 Windows, Python 3.13 — logged in:
 [ ] Setup: kill Claude + port 4041, log in to Anaconda, install RC2, configure Claude Desktop
 [ ] CORE-001: Full tools flow (verifies DESK-1386 fix)
 [ ] AUTH-002: Authenticated mode
+[ ] GUARD-001: Guardrails
 ```
