@@ -115,11 +115,28 @@ conda config --show default_channels
 # Step 4: Verify channel_settings in .condarc
 conda config --show channel_settings
 # [EXPECTED] Entry for 'https://repo.anaconda.cloud/*' → 'anaconda-auth'
+# [IF EMPTY] See Step 4a below
+
+# Step 4a: Manual fix if channel_settings is empty
+# (anaconda token config does not always set this correctly)
+# Edit ~/.condarc and add:
+#
+#   channel_settings:
+#     - channel: https://repo.anaconda.cloud/*
+#       auth: anaconda-auth
+#
+# Or use:
+echo -e "\nchannel_settings:\n  - channel: https://repo.anaconda.cloud/*\n    auth: anaconda-auth" >> ~/.condarc
+
+# Verify channel_settings is now set
+conda config --show channel_settings
 
 # Step 5: Restart Claude Desktop to pick up .condarc changes
 ```
 
 > **Gate**: If `default_channels` still points to `repo.anaconda.com` or is unset, do not proceed — token config did not apply correctly.
+>
+> **Note**: `anaconda token config` may not set `channel_settings` — manual Step 4a is often required.
 
 **RC2-specific verification**:
 
@@ -146,19 +163,31 @@ conda remove -n e2e-test --all -y 2>/dev/null
 # Logout
 anaconda logout
 
-# Remove token configuration to restore default channels
-anaconda token remove
-# Or manually:
-# conda config --remove-key default_channels
-# conda config --remove-key channel_settings
+# Remove token configuration
+# NOTE: `anaconda token remove` may fail with "CondaKeyError: 'signing_metadata_url_base'"
+# If it fails, skip and proceed with manual removal below
+anaconda token remove 2>/dev/null || true
+
+# Remove channel_settings from .condarc
+conda config --remove-key channel_settings 2>/dev/null || true
+
+# Remove default_channels
+conda config --remove-key default_channels 2>/dev/null || true
 
 # Verify logged out
 anaconda whoami
-# [EXPECTED] "You are not logged in"
+# [EXPECTED] "AuthenticationMissingError" or "You are not logged in"
 
 # Verify default_channels restored
 conda config --show default_channels
-# [EXPECTED] Empty or pointing to repo.anaconda.com (not repo.anaconda.cloud)
+# [EXPECTED]
+#   - https://repo.anaconda.com/pkgs/main
+#   - https://repo.anaconda.com/pkgs/r
+# (pointing to repo.anaconda.com, NOT repo.anaconda.cloud)
+
+# Verify channel_settings removed
+conda config --show channel_settings
+# [EXPECTED] Empty: channel_settings: []
 
 # Restart Claude Desktop to pick up .condarc changes
 ```
@@ -169,7 +198,9 @@ conda config --show default_channels
 
 Base test steps unchanged — see [TESTS_E2E.md](./TESTS_E2E.md#core-001-full-tools-flow).
 
-**Prerequisites** (logged-out state):
+> **Note**: This test uses PUBLIC channels (not repo.anaconda.cloud). For testing anonymous denial on private channels, see AUTH-001a.
+
+**Prerequisites** (logged-out state with public channels):
 ```bash
 # Step 1: Ensure logged out
 anaconda logout 2>/dev/null || true
@@ -178,19 +209,81 @@ anaconda logout 2>/dev/null || true
 anaconda whoami
 # [EXPECTED] "You are not logged in"
 
-# Step 2: Ensure no token configuration
+# Step 2: Remove token configuration
 anaconda token remove 2>/dev/null || true
 
-# Step 3: Verify default_channels do NOT point to repo.anaconda.cloud
+# Step 3: Remove channel_settings (including manually added)
+conda config --remove-key channel_settings 2>/dev/null || true
+
+# Step 4: Remove default_channels pointing to repo.anaconda.cloud
+conda config --remove-key default_channels 2>/dev/null || true
+
+# Step 5: Verify default_channels do NOT point to repo.anaconda.cloud
 conda config --show default_channels
 # [EXPECTED] Empty or pointing to repo.anaconda.com / defaults (NOT repo.anaconda.cloud)
 
-# Step 4: Restart Claude Desktop to pick up .condarc changes
+# Step 6: Verify channel_settings removed
+conda config --show channel_settings
+# [EXPECTED] Empty: channel_settings: []
+
+# Step 7: Restart Claude Desktop to pick up .condarc changes
 ```
 
 **RC2-specific verification**:
 
 Same as CORE-001 — count tool calls, verify DESK-1342 fix.
+
+---
+
+### AUTH-001a: Anonymous Mode — Private Channel Denial (RC2)
+
+Base test unchanged — see [TESTS_E2E.md](./TESTS_E2E.md#auth-001a-anonymous-mode--private-channel-denial).
+
+> **Status**: Unblocked in RC2 — URL routing fixed, test now executable.
+
+**Prerequisites** (logged-out state with private channel config):
+```bash
+# Step 1: Ensure logged out
+anaconda logout 2>/dev/null || true
+
+# Verify logged out
+anaconda whoami
+# [EXPECTED] "You are not logged in"
+
+# Step 2: KEEP default_channels pointing to repo.anaconda.cloud
+# (If not already set, run as logged-in user first: anaconda token install && anaconda token config)
+conda config --show default_channels
+# [EXPECTED]
+#   - https://repo.anaconda.cloud/repo/main
+#   - https://repo.anaconda.cloud/repo/r
+#   - https://repo.anaconda.cloud/repo/msys2
+
+# Step 3: KEEP channel_settings with anaconda-auth handler
+conda config --show channel_settings
+# [EXPECTED] Entry for 'https://repo.anaconda.cloud/*' → 'anaconda-auth'
+# (If empty, add manually — see CORE-001 Step 4a)
+
+# Step 4: Restart Claude Desktop
+```
+
+**Test**:
+Ask: "Create environment anon-test with Python 3.11"
+
+**Expected**:
+- HTTP 403 Forbidden on `repo.anaconda.cloud`
+- Error message: "You do not have permission to access this resource"
+- NOT 404 (wrong URL routing)
+- NOT silent fallback to public channel
+
+**Pass criteria**:
+- Request reaches correct URL (`repo.anaconda.cloud`) ✓
+- Explicit auth denial (403) ✓
+- Clear error message about authentication required ✓
+
+**Cleanup**:
+```bash
+conda remove -n anon-test --all -y 2>/dev/null
+```
 
 **RC2 Pass criteria** (in addition to base):
 - Total tool calls for flow: 7 (one per step)
@@ -273,6 +366,8 @@ Verify fixes claimed in RC2 release notes:
 
 Base test unchanged — see [TESTS_E2E.md](./TESTS_E2E.md#auth-002-authenticated-mode).
 
+> **Status**: Blocked by DESK-1401 — authenticated users get 403 (credentials not passed by MCP).
+
 **Prerequisites**: Same as CORE-001 (logged in) — see [CORE-001 prerequisites](#core-001-full-tools-flow--logged-in-rc2-modifications).
 
 **Cleanup** (after test):
@@ -283,19 +378,30 @@ conda remove -n auth-test --all -y 2>/dev/null
 # Logout
 anaconda logout
 
-# Remove token configuration to restore default channels
-anaconda token remove
-# Or manually:
-# conda config --remove-key default_channels
-# conda config --remove-key channel_settings
+# Remove token configuration
+# NOTE: `anaconda token remove` may fail with "CondaKeyError: 'signing_metadata_url_base'"
+# If it fails, skip and proceed with manual removal below
+anaconda token remove 2>/dev/null || true
+
+# Remove channel_settings from .condarc
+conda config --remove-key channel_settings 2>/dev/null || true
+
+# Remove default_channels
+conda config --remove-key default_channels 2>/dev/null || true
 
 # Verify logged out
 anaconda whoami
-# [EXPECTED] "You are not logged in"
+# [EXPECTED] "AuthenticationMissingError" or "You are not logged in"
 
 # Verify default_channels restored
 conda config --show default_channels
 # [EXPECTED] Empty or pointing to repo.anaconda.com (not repo.anaconda.cloud)
+
+# Verify channel_settings removed
+conda config --show channel_settings
+# [EXPECTED] Empty: channel_settings: []
+
+# Restart Claude Desktop to pick up .condarc changes
 
 # Restart Claude Desktop to pick up .condarc changes
 ```
