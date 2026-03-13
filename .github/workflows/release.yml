@@ -171,7 +171,9 @@ jobs:
         with:
           pattern: conda-package-*
           path: build/conda/
-          merge-multiple: true
+          # merge-multiple is intentionally omitted so each platform lands in its own
+          # subdirectory (conda-package-linux/, conda-package-macos/, conda-package-windows/)
+          # preventing filename collisions when attaching assets to the GitHub Release.
 
       - name: Determine if pre-release
         id: prerelease
