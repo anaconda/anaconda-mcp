@@ -124,25 +124,25 @@ Base test unchanged — see [TESTS_E2E.md](./TESTS_E2E.md#guard-001-guardrails).
 
 ---
 
-### REGRESS-002: Remove Environment by Name (DESK-1342 Verification)
+### REGRESS-002: Remove Environment by Name (RC2 Modifications)
 
-**Purpose**: Explicit verification that DESK-1342 (KI-003) is fixed in RC2.
+Base test unchanged — see [TESTS_E2E.md](./TESTS_E2E.md#regress-002-remove-environment-by-name-ki-003).
 
-> This test is critical for RC2 — environment name operations were listed as "more reliable now" in release notes.
+> This test is critical for RC2 — environment name operations were listed as "more reliable now" in release notes. Verifies DESK-1342 fix.
 
-| Step | Action | Expected |
-|------|--------|----------|
-| 1 | Create test environment: `conda create -n regress-rc2-test python=3.11 -y` | — |
-| 2 | Ask: "Delete the regress-rc2-test environment" | Single `conda_remove_environment` call with `environment_name="regress-rc2-test"` |
-| 3 | Run: `conda env list \| grep regress-rc2-test` | Empty (env is gone) |
+**RC2-specific verification**:
 
-**Pass criteria**:
+| Step | RC2 Addition |
+|------|--------------|
+| Step 1 | Verify single `conda_remove_environment` call — no `conda_list_environments` lookup first |
+| Step 1 | Tool call must use `environment_name` parameter, not `prefix` |
+
+**RC2 Pass criteria** (in addition to base):
 - Exactly 1 tool call (`conda_remove_environment`)
 - Tool call uses `environment_name` parameter, not `prefix`
-- `is_error: false` in response
-- Environment actually removed
+- No agent self-recovery patterns
 
-**Fail criteria** (DESK-1342 still present):
+**RC2 Fail symptoms** (DESK-1342 not fixed):
 - Tool returns "environment not found" with wrong prefix (e.g., nested path)
 - Agent performs lookup via `conda_list_environments` then retries with `prefix`
 - More than 1 tool call total
