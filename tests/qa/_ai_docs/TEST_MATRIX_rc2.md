@@ -66,14 +66,16 @@ Based on RC1 findings (13 bugs filed, Phase 1 complete):
 
 ### Tests Per Configuration
 
-| Config | SETUP-001 | CORE-001 logged out | CORE-001 logged in | AUTH-002 | GUARD-001 | CHAN-001 | REGRESS-002 | Total tests |
-|--------|-----------|--------------------|--------------------|----------|-----------|----------|-------------|-------------|
-| 1 (macOS, 3.13) | Yes | Yes | Yes | Yes | Yes | Yes | Yes | 8 |
-| 2 (macOS, 3.10) | Yes | — | Yes | — | — | — | — | 2 |
-| 3 (Windows, 3.13) | Yes | Yes | Yes | logged in only | Yes | — | — | 5 |
-| 4 (Windows, 3.10) | Yes | Yes | Yes | — | — | — | — | 3 |
+| Config | SETUP-001 | CORE-001 logged out | CORE-001 logged in | AUTH-002 | AUTH-001a | GUARD-001 | CHAN-001 | REGRESS-002 | Total tests |
+|--------|-----------|--------------------|--------------------|----------|-----------|-----------|----------|-------------|-------------|
+| 1 (macOS, 3.13) | Yes | Yes | Yes | Yes | Blocked | Yes | Yes | Yes | 8 (+1 blocked) |
+| 2 (macOS, 3.10) | Yes | — | Yes | — | — | — | — | — | 2 |
+| 3 (Windows, 3.13) | Yes | Yes | Yes | logged in only | — | Yes | — | — | 5 |
+| 4 (Windows, 3.10) | Yes | Yes | Yes | — | — | — | — | — | 3 |
 
 > **New tests for RC2**: SETUP-001 (installation disclaimer), CHAN-001 (override_channels behavior), REGRESS-002 (DESK-1342 fix). See [TESTS_E2E_RC2.md](./TESTS_E2E_RC2.md) for details.
+>
+> **Blocked**: AUTH-001a — private channel denial test blocked by KI-005/DESK-1358 (private repos not working in RC2).
 
 **Rationale**:
 - SETUP-001: all configs — verifies terms & conditions disclaimer appears during installation (new RC2 feature)
@@ -143,6 +145,7 @@ macOS, Python 3.13:
 [ ] SETUP-001: Installation disclaimer verification
 [ ] CORE-001: Full tools flow (with RC2 tool count verification)
 [ ] AUTH-002: Authenticated mode
+[BLOCKED] AUTH-001a: Private channel denial — blocked by KI-005/DESK-1358 (private repos not working in RC2)
 [ ] GUARD-001: Guardrails (with RC2 confirmation verification)
 [ ] CHAN-001: Override channels behavior (both parts A and B)
 [ ] REGRESS-002: DESK-1342 fix verification
