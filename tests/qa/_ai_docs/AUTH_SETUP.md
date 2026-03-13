@@ -4,6 +4,22 @@ This document defines prerequisites and post-conditions for authentication-relat
 
 ---
 
+## Before You Begin — Backup Recommended
+
+**Run this once before any auth-related testing:**
+
+```bash
+# Save original .condarc before any changes
+cp ~/.condarc ~/.condarc.backup 2>/dev/null || true
+echo "Backup created: ~/.condarc.backup"
+```
+
+This backup is used by the cleanup procedure to restore your exact original state.
+
+**No backup?** Cleanup will still work — it removes auth-related keys manually. See [Cleanup without backup](#cleanup-without-backup).
+
+---
+
 ## Overview
 
 | State | Tests | Channel Source |
@@ -16,18 +32,19 @@ This document defines prerequisites and post-conditions for authentication-relat
 
 ## Configuration Flow
 
-```
-┌─────────────────┐     anaconda login        ┌─────────────────┐
-│   Clean State   │ ──────────────────────►   │   Logged In     │
-│                 │     + token install       │                 │
-│ channels:       │     + token config        │ default_channels│
-│   - defaults    │     + manual fix          │   repo.cloud    │
-│                 │                           │ channel_settings│
-└─────────────────┘                           │   anaconda-auth │
-        ▲                                     └─────────────────┘
-        │                                              │
-        │         restore .condarc.backup              │
-        └──────────────────────────────────────────────┘
+```mermaid
+flowchart LR
+    subgraph clean["Clean State"]
+        C1["channels:<br/>- defaults"]
+    end
+
+    subgraph logged["Logged In State"]
+        L1["default_channels:<br/>repo.anaconda.cloud"]
+        L2["channel_settings:<br/>anaconda-auth"]
+    end
+
+    clean -->|"1. anaconda login<br/>2. token install<br/>3. token config<br/>4. manual fix"| logged
+    logged -->|"Option A: restore .condarc.backup<br/>Option B: remove auth keys"| clean
 ```
 
 ---
@@ -59,12 +76,7 @@ This document defines prerequisites and post-conditions for authentication-relat
 
 ## Prerequisites: Logged In (CORE-001, AUTH-002)
 
-### Backup Original State
-
-```bash
-# Save original .condarc before any changes
-cp ~/.condarc ~/.condarc.backup 2>/dev/null || true
-```
+> **Reminder**: Ensure you have created a backup first. See [Before You Begin](#before-you-begin--backup-recommended).
 
 ### Setup
 
@@ -192,6 +204,10 @@ conda config --show channel_settings
 
 Run after completing all auth-related tests to restore original state.
 
+### Cleanup with Backup (recommended)
+
+If you created `~/.condarc.backup` in [Before You Begin](#before-you-begin--backup-recommended):
+
 ```bash
 # Step 1: Remove any test environments
 conda remove -n e2e-test --all -y 2>/dev/null || true
@@ -202,33 +218,57 @@ conda remove -n anon-test --all -y 2>/dev/null || true
 anaconda logout 2>/dev/null || true
 
 # Step 3: Remove token configuration
-# NOTE: May fail with "CondaKeyError: 'signing_metadata_url_base'" — skip if fails
 anaconda token remove 2>/dev/null || true
 
-# Step 4: Restore original .condarc
-if [ -f ~/.condarc.backup ]; then
-    cp ~/.condarc.backup ~/.condarc
-    rm ~/.condarc.backup
-    echo "Restored original .condarc"
-else
-    # Fallback: manually remove auth-related keys
-    conda config --remove-key channel_settings 2>/dev/null || true
-    conda config --remove-key default_channels 2>/dev/null || true
-    echo "Manually removed auth config (no backup found)"
-fi
+# Step 4: Restore original .condarc from backup
+cp ~/.condarc.backup ~/.condarc
+rm ~/.condarc.backup
+echo "Restored original .condarc"
 
 # Step 5: Verify cleanup
 anaconda whoami
 # [EXPECTED] "AuthenticationMissingError" or "You are not logged in"
 
 conda config --show default_channels
-# [EXPECTED] Original state (likely repo.anaconda.com or just 'defaults')
-
-conda config --show channel_settings
-# [EXPECTED] Original state (likely empty)
+# [EXPECTED] Original state (matches your backup)
 
 # Step 6: Restart Claude Desktop to pick up restored config
 ```
+
+### Cleanup without Backup
+
+If you don't have a backup, manually remove auth-related configuration:
+
+```bash
+# Step 1: Remove any test environments
+conda remove -n e2e-test --all -y 2>/dev/null || true
+conda remove -n auth-test --all -y 2>/dev/null || true
+conda remove -n anon-test --all -y 2>/dev/null || true
+
+# Step 2: Logout
+anaconda logout 2>/dev/null || true
+
+# Step 3: Remove token configuration
+anaconda token remove 2>/dev/null || true
+
+# Step 4: Remove auth-related keys from .condarc
+conda config --remove-key channel_settings 2>/dev/null || true
+conda config --remove-key default_channels 2>/dev/null || true
+
+# Step 5: Verify cleanup
+anaconda whoami
+# [EXPECTED] "AuthenticationMissingError" or "You are not logged in"
+
+conda config --show default_channels
+# [EXPECTED] repo.anaconda.com URLs or empty (conda defaults)
+
+conda config --show channel_settings
+# [EXPECTED] channel_settings: []
+
+# Step 6: Restart Claude Desktop to pick up restored config
+```
+
+> **Note**: Without backup, any custom `.condarc` settings unrelated to auth (e.g., custom channels, proxy settings) will be preserved. Only `channel_settings` and `default_channels` are removed.
 
 ---
 
