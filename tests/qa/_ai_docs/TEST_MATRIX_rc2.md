@@ -66,8 +66,8 @@ Based on RC1 findings (13 bugs filed, Phase 1 complete):
 
 ### Tests Per Configuration
 
-| Config | SETUP-001 | CORE-001 logged out | CORE-001 logged in | AUTH-002 | AUTH-001a | GUARD-001 | CHAN-001 | REGRESS-002 | Total tests |
-|--------|-----------|--------------------|--------------------|----------|-----------|-----------|----------|-------------|-------------|
+| Config | SETUP-001 | CORE-001a (logged out) | CORE-001 (logged in) | AUTH-002 | AUTH-001a | GUARD-001 | CHAN-001 | REGRESS-002 | Total tests |
+|--------|-----------|------------------------|----------------------|----------|-----------|-----------|----------|-------------|-------------|
 | 1 (macOS, 3.13) | Yes | Yes | Yes | Yes | Blocked | Yes | Yes | Yes | 8 (+1 blocked) |
 | 2 (macOS, 3.10) | Yes | — | Yes | — | — | — | — | — | 2 |
 | 3 (Windows, 3.13) | Yes | Yes | Yes | logged in only | — | Yes | — | — | 5 |
@@ -79,9 +79,9 @@ Based on RC1 findings (13 bugs filed, Phase 1 complete):
 
 **Rationale**:
 - SETUP-001: all configs — verifies terms & conditions disclaimer appears during installation (new RC2 feature)
-- CORE-001 logged out (Windows): verifies DESK-1385 fix — first call must complete without hang
-- CORE-001 logged in (Windows): verifies DESK-1386 fix — retry after first-call hang must succeed; also the normal user scenario
-- CORE-001 (macOS config 1): both auth states — one pass catches any auth-state-dependent regressions introduced by DESK-1385/1386 fixes; config 2 logged-in only (baseline coverage sufficient)
+- CORE-001a (Windows): logged-out flow — verifies DESK-1385 fix (first call must complete without hang)
+- CORE-001 (Windows): logged-in flow — verifies DESK-1386 fix (retry after first-call hang must succeed); also the normal user scenario
+- CORE-001/001a (macOS config 1): both auth states — catches any auth-state-dependent regressions; config 2 logged-in only (baseline coverage sufficient)
 - AUTH-002: logged-in only by definition — tests credential pickup; running logged-out would duplicate CORE-001
 - GUARD-001: macOS config 1 + Windows config 3 — guardrails are config-independent but Windows has shown enough unexpected behavior to warrant explicit coverage there too
 - CHAN-001: macOS config 1 only — verifies `override_channels` disabled by default (new RC2 behavior); config-independent, single config sufficient
@@ -143,7 +143,8 @@ RC1 filed 10 bugs. Fixed bugs require verification before release.
 macOS, Python 3.13:
 [ ] Setup: Install anaconda-mcp RC2, configure Claude Desktop
 [ ] SETUP-001: Installation disclaimer verification
-[ ] CORE-001: Full tools flow (with RC2 tool count verification)
+[ ] CORE-001: Full tools flow — logged in (see prerequisites in TESTS_E2E_RC2.md)
+[ ] CORE-001a: Full tools flow — logged out (run cleanup after CORE-001, see TESTS_E2E_RC2.md)
 [ ] AUTH-002: Authenticated mode
 [BLOCKED] AUTH-001a: Private channel denial — blocked by KI-005/DESK-1358 (private repos not working in RC2)
 [ ] GUARD-001: Guardrails (with RC2 confirmation verification)
@@ -153,16 +154,16 @@ macOS, Python 3.13:
 macOS, Python 3.10:
 [ ] Setup: Install anaconda-mcp RC2, configure Claude Desktop
 [ ] SETUP-001: Installation disclaimer verification
-[ ] CORE-001: Full tools flow
+[ ] CORE-001: Full tools flow — logged in
 
 Windows, Python 3.10 — logged out:
 [ ] Setup: kill Claude + port 4041, log out of Anaconda, install RC2, configure Claude Desktop
 [ ] SETUP-001: Installation disclaimer verification
-[ ] CORE-001: Full tools flow (verifies DESK-1385 fix — first call must succeed without hang)
+[ ] CORE-001a: Full tools flow — logged out (verifies DESK-1385 fix — first call must succeed without hang)
 
 Windows, Python 3.10 — logged in:
 [ ] Setup: kill Claude + port 4041, log in to Anaconda, install RC2, configure Claude Desktop
-[ ] CORE-001: Full tools flow (verifies DESK-1386 fix — retry after any hang must succeed)
+[ ] CORE-001: Full tools flow — logged in (verifies DESK-1386 fix — retry after any hang must succeed)
 ```
 
 ### QA 2 (1 config)
@@ -170,11 +171,11 @@ Windows, Python 3.10 — logged in:
 Windows, Python 3.13 — logged out:
 [ ] Setup: kill Claude + port 4041, log out of Anaconda, install RC2, configure Claude Desktop
 [ ] SETUP-001: Installation disclaimer verification
-[ ] CORE-001: Full tools flow (if DESK-1344 fixed; verifies DESK-1385 fix)
+[ ] CORE-001a: Full tools flow — logged out (if DESK-1344 fixed; verifies DESK-1385 fix)
 
 Windows, Python 3.13 — logged in:
 [ ] Setup: kill Claude + port 4041, log in to Anaconda, install RC2, configure Claude Desktop
-[ ] CORE-001: Full tools flow (verifies DESK-1386 fix)
+[ ] CORE-001: Full tools flow — logged in (verifies DESK-1386 fix)
 [ ] AUTH-002: Authenticated mode
 [ ] GUARD-001: Guardrails
 ```

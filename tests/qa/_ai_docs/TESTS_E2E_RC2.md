@@ -85,9 +85,38 @@ unset ALLOW_OVERRIDE_CHANNELS
 
 ## Modified Tests for RC2
 
-### CORE-001: Full Tools Flow (RC2 Modifications)
+### CORE-001: Full Tools Flow — Logged In (RC2 Modifications)
 
-Base test unchanged — see [TESTS_E2E.md](./TESTS_E2E.md#core-001-full-tools-flow).
+Base test steps unchanged — see [TESTS_E2E.md](./TESTS_E2E.md#core-001-full-tools-flow).
+
+**Prerequisites** (logged-in state with full token setup):
+```bash
+# Step 1: Login
+anaconda login
+
+# Verify logged in
+anaconda whoami
+# [EXPECTED] Shows your username
+
+# Step 2: Apply token configuration (required — not done by login alone)
+anaconda token install
+anaconda token config
+
+# Step 3: Verify default_channels now point to repo.anaconda.cloud
+conda config --show default_channels
+# [EXPECTED]
+#   - https://repo.anaconda.cloud/repo/main
+#   - https://repo.anaconda.cloud/repo/r
+#   - https://repo.anaconda.cloud/repo/msys2
+
+# Step 4: Verify channel_settings in .condarc
+conda config --show channel_settings
+# [EXPECTED] Entry for 'https://repo.anaconda.cloud/*' → 'anaconda-auth'
+
+# Step 5: Restart Claude Desktop to pick up .condarc changes
+```
+
+> **Gate**: If `default_channels` still points to `repo.anaconda.com` or is unset, do not proceed — token config did not apply correctly.
 
 **RC2-specific verification**:
 
@@ -105,6 +134,70 @@ Base test unchanged — see [TESTS_E2E.md](./TESTS_E2E.md#core-001-full-tools-fl
 - Agent calls `conda_list_environments` before step 6 to look up prefix
 - Step 6 returns "environment not found" with wrong prefix
 - Agent retries with `prefix` parameter — 2+ tool calls for step 6
+
+**Cleanup** (after test, before CORE-001a):
+```bash
+# Remove test environment if not already removed
+conda remove -n e2e-test --all -y 2>/dev/null
+
+# Logout
+anaconda logout
+
+# Remove token configuration to restore default channels
+anaconda token remove
+# Or manually:
+# conda config --remove-key default_channels
+# conda config --remove-key channel_settings
+
+# Verify logged out
+anaconda whoami
+# [EXPECTED] "You are not logged in"
+
+# Verify default_channels restored
+conda config --show default_channels
+# [EXPECTED] Empty or pointing to repo.anaconda.com (not repo.anaconda.cloud)
+
+# Restart Claude Desktop to pick up .condarc changes
+```
+
+---
+
+### CORE-001a: Full Tools Flow — Logged Out (RC2 Modifications)
+
+Base test steps unchanged — see [TESTS_E2E.md](./TESTS_E2E.md#core-001-full-tools-flow).
+
+**Prerequisites** (logged-out state):
+```bash
+# Step 1: Ensure logged out
+anaconda logout 2>/dev/null || true
+
+# Verify logged out
+anaconda whoami
+# [EXPECTED] "You are not logged in"
+
+# Step 2: Ensure no token configuration
+anaconda token remove 2>/dev/null || true
+
+# Step 3: Verify default_channels do NOT point to repo.anaconda.cloud
+conda config --show default_channels
+# [EXPECTED] Empty or pointing to repo.anaconda.com / defaults (NOT repo.anaconda.cloud)
+
+# Step 4: Restart Claude Desktop to pick up .condarc changes
+```
+
+**RC2-specific verification**:
+
+Same as CORE-001 — count tool calls, verify DESK-1342 fix.
+
+**RC2 Pass criteria** (in addition to base):
+- Total tool calls for flow: 7 (one per step)
+- Step 6 uses `environment_name="e2e-test"` parameter, not `prefix`
+- No agent self-recovery patterns
+
+**Cleanup**:
+```bash
+conda remove -n e2e-test --all -y 2>/dev/null
+```
 
 ---
 
