@@ -263,7 +263,39 @@ Verify fixes claimed in RC2 release notes:
 |------|--------|
 | AUTH-001 | Anonymous mode — no RC2 changes affect this |
 | AUTH-001a | Still blocked by KI-005 (private repos not fixed) |
-| AUTH-002 | Authenticated mode — no RC2 changes affect this |
+
+---
+
+### AUTH-002: Authenticated Mode (RC2 Modifications)
+
+Base test unchanged — see [TESTS_E2E.md](./TESTS_E2E.md#auth-002-authenticated-mode).
+
+**Prerequisites**: Same as CORE-001 (logged in) — see [CORE-001 prerequisites](#core-001-full-tools-flow--logged-in-rc2-modifications).
+
+**Cleanup** (after test):
+```bash
+# Remove test environment if not already removed
+conda remove -n auth-test --all -y 2>/dev/null
+
+# Logout
+anaconda logout
+
+# Remove token configuration to restore default channels
+anaconda token remove
+# Or manually:
+# conda config --remove-key default_channels
+# conda config --remove-key channel_settings
+
+# Verify logged out
+anaconda whoami
+# [EXPECTED] "You are not logged in"
+
+# Verify default_channels restored
+conda config --show default_channels
+# [EXPECTED] Empty or pointing to repo.anaconda.com (not repo.anaconda.cloud)
+
+# Restart Claude Desktop to pick up .condarc changes
+```
 
 ---
 
