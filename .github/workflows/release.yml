@@ -171,9 +171,21 @@ jobs:
         with:
           pattern: conda-package-*
           path: build/conda/
-          # merge-multiple is intentionally omitted so each platform lands in its own
-          # subdirectory (conda-package-linux/, conda-package-macos/, conda-package-windows/)
-          # preventing filename collisions when attaching assets to the GitHub Release.
+          merge-multiple: true
+
+      - name: Rename packages to include platform suffix
+        # conda build outputs files like linux-64/pkg.conda — after merge-multiple
+        # all three platforms produce the same basename, which causes GitHub Release
+        # asset upload collisions. We rename them to pkg-linux.conda etc. here.
+        # The original platform-tagged files are still uploaded to Anaconda Cloud
+        # by the publish job, so conda tooling is unaffected.
+        run: |
+          for f in build/conda/**/*.conda; do
+            dir=$(dirname "$f")
+            base=$(basename "$f" .conda)
+            platform=$(basename "$dir")   # e.g. linux-64, osx-arm64, win-64
+            mv "$f" "${dir}/${base}-${platform}.conda"
+          done
 
       - name: Determine if pre-release
         id: prerelease
