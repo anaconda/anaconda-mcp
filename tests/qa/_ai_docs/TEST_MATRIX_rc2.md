@@ -38,6 +38,7 @@ Based on RC1 findings (13 bugs filed, Phase 1 complete):
 |----------|---------|
 | [TESTS_E2E_RC2.md](./TESTS_E2E_RC2.md) | RC2-specific test definitions and modifications |
 | [TESTS_E2E.md](./TESTS_E2E.md) | Base E2E test definitions (reference) |
+| [AUTH_SETUP.md](./AUTH_SETUP.md) | Authentication prerequisites and cleanup procedures |
 | [KNOWN_ISSUES.md](./KNOWN_ISSUES.md) | Bug details and workarounds |
 | [WINDOWS_SETUP.md](./WINDOWS_SETUP.md) | Windows-specific setup instructions |
 

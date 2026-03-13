@@ -44,9 +44,9 @@ Issues documented from internal testing conversations (Feb 2026).
 ---
 
 ### KI-003: Environment Operations Fail by Name — Wrong Prefix Resolved
-**Status**: Open (Bug) — [DESK-1342](https://anaconda.atlassian.net/browse/DESK-1342)
+**Status**: Fixed — [DESK-1342](https://anaconda.atlassian.net/browse/DESK-1342)
 **Severity**: High
-**Version**: 1.0.0rc1
+**Version Fixed**: 1.0.0.rc.2
 **Regression test**: `tests/qa/http_tools/test_env_name_resolution.py::TestEnvironmentNameResolution::test_ki003_remove_environment_by_name`
 **Related**: KI-002 (misclassified "base" environment is the root cause)
 
@@ -126,6 +126,30 @@ The LLM then self-recovers: calls `conda_list_environments`, retries with the fu
 **Does NOT block**: AUTH-001a (anonymous denial works correctly)
 
 **Related**: [DESK-1358](https://anaconda.atlassian.net/browse/DESK-1358) / KI-005 (different issue — URL routing vs credentials)
+
+---
+
+### KI-021: Tool "Not Loaded Yet" Error on First Call to `conda_install_packages`
+**Status**: Open — [DESK-1402](https://anaconda.atlassian.net/browse/DESK-1402)
+**Severity**: Medium
+**Observed**: 2026-03-13 (macOS, Python 3.13, Claude Desktop STDIO) — reproduced multiple times
+
+**Description**: First call to `conda_install_packages` fails with error:
+```
+Error: 'anaconda-mcp:conda_install_packages' has not been loaded yet. You do not have the correct parameter names for this tool. Call tool_search with a relevant query first to load the tool definition and discover the correct parameters...
+```
+Retry with identical parameters succeeds immediately after "Loading tools" appears.
+
+**Key observation**: Agent uses correct parameters both times — this is a tool initialization/loading issue, not an agent behavior issue.
+
+**Affected tool**: Only observed for `conda_install_packages` so far. Other tools (`conda_list_environments`, `conda_create_environment`) work on first call.
+
+**Impact**: Extra tool call required. Does not block functionality — retry always succeeds.
+
+**Possible causes**:
+- Lazy loading of tool definitions
+- Race condition in tool discovery/registration
+- Client-side tool schema caching not populated until first use attempt
 
 ---
 

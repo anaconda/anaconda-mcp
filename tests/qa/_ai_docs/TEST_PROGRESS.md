@@ -2,7 +2,7 @@
 
 ## Summary
 
-- **Last updated**: 2026-03-12
+- **Last updated**: 2026-03-13
 - **Bugs filed**: 18 active bugs + 3 feature requests (proposed for reclassification as tasks)
 
 | Phase | What | Status |
@@ -51,10 +51,10 @@ Windows E2E results show significantly higher instability than macOS. The table 
 | ID | Title | Status | Platform | Severity |
 |----|-------|--------|----------|----------|
 | [DESK-1341](https://anaconda.atlassian.net/browse/DESK-1341) | Incorrect error message for `conda_install_packages` when package does not exist | New | macOS | Minor |
-| [DESK-1342](https://anaconda.atlassian.net/browse/DESK-1342) | Environment operations fail by name — wrong prefix resolved | REVIEW | macOS | Minor |
 | [DESK-1344](https://anaconda.atlassian.net/browse/DESK-1344) | `anaconda-mcp` command not recognized on Windows despite correct installation | New | Windows | Major |
 | [DESK-1356](https://anaconda.atlassian.net/browse/DESK-1356) | HTTP setup wizard suggests wrong server command — starts STDIO mode instead of HTTP | New | macOS | Minor |
 | [DESK-1401](https://anaconda.atlassian.net/browse/DESK-1401) | `conda_create_environment` returns 403 Forbidden despite valid authentication | New | macOS | Major |
+| [DESK-1402](https://anaconda.atlassian.net/browse/DESK-1402) | Tool "not loaded yet" error on first call to `conda_install_packages` | New | macOS | Medium |
 | [DESK-1359](https://anaconda.atlassian.net/browse/DESK-1359) | Stale process port conflicts on MCP server restart produce no actionable diagnostic | New | macOS | Medium |
 | [DESK-1363](https://anaconda.atlassian.net/browse/DESK-1363) | [Windows] `claude-desktop setup-config` writes config to wrong location and doesn't restart Claude Desktop | New | Windows | Minor |
 | [DESK-1365](https://anaconda.atlassian.net/browse/DESK-1365) | [Windows] Invalid argument error on `conda_install_packages` / `conda_remove_packages` / `conda_remove_environment` | New | Windows | Major |
@@ -69,6 +69,7 @@ Windows E2E results show significantly higher instability than macOS. The table 
 
 | ID | Title | Status | Notes |
 |----|-------|--------|-------|
+| [DESK-1342](https://anaconda.atlassian.net/browse/DESK-1342) | Environment operations fail by name — wrong prefix resolved | Done | Fixed in RC2 |
 | [DESK-1355](https://anaconda.atlassian.net/browse/DESK-1355) | Chat session freezes after tool error with no recovery (mcp-compose proxy hang) | Done | Fixed in mcp-compose 0.1.11; [PR #24](https://github.com/anaconda/anaconda-mcp/pull/24) |
 | [DESK-1358](https://anaconda.atlassian.net/browse/DESK-1358) | Private channel requests routed to `conda.anaconda.org` instead of `repo.anaconda.cloud` | Done | Replaced by [DESK-1401](https://anaconda.atlassian.net/browse/DESK-1401) |
 | [DESK-1364](https://anaconda.atlassian.net/browse/DESK-1364) | Generic error message for `conda_create_environment` | Closed: No Action | — |
