@@ -70,7 +70,7 @@ Based on RC1 findings (13 bugs filed, Phase 1 complete):
 |--------|-----------|------------------------|----------------------|----------|-----------|-----------|----------|-------------|-------------|
 | 1 (macOS, 3.13) | Yes | Yes | Yes | Yes | Blocked | Yes | Yes | Yes | 8 (1 blocked) |
 | 2 (macOS, 3.10) | Yes | — | Yes | — | — | — | — | — | 2 |
-| 3 (Windows, 3.13) | Yes | Yes | Yes | logged in only | — | Yes | — | — | 5 |
+| 3 (Windows, 3.13) | Yes | Yes | Yes | Yes | — | Yes | — | — | 5 |
 | 4 (Windows, 3.10) | Yes | Yes | Yes | — | — | — | — | — | 3 |
 
 > **New tests for RC2**: SETUP-001 (installation disclaimer), CHAN-001 (override_channels behavior), REGRESS-002 (DESK-1342 fix). See [TESTS_E2E_RC2.md](./TESTS_E2E_RC2.md) for details.
