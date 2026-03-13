@@ -54,7 +54,7 @@ Windows E2E results show significantly higher instability than macOS. The table 
 | [DESK-1342](https://anaconda.atlassian.net/browse/DESK-1342) | Environment operations fail by name — wrong prefix resolved | REVIEW | macOS | Minor |
 | [DESK-1344](https://anaconda.atlassian.net/browse/DESK-1344) | `anaconda-mcp` command not recognized on Windows despite correct installation | New | Windows | Major |
 | [DESK-1356](https://anaconda.atlassian.net/browse/DESK-1356) | HTTP setup wizard suggests wrong server command — starts STDIO mode instead of HTTP | New | macOS | Minor |
-| [DESK-1358](https://anaconda.atlassian.net/browse/DESK-1358) | Private channel requests routed to `conda.anaconda.org` instead of `repo.anaconda.cloud` — credentials never reached | New | macOS | Major |
+| [DESK-1401](https://anaconda.atlassian.net/browse/DESK-1401) | `conda_create_environment` returns 403 Forbidden despite valid authentication | New | macOS | Major |
 | [DESK-1359](https://anaconda.atlassian.net/browse/DESK-1359) | Stale process port conflicts on MCP server restart produce no actionable diagnostic | New | macOS | Medium |
 | [DESK-1363](https://anaconda.atlassian.net/browse/DESK-1363) | [Windows] `claude-desktop setup-config` writes config to wrong location and doesn't restart Claude Desktop | New | Windows | Minor |
 | [DESK-1365](https://anaconda.atlassian.net/browse/DESK-1365) | [Windows] Invalid argument error on `conda_install_packages` / `conda_remove_packages` / `conda_remove_environment` | New | Windows | Major |
@@ -70,6 +70,7 @@ Windows E2E results show significantly higher instability than macOS. The table 
 | ID | Title | Status | Notes |
 |----|-------|--------|-------|
 | [DESK-1355](https://anaconda.atlassian.net/browse/DESK-1355) | Chat session freezes after tool error with no recovery (mcp-compose proxy hang) | Done | Fixed in mcp-compose 0.1.11; [PR #24](https://github.com/anaconda/anaconda-mcp/pull/24) |
+| [DESK-1358](https://anaconda.atlassian.net/browse/DESK-1358) | Private channel requests routed to `conda.anaconda.org` instead of `repo.anaconda.cloud` | Done | Replaced by [DESK-1401](https://anaconda.atlassian.net/browse/DESK-1401) |
 | [DESK-1364](https://anaconda.atlassian.net/browse/DESK-1364) | Generic error message for `conda_create_environment` | Closed: No Action | — |
 | [DESK-1384](https://anaconda.atlassian.net/browse/DESK-1384) | `create_environment` fails with Pydantic `frozen_instance` error when `environment_root_path` provided | Done | Fixed |
 
@@ -100,7 +101,7 @@ See [TEST_MATRIX.md](./TEST_MATRIX.md) for full assignment rationale.
 | REGRESS-002 (KI-003) | QA 2 | Cursor, HTTP, 3.13 | ✅ Done | KI-003 confirmed — DESK-1342 filed |
 | REGRESS-002 (KI-003) | QA 1 | Claude Desktop, STDIO, 3.10 | 🔶 Partial | Run via GUARD-001; full REGRESS-002 pending |
 | REGRESS-002 (KI-003) | QA 2 | Claude Code, HTTP, 3.10 | ✅ Done | KI-003 confirmed — DESK-1342 filed |
-| AUTH-001a | all configs | — | ⛔ Blocked | [DESK-1358](https://anaconda.atlassian.net/browse/DESK-1358) — config-independent, run in any suite once unblocked |
+| AUTH-001a | QA 1 | macOS, Claude Desktop, 3.13 (RC2) | ✅ Done | Passed — anonymous user correctly gets 403 auth error on `repo.anaconda.cloud` |
 
 ---
 
@@ -113,7 +114,8 @@ See [TEST_MATRIX.md](./TEST_MATRIX.md) for full assignment rationale.
 | [DESK-1344](https://anaconda.atlassian.net/browse/DESK-1344) | `anaconda-mcp` command not recognized on Windows despite correct installation | Major | [PI-001](./KNOWN_ISSUES.md#pi-001) | QA 3 · Windows · Claude Desktop · 3.13 · STDIO |
 | [DESK-1355](https://anaconda.atlassian.net/browse/DESK-1355) | mcp-compose proxy hangs and corrupts session on tool error | Major | [KI-011](./KNOWN_ISSUES.md#ki-011) | QA 2 · macOS · Cursor · 3.13 · HTTP; QA 2 · macOS · Claude Code · 3.10 · HTTP — **done** |
 | [DESK-1356](https://anaconda.atlassian.net/browse/DESK-1356) | HTTP setup wizard suggests wrong server command — starts STDIO mode instead of HTTP | Minor | [KI-008](./KNOWN_ISSUES.md#ki-008) | Manual testing |
-| [DESK-1358](https://anaconda.atlassian.net/browse/DESK-1358) | Private channel requests routed to `conda.anaconda.org` instead of `repo.anaconda.cloud` — credentials never reached | Major | [KI-005](./KNOWN_ISSUES.md#ki-005) | Manual testing |
+| [DESK-1358](https://anaconda.atlassian.net/browse/DESK-1358) | Private channel requests routed to `conda.anaconda.org` instead of `repo.anaconda.cloud` — credentials never reached | Major | [KI-005](./KNOWN_ISSUES.md#ki-005) | Manual testing — **done: replaced by DESK-1401** |
+| [DESK-1401](https://anaconda.atlassian.net/browse/DESK-1401) | `conda_create_environment` returns 403 Forbidden despite valid authentication | Major | [KI-020](./KNOWN_ISSUES.md#ki-020) | QA 1 · macOS · Claude Desktop · 3.13 · STDIO (RC2) |
 | [DESK-1359](https://anaconda.atlassian.net/browse/DESK-1359) | Stale process port conflicts on MCP server restart produce no actionable diagnostic | Medium | [KI-012](./KNOWN_ISSUES.md#ki-012) | Manual testing · macOS · Cursor · 3.12 · STDIO |
 | [DESK-1363](https://anaconda.atlassian.net/browse/DESK-1363) | [Windows] `claude-desktop setup-config` writes config to wrong location and doesn't restart Claude Desktop | Minor | — | QA 1 · Windows · Claude Desktop · 3.13 · STDIO |
 | [DESK-1364](https://anaconda.atlassian.net/browse/DESK-1364) | Generic error message for `conda_create_environment` | Minor | — | QA 1 · Windows · Claude Desktop · 3.13 · STDIO — **closed: no action** |

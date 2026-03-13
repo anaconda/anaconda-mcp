@@ -20,18 +20,21 @@
 ## Installation Command (RC2)
 
 ```bash
-conda create --name anaconda-mcp-testing-rc2 \
+conda create --name anaconda-mcp-rc2-pyXY \
   -c datalayer \
   -c anaconda-cloud/label/dev \
   -c defaults \
   -c conda-forge \
   --channel 'https://conda.anaconda.org/t/an-19ec59a6-f3b4-4d62-a686-a882d9c1f209/anaconda-connector/' \
+  python=X.Y \
   anaconda-mcp=1.0.0.rc.2 \
   environments-mcp-server=1.0.0.rc.2
 
-conda activate anaconda-mcp-testing-rc2
+conda activate anaconda-mcp-rc2-pyXY
 anaconda-mcp claude-desktop setup-config --force
 ```
+
+> Replace `X.Y` with target Python version (e.g., `3.10` or `3.13`).
 
 ---
 
@@ -262,7 +265,7 @@ Verify fixes claimed in RC2 release notes:
 | Test | Reason |
 |------|--------|
 | AUTH-001 | Anonymous mode — no RC2 changes affect this |
-| AUTH-001a | Still blocked by KI-005 (private repos not fixed) |
+| AUTH-001a | **Unblocked in RC2** — URL routing fixed, anonymous users correctly get 403 auth error |
 
 ---
 
@@ -345,7 +348,7 @@ Windows, Python 3.13 — logged in:
 
 | Issue | Impact | Workaround |
 |-------|--------|------------|
-| Private repositories not working | AUTH-001a blocked; AUTH-002 step 4 may show public channels only | Skip AUTH-001a; note if AUTH-002 shows public channels |
+| MCP doesn't pass credentials (DESK-1401) | AUTH-002 blocked — authenticated users get 403 | AUTH-001a passes (anonymous denial works); AUTH-002 cannot be completed |
 | Server may get stuck | Session becomes unresponsive | Restart Claude Desktop / server |
 
 ---

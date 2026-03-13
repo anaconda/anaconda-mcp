@@ -84,19 +84,48 @@ The LLM then self-recovers: calls `conda_list_environments`, retries with the fu
 
 ---
 
-### KI-005: Channel Credentials Not Picked Up
-**Status**: Open
+### KI-005: Channel Credentials Not Picked Up (URL Routing)
+**Status**: Done — URL routing fixed; replaced by [KI-020](#ki-020-mcp-returns-403-on-repoanacondacloud-despite-valid-authentication) / [DESK-1401](https://anaconda.atlassian.net/browse/DESK-1401)
 **Severity**: Medium
 **Bug**: [DESK-1358](https://anaconda.atlassian.net/browse/DESK-1358)
-**Description**: When a private Anaconda channel is specified (e.g. `repo.anaconda.cloud` or an org-scoped channel like `anaconda-internal/msys2`), conda resolves the channel name using its default base URL (`https://conda.anaconda.org/<channel>`). This address does not exist for private channels, resulting in HTTP 404. The request never reaches `https://repo.anaconda.cloud`, so credentials are never checked. The failure is identical for authenticated and unauthenticated users.
+**Description**: Originally reported as URL routing issue (requests going to `conda.anaconda.org` instead of `repo.anaconda.cloud`). Investigation in RC2 showed URL routing is now correct — requests reach `repo.anaconda.cloud`. The actual issue is credentials not being passed (see KI-020).
+**Resolution**:
+- URL routing fixed — requests now go to correct URL
+- AUTH-001a **unblocked and passing** — anonymous users correctly get 403 auth error
+- AUTH-002 still blocked by KI-020/DESK-1401 — authenticated users also get 403 (credentials not passed)
+
+---
+
+### KI-020: MCP Returns 403 on repo.anaconda.cloud Despite Valid Authentication
+**Status**: Open
+**Severity**: Major
+**Bug**: [DESK-1401](https://anaconda.atlassian.net/browse/DESK-1401)
+**Description**: `conda_create_environment` (and likely other conda operations) fails with HTTP 403 Forbidden on `repo.anaconda.cloud` when invoked via MCP, even though authentication is fully configured and the same operation succeeds in terminal.
+
+**Evidence**:
+| Check | Result |
+|-------|--------|
+| `anaconda-auth` in MCP env | ✓ installed |
+| `anaconda whoami` from MCP env | ✓ authenticated |
+| `channel_settings` configured | ✓ `anaconda-auth` handler |
+| `default_channels` | ✓ points to `repo.anaconda.cloud` |
+| Terminal `conda create` | ✓ works |
+| MCP `conda_create_environment` | ✗ 403 Forbidden |
+
 **Impact**:
-- Cannot install packages from private or org-scoped channels via MCP tools
-- AUTH-001a test fully blocked — cannot verify anonymous users are denied private channel access
-- AUTH-002 step 3a unconfirmed — unknown whether authenticated default installs resolve from `repo.anaconda.cloud`
-- Misleading error: users see "channel not accessible" (404) instead of an auth error
-**Root cause (hypothesis)**: conda requires either a full URL override (e.g. `https://repo.anaconda.cloud/pkgs/main`) or a token/credential config that maps the channel name to the correct endpoint. The MCP server is not injecting the necessary channel URL mapping or token when calling conda with a private channel override.
-**Workaround**: None — private channel access via MCP tools is not functional until resolved.
-**Blocks**: AUTH-001a (config-independent)
+- Cannot create environments or install packages via MCP when `default_channels` points to `repo.anaconda.cloud`
+- AUTH-002 blocked — authenticated flows fail (credentials not passed)
+- AUTH-001a passing — anonymous users correctly get 403 (expected behavior)
+
+**Root cause (hypothesis)**: `environments-mcp-server` spawns conda in a way that doesn't trigger the `anaconda-auth` plugin (possibly missing environment variables, subprocess isolation, or invoking conda as library instead of CLI).
+
+**Workaround**: None — authenticated channel access via MCP tools is not functional until resolved.
+
+**Blocks**: AUTH-002
+
+**Does NOT block**: AUTH-001a (anonymous denial works correctly)
+
+**Related**: [DESK-1358](https://anaconda.atlassian.net/browse/DESK-1358) / KI-005 (different issue — URL routing vs credentials)
 
 ---
 
@@ -468,12 +497,12 @@ conda create ...
 - **Original finding**: On organizational Windows 365 instances, Claude Desktop appeared unable to spawn local subprocess MCP servers. This was initially suspected to be an AppContainer/org policy restriction.
 - **Actual root cause**: The issue is not org policy. It is caused by two Windows-specific bugs in the setup-config command flow, both present on any Windows MSIX install — managed or personal:
 
-Wrong config path: 
-- setup-config writes to %APPDATA%\Roaming\Claude\ 
-- but Claude Desktop (MSIX) reads from a virtualized path under %LOCALAPPDATA%\Packages\Claude_pzs8sxrjxfjjc\LocalCache\Roaming\Claude\. 
+Wrong config path:
+- setup-config writes to %APPDATA%\Roaming\Claude\
+- but Claude Desktop (MSIX) reads from a virtualized path under %LOCALAPPDATA%\Packages\Claude_pzs8sxrjxfjjc\LocalCache\Roaming\Claude\.
 
-Incomplete restart: 
-- Closing the Claude Desktop window leaves background processes alive. 
+Incomplete restart:
+- Closing the Claude Desktop window leaves background processes alive.
 - The new config is never read until all Claude processes are fully killed.
 
 - **Workaround**: See [WINDOWS_CLAUDE_CODE.md](./tests/qa/_ai_docs/WINDOWS_CLAUDE_CODE.md) for full step-by-step instructions.
