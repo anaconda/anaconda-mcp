@@ -2,46 +2,76 @@
 
 ## Summary
 
-- **Last updated**: 2026-03-11
-- **Bugs filed**: 13 (6 major / 2 moderate / 5 minor)
+- **Last updated**: 2026-03-12
+- **Bugs filed**: 18 active bugs + 3 feature requests (proposed for reclassification as tasks)
 
 | Phase | What | Status |
 |-------|------|--------|
-| Phase 1 | Manual testing — E2E| 🔶 In progress |
-| Phase 2 | Test automation — CLI, Config, API-Tools| 🔶 In progress (tests added for DESK-1355; used to validate proposed fix) |
+| Phase 1 | Manual testing — E2E | 🔶 In progress |
+| Phase 2 | Test automation — CLI, Config, API-Tools | 🔶 In progress (tests added for DESK-1355; used to validate proposed fix) |
 
 ---
+
+## 🔐 Auth Diagnostics — Feature Requests (High Visibility)
+
+During troubleshooting of [DESK-1358](https://anaconda.atlassian.net/browse/DESK-1358) (MCP subprocess does not inherit `anaconda-auth` credentials), three related improvements were identified and filed. Per Product Owner guidance, these are proposed for **reclassification from Bug → Task**, to be prioritized and scheduled independently.
+
+| ID | Title | Status | Notes |
+|----|-------|--------|-------|
+| [DESK-1392](https://anaconda.atlassian.net/browse/DESK-1392) | Expose `channels` as explicit schema parameter in `conda_install_packages` and `conda_create_environment` | New | Enables agent to pass channel URLs; prerequisite for testing private channel flows via MCP |
+| [DESK-1393](https://anaconda.atlassian.net/browse/DESK-1393) | Auth Toolset — new `auth_status` + `auth_check_channel` tools for session and channel access visibility | REVIEW | **Proactive** auth check before install; proposed solution in [PR #26](https://github.com/anaconda/anaconda-mcp/pull/26); helps distinguish authenticated vs unauthenticated flows |
+| [DESK-1394](https://anaconda.atlassian.net/browse/DESK-1394) | 403 Auth Interceptor — automatic diagnostic chain on channel access failure | New | **Reactive** complement to DESK-1393; intercepts raw 403 errors and returns structured diagnosis (not logged in / token config missing / subscription issue) |
+
+**DESK-1393 priority note**: The `auth_status` / `auth_check_channel` toolset is the most impactful of the three for near-term testability. It makes authenticated vs anonymous user flows clearly distinguishable at the MCP level, which is otherwise impossible to verify without terminal-side inspection. Even a simplified version (as in PR #26) would significantly unblock AUTH-001a and AUTH-002 test suites.
+
+---
+
+## Windows Testing — Scope Decision Required
+
+Windows E2E results show significantly higher instability than macOS. The table below summarizes the blockers:
+
+| ID | Summary | Impact |
+|----|---------|--------|
+| [DESK-1363](https://anaconda.atlassian.net/browse/DESK-1363) | `claude-desktop setup-config` writes config to wrong location, doesn't restart Claude Desktop | Setup broken — manual workaround required before any test can run |
+| [DESK-1385](https://anaconda.atlassian.net/browse/DESK-1385) | First `conda_list_environments` call always hangs on Windows (cold-start timeout) | Every Windows session starts with a failed first call (~4 min wait) |
+| [DESK-1386](https://anaconda.atlassian.net/browse/DESK-1386) | After first-call hang, retry also fails when user is logged in | Logged-in users cannot use the product after startup until restarted |
+| [DESK-1365](https://anaconda.atlassian.net/browse/DESK-1365) | Invalid argument error on `conda_install_packages`, `conda_remove_packages`, `conda_remove_environment` (Windows) | Core operations fail |
+| [DESK-1389](https://anaconda.atlassian.net/browse/DESK-1389) | "Not defined" error message for `conda_create_environment` (Windows) | Unhelpful error surfaced to agent |
+| [DESK-1390](https://anaconda.atlassian.net/browse/DESK-1390) | Existing environment not found using `conda_remove_environment` (Windows) | Remove tool broken |
+| [DESK-1391](https://anaconda.atlassian.net/browse/DESK-1391) | Unable to install package from `repo.anaconda.cloud` (Windows) | Install tool broken |
+
+**Recommendation**: Windows user flows are not stable enough for this release. DESK-1385 and DESK-1386 alone make the product unusable for any Windows user on first launch. If Windows is **not in scope** for this release, document these as known limitations in release notes. If Windows **is in scope**, DESK-1385 and DESK-1386 must be treated as release blockers.
+
+---
+
 ## Bugs
-- [DESK-1341](https://anaconda.atlassian.net/browse/DESK-1341)
-- [DESK-1342](https://anaconda.atlassian.net/browse/DESK-1342)
-- [DESK-1344](https://anaconda.atlassian.net/browse/DESK-1344)
-- [DESK-1355](https://anaconda.atlassian.net/browse/DESK-1355)
-- [DESK-1356](https://anaconda.atlassian.net/browse/DESK-1356)
-- [DESK-1358](https://anaconda.atlassian.net/browse/DESK-1358)
-- [DESK-1359](https://anaconda.atlassian.net/browse/DESK-1359)
-- [DESK-1363](https://anaconda.atlassian.net/browse/DESK-1363)
-- [DESK-1364](https://anaconda.atlassian.net/browse/DESK-1364)
-- [DESK-1366](https://anaconda.atlassian.net/browse/DESK-1366)
-- [DESK-1384](https://anaconda.atlassian.net/browse/DESK-1384)
-- [DESK-1385](https://anaconda.atlassian.net/browse/DESK-1385)
-- [DESK-1386](https://anaconda.atlassian.net/browse/DESK-1386)
----
 
-## Windows Testing — Status & Recommendation (2026-03-11)
+### Active / Open
 
-Three Windows-specific bugs found during exploratory testing on 2026-03-11:
+| ID | Title | Status | Platform | Severity |
+|----|-------|--------|----------|----------|
+| [DESK-1341](https://anaconda.atlassian.net/browse/DESK-1341) | Incorrect error message for `conda_install_packages` when package does not exist | New | macOS | Minor |
+| [DESK-1342](https://anaconda.atlassian.net/browse/DESK-1342) | Environment operations fail by name — wrong prefix resolved | REVIEW | macOS | Minor |
+| [DESK-1344](https://anaconda.atlassian.net/browse/DESK-1344) | `anaconda-mcp` command not recognized on Windows despite correct installation | New | Windows | Major |
+| [DESK-1356](https://anaconda.atlassian.net/browse/DESK-1356) | HTTP setup wizard suggests wrong server command — starts STDIO mode instead of HTTP | New | macOS | Minor |
+| [DESK-1358](https://anaconda.atlassian.net/browse/DESK-1358) | Private channel requests routed to `conda.anaconda.org` instead of `repo.anaconda.cloud` — credentials never reached | New | macOS | Major |
+| [DESK-1359](https://anaconda.atlassian.net/browse/DESK-1359) | Stale process port conflicts on MCP server restart produce no actionable diagnostic | New | macOS | Medium |
+| [DESK-1363](https://anaconda.atlassian.net/browse/DESK-1363) | [Windows] `claude-desktop setup-config` writes config to wrong location and doesn't restart Claude Desktop | New | Windows | Minor |
+| [DESK-1365](https://anaconda.atlassian.net/browse/DESK-1365) | [Windows] Invalid argument error on `conda_install_packages` / `conda_remove_packages` / `conda_remove_environment` | New | Windows | Major |
+| [DESK-1366](https://anaconda.atlassian.net/browse/DESK-1366) | `logger.exception()` causes MCP server hang after ~15 tool calls | REVIEW | macOS | Major |
+| [DESK-1385](https://anaconda.atlassian.net/browse/DESK-1385) | [Windows] First `conda_list_environments` call always hangs — cold-start timeout | New | Windows | High |
+| [DESK-1386](https://anaconda.atlassian.net/browse/DESK-1386) | [Windows] After first-call hang, retry also fails when user is logged in | New | Windows | High |
+| [DESK-1389](https://anaconda.atlassian.net/browse/DESK-1389) | [Windows] "Not defined" error message for `conda_create_environment` | New | Windows | Minor |
+| [DESK-1390](https://anaconda.atlassian.net/browse/DESK-1390) | [Windows] Existing environment not found using `conda_remove_environment` | New | Windows | Major |
+| [DESK-1391](https://anaconda.atlassian.net/browse/DESK-1391) | [Windows] Unable to install package from `repo.anaconda.cloud` | New | Windows | Major |
 
-| ID | Summary | Impact | Prerequisite for Windows testing |
-|----|---------|--------|----------------------------------|
-| [DESK-1384](https://anaconda.atlassian.net/browse/DESK-1384) | `conda_create_environment` fails with Pydantic `frozen_instance` error when `environment_root_path` is provided | `create_environment` always fails on Windows (LLM triggers the path because conda root is non-standard). `environment_root_path` is only a parameter of `create_environment` — other tools unaffected. | Fix must be merged before testing `create_environment` on Windows; `list`, `install`, `remove` can be tested without it |
-| [DESK-1385](https://anaconda.atlassian.net/browse/DESK-1385) | First tool call always hangs on Windows — Windows cold-start overhead exceeds 30s SSE timeout | Every Windows session: first request fails, ~4-minute wait, retry needed | Blocks all Windows E2E testing — every test starts with a failed first call |
-| [DESK-1386](https://anaconda.atlassian.net/browse/DESK-1386) | After first-call hang, retry also fails when user is logged in | Logged-in users: server fully unusable after startup until restarted | Makes Windows testing with auth impossible until fixed |
+### Resolved / Closed
 
-**Recommendation**:
-
-- **DESK-1384 blocks `create_environment` testing on Windows only** — `environment_root_path` is exclusive to that tool; `list_environments`, `install_packages`, `remove_environment`, and `list_environment_packages` are unaffected and can be tested now.
-- **DESK-1385 and DESK-1386 should be treated as release blockers if Windows support is in scope for this release**: DESK-1385 means every Windows user hits a 4-minute hang on their very first action; DESK-1386 means logged-in users (the primary target audience) cannot use the product at all after that hang. Both require fixes in `environments_mcp_server` before Windows can be considered shippable.
-- If Windows is not in scope for this release, document DESK-1385 and DESK-1386 as known Windows limitations in the release notes.
+| ID | Title | Status | Notes |
+|----|-------|--------|-------|
+| [DESK-1355](https://anaconda.atlassian.net/browse/DESK-1355) | Chat session freezes after tool error with no recovery (mcp-compose proxy hang) | Done | Fixed in mcp-compose 0.1.11; [PR #24](https://github.com/anaconda/anaconda-mcp/pull/24) |
+| [DESK-1364](https://anaconda.atlassian.net/browse/DESK-1364) | Generic error message for `conda_create_environment` | Closed: No Action | — |
+| [DESK-1384](https://anaconda.atlassian.net/browse/DESK-1384) | `create_environment` fails with Pydantic `frozen_instance` error when `environment_root_path` provided | Done | Fixed |
 
 ---
 
@@ -52,15 +82,14 @@ See [TEST_MATRIX.md](./TEST_MATRIX.md) for full assignment rationale.
 | QA | OS | Client | Python | Transport | Suite | Status | Result | Notes |
 |----|----|--------|--------|-----------|-------|--------|--------|-------|
 | QA 2 | macOS | Cursor | 3.13 | HTTP | TESTS_E2E.md | ✅ Done | 3 passed / 3 failed / 1 blocked | DESK-1358; DESK-1342; DESK-1355; DESK-1341 |
-| QA 1 | macOS | Claude Desktop | 3.10 | STDIO | TESTS_E2E.md | ✅ Done  | 3 passed / 4 failed | DESK-1358; DESK-1342; DESK-1341  |
+| QA 1 | macOS | Claude Desktop | 3.10 | STDIO | TESTS_E2E.md | ✅ Done | 3 passed / 4 failed | DESK-1358; DESK-1342; DESK-1341 |
 | QA 1 | macOS | Claude Desktop | 3.11 | STDIO | TESTS_E2E.md | ✅ Done | 4 passed / 2 failed | DESK-1342; DESK-1341 |
 | QA 1 | macOS | Claude Desktop | 3.12 | STDIO | TESTS_E2E.md | ✅ Done | 4 passed / 2 failed | DESK-1342; DESK-1341 |
 | QA 1 | macOS | Claude Desktop | 3.13 | STDIO | TESTS_E2E.md | ✅ Done | 3 passed / 3 failed | DESK-1358; DESK-1342 |
-| QA 2 | macOS | Cursor | 3.12 | STDIO | TESTS_E2E.md | ✅ Done | 2 passed / 3 failed / 1 blocked | DESK-1538; DESK-1539; DESK-1355; DESK-1341|
+| QA 2 | macOS | Cursor | 3.12 | STDIO | TESTS_E2E.md | ✅ Done | 2 passed / 3 failed / 1 blocked | DESK-1538; DESK-1539; DESK-1355; DESK-1341 |
 | QA 2 | macOS | Claude Code | 3.10 | HTTP | TESTS_E2E.md | ✅ Done | 3 passed / 3 failed / 1 blocked | DESK-1358; DESK-1342; DESK-1355; DESK-1341 |
-| QA 1 | Windows | Claude Desktop | 3.13 | STDIO | TESTS_E2E.md | 🔶 Partial | 0 passed / 1 failed / 5 unexecuted | DESK-1344; DESK-1363; DESK-1364; DESK-1365 |
+| QA 1 | Windows | Claude Desktop | 3.13 | STDIO | TESTS_E2E.md | ✅ Done | 0 passed / 6 failed / 0 unexecuted | DESK-1390; DESK-1364; DESK-1389; DESK-1365; DESK-1391 |
 | QA 2 | Windows | Claude Desktop | 3.10 | STDIO | TESTS_E2E.md | 🔶 Partial | 0 passed / 1 failed / 5 unexecuted | DESK-1384; DESK-1385; DESK-1386; DESK-1363 |
-
 
 ---
 
@@ -79,16 +108,23 @@ See [TEST_MATRIX.md](./TEST_MATRIX.md) for full assignment rationale.
 
 | ID | Title | Severity | KI | Found in |
 |----|-------|----------|----|----------|
-| [DESK-1342](https://anaconda.atlassian.net/browse/DESK-1342) | Environment Operations Fail by Name — Wrong Prefix Resolved | Minor | [KI-003](./KNOWN_ISSUES.md#ki-003-environment-operations-fail-by-name--wrong-prefix-resolved) | QA 2 · macOS · Cursor · 3.13 · HTTP |
-| [DESK-1341](https://anaconda.atlassian.net/browse/DESK-1341) | Incorrect behavior for conda_install_packages when package does not exist | Minor | [KI-010](./KNOWN_ISSUES.md#ki-010-false-environment-not-found-when-installing-nonexistent-package) | QA 1 · macOS · Claude Desktop · 3.10 · STDIO |
-| [DESK-1344](https://anaconda.atlassian.net/browse/DESK-1344) | `anaconda-mcp` command not recognized on Windows despite correct installation | Major | [PI-001](./KNOWN_ISSUES.md#pi-001-anaconda-mcp-cli-not-executable-on-windows--missing-exe-wrapper) | QA 3 · Windows · Claude Desktop · 3.13 · STDIO |
-| [DESK-1355](https://anaconda.atlassian.net/browse/DESK-1355) | mcp-compose proxy hangs and corrupts session on tool error | Major | [KI-011](./KNOWN_ISSUES.md#ki-011-mcp-compose-proxy-hangs-and-corrupts-session-on-tool-error) | QA 2 · macOS · Cursor · 3.13 · HTTP; QA 2 · macOS · Claude Code · 3.10 · HTTP — **donew** |
-| [DESK-1356](https://anaconda.atlassian.net/browse/DESK-1356) | HTTP setup wizard suggests wrong server command — starts STDIO mode instead of HTTP | Minor | [KI-008](./KNOWN_ISSUES.md#ki-008-http-setup-suggests-wrong-server-command) | Manual testing |
-| [DESK-1358](https://anaconda.atlassian.net/browse/DESK-1358) | Private channel requests routed to conda.anaconda.org instead of repo.anaconda.cloud — credentials never reached | Major | [KI-005](./KNOWN_ISSUES.md#ki-005-channel-credentials-not-picked-up) | Manual testing |
-| [DESK-1359](https://anaconda.atlassian.net/browse/DESK-1359) | MCP server initialization hangs when port 4041 is occupied by a non-responsive process | Medium | [KI-012](./KNOWN_ISSUES.md#ki-012-mcp-server-initialization-hangs-when-port-4041-is-occupied-by-a-non-responsive-process) | Manual testing · macOS · Cursor · 3.12 · STDIO |
-| [DESK-1363](https://anaconda.atlassian.net/browse/DESK-1363) | [Windows] claude-desktop setup-config writes config to wrong location and doesn't restart Claude Desktop | Minor | — | QA 1 · Windows · Claude Desktop · 3.13 · STDIO |
-| [DESK-1364](https://anaconda.atlassian.net/browse/DESK-1364) | Generic error message for: conda_create_environment | Minor | — | QA 1 · Windows · Claude Desktop · 3.13 · STDIO |
-| [DESK-1366](https://anaconda.atlassian.net/browse/DESK-1366) | `logger.exception()` causes server hang after ~15 calls | Major | [KI-015](./KNOWN_ISSUES.md#ki-015-loggerexception-causes-server-hang-after-15-calls) | QA 2 · macOS · anaconda-mcp-dev · 3.13 · HTTP/STDIO |
-| [DESK-1384](https://anaconda.atlassian.net/browse/DESK-1384) | `create_environment` fails with Pydantic `frozen_instance` error when `environment_root_path` provided | High | [KI-016](./KNOWN_ISSUES.md#ki-016) | QA 1 · Windows · Claude Desktop · 3.10 · STDIO |
-| [DESK-1385](https://anaconda.atlassian.net/browse/DESK-1385) | First tool call always hangs on Windows — cold-start overhead exceeds 30s SSE timeout | High | [KI-018](./KNOWN_ISSUES.md#ki-018) | QA 1 · Windows · Claude Desktop · 3.10 · STDIO |
-| [DESK-1386](https://anaconda.atlassian.net/browse/DESK-1386) | After first-call hang, retry also fails when user is logged in (telemetry blocks recovery) | High | [KI-019](./KNOWN_ISSUES.md#ki-019) | QA 1 · Windows · Claude Desktop · 3.10 · STDIO |
+| [DESK-1341](https://anaconda.atlassian.net/browse/DESK-1341) | Incorrect error message for `conda_install_packages` when package does not exist | Minor | [KI-010](./KNOWN_ISSUES.md#ki-010) | QA 1 · macOS · Claude Desktop · 3.10 · STDIO |
+| [DESK-1342](https://anaconda.atlassian.net/browse/DESK-1342) | Environment operations fail by name — wrong prefix resolved | Minor | [KI-003](./KNOWN_ISSUES.md#ki-003) | QA 2 · macOS · Cursor · 3.13 · HTTP |
+| [DESK-1344](https://anaconda.atlassian.net/browse/DESK-1344) | `anaconda-mcp` command not recognized on Windows despite correct installation | Major | [PI-001](./KNOWN_ISSUES.md#pi-001) | QA 3 · Windows · Claude Desktop · 3.13 · STDIO |
+| [DESK-1355](https://anaconda.atlassian.net/browse/DESK-1355) | mcp-compose proxy hangs and corrupts session on tool error | Major | [KI-011](./KNOWN_ISSUES.md#ki-011) | QA 2 · macOS · Cursor · 3.13 · HTTP; QA 2 · macOS · Claude Code · 3.10 · HTTP — **done** |
+| [DESK-1356](https://anaconda.atlassian.net/browse/DESK-1356) | HTTP setup wizard suggests wrong server command — starts STDIO mode instead of HTTP | Minor | [KI-008](./KNOWN_ISSUES.md#ki-008) | Manual testing |
+| [DESK-1358](https://anaconda.atlassian.net/browse/DESK-1358) | Private channel requests routed to `conda.anaconda.org` instead of `repo.anaconda.cloud` — credentials never reached | Major | [KI-005](./KNOWN_ISSUES.md#ki-005) | Manual testing |
+| [DESK-1359](https://anaconda.atlassian.net/browse/DESK-1359) | Stale process port conflicts on MCP server restart produce no actionable diagnostic | Medium | [KI-012](./KNOWN_ISSUES.md#ki-012) | Manual testing · macOS · Cursor · 3.12 · STDIO |
+| [DESK-1363](https://anaconda.atlassian.net/browse/DESK-1363) | [Windows] `claude-desktop setup-config` writes config to wrong location and doesn't restart Claude Desktop | Minor | — | QA 1 · Windows · Claude Desktop · 3.13 · STDIO |
+| [DESK-1364](https://anaconda.atlassian.net/browse/DESK-1364) | Generic error message for `conda_create_environment` | Minor | — | QA 1 · Windows · Claude Desktop · 3.13 · STDIO — **closed: no action** |
+| [DESK-1365](https://anaconda.atlassian.net/browse/DESK-1365) | [Windows] Invalid argument error on `conda_install_packages` / `conda_remove_packages` / `conda_remove_environment` | Major | — | QA 1 · Windows · Claude Desktop · 3.13 · STDIO |
+| [DESK-1366](https://anaconda.atlassian.net/browse/DESK-1366) | `logger.exception()` causes server hang after ~15 calls | Major | [KI-015](./KNOWN_ISSUES.md#ki-015) | QA 2 · macOS · anaconda-mcp-dev · 3.13 · HTTP/STDIO |
+| [DESK-1384](https://anaconda.atlassian.net/browse/DESK-1384) | `create_environment` fails with Pydantic `frozen_instance` error when `environment_root_path` provided | High | [KI-016](./KNOWN_ISSUES.md#ki-016) | QA 1 · Windows · Claude Desktop · 3.10 · STDIO — **done** |
+| [DESK-1385](https://anaconda.atlassian.net/browse/DESK-1385) | [Windows] First tool call always hangs — cold-start overhead exceeds 30s SSE timeout | High | [KI-018](./KNOWN_ISSUES.md#ki-018) | QA 1 · Windows · Claude Desktop · 3.10 · STDIO |
+| [DESK-1386](https://anaconda.atlassian.net/browse/DESK-1386) | [Windows] After first-call hang, retry also fails when user is logged in | High | [KI-019](./KNOWN_ISSUES.md#ki-019) | QA 1 · Windows · Claude Desktop · 3.10 · STDIO |
+| [DESK-1389](https://anaconda.atlassian.net/browse/DESK-1389) | [Windows] "Not defined" error message for `conda_create_environment` | Minor | — | QA 1 · Windows · Claude Desktop · 3.13 · STDIO |
+| [DESK-1390](https://anaconda.atlassian.net/browse/DESK-1390) | [Windows] Existing environment not found using `conda_remove_environment` | Major | — | QA 1 · Windows · Claude Desktop · 3.13 · STDIO |
+| [DESK-1391](https://anaconda.atlassian.net/browse/DESK-1391) | [Windows] Unable to install package from `repo.anaconda.cloud` | Major | — | QA 1 · Windows · Claude Desktop · 3.13 · STDIO |
+| [DESK-1392](https://anaconda.atlassian.net/browse/DESK-1392) | [Feature] Expose `channels` parameter in `conda_install_packages` and `conda_create_environment` | Low | — | Manual testing — proposed reclassification: Bug → Task |
+| [DESK-1393](https://anaconda.atlassian.net/browse/DESK-1393) | [Feature] Auth Toolset — `auth_status` + `auth_check_channel` tools | Low | — | Manual testing — proposed reclassification: Bug → Task |
+| [DESK-1394](https://anaconda.atlassian.net/browse/DESK-1394) | [Feature] 403 Auth Interceptor — automatic diagnostic chain on channel access failure | Low | — | Manual testing — proposed reclassification: Bug → Task |
