@@ -68,7 +68,7 @@ Based on RC1 findings (13 bugs filed, Phase 1 complete):
 
 | Config | SETUP-001 | CORE-001a (logged out) | CORE-001 (logged in) | AUTH-002 | AUTH-001a | GUARD-001 | CHAN-001 | REGRESS-002 | Total tests |
 |--------|-----------|------------------------|----------------------|----------|-----------|-----------|----------|-------------|-------------|
-| 1 (macOS, 3.13) | Yes | Yes | Yes | Yes | Blocked | Yes | Yes | Yes | 8 (+1 blocked) |
+| 1 (macOS, 3.13) | Yes | Yes | Yes | Yes | Blocked | Yes | Yes | Yes | 8 (1 blocked) |
 | 2 (macOS, 3.10) | Yes | — | Yes | — | — | — | — | — | 2 |
 | 3 (Windows, 3.13) | Yes | Yes | Yes | logged in only | — | Yes | — | — | 5 |
 | 4 (Windows, 3.10) | Yes | Yes | Yes | — | — | — | — | — | 3 |
