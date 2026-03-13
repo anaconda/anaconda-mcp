@@ -10,12 +10,26 @@ on:
 
 jobs:
   conda-build:
-    name: Build conda package
-    runs-on: [self-hosted-amd64-medium-privileged-on-demand]
+    name: Build conda package (${{ matrix.os }})
+    runs-on: ${{ matrix.runner }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: linux
+            runner: [self-hosted-amd64-medium-privileged-on-demand]
+            shell: bash -el {0}
+          - os: macos
+            runner: macos-latest
+            shell: bash -el {0}
+          - os: windows
+            runner: windows-latest
+            shell: cmd /C CALL {0}
 
     defaults:
       run:
-        shell: bash -el {0}
+        shell: ${{ matrix.shell }}
 
     steps:
       - uses: actions/checkout@v4
@@ -32,7 +46,8 @@ jobs:
       - name: Install conda-build
         run: conda install -y conda-build
 
-      - name: Configure private conda channels
+      - name: Configure private conda channels (unix)
+        if: matrix.os != 'windows'
         run: |
           conda config --add channels conda-forge
           conda config --add channels datalayer
@@ -40,7 +55,18 @@ jobs:
           conda config --add channels https://conda.anaconda.org/t/${{ secrets.ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN }}/anaconda-cloud/label/dev
           conda config --add channels https://conda.anaconda.org/t/${{ secrets.ANACONDA_CONNECTOR_TOKEN }}/anaconda-connector
 
-      - name: Build conda package
+      - name: Configure private conda channels (windows)
+        if: matrix.os == 'windows'
+        shell: bash -el {0}
+        run: |
+          conda config --add channels conda-forge
+          conda config --add channels datalayer
+          conda config --add channels https://conda.anaconda.org/t/${{ secrets.ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN }}/anaconda-cloud
+          conda config --add channels https://conda.anaconda.org/t/${{ secrets.ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN }}/anaconda-cloud/label/dev
+          conda config --add channels https://conda.anaconda.org/t/${{ secrets.ANACONDA_CONNECTOR_TOKEN }}/anaconda-connector
+
+      - name: Build conda package (unix)
+        if: matrix.os != 'windows'
         run: |
           mkdir -p build/conda
           conda build \
@@ -52,13 +78,33 @@ jobs:
             --output-folder build/conda \
             conda-build
 
-      - name: Show built package
+      - name: Build conda package (windows)
+        if: matrix.os == 'windows'
+        shell: bash -el {0}
+        run: |
+          mkdir -p build/conda
+          conda build \
+            -c conda-forge \
+            -c datalayer \
+            -c https://conda.anaconda.org/t/${{ secrets.ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN }}/anaconda-cloud \
+            -c https://conda.anaconda.org/t/${{ secrets.ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN }}/anaconda-cloud/label/dev \
+            -c https://conda.anaconda.org/t/${{ secrets.ANACONDA_CONNECTOR_TOKEN }}/anaconda-connector \
+            --output-folder build/conda \
+            conda-build
+
+      - name: Show built package (unix)
+        if: matrix.os != 'windows'
+        run: ls -lh build/conda/**/*.conda || ls -lh build/conda/**/*.tar.bz2
+
+      - name: Show built package (windows)
+        if: matrix.os == 'windows'
+        shell: bash -el {0}
         run: ls -lh build/conda/**/*.conda || ls -lh build/conda/**/*.tar.bz2
 
       - name: Upload conda artifact
         uses: actions/upload-artifact@v4
         with:
-          name: conda-package
+          name: conda-package-${{ matrix.os }}
           path: build/conda/
 
   publish:
@@ -71,11 +117,12 @@ jobs:
         shell: bash -el {0}
 
     steps:
-      - name: Download conda artifact
+      - name: Download all conda artifacts
         uses: actions/download-artifact@v4
         with:
-          name: conda-package
+          pattern: conda-package-*
           path: build/conda/
+          merge-multiple: true
 
       - name: Setup Miniconda
         uses: conda-incubator/setup-miniconda@v3
@@ -119,11 +166,12 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Download conda artifact
+      - name: Download all conda artifacts
         uses: actions/download-artifact@v4
         with:
-          name: conda-package
+          pattern: conda-package-*
           path: build/conda/
+          merge-multiple: true
 
       - name: Determine if pre-release
         id: prerelease
