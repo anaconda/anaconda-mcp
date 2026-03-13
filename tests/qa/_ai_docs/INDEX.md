@@ -1,78 +1,94 @@
-# Anaconda MCP - QA Documentation Index
+# QA Testing Guide
 
-## Purpose
-This documentation serves as the central knowledge base for QA testing of the Anaconda MCP server. Documents are structured for both manual QA testing and AI-assisted testing workflows.
+## Quick Navigation
 
-## Document Structure
+```mermaid
+flowchart TD
+    Start["I need to test"] --> Platform{Platform?}
+
+    Platform -->|macOS| QS[QUICK_START.md]
+    Platform -->|Windows| Win["WINDOWS_SETUP.md<br/>→ QUICK_START.md"]
+
+    QS --> Test{Which test?}
+    Win --> Test
+
+    Test --> TestList["Pick from Test Catalog below"]
+```
+
+## 1. Setup
+
+| Platform | Guide |
+|----------|-------|
+| macOS | [QUICK_START.md](./QUICK_START.md) |
+| Windows | [WINDOWS_SETUP.md](./WINDOWS_SETUP.md) → [QUICK_START.md](./QUICK_START.md) |
+| Windows + Claude Code | [WINDOWS_CLAUDE_CODE.md](./WINDOWS_CLAUDE_CODE.md) |
+
+## 2. Prerequisites (if test requires auth)
+
+| State | Guide | Used by |
+|-------|-------|---------|
+| Backup .condarc | [AUTH_SETUP.md#backup](./AUTH_SETUP.md#before-you-begin--backup-recommended) | All auth tests |
+| Logged In | [AUTH_SETUP.md#logged-in](./AUTH_SETUP.md#prerequisites-logged-in-core-001-auth-002) | CORE-001, AUTH-002 |
+| Logged Out + Public | [AUTH_SETUP.md#logged-out-public](./AUTH_SETUP.md#prerequisites-logged-out--public-channels-core-001a) | CORE-001a |
+| Logged Out + Private | [AUTH_SETUP.md#logged-out-private](./AUTH_SETUP.md#prerequisites-logged-out--private-channels-auth-001a) | AUTH-001a |
+| Cleanup | [AUTH_SETUP.md#cleanup](./AUTH_SETUP.md#post-conditions--cleanup) | After auth tests |
+
+## 3. Test Catalog
+
+| Test | Description | RC1 | RC2 |
+|------|-------------|:---:|:---:|
+| [SETUP-001](./tests/SETUP-001.md) | Installation disclaimer verification | | + |
+| [CORE-001](./tests/CORE-001.md) | Full tools flow — logged in | + | + |
+| [CORE-001a](./tests/CORE-001a.md) | Full tools flow — logged out (public channels) | + | + |
+| [AUTH-001](./tests/AUTH-001.md) | Anonymous mode (public channels) | + | + |
+| [AUTH-001a](./tests/AUTH-001a.md) | Anonymous + private channels → 403 | | + |
+| [AUTH-002](./tests/AUTH-002.md) | Authenticated mode | + | + |
+| [GUARD-001](./tests/GUARD-001.md) | Guardrails (no pip fallback, deletion confirm) | + | + |
+| [CHAN-001](./tests/CHAN-001.md) | Override channels behavior | | + |
+| [REGRESS-001](./tests/REGRESS-001.md) | Known issues regression (KI-001, KI-002, KI-003) | + | + |
+| [REGRESS-002](./tests/REGRESS-002.md) | Remove environment by name (DESK-1342) | + | + |
+
+**Legend**: `+` = in scope for release
+
+## 4. Tracking & Reference
+
+| Document | Purpose |
+|----------|---------|
+| [TEST_MATRIX_rc2.md](./TEST_MATRIX_rc2.md) | Test assignments per QA/config |
+| [TEST_PROGRESS.md](./TEST_PROGRESS.md) | Results tracking |
+| [KNOWN_ISSUES.md](./KNOWN_ISSUES.md) | Bugs and workarounds |
+
+## 5. Workflow
+
+1. **Setup**: Follow platform guide to install and configure
+2. **Backup**: Run backup command from AUTH_SETUP.md (once, before any auth tests)
+3. **Prerequisites**: Set auth state per test requirements
+4. **Execute**: Run test steps, record results
+5. **Cleanup**: Restore original state after auth tests
+6. **Report**: Update TEST_PROGRESS.md with results
+
+---
+
+## Additional Documentation
 
 ### Product Documentation
-| Document | Description | Audience |
-|----------|-------------|----------|
-| [PRODUCT_OVERVIEW.md](./PRODUCT_OVERVIEW.md) | Product features, architecture, constraints | All QA |
-| [FEATURE_TREE.md](./FEATURE_TREE.md) | 3-level feature tree with diagrams | All QA |
-| [CONFIGURATION.md](./CONFIGURATION.md) | Configuration options reference | All QA |
+| Document | Description |
+|----------|-------------|
+| [PRODUCT_OVERVIEW.md](./PRODUCT_OVERVIEW.md) | Product features, architecture, constraints |
+| [FEATURE_TREE.md](./FEATURE_TREE.md) | 3-level feature tree with diagrams |
+| [CONFIGURATION.md](./CONFIGURATION.md) | Configuration options reference |
 
-### Test Flows (TESTS_* prefix)
-| Document | Description | Platform |
-|----------|-------------|----------|
-| [TESTS_E2E.md](./TESTS_E2E.md) | E2E flows (Claude Desktop, Cursor, or Claude Code) | macOS, Windows |
-| [TESTS_CLI.md](./TESTS_CLI.md) | CLI-only flows (automatable) | All platforms |
-| [TESTS_CONFIG.md](./TESTS_CONFIG.md) | Configuration tests (automatable) | All platforms |
-| [TESTS_API_TOOLS.md](./TESTS_API_TOOLS.md) | Direct API tool tests (automatable) | All platforms |
+### Legacy Test Docs (reference)
+| Document | Description |
+|----------|-------------|
+| [TESTS_E2E.md](./TESTS_E2E.md) | Base E2E test definitions |
+| [TESTS_E2E_RC2.md](./TESTS_E2E_RC2.md) | RC2 modifications (legacy format) |
+| [TESTS_CLI.md](./TESTS_CLI.md) | CLI-only flows (automatable) |
+| [TESTS_CONFIG.md](./TESTS_CONFIG.md) | Configuration tests (automatable) |
+| [TESTS_API_TOOLS.md](./TESTS_API_TOOLS.md) | Direct API tool tests (automatable) |
 
-### Test Planning
-| Document | Description | Audience |
-|----------|-------------|----------|
-| [COVERAGE_MAP.md](./COVERAGE_MAP.md) | Feature to test case mapping (all test files) | QA leads |
-| [TEST_MATRIX.md](./TEST_MATRIX.md) | OS/Python/Transport matrix | QA leads |
-| [TEST_PROGRESS.md](./TEST_PROGRESS.md) | Live run status, results, bugs and observations | All QA |
-| [TEST_COVERAGE_ANALYSIS.md](./TEST_COVERAGE_ANALYSIS.md) | Existing pytest coverage analysis | QA leads |
-| [OPEN_QUESTIONS.md](./OPEN_QUESTIONS.md) | Questions for product owner | QA leads, PO |
-
-### Reference
-| Document | Description | Audience |
-|----------|-------------|----------|
-| [TESTING_WORKFLOW.md](./TESTING_WORKFLOW.md) | Step-by-step workflow for QA participants | All QA |
-| [QUICK_START.md](./QUICK_START.md) | Install, configure and verify setup | All QA |
-| [KNOWN_ISSUES.md](./KNOWN_ISSUES.md) | Known bugs and workarounds | All QA |
-| [hang_issue/](./hang_issue/) | Root cause analysis, bug report, and reproduction log for the mcp-compose proxy hang on tool error responses (KI-011 / [DESK-1355](https://anaconda.atlassian.net/browse/DESK-1355)) | Developers, QA leads |
-
-### Scripts
-| Script | Description |
-|--------|-------------|
-| [scripts/start-http-server.sh](./scripts/start-http-server.sh) | Start HTTP server (keeps running) |
-
-## Test Projects
-
-| Folder | Transport | Purpose | Needs pre-started server? |
-|--------|-----------|---------|--------------------------|
-| [`tests/qa/http_tools/`](../http_tools/README.md) | Streamable HTTP | Direct API regression suite — calls mcp-compose over HTTP | Yes (port 8888) |
-| [`tests/qa/stdio_tools/`](../stdio_tools/README.md) | STDIO | Regression suite — calls mcp-compose via subprocess pipe | No — fixture self-manages |
-
-## Source Documents
-
-Original requirements in `initial_docs/`:
-- `epic_information.md` - Epic requirements
-- `conversation.md` - Internal testing feedback
-- `Anaconda MCP-User Stories.pdf` - User stories
-
-## Quick Links
-
-| Task | Document |
-|------|----------|
-| **Quick Start** | [QUICK_START.md](./QUICK_START.md) |
-| **Setup & Install** | [QUICK_START.md](./QUICK_START.md) |
-| **Test Matrix** | [TEST_MATRIX.md](./TEST_MATRIX.md) |
-| **Test Progress** | [TEST_PROGRESS.md](./TEST_PROGRESS.md) |
-| **E2E Tests** | [TESTS_E2E.md](./TESTS_E2E.md) |
-| **CLI Tests (All Platforms)** | [TESTS_CLI.md](./TESTS_CLI.md) |
-| **Config Tests (All Platforms)** | [TESTS_CONFIG.md](./TESTS_CONFIG.md) |
-| **API Tool Tests (All Platforms)** | [TESTS_API_TOOLS.md](./TESTS_API_TOOLS.md) |
-| **Feature → Test Mapping** | [COVERAGE_MAP.md](./COVERAGE_MAP.md) |
-| **Known Issues** | [KNOWN_ISSUES.md](./KNOWN_ISSUES.md) |
-
-## Conventions
-
-- Test IDs: `{AREA}-{NUMBER}` (e.g., `CLI-001`, `ENV-002`)
-- Preconditions: `[PRE]`
-- Expected results: `[EXPECTED]`
+### Test Projects (automation)
+| Folder | Purpose |
+|--------|---------|
+| [`tests/qa/http_tools/`](../http_tools/README.md) | HTTP API regression suite |
+| [`tests/qa/stdio_tools/`](../stdio_tools/README.md) | STDIO regression suite |
