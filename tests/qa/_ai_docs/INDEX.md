@@ -7,12 +7,22 @@ flowchart TD
     Start["I need to test"] --> Platform{Platform?}
 
     Platform -->|macOS| QS[QUICK_START.md]
-    Platform -->|Windows| Win["WINDOWS_SETUP.md<br/>→ QUICK_START.md"]
+    Platform -->|Windows| Win[WINDOWS_SETUP.md]
 
-    QS --> Test{Which test?}
-    Win --> Test
+    QS --> Auth{Need auth?}
+    Win --> WinQS[QUICK_START.md]
+    WinQS --> Auth
 
-    Test --> TestList["Pick from Test Catalog below"]
+    Auth -->|Yes| AuthSetup[AUTH_SETUP.md]
+    Auth -->|No| Tests
+
+    AuthSetup --> Tests[Test Catalog]
+
+    click QS "./QUICK_START.md" "Setup for macOS"
+    click Win "./WINDOWS_SETUP.md" "Setup for Windows"
+    click WinQS "./QUICK_START.md" "Setup for Windows"
+    click AuthSetup "./AUTH_SETUP.md" "Configure auth state"
+    click Tests "#3-test-catalog" "Pick a test"
 ```
 
 ## 1. Setup
