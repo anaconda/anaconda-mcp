@@ -82,28 +82,33 @@ mindmap
 
 ## Feature Tree Table
 
-| Feature Group | Feature | User Actions | Priority |
-|---------------|---------|--------------|----------|
-| **Environment Management** | List Environments | AI: "List my conda environments"<br>API: `tools/call conda_list_environments` | P0 |
-| | List Environment Packages | AI: "What packages are in env X?"<br>API: `tools/call conda_list_environment_packages` | P0 |
-| | Create Environment | AI: "Create env with Python 3.11"<br>API: `tools/call conda_create_environment` | P0 |
-| | Remove Environment | AI: "Delete environment X"<br>API: `tools/call conda_remove_environment` | P0 |
-| | Install Packages | AI: "Install numpy in env X"<br>API: `tools/call conda_install_packages` | P0 |
-| | Remove Packages | AI: "Remove pandas from env X"<br>API: `tools/call conda_remove_packages` | P0 |
-| **Server Management** | Start Server | `anaconda-mcp serve`<br>`anaconda-mcp serve --port 8888` | P0 |
-| | Discover Servers | `anaconda-mcp discover`<br>`anaconda-mcp discover --output-format json` | P1 |
-| | Compose Servers | `anaconda-mcp compose`<br>`anaconda-mcp compose --include server1` | P1 |
-| **Claude Desktop Integration** | Setup Config | `anaconda-mcp claude-desktop setup-config`<br>`setup-config --transport streamable-http` | P0 |
-| | Remove Config | `anaconda-mcp claude-desktop remove-config` | P0 |
-| | Show Config | `anaconda-mcp claude-desktop show`<br>`claude-desktop show --json` | P1 |
-| | Get Config Path | `anaconda-mcp claude-desktop path` | P1 |
-| **Authentication** | Anaconda Login | Auto: Browser opens on serve<br>Manual: `anaconda login` before serve | P0 |
-| | Token Management | Auto: Stored in system keyring<br>Used for telemetry | P1 |
-| **Configuration** | Environment Variables | `ANACONDA_MCP_LOG_LEVEL=DEBUG`<br>`ANACONDA_MCP_SEND_METRICS=false` | P0 |
-| | Config File | Edit: `mcp_compose.toml.template`<br>Override: `--config custom.toml` | P0 |
-| | Python Executable | Env: `ANACONDA_MCP_PYTHON_EXECUTABLE`<br>Template: `{{PYTHON_EXECUTABLE}}` | P1 |
-| **Transport Modes** | STDIO Transport | Default for Claude Desktop<br>Auto-spawns as subprocess | P0 |
-| | HTTP Transport | Start: `anaconda-mcp serve --port 8888`<br>Connect: `--transport streamable-http` | P0 |
+| Feature Group | Feature | User Actions | RC1 | RC2 |
+|---------------|---------|--------------|:---:|:---:|
+| **Environment Management** | List Environments | AI: "List my conda environments" | + | + |
+| | List Environment Packages | AI: "What packages are in env X?" | + | + |
+| | Create Environment | AI: "Create env with Python 3.11" | + | + |
+| | Remove Environment | AI: "Delete environment X" | + | + |
+| | Install Packages | AI: "Install numpy in env X" | + | + |
+| | Remove Packages | AI: "Remove pandas from env X" | + | + |
+| | Override Channels | AI: "Create env using only conda-forge" | | + |
+| **Server Management** | Start Server | `anaconda-mcp serve` | + | + |
+| | Discover Servers | `anaconda-mcp discover` | + | + |
+| | Compose Servers | `anaconda-mcp compose` | + | + |
+| **Claude Desktop Integration** | Setup Config | `anaconda-mcp claude-desktop setup-config` | + | + |
+| | Remove Config | `anaconda-mcp claude-desktop remove-config` | + | + |
+| | Show Config | `anaconda-mcp claude-desktop show` | + | + |
+| | Get Config Path | `anaconda-mcp claude-desktop path` | + | + |
+| | Installation Disclaimer | Terms shown after install | | + |
+| **Authentication** | Anaconda Login | Auto: Browser opens on serve | + | + |
+| | Token Management | Auto: Stored in system keyring | + | + |
+| **Configuration** | Environment Variables | `ANACONDA_MCP_LOG_LEVEL`, `ANACONDA_MCP_SEND_METRICS` | + | + |
+| | Config File | `mcp_compose.toml.template` | + | + |
+| | Python Executable | `ANACONDA_MCP_PYTHON_EXECUTABLE` | + | + |
+| | Allow Override Channels | `CONDA_MCP_SERVER_ALLOW_OVERRIDE_CHANNELS` | | + |
+| **Transport Modes** | STDIO Transport | Default for Claude Desktop | + | + |
+| | HTTP Transport | `anaconda-mcp serve --port 8888` | + | + |
+
+**Legend**: `+` = feature present in release
 
 ---
 
