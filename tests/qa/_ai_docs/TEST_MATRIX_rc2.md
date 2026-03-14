@@ -61,18 +61,15 @@ Based on RC1 findings (13 bugs filed, Phase 1 complete):
 
 > **DESK-1385/1386 status**: Not confirmed fixed in RC2. Test both auth states on Windows and document failures explicitly — anaconda-connector changes may have affected behavior. See [WINDOWS_SETUP.md](./WINDOWS_SETUP.md#3-open-claude-desktop-and-wait-for-connection) for setup.
 
-**Rationale**:
-- QA 1 takes 3 configs (71%) — macOS both + Windows 3.10
-- QA 2 takes 1 config (29%) — Windows 3.13 with AUTH-002
 
 ### Tests Per Configuration
 
-| Config | SETUP-001 | CORE-001a (logged out) | CORE-001 (logged in) | AUTH-002 | AUTH-001a | GUARD-001 | CHAN-001 | REGRESS-002 | Total tests |
-|--------|-----------|------------------------|----------------------|----------|-----------|-----------|----------|-------------|-------------|
-| 1 (macOS, 3.13) | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | 9 |
-| 2 (macOS, 3.10) | Yes | — | Yes | — | — | — | — | — | 2 |
-| 3 (Windows, 3.13) | Yes | Yes | Yes | Yes | — | Yes | — | — | 5 |
-| 4 (Windows, 3.10) | Yes | Yes | Yes | — | — | — | — | — | 3 |
+| QA | Config | SETUP-001 | CORE-001a (logged out) | CORE-001 (logged in) | AUTH-002 | AUTH-001a | GUARD-001 | CHAN-001 | REGRESS-002 | Total |
+|----|--------|-----------|------------------------|----------------------|----------|-----------|-----------|----------|-------------|-------|
+| QA 2 | macOS, 3.13 | + | + | + | + | + | + | + | + | 9 |
+| QA 1 | macOS, 3.10 | + | — | + | — | — | — | — | — | 2 |
+| QA 1 | Windows, 3.13 | + | + | + | + | — | + | — | — | 5 |
+| QA 2 | Windows, 3.10 | + | + | + | — | — | — | — | — | 3 |
 
 > **New tests for RC2**: SETUP-001 (installation disclaimer), CHAN-001 (override_channels behavior), REGRESS-002 (DESK-1342 fix). See [TESTS_E2E_RC2.md](./TESTS_E2E_RC2.md) for details.
 >

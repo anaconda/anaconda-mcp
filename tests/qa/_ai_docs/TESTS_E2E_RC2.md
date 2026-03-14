@@ -237,47 +237,6 @@ Base test unchanged — see [TESTS_E2E.md](./TESTS_E2E.md#auth-002-authenticated
 
 **Cleanup**: See [AUTH_SETUP.md — Post-Conditions / Cleanup](./AUTH_SETUP.md#post-conditions--cleanup).
 
----
-
-## RC2 Test Matrix Assignment
-
-Per [TEST_MATRIX_rc2.md](./TEST_MATRIX_rc2.md):
-
-### QA 1 (3 configs)
-
-```
-macOS, Python 3.13:
-[ ] SETUP-001: Installation disclaimer
-[ ] CORE-001: Full tools flow (with RC2 tool count verification)
-[ ] GUARD-001: Guardrails (with RC2 confirmation verification)
-[ ] AUTH-002: Authenticated mode
-[ ] CHAN-001: Override channels behavior (both parts)
-[ ] REGRESS-002: DESK-1342 fix verification
-
-macOS, Python 3.10:
-[ ] SETUP-001: Installation disclaimer
-[ ] CORE-001: Full tools flow
-
-Windows, Python 3.10 — logged out:
-[ ] SETUP-001: Installation disclaimer
-[ ] CORE-001: Full tools flow (verifies DESK-1385 fix)
-
-Windows, Python 3.10 — logged in:
-[ ] CORE-001: Full tools flow (verifies DESK-1386 fix)
-```
-
-### QA 2 (1 config)
-
-```
-Windows, Python 3.13 — logged out:
-[ ] SETUP-001: Installation disclaimer
-[ ] CORE-001: Full tools flow (if DESK-1344 fixed)
-
-Windows, Python 3.13 — logged in:
-[ ] CORE-001: Full tools flow
-[ ] AUTH-002: Authenticated mode
-[ ] GUARD-001: Guardrails
-```
 
 ---
 
