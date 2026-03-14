@@ -4,13 +4,13 @@ At C:\Users\JuliaIliukhina\anaconda3\shell\condabin\Conda.psm1:153 char:17
 +                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     + CategoryInfo          : NotSpecified: (DEBUG conda.gat...level set to 10:String) [], RemoteException
     + FullyQualifiedErrorId : NativeCommandError
- 
+
 DEBUG conda.conda_libmamba_solver.solver:_maybe_ignore_current_repodata(948): Ignoring repodata_fn='current_repodata.json', defaulting to repodata.json
 INFO conda.conda_libmamba_solver.solver:_log_info(857): conda version: 25.5.1
 INFO conda.conda_libmamba_solver.solver:_log_info(858): conda-libmamba-solver version: 25.4.0
 INFO conda.conda_libmamba_solver.solver:_log_info(859): libmambapy version: 2.0.5
 INFO conda.conda_libmamba_solver.solver:_log_info(860): Target prefix: 'C:\\Users\\JuliaIliukhina\\anaconda3\\envs\\anaconda-mcp-rc-py310'
-INFO conda.conda_libmamba_solver.solver:_log_info(861): Command: ['C:\\Users\\JuliaIliukhina\\anaconda3\\Scripts\\conda-script.py', 'create', '-vvv', '--name', 'anaconda-mcp-rc-py310', '-c', 'datalayer', '-c', 
+INFO conda.conda_libmamba_solver.solver:_log_info(861): Command: ['C:\\Users\\JuliaIliukhina\\anaconda3\\Scripts\\conda-script.py', 'create', '-vvv', '--name', 'anaconda-mcp-rc-py310', '-c', 'datalayer', '-c',
 'anaconda-cloud/label/dev', '-c', 'defaults', '-c', 'conda-forge', '--channel', 'https://conda.anaconda.org/t/<TOKEN>/anaconda-connector/', 'python=3.10', 'anaconda-mcp=1.0.0.rc.1', 'environments-mcp-server=1.0.0.rc.1']
 DEBUG conda.core.package_cache_data:_check_writable(334): package cache directory 'C:\Users\JuliaIliukhina\anaconda3\pkgs' writable: True
 DEBUG conda.gateways.repodata:fetch_latest(837): Local cache timed out for https://conda.anaconda.org/datalayer/win-64/repodata.json at C:\Users\JuliaIliukhina\anaconda3\pkgs\cache\3b9d1f82.json
@@ -520,7 +520,7 @@ DEBUG conda.core.prefix_data:_load_single_record(486): loading prefix record C:\
 DEBUG conda.core.prefix_data:_load_single_record(486): loading prefix record C:\Users\JuliaIliukhina\anaconda3\conda-meta\zstandard-0.23.0-py313h4fc1ca9_1.json
 DEBUG conda.core.prefix_data:_load_single_record(486): loading prefix record C:\Users\JuliaIliukhina\anaconda3\conda-meta\zstd-1.5.6-h8880b57_0.json
 DEBUG conda.core.prefix_data:_load_single_record(486): loading prefix record C:\Users\JuliaIliukhina\anaconda3\conda-meta\_anaconda_depends-2025.06-py313_mkl_2.json
-DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items: 
+DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items:
   - defaults/win-64::aiobotocore-2.19.0-py313haa95532_0
   - defaults/win-64::aiohttp-3.11.10-py313h827c3e9_0
   - defaults/noarch::aioitertools-0.7.1-pyhd3eb1b0_0
@@ -674,7 +674,7 @@ DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependenc
   - defaults/win-64::zict-3.0.0-py313haa95532_0
   - defaults/win-64::zstandard-0.23.0-py313h4fc1ca9_1
   - defaults/win-64::_anaconda_depends-2025.06-py313_mkl_2
-DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items: 
+DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items:
   - defaults/win-64::aiobotocore-2.19.0-py313haa95532_0
   - defaults/win-64::aiohttp-3.11.10-py313h827c3e9_0
   - defaults/noarch::aiosignal-1.2.0-pyhd3eb1b0_0
@@ -827,7 +827,7 @@ DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependenc
   - defaults/win-64::zict-3.0.0-py313haa95532_0
   - defaults/win-64::zstandard-0.23.0-py313h4fc1ca9_1
   - defaults/win-64::_anaconda_depends-2025.06-py313_mkl_2
-DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items: 
+DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items:
   - defaults/win-64::anaconda-auth-0.8.6-py313haa95532_0
   - defaults/win-64::anaconda-client-1.13.0-py313haa95532_1
   - defaults/win-64::anaconda-navigator-2.6.6-py313haa95532_2
@@ -975,7 +975,7 @@ DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependenc
   - defaults/win-64::zict-3.0.0-py313haa95532_0
   - defaults/win-64::zstandard-0.23.0-py313h4fc1ca9_1
   - defaults/win-64::_anaconda_depends-2025.06-py313_mkl_2
-DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items: 
+DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items:
   - defaults/win-64::anaconda-auth-0.8.6-py313haa95532_0
   - defaults/win-64::anaconda-client-1.13.0-py313haa95532_1
   - defaults/win-64::anaconda-navigator-2.6.6-py313haa95532_2
@@ -1122,7 +1122,7 @@ DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependenc
   - defaults/win-64::zict-3.0.0-py313haa95532_0
   - defaults/win-64::zstandard-0.23.0-py313h4fc1ca9_1
   - defaults/win-64::_anaconda_depends-2025.06-py313_mkl_2
-DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items: 
+DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items:
   - defaults/win-64::anaconda-auth-0.8.6-py313haa95532_0
   - defaults/win-64::anaconda-client-1.13.0-py313haa95532_1
   - defaults/win-64::anaconda-navigator-2.6.6-py313haa95532_2
@@ -1268,7 +1268,7 @@ DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependenc
   - defaults/win-64::zict-3.0.0-py313haa95532_0
   - defaults/win-64::zstandard-0.23.0-py313h4fc1ca9_1
   - defaults/win-64::_anaconda_depends-2025.06-py313_mkl_2
-DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items: 
+DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items:
   - defaults/win-64::anaconda-auth-0.8.6-py313haa95532_0
   - defaults/win-64::anaconda-client-1.13.0-py313haa95532_1
   - defaults/win-64::anaconda-navigator-2.6.6-py313haa95532_2
@@ -1413,7 +1413,7 @@ DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependenc
   - defaults/win-64::zict-3.0.0-py313haa95532_0
   - defaults/win-64::zstandard-0.23.0-py313h4fc1ca9_1
   - defaults/win-64::_anaconda_depends-2025.06-py313_mkl_2
-DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items: 
+DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items:
   - defaults/win-64::anaconda-auth-0.8.6-py313haa95532_0
   - defaults/win-64::anaconda-client-1.13.0-py313haa95532_1
   - defaults/win-64::anaconda-navigator-2.6.6-py313haa95532_2
@@ -1557,7 +1557,7 @@ DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependenc
   - defaults/win-64::zict-3.0.0-py313haa95532_0
   - defaults/win-64::zstandard-0.23.0-py313h4fc1ca9_1
   - defaults/win-64::_anaconda_depends-2025.06-py313_mkl_2
-DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items: 
+DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items:
   - defaults/win-64::anaconda-auth-0.8.6-py313haa95532_0
   - defaults/win-64::anaconda-client-1.13.0-py313haa95532_1
   - defaults/win-64::anaconda-navigator-2.6.6-py313haa95532_2
@@ -1700,7 +1700,7 @@ DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependenc
   - defaults/win-64::zict-3.0.0-py313haa95532_0
   - defaults/win-64::zstandard-0.23.0-py313h4fc1ca9_1
   - defaults/win-64::_anaconda_depends-2025.06-py313_mkl_2
-DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items: 
+DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items:
   - defaults/win-64::anaconda-auth-0.8.6-py313haa95532_0
   - defaults/win-64::anaconda-client-1.13.0-py313haa95532_1
   - defaults/win-64::anaconda-navigator-2.6.6-py313haa95532_2
@@ -1842,7 +1842,7 @@ DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependenc
   - defaults/win-64::zict-3.0.0-py313haa95532_0
   - defaults/win-64::zstandard-0.23.0-py313h4fc1ca9_1
   - defaults/win-64::_anaconda_depends-2025.06-py313_mkl_2
-DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items: 
+DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items:
   - defaults/win-64::anaconda-auth-0.8.6-py313haa95532_0
   - defaults/win-64::anaconda-client-1.13.0-py313haa95532_1
   - defaults/win-64::anaconda-navigator-2.6.6-py313haa95532_2
@@ -1983,7 +1983,7 @@ DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependenc
   - defaults/win-64::zict-3.0.0-py313haa95532_0
   - defaults/win-64::zstandard-0.23.0-py313h4fc1ca9_1
   - defaults/win-64::_anaconda_depends-2025.06-py313_mkl_2
-DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items: 
+DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items:
   - defaults/win-64::anaconda-auth-0.8.6-py313haa95532_0
   - defaults/win-64::anaconda-client-1.13.0-py313haa95532_1
   - defaults/win-64::anaconda-navigator-2.6.6-py313haa95532_2
@@ -2123,7 +2123,7 @@ DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependenc
   - defaults/win-64::zict-3.0.0-py313haa95532_0
   - defaults/win-64::zstandard-0.23.0-py313h4fc1ca9_1
   - defaults/win-64::_anaconda_depends-2025.06-py313_mkl_2
-DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items: 
+DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items:
   - defaults/win-64::anaconda-auth-0.8.6-py313haa95532_0
   - defaults/win-64::anaconda-client-1.13.0-py313haa95532_1
   - defaults/win-64::anaconda-navigator-2.6.6-py313haa95532_2
@@ -2262,7 +2262,7 @@ DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependenc
   - defaults/win-64::zict-3.0.0-py313haa95532_0
   - defaults/win-64::zstandard-0.23.0-py313h4fc1ca9_1
   - defaults/win-64::_anaconda_depends-2025.06-py313_mkl_2
-DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items: 
+DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items:
   - defaults/win-64::anaconda-auth-0.8.6-py313haa95532_0
   - defaults/win-64::anaconda-client-1.13.0-py313haa95532_1
   - defaults/win-64::anaconda-navigator-2.6.6-py313haa95532_2
@@ -2400,7 +2400,7 @@ DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependenc
   - defaults/win-64::zict-3.0.0-py313haa95532_0
   - defaults/win-64::zstandard-0.23.0-py313h4fc1ca9_1
   - defaults/win-64::_anaconda_depends-2025.06-py313_mkl_2
-DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items: 
+DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items:
   - defaults/win-64::anaconda-auth-0.8.6-py313haa95532_0
   - defaults/win-64::anaconda-client-1.13.0-py313haa95532_1
   - defaults/win-64::anaconda-navigator-2.6.6-py313haa95532_2
@@ -2536,7 +2536,7 @@ DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependenc
   - defaults/win-64::xarray-2025.4.0-py313haa95532_0
   - defaults/win-64::zstandard-0.23.0-py313h4fc1ca9_1
   - defaults/win-64::_anaconda_depends-2025.06-py313_mkl_2
-DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items: 
+DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items:
   - defaults/win-64::anaconda-auth-0.8.6-py313haa95532_0
   - defaults/win-64::anaconda-client-1.13.0-py313haa95532_1
   - defaults/win-64::anaconda-navigator-2.6.6-py313haa95532_2
@@ -2671,7 +2671,7 @@ DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependenc
   - defaults/win-64::xarray-2025.4.0-py313haa95532_0
   - defaults/win-64::zstandard-0.23.0-py313h4fc1ca9_1
   - defaults/win-64::_anaconda_depends-2025.06-py313_mkl_2
-DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items: 
+DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items:
   - defaults/win-64::anaconda-auth-0.8.6-py313haa95532_0
   - defaults/win-64::anaconda-client-1.13.0-py313haa95532_1
   - defaults/win-64::anaconda-navigator-2.6.6-py313haa95532_2
@@ -2805,7 +2805,7 @@ DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependenc
   - defaults/win-64::xarray-2025.4.0-py313haa95532_0
   - defaults/win-64::zstandard-0.23.0-py313h4fc1ca9_1
   - defaults/win-64::_anaconda_depends-2025.06-py313_mkl_2
-DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items: 
+DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items:
   - defaults/win-64::anaconda-auth-0.8.6-py313haa95532_0
   - defaults/win-64::anaconda-client-1.13.0-py313haa95532_1
   - defaults/win-64::anaconda-navigator-2.6.6-py313haa95532_2
@@ -2937,7 +2937,7 @@ DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependenc
   - defaults/win-64::xarray-2025.4.0-py313haa95532_0
   - defaults/win-64::zstandard-0.23.0-py313h4fc1ca9_1
   - defaults/win-64::_anaconda_depends-2025.06-py313_mkl_2
-DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items: 
+DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items:
   - defaults/win-64::anaconda-auth-0.8.6-py313haa95532_0
   - defaults/win-64::anaconda-client-1.13.0-py313haa95532_1
   - defaults/win-64::anaconda-navigator-2.6.6-py313haa95532_2
@@ -3067,7 +3067,7 @@ DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependenc
   - defaults/win-64::xarray-2025.4.0-py313haa95532_0
   - defaults/win-64::zstandard-0.23.0-py313h4fc1ca9_1
   - defaults/win-64::_anaconda_depends-2025.06-py313_mkl_2
-DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items: 
+DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items:
   - defaults/win-64::anaconda-auth-0.8.6-py313haa95532_0
   - defaults/win-64::anaconda-client-1.13.0-py313haa95532_1
   - defaults/win-64::anaconda-navigator-2.6.6-py313haa95532_2
@@ -3195,7 +3195,7 @@ DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependenc
   - defaults/win-64::xarray-2025.4.0-py313haa95532_0
   - defaults/win-64::zstandard-0.23.0-py313h4fc1ca9_1
   - defaults/win-64::_anaconda_depends-2025.06-py313_mkl_2
-DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items: 
+DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items:
   - defaults/win-64::anaconda-auth-0.8.6-py313haa95532_0
   - defaults/win-64::anaconda-client-1.13.0-py313haa95532_1
   - defaults/win-64::anaconda-navigator-2.6.6-py313haa95532_2
@@ -3322,7 +3322,7 @@ DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependenc
   - defaults/win-64::xarray-2025.4.0-py313haa95532_0
   - defaults/win-64::zstandard-0.23.0-py313h4fc1ca9_1
   - defaults/win-64::_anaconda_depends-2025.06-py313_mkl_2
-DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items: 
+DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items:
   - defaults/win-64::anaconda-auth-0.8.6-py313haa95532_0
   - defaults/win-64::anaconda-client-1.13.0-py313haa95532_1
   - defaults/win-64::anaconda-navigator-2.6.6-py313haa95532_2
@@ -3447,7 +3447,7 @@ DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependenc
   - defaults/win-64::xarray-2025.4.0-py313haa95532_0
   - defaults/win-64::zstandard-0.23.0-py313h4fc1ca9_1
   - defaults/win-64::_anaconda_depends-2025.06-py313_mkl_2
-DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items: 
+DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items:
   - defaults/win-64::anaconda-auth-0.8.6-py313haa95532_0
   - defaults/win-64::anaconda-client-1.13.0-py313haa95532_1
   - defaults/win-64::anaconda-navigator-2.6.6-py313haa95532_2
@@ -3569,7 +3569,7 @@ DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependenc
   - defaults/win-64::xarray-2025.4.0-py313haa95532_0
   - defaults/win-64::zstandard-0.23.0-py313h4fc1ca9_1
   - defaults/win-64::_anaconda_depends-2025.06-py313_mkl_2
-DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items: 
+DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items:
   - defaults/win-64::anaconda-auth-0.8.6-py313haa95532_0
   - defaults/win-64::anaconda-client-1.13.0-py313haa95532_1
   - defaults/win-64::anaconda-navigator-2.6.6-py313haa95532_2
@@ -3687,7 +3687,7 @@ DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependenc
   - defaults/win-64::xarray-2025.4.0-py313haa95532_0
   - defaults/win-64::zstandard-0.23.0-py313h4fc1ca9_1
   - defaults/win-64::_anaconda_depends-2025.06-py313_mkl_2
-DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items: 
+DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items:
   - defaults/win-64::anaconda-auth-0.8.6-py313haa95532_0
   - defaults/win-64::anaconda-client-1.13.0-py313haa95532_1
   - defaults/win-64::anaconda-navigator-2.6.6-py313haa95532_2
@@ -3804,7 +3804,7 @@ DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependenc
   - defaults/win-64::xarray-2025.4.0-py313haa95532_0
   - defaults/win-64::zstandard-0.23.0-py313h4fc1ca9_1
   - defaults/win-64::_anaconda_depends-2025.06-py313_mkl_2
-DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items: 
+DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items:
   - defaults/win-64::anaconda-auth-0.8.6-py313haa95532_0
   - defaults/win-64::anaconda-client-1.13.0-py313haa95532_1
   - defaults/win-64::anaconda-navigator-2.6.6-py313haa95532_2
@@ -3920,7 +3920,7 @@ DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependenc
   - defaults/win-64::xarray-2025.4.0-py313haa95532_0
   - defaults/win-64::zstandard-0.23.0-py313h4fc1ca9_1
   - defaults/win-64::_anaconda_depends-2025.06-py313_mkl_2
-DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items: 
+DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items:
   - defaults/win-64::anaconda-auth-0.8.6-py313haa95532_0
   - defaults/win-64::anaconda-client-1.13.0-py313haa95532_1
   - defaults/win-64::anaconda-navigator-2.6.6-py313haa95532_2
@@ -4035,7 +4035,7 @@ DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependenc
   - defaults/win-64::xarray-2025.4.0-py313haa95532_0
   - defaults/win-64::zstandard-0.23.0-py313h4fc1ca9_1
   - defaults/win-64::_anaconda_depends-2025.06-py313_mkl_2
-DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items: 
+DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items:
   - defaults/win-64::anaconda-auth-0.8.6-py313haa95532_0
   - defaults/win-64::anaconda-client-1.13.0-py313haa95532_1
   - defaults/win-64::anaconda-navigator-2.6.6-py313haa95532_2
@@ -4149,7 +4149,7 @@ DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependenc
   - defaults/win-64::xarray-2025.4.0-py313haa95532_0
   - defaults/win-64::zstandard-0.23.0-py313h4fc1ca9_1
   - defaults/win-64::_anaconda_depends-2025.06-py313_mkl_2
-DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items: 
+DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items:
   - defaults/win-64::anaconda-auth-0.8.6-py313haa95532_0
   - defaults/win-64::anaconda-client-1.13.0-py313haa95532_1
   - defaults/win-64::anaconda-navigator-2.6.6-py313haa95532_2
@@ -4262,7 +4262,7 @@ DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependenc
   - defaults/win-64::xarray-2025.4.0-py313haa95532_0
   - defaults/win-64::zstandard-0.23.0-py313h4fc1ca9_1
   - defaults/win-64::_anaconda_depends-2025.06-py313_mkl_2
-DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items: 
+DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items:
   - defaults/win-64::anaconda-auth-0.8.6-py313haa95532_0
   - defaults/win-64::anaconda-client-1.13.0-py313haa95532_1
   - defaults/win-64::anaconda-navigator-2.6.6-py313haa95532_2
@@ -4374,7 +4374,7 @@ DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependenc
   - defaults/win-64::xarray-2025.4.0-py313haa95532_0
   - defaults/win-64::zstandard-0.23.0-py313h4fc1ca9_1
   - defaults/win-64::_anaconda_depends-2025.06-py313_mkl_2
-DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items: 
+DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items:
   - defaults/win-64::anaconda-auth-0.8.6-py313haa95532_0
   - defaults/win-64::anaconda-client-1.13.0-py313haa95532_1
   - defaults/win-64::anaconda-navigator-2.6.6-py313haa95532_2
@@ -4485,7 +4485,7 @@ DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependenc
   - defaults/win-64::xarray-2025.4.0-py313haa95532_0
   - defaults/win-64::zstandard-0.23.0-py313h4fc1ca9_1
   - defaults/win-64::_anaconda_depends-2025.06-py313_mkl_2
-DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items: 
+DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items:
   - defaults/win-64::anaconda-auth-0.8.6-py313haa95532_0
   - defaults/win-64::anaconda-client-1.13.0-py313haa95532_1
   - defaults/win-64::anaconda-navigator-2.6.6-py313haa95532_2
@@ -4595,7 +4595,7 @@ DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependenc
   - defaults/win-64::xarray-2025.4.0-py313haa95532_0
   - defaults/win-64::zstandard-0.23.0-py313h4fc1ca9_1
   - defaults/win-64::_anaconda_depends-2025.06-py313_mkl_2
-DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items: 
+DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items:
   - defaults/win-64::anaconda-auth-0.8.6-py313haa95532_0
   - defaults/win-64::anaconda-client-1.13.0-py313haa95532_1
   - defaults/win-64::anaconda-navigator-2.6.6-py313haa95532_2
@@ -4704,7 +4704,7 @@ DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependenc
   - defaults/win-64::xarray-2025.4.0-py313haa95532_0
   - defaults/win-64::zstandard-0.23.0-py313h4fc1ca9_1
   - defaults/win-64::_anaconda_depends-2025.06-py313_mkl_2
-DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items: 
+DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items:
   - defaults/win-64::astropy-7.0.0-py313h827c3e9_0
   - defaults/win-64::bokeh-3.6.2-py313haa95532_0
   - defaults/win-64::bottleneck-1.4.2-py313h2cb717b_0
@@ -4740,7 +4740,7 @@ DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependenc
   - defaults/win-64::tifffile-2025.2.18-py313haa95532_0
   - defaults/win-64::xarray-2025.4.0-py313haa95532_0
   - defaults/win-64::_anaconda_depends-2025.06-py313_mkl_2
-DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items: 
+DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items:
   - defaults/win-64::astropy-7.0.0-py313h827c3e9_0
   - defaults/win-64::bokeh-3.6.2-py313haa95532_0
   - defaults/win-64::contourpy-1.3.1-py313h214f63a_0
@@ -4775,7 +4775,7 @@ DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependenc
   - defaults/win-64::tifffile-2025.2.18-py313haa95532_0
   - defaults/win-64::xarray-2025.4.0-py313haa95532_0
   - defaults/win-64::_anaconda_depends-2025.06-py313_mkl_2
-DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items: 
+DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items:
   - defaults/win-64::astropy-7.0.0-py313h827c3e9_0
   - defaults/win-64::bokeh-3.6.2-py313haa95532_0
   - defaults/win-64::dask-2025.2.0-py313haa95532_0
@@ -4809,7 +4809,7 @@ DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependenc
   - defaults/win-64::tifffile-2025.2.18-py313haa95532_0
   - defaults/win-64::xarray-2025.4.0-py313haa95532_0
   - defaults/win-64::_anaconda_depends-2025.06-py313_mkl_2
-DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items: 
+DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items:
   - defaults/win-64::astropy-7.0.0-py313h827c3e9_0
   - defaults/win-64::bokeh-3.6.2-py313haa95532_0
   - defaults/win-64::dask-2025.2.0-py313haa95532_0
@@ -4842,7 +4842,7 @@ DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependenc
   - defaults/win-64::tifffile-2025.2.18-py313haa95532_0
   - defaults/win-64::xarray-2025.4.0-py313haa95532_0
   - defaults/win-64::_anaconda_depends-2025.06-py313_mkl_2
-DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items: 
+DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items:
   - defaults/win-64::astropy-7.0.0-py313h827c3e9_0
   - defaults/win-64::bokeh-3.6.2-py313haa95532_0
   - defaults/win-64::dask-2025.2.0-py313haa95532_0
@@ -4874,7 +4874,7 @@ DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependenc
   - defaults/win-64::tifffile-2025.2.18-py313haa95532_0
   - defaults/win-64::xarray-2025.4.0-py313haa95532_0
   - defaults/win-64::_anaconda_depends-2025.06-py313_mkl_2
-DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items: 
+DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items:
   - defaults/win-64::astropy-7.0.0-py313h827c3e9_0
   - defaults/win-64::bokeh-3.6.2-py313haa95532_0
   - defaults/win-64::dask-2025.2.0-py313haa95532_0
@@ -4905,7 +4905,7 @@ DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependenc
   - defaults/win-64::tifffile-2025.2.18-py313haa95532_0
   - defaults/win-64::xarray-2025.4.0-py313haa95532_0
   - defaults/win-64::_anaconda_depends-2025.06-py313_mkl_2
-DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items: 
+DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items:
   - defaults/win-64::astropy-7.0.0-py313h827c3e9_0
   - defaults/win-64::bokeh-3.6.2-py313haa95532_0
   - defaults/win-64::dask-2025.2.0-py313haa95532_0
@@ -4935,7 +4935,7 @@ DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependenc
   - defaults/win-64::tifffile-2025.2.18-py313haa95532_0
   - defaults/win-64::xarray-2025.4.0-py313haa95532_0
   - defaults/win-64::_anaconda_depends-2025.06-py313_mkl_2
-DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items: 
+DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items:
   - defaults/win-64::astropy-7.0.0-py313h827c3e9_0
   - defaults/win-64::bokeh-3.6.2-py313haa95532_0
   - defaults/win-64::dask-2025.2.0-py313haa95532_0
@@ -4968,18 +4968,18 @@ INFO conda_anaconda_telemetry.hooks:wrapper_timer(72): function: get_installed_p
 INFO conda_anaconda_telemetry.hooks:wrapper_timer(72): function: get_install_arguments_header_value; duration (seconds): 0.0000
 DEBUG urllib3.connectionpool:_new_conn(1049): Starting new HTTPS connection (1): conda.anaconda.org:443
 DEBUG urllib3.connectionpool:_make_request(544): https://conda.anaconda.org:443 "GET /datalayer/win-64/repodata.json.zst HTTP/1.1" 200 124
-DEBUG conda.gateways.repodata.jlap.fetch:download_and_hash(244): https://conda.anaconda.org/datalayer/win-64/repodata.json.zst {'Date': 'Mon, 09 Mar 2026 17:40:27 GMT', 'Content-Type': 'application/octet-stream', 
-'Content-Length': '124', 'Connection': 'keep-alive', 'Server': 'cloudflare', 'CF-Ray': '9d9bdd655d589815-DFW', 'CF-Cache-Status': 'DYNAMIC', 'Cache-Control': 'max-age=60, public', 'Content-Disposition': 'attachment; 
-filename=repodata.json.zst', 'Last-Modified': 'Sat, 07 Mar 2026 06:58:06 GMT', 'Set-Cookie': 'x_csrf_token=IjI1YjUzZjI2MzFiZDI3YWM2YzI4Yzk4MTA2YjY0ZmU2Y2NmMGY1NWUi.aa8GCw.JJZuGocoIQc5W15ioSCR2tl9poM; Path=/, 
-session=eyJjc3JmX3Rva2VuIjoiMjViNTNmMjYzMWJkMjdhYzZjMjhjOTgxMDZiNjRmZTZjY2YwZjU1ZSJ9.aa8GCw.zN5CQc7UOBF878CbM1GvWAGV-ps; Domain=anaconda.org; Secure; HttpOnly; Path=/, 
-__cf_bm=jkhuebP7p20Hyh09Hi1rYk6Io9eIGwnHOsaoHJSpdUE-1773078027-1.0.1.1-1iLdLk6olGpiXlV0RQ_kK3pSAPQmXAp.88VDQ6BJpzNsurSMmbw9T7JmoPeAzYLeGgCR5ok6HMGIC_Fqj5FskYzt8Ff4d11faiONU.aRt2u662nIHerIfkrv8MJrS5lO; path=/; 
-expires=Mon, 09-Mar-26 18:10:27 GMT; domain=.anaconda.org; HttpOnly; Secure; SameSite=None', 'Strict-Transport-Security': 'max-age=15552000', 'Vary': 'Cookie, Accept-Encoding', 'content-security-policy': "frame-ancestors 
+DEBUG conda.gateways.repodata.jlap.fetch:download_and_hash(244): https://conda.anaconda.org/datalayer/win-64/repodata.json.zst {'Date': 'Mon, 09 Mar 2026 17:40:27 GMT', 'Content-Type': 'application/octet-stream',
+'Content-Length': '124', 'Connection': 'keep-alive', 'Server': 'cloudflare', 'CF-Ray': '9d9bdd655d589815-DFW', 'CF-Cache-Status': 'DYNAMIC', 'Cache-Control': 'max-age=60, public', 'Content-Disposition': 'attachment;
+filename=repodata.json.zst', 'Last-Modified': 'Sat, 07 Mar 2026 06:58:06 GMT', 'Set-Cookie': 'x_csrf_token=IjI1YjUzZjI2MzFiZDI3YWM2YzI4Yzk4MTA2YjY0ZmU2Y2NmMGY1NWUi.aa8GCw.JJZuGocoIQc5W15ioSCR2tl9poM; Path=/,
+session=eyJjc3JmX3Rva2VuIjoiMjViNTNmMjYzMWJkMjdhYzZjMjhjOTgxMDZiNjRmZTZjY2YwZjU1ZSJ9.aa8GCw.zN5CQc7UOBF878CbM1GvWAGV-ps; Domain=anaconda.org; Secure; HttpOnly; Path=/,
+__cf_bm=jkhuebP7p20Hyh09Hi1rYk6Io9eIGwnHOsaoHJSpdUE-1773078027-1.0.1.1-1iLdLk6olGpiXlV0RQ_kK3pSAPQmXAp.88VDQ6BJpzNsurSMmbw9T7JmoPeAzYLeGgCR5ok6HMGIC_Fqj5FskYzt8Ff4d11faiONU.aRt2u662nIHerIfkrv8MJrS5lO; path=/;
+expires=Mon, 09-Mar-26 18:10:27 GMT; domain=.anaconda.org; HttpOnly; Secure; SameSite=None', 'Strict-Transport-Security': 'max-age=15552000', 'Vary': 'Cookie, Accept-Encoding', 'content-security-policy': "frame-ancestors
 'self';", 'referrer-policy': 'same-origin', 'x-content-type-options': 'nosniff', 'x-download-options': 'noopen'}
-INFO conda.gateways.repodata.jlap.fetch:download_and_hash(265): Download 124 bytes {'User-Agent': 'conda/25.5.1 requests/2.32.3 CPython/3.13.5 Windows/11 Windows/10.0.26200 solver/libmamba conda-libmamba-solver/25.4.0 
-libmambapy/2.0.5 aau/0.7.1 c/cop_hA_a245xmyRtw61AK_ s/zmBIHg4K_8BAl8I4KdFd7w e/o_KRH71WhloEcE1Es3HchA', 'Accept-Encoding': 'gzip, deflate, br, zstd', 'Accept': '*/*', 'Connection': 'keep-alive', 
+INFO conda.gateways.repodata.jlap.fetch:download_and_hash(265): Download 124 bytes {'User-Agent': 'conda/25.5.1 requests/2.32.3 CPython/3.13.5 Windows/11 Windows/10.0.26200 solver/libmamba conda-libmamba-solver/25.4.0
+libmambapy/2.0.5 aau/0.7.1 c/cop_hA_a245xmyRtw61AK_ s/zmBIHg4K_8BAl8I4KdFd7w e/o_KRH71WhloEcE1Es3HchA', 'Accept-Encoding': 'gzip, deflate, br, zstd', 'Accept': '*/*', 'Connection': 'keep-alive',
 'Anaconda-Telemetry-Channels': 'https://conda.anaconda.org/datalayer/win-64;https://conda.anaconda.org/datalayer/noarch;https://conda.anaconda.org/anaconda-cloud/label/dev/win-64;https://conda.anaconda.org/anaconda-cloud/
 label/dev/noarch;https://repo.anaconda.com/pkgs/main/win-64;https://repo.anaconda.com/pkgs/main/noarch;https://repo.anaconda.com/pkgs/r/win-64;https://repo.anaconda.com/pkgs/r/noarch;https://repo.anaconda.com/pkgs/msys2/w
-in-64;https://repo.anaconda.com/pkgs/msys2/noarch;https://conda.anaconda.org/conda-forge/w', 'Anaconda-Telemetry-Install': 'python=3.10;anaconda-mcp=1.0.0.rc.1;environments-mcp-server=1.0.0.rc.1', 
+in-64;https://repo.anaconda.com/pkgs/msys2/noarch;https://conda.anaconda.org/conda-forge/w', 'Anaconda-Telemetry-Install': 'python=3.10;anaconda-mcp=1.0.0.rc.1;environments-mcp-server=1.0.0.rc.1',
 'Anaconda-Telemetry-Packages': 'defaults/win-64::_anaconda_depends-2025.06-py313_mkl_2;defaults/win-64::aiobotocore-2.19.0-py313haa95532_0;defaults/win-64::aiohappyeyeballs-2.4.4-py313haa95532_0;defaults/win-64::aiohttp-3
 .11.10-py313h827c3e9_0;defaults/noarch::aioitertools-0.7.1-pyhd3eb1b0_0;defaults/noarch::aiosignal-1.2.0-pyhd3eb1b0_0;defaults/win-64::alabaster-0.7.16-py313haa95532_0;defaults/win-64::altair-5.5.0-py313haa95532_0;default
 s/win-64::anaconda-anon-usage-0.7.1-py313hfc23b7f_100;defaults/win-64::anaconda-auth-0.8.6-py313haa95532_0;defaults/win-64::anaconda-catalogs-0.2.0-py313haa95532_2;defaults/win-64::anaconda-cli-base-0.5.2-py313haa95532_0;
@@ -5002,7 +5002,7 @@ defaults/win-64::conda-build-25.5.0-py313hcfce1f1_0;defaults/win-64::conda-conte
 defaults/win-64::conda-pack-0.7.1-py313haa95532_0;defaults/win-64::conda-package-handling-2.4.0-py313haa95532_0;defaults/win-64::conda-package-streaming-0.11.0-py313haa95532_0;defaults/win-64::conda-repo-cli-1.0.165-py313
 haa95532_0;defaults/noarch::conda-token-0.6.0-pyhd3eb1b0_0;defaults/win-64::constantly-23.10.4-py313haa95532_0;defaults/win-64::contourpy-1.3.1-py313h214f63a_0;defaults/noarch::cookiecutter-1.7.3-pyhd3eb1b0_0;defaults/win
 -64::cpp-expected-1.1.0-h214f63a_0;defaults/win-64::cryptography-44.0.1-py313hbd6ee87_0;defaults/win-64::cssselect-1.2.0-py313haa95532_0;defaults/win-64::curl-8.12.1-h51539b2_0;defaults/noarch::cycler-0.11.0-pyhd3eb1b0_0;
-defaults/win-64::cytoolz-1.0.1-py313h827c3e9_0;defaults/win-64::dask-2025.2.0-py313haa95532_0;defaults/win-64::dask-core-2025.2.0-py313haa95532_0;defaults/win-64::dask-ex', 'Anaconda-Telemetry-Sys-Info': 
+defaults/win-64::cytoolz-1.0.1-py313h827c3e9_0;defaults/win-64::dask-2025.2.0-py313haa95532_0;defaults/win-64::dask-core-2025.2.0-py313haa95532_0;defaults/win-64::dask-ex', 'Anaconda-Telemetry-Sys-Info':
 'conda_build_version:25.5.0;conda_command:create', 'Anaconda-Telemetry-Virtual-Packages': '__archspec=1=x86_64_v3;__conda=25.5.1=0;__win=10.0.26200=0'}
 DEBUG conda.gateways.repodata:__setitem__(481): Replaced non-str RepodataState[etag] with ""
 DEBUG conda.gateways.repodata.jlap.fetch:timeme(197): Download complete https://conda.anaconda.org/datalayer/win-64/repodata.json Took 6.32s
@@ -5011,17 +5011,17 @@ DEBUG conda.gateways.repodata.jlap.fetch:timeme(197): Apply Patches Took 0.00s
 DEBUG conda.gateways.repodata:fetch_latest(837): Local cache timed out for https://conda.anaconda.org/datalayer/noarch/repodata.json at C:\Users\JuliaIliukhina\anaconda3\pkgs\cache\ef7af08e.json
 DEBUG conda.gateways.repodata.jlap.interface:__init__(42): Using ZstdRepoInterface
 DEBUG urllib3.connectionpool:_make_request(544): https://conda.anaconda.org:443 "GET /datalayer/noarch/repodata.json.zst HTTP/1.1" 200 3233
-DEBUG conda.gateways.repodata.jlap.fetch:download_and_hash(244): https://conda.anaconda.org/datalayer/noarch/repodata.json.zst {'Date': 'Mon, 09 Mar 2026 17:40:27 GMT', 'Content-Type': 'application/octet-stream', 
-'Content-Length': '3233', 'Connection': 'keep-alive', 'Server': 'cloudflare', 'CF-Ray': '9d9bdd661f029815-DFW', 'CF-Cache-Status': 'DYNAMIC', 'Cache-Control': 'max-age=60, public', 'Content-Disposition': 'attachment; 
-filename=repodata.json.zst', 'Last-Modified': 'Sat, 07 Mar 2026 06:58:06 GMT', 'Set-Cookie': 'remember_token=; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Max-Age=0; Path=/, 
-x_csrf_token=IjI1YjUzZjI2MzFiZDI3YWM2YzI4Yzk4MTA2YjY0ZmU2Y2NmMGY1NWUi.aa8GCw.JJZuGocoIQc5W15ioSCR2tl9poM; Path=/, 
-session=eyJjc3JmX3Rva2VuIjoiMjViNTNmMjYzMWJkMjdhYzZjMjhjOTgxMDZiNjRmZTZjY2YwZjU1ZSJ9.aa8GCw.zN5CQc7UOBF878CbM1GvWAGV-ps; Domain=anaconda.org; Secure; HttpOnly; Path=/', 'Strict-Transport-Security': 'max-age=15552000', 
+DEBUG conda.gateways.repodata.jlap.fetch:download_and_hash(244): https://conda.anaconda.org/datalayer/noarch/repodata.json.zst {'Date': 'Mon, 09 Mar 2026 17:40:27 GMT', 'Content-Type': 'application/octet-stream',
+'Content-Length': '3233', 'Connection': 'keep-alive', 'Server': 'cloudflare', 'CF-Ray': '9d9bdd661f029815-DFW', 'CF-Cache-Status': 'DYNAMIC', 'Cache-Control': 'max-age=60, public', 'Content-Disposition': 'attachment;
+filename=repodata.json.zst', 'Last-Modified': 'Sat, 07 Mar 2026 06:58:06 GMT', 'Set-Cookie': 'remember_token=; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Max-Age=0; Path=/,
+x_csrf_token=IjI1YjUzZjI2MzFiZDI3YWM2YzI4Yzk4MTA2YjY0ZmU2Y2NmMGY1NWUi.aa8GCw.JJZuGocoIQc5W15ioSCR2tl9poM; Path=/,
+session=eyJjc3JmX3Rva2VuIjoiMjViNTNmMjYzMWJkMjdhYzZjMjhjOTgxMDZiNjRmZTZjY2YwZjU1ZSJ9.aa8GCw.zN5CQc7UOBF878CbM1GvWAGV-ps; Domain=anaconda.org; Secure; HttpOnly; Path=/', 'Strict-Transport-Security': 'max-age=15552000',
 'Vary': 'Cookie, Accept-Encoding', 'content-security-policy': "frame-ancestors 'self';", 'referrer-policy': 'same-origin', 'x-content-type-options': 'nosniff', 'x-download-options': 'noopen'}
-INFO conda.gateways.repodata.jlap.fetch:download_and_hash(265): Download 3233 bytes {'User-Agent': 'conda/25.5.1 requests/2.32.3 CPython/3.13.5 Windows/11 Windows/10.0.26200 solver/libmamba conda-libmamba-solver/25.4.0 
-libmambapy/2.0.5 aau/0.7.1 c/cop_hA_a245xmyRtw61AK_ s/zmBIHg4K_8BAl8I4KdFd7w e/o_KRH71WhloEcE1Es3HchA', 'Accept-Encoding': 'gzip, deflate, br, zstd', 'Accept': '*/*', 'Connection': 'keep-alive', 
+INFO conda.gateways.repodata.jlap.fetch:download_and_hash(265): Download 3233 bytes {'User-Agent': 'conda/25.5.1 requests/2.32.3 CPython/3.13.5 Windows/11 Windows/10.0.26200 solver/libmamba conda-libmamba-solver/25.4.0
+libmambapy/2.0.5 aau/0.7.1 c/cop_hA_a245xmyRtw61AK_ s/zmBIHg4K_8BAl8I4KdFd7w e/o_KRH71WhloEcE1Es3HchA', 'Accept-Encoding': 'gzip, deflate, br, zstd', 'Accept': '*/*', 'Connection': 'keep-alive',
 'Anaconda-Telemetry-Channels': 'https://conda.anaconda.org/datalayer/win-64;https://conda.anaconda.org/datalayer/noarch;https://conda.anaconda.org/anaconda-cloud/label/dev/win-64;https://conda.anaconda.org/anaconda-cloud/
 label/dev/noarch;https://repo.anaconda.com/pkgs/main/win-64;https://repo.anaconda.com/pkgs/main/noarch;https://repo.anaconda.com/pkgs/r/win-64;https://repo.anaconda.com/pkgs/r/noarch;https://repo.anaconda.com/pkgs/msys2/w
-in-64;https://repo.anaconda.com/pkgs/msys2/noarch;https://conda.anaconda.org/conda-forge/w', 'Anaconda-Telemetry-Install': 'python=3.10;anaconda-mcp=1.0.0.rc.1;environments-mcp-server=1.0.0.rc.1', 
+in-64;https://repo.anaconda.com/pkgs/msys2/noarch;https://conda.anaconda.org/conda-forge/w', 'Anaconda-Telemetry-Install': 'python=3.10;anaconda-mcp=1.0.0.rc.1;environments-mcp-server=1.0.0.rc.1',
 'Anaconda-Telemetry-Packages': 'defaults/win-64::_anaconda_depends-2025.06-py313_mkl_2;defaults/win-64::aiobotocore-2.19.0-py313haa95532_0;defaults/win-64::aiohappyeyeballs-2.4.4-py313haa95532_0;defaults/win-64::aiohttp-3
 .11.10-py313h827c3e9_0;defaults/noarch::aioitertools-0.7.1-pyhd3eb1b0_0;defaults/noarch::aiosignal-1.2.0-pyhd3eb1b0_0;defaults/win-64::alabaster-0.7.16-py313haa95532_0;defaults/win-64::altair-5.5.0-py313haa95532_0;default
 s/win-64::anaconda-anon-usage-0.7.1-py313hfc23b7f_100;defaults/win-64::anaconda-auth-0.8.6-py313haa95532_0;defaults/win-64::anaconda-catalogs-0.2.0-py313haa95532_2;defaults/win-64::anaconda-cli-base-0.5.2-py313haa95532_0;
@@ -5044,10 +5044,10 @@ defaults/win-64::conda-build-25.5.0-py313hcfce1f1_0;defaults/win-64::conda-conte
 defaults/win-64::conda-pack-0.7.1-py313haa95532_0;defaults/win-64::conda-package-handling-2.4.0-py313haa95532_0;defaults/win-64::conda-package-streaming-0.11.0-py313haa95532_0;defaults/win-64::conda-repo-cli-1.0.165-py313
 haa95532_0;defaults/noarch::conda-token-0.6.0-pyhd3eb1b0_0;defaults/win-64::constantly-23.10.4-py313haa95532_0;defaults/win-64::contourpy-1.3.1-py313h214f63a_0;defaults/noarch::cookiecutter-1.7.3-pyhd3eb1b0_0;defaults/win
 -64::cpp-expected-1.1.0-h214f63a_0;defaults/win-64::cryptography-44.0.1-py313hbd6ee87_0;defaults/win-64::cssselect-1.2.0-py313haa95532_0;defaults/win-64::curl-8.12.1-h51539b2_0;defaults/noarch::cycler-0.11.0-pyhd3eb1b0_0;
-defaults/win-64::cytoolz-1.0.1-py313h827c3e9_0;defaults/win-64::dask-2025.2.0-py313haa95532_0;defaults/win-64::dask-core-2025.2.0-py313haa95532_0;defaults/win-64::dask-ex', 'Anaconda-Telemetry-Sys-Info': 
-'conda_build_version:25.5.0;conda_command:create', 'Anaconda-Telemetry-Virtual-Packages': '__archspec=1=x86_64_v3;__conda=25.5.1=0;__win=10.0.26200=0', 'Cookie': 
-'x_csrf_token=IjI1YjUzZjI2MzFiZDI3YWM2YzI4Yzk4MTA2YjY0ZmU2Y2NmMGY1NWUi.aa8GCw.JJZuGocoIQc5W15ioSCR2tl9poM; 
-session=eyJjc3JmX3Rva2VuIjoiMjViNTNmMjYzMWJkMjdhYzZjMjhjOTgxMDZiNjRmZTZjY2YwZjU1ZSJ9.aa8GCw.zN5CQc7UOBF878CbM1GvWAGV-ps; 
+defaults/win-64::cytoolz-1.0.1-py313h827c3e9_0;defaults/win-64::dask-2025.2.0-py313haa95532_0;defaults/win-64::dask-core-2025.2.0-py313haa95532_0;defaults/win-64::dask-ex', 'Anaconda-Telemetry-Sys-Info':
+'conda_build_version:25.5.0;conda_command:create', 'Anaconda-Telemetry-Virtual-Packages': '__archspec=1=x86_64_v3;__conda=25.5.1=0;__win=10.0.26200=0', 'Cookie':
+'x_csrf_token=IjI1YjUzZjI2MzFiZDI3YWM2YzI4Yzk4MTA2YjY0ZmU2Y2NmMGY1NWUi.aa8GCw.JJZuGocoIQc5W15ioSCR2tl9poM;
+session=eyJjc3JmX3Rva2VuIjoiMjViNTNmMjYzMWJkMjdhYzZjMjhjOTgxMDZiNjRmZTZjY2YwZjU1ZSJ9.aa8GCw.zN5CQc7UOBF878CbM1GvWAGV-ps;
 __cf_bm=jkhuebP7p20Hyh09Hi1rYk6Io9eIGwnHOsaoHJSpdUE-1773078027-1.0.1.1-1iLdLk6olGpiXlV0RQ_kK3pSAPQmXAp.88VDQ6BJpzNsurSMmbw9T7JmoPeAzYLeGgCR5ok6HMGIC_Fqj5FskYzt8Ff4d11faiONU.aRt2u662nIHerIfkrv8MJrS5lO'}
 DEBUG conda.gateways.repodata:__setitem__(481): Replaced non-str RepodataState[etag] with ""
 DEBUG conda.gateways.repodata.jlap.fetch:timeme(197): Download complete https://conda.anaconda.org/datalayer/noarch/repodata.json Took 0.36s
@@ -5056,17 +5056,17 @@ DEBUG conda.gateways.repodata.jlap.fetch:timeme(197): Apply Patches Took 0.00s
 DEBUG conda.gateways.repodata:fetch_latest(837): Local cache timed out for https://conda.anaconda.org/anaconda-cloud/label/dev/win-64/repodata.json at C:\Users\JuliaIliukhina\anaconda3\pkgs\cache\3040ce44.json
 DEBUG conda.gateways.repodata.jlap.interface:__init__(42): Using ZstdRepoInterface
 DEBUG urllib3.connectionpool:_make_request(544): https://conda.anaconda.org:443 "GET /anaconda-cloud/label/dev/win-64/repodata.json.zst HTTP/1.1" 200 124
-DEBUG conda.gateways.repodata.jlap.fetch:download_and_hash(244): https://conda.anaconda.org/anaconda-cloud/label/dev/win-64/repodata.json.zst {'Date': 'Mon, 09 Mar 2026 17:40:27 GMT', 'Content-Type': 
-'application/octet-stream', 'Content-Length': '124', 'Connection': 'keep-alive', 'Server': 'cloudflare', 'CF-Ray': '9d9bdd686be29815-DFW', 'CF-Cache-Status': 'DYNAMIC', 'Cache-Control': 'max-age=60, private', 
-'Content-Disposition': 'attachment; filename=repodata.json.zst', 'Last-Modified': 'Mon, 09 Mar 2026 13:27:21 GMT', 'Set-Cookie': 'remember_token=; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Max-Age=0; Path=/, 
-x_csrf_token=IjI1YjUzZjI2MzFiZDI3YWM2YzI4Yzk4MTA2YjY0ZmU2Y2NmMGY1NWUi.aa8GCw.JJZuGocoIQc5W15ioSCR2tl9poM; Path=/, 
-session=eyJjc3JmX3Rva2VuIjoiMjViNTNmMjYzMWJkMjdhYzZjMjhjOTgxMDZiNjRmZTZjY2YwZjU1ZSJ9.aa8GCw.zN5CQc7UOBF878CbM1GvWAGV-ps; Domain=anaconda.org; Secure; HttpOnly; Path=/', 'Strict-Transport-Security': 'max-age=15552000', 
+DEBUG conda.gateways.repodata.jlap.fetch:download_and_hash(244): https://conda.anaconda.org/anaconda-cloud/label/dev/win-64/repodata.json.zst {'Date': 'Mon, 09 Mar 2026 17:40:27 GMT', 'Content-Type':
+'application/octet-stream', 'Content-Length': '124', 'Connection': 'keep-alive', 'Server': 'cloudflare', 'CF-Ray': '9d9bdd686be29815-DFW', 'CF-Cache-Status': 'DYNAMIC', 'Cache-Control': 'max-age=60, private',
+'Content-Disposition': 'attachment; filename=repodata.json.zst', 'Last-Modified': 'Mon, 09 Mar 2026 13:27:21 GMT', 'Set-Cookie': 'remember_token=; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Max-Age=0; Path=/,
+x_csrf_token=IjI1YjUzZjI2MzFiZDI3YWM2YzI4Yzk4MTA2YjY0ZmU2Y2NmMGY1NWUi.aa8GCw.JJZuGocoIQc5W15ioSCR2tl9poM; Path=/,
+session=eyJjc3JmX3Rva2VuIjoiMjViNTNmMjYzMWJkMjdhYzZjMjhjOTgxMDZiNjRmZTZjY2YwZjU1ZSJ9.aa8GCw.zN5CQc7UOBF878CbM1GvWAGV-ps; Domain=anaconda.org; Secure; HttpOnly; Path=/', 'Strict-Transport-Security': 'max-age=15552000',
 'Vary': 'Cookie, Accept-Encoding', 'content-security-policy': "frame-ancestors 'self';", 'referrer-policy': 'same-origin', 'x-content-type-options': 'nosniff', 'x-download-options': 'noopen'}
-INFO conda.gateways.repodata.jlap.fetch:download_and_hash(265): Download 124 bytes {'User-Agent': 'conda/25.5.1 requests/2.32.3 CPython/3.13.5 Windows/11 Windows/10.0.26200 solver/libmamba conda-libmamba-solver/25.4.0 
-libmambapy/2.0.5 aau/0.7.1 c/cop_hA_a245xmyRtw61AK_ s/zmBIHg4K_8BAl8I4KdFd7w e/o_KRH71WhloEcE1Es3HchA', 'Accept-Encoding': 'gzip, deflate, br, zstd', 'Accept': '*/*', 'Connection': 'keep-alive', 
+INFO conda.gateways.repodata.jlap.fetch:download_and_hash(265): Download 124 bytes {'User-Agent': 'conda/25.5.1 requests/2.32.3 CPython/3.13.5 Windows/11 Windows/10.0.26200 solver/libmamba conda-libmamba-solver/25.4.0
+libmambapy/2.0.5 aau/0.7.1 c/cop_hA_a245xmyRtw61AK_ s/zmBIHg4K_8BAl8I4KdFd7w e/o_KRH71WhloEcE1Es3HchA', 'Accept-Encoding': 'gzip, deflate, br, zstd', 'Accept': '*/*', 'Connection': 'keep-alive',
 'Anaconda-Telemetry-Channels': 'https://conda.anaconda.org/datalayer/win-64;https://conda.anaconda.org/datalayer/noarch;https://conda.anaconda.org/anaconda-cloud/label/dev/win-64;https://conda.anaconda.org/anaconda-cloud/
 label/dev/noarch;https://repo.anaconda.com/pkgs/main/win-64;https://repo.anaconda.com/pkgs/main/noarch;https://repo.anaconda.com/pkgs/r/win-64;https://repo.anaconda.com/pkgs/r/noarch;https://repo.anaconda.com/pkgs/msys2/w
-in-64;https://repo.anaconda.com/pkgs/msys2/noarch;https://conda.anaconda.org/conda-forge/w', 'Anaconda-Telemetry-Install': 'python=3.10;anaconda-mcp=1.0.0.rc.1;environments-mcp-server=1.0.0.rc.1', 
+in-64;https://repo.anaconda.com/pkgs/msys2/noarch;https://conda.anaconda.org/conda-forge/w', 'Anaconda-Telemetry-Install': 'python=3.10;anaconda-mcp=1.0.0.rc.1;environments-mcp-server=1.0.0.rc.1',
 'Anaconda-Telemetry-Packages': 'defaults/win-64::_anaconda_depends-2025.06-py313_mkl_2;defaults/win-64::aiobotocore-2.19.0-py313haa95532_0;defaults/win-64::aiohappyeyeballs-2.4.4-py313haa95532_0;defaults/win-64::aiohttp-3
 .11.10-py313h827c3e9_0;defaults/noarch::aioitertools-0.7.1-pyhd3eb1b0_0;defaults/noarch::aiosignal-1.2.0-pyhd3eb1b0_0;defaults/win-64::alabaster-0.7.16-py313haa95532_0;defaults/win-64::altair-5.5.0-py313haa95532_0;default
 s/win-64::anaconda-anon-usage-0.7.1-py313hfc23b7f_100;defaults/win-64::anaconda-auth-0.8.6-py313haa95532_0;defaults/win-64::anaconda-catalogs-0.2.0-py313haa95532_2;defaults/win-64::anaconda-cli-base-0.5.2-py313haa95532_0;
@@ -5089,10 +5089,10 @@ defaults/win-64::conda-build-25.5.0-py313hcfce1f1_0;defaults/win-64::conda-conte
 defaults/win-64::conda-pack-0.7.1-py313haa95532_0;defaults/win-64::conda-package-handling-2.4.0-py313haa95532_0;defaults/win-64::conda-package-streaming-0.11.0-py313haa95532_0;defaults/win-64::conda-repo-cli-1.0.165-py313
 haa95532_0;defaults/noarch::conda-token-0.6.0-pyhd3eb1b0_0;defaults/win-64::constantly-23.10.4-py313haa95532_0;defaults/win-64::contourpy-1.3.1-py313h214f63a_0;defaults/noarch::cookiecutter-1.7.3-pyhd3eb1b0_0;defaults/win
 -64::cpp-expected-1.1.0-h214f63a_0;defaults/win-64::cryptography-44.0.1-py313hbd6ee87_0;defaults/win-64::cssselect-1.2.0-py313haa95532_0;defaults/win-64::curl-8.12.1-h51539b2_0;defaults/noarch::cycler-0.11.0-pyhd3eb1b0_0;
-defaults/win-64::cytoolz-1.0.1-py313h827c3e9_0;defaults/win-64::dask-2025.2.0-py313haa95532_0;defaults/win-64::dask-core-2025.2.0-py313haa95532_0;defaults/win-64::dask-ex', 'Anaconda-Telemetry-Sys-Info': 
-'conda_build_version:25.5.0;conda_command:create', 'Anaconda-Telemetry-Virtual-Packages': '__archspec=1=x86_64_v3;__conda=25.5.1=0;__win=10.0.26200=0', 'Cookie': 
-'x_csrf_token=IjI1YjUzZjI2MzFiZDI3YWM2YzI4Yzk4MTA2YjY0ZmU2Y2NmMGY1NWUi.aa8GCw.JJZuGocoIQc5W15ioSCR2tl9poM; 
-session=eyJjc3JmX3Rva2VuIjoiMjViNTNmMjYzMWJkMjdhYzZjMjhjOTgxMDZiNjRmZTZjY2YwZjU1ZSJ9.aa8GCw.zN5CQc7UOBF878CbM1GvWAGV-ps; 
+defaults/win-64::cytoolz-1.0.1-py313h827c3e9_0;defaults/win-64::dask-2025.2.0-py313haa95532_0;defaults/win-64::dask-core-2025.2.0-py313haa95532_0;defaults/win-64::dask-ex', 'Anaconda-Telemetry-Sys-Info':
+'conda_build_version:25.5.0;conda_command:create', 'Anaconda-Telemetry-Virtual-Packages': '__archspec=1=x86_64_v3;__conda=25.5.1=0;__win=10.0.26200=0', 'Cookie':
+'x_csrf_token=IjI1YjUzZjI2MzFiZDI3YWM2YzI4Yzk4MTA2YjY0ZmU2Y2NmMGY1NWUi.aa8GCw.JJZuGocoIQc5W15ioSCR2tl9poM;
+session=eyJjc3JmX3Rva2VuIjoiMjViNTNmMjYzMWJkMjdhYzZjMjhjOTgxMDZiNjRmZTZjY2YwZjU1ZSJ9.aa8GCw.zN5CQc7UOBF878CbM1GvWAGV-ps;
 __cf_bm=jkhuebP7p20Hyh09Hi1rYk6Io9eIGwnHOsaoHJSpdUE-1773078027-1.0.1.1-1iLdLk6olGpiXlV0RQ_kK3pSAPQmXAp.88VDQ6BJpzNsurSMmbw9T7JmoPeAzYLeGgCR5ok6HMGIC_Fqj5FskYzt8Ff4d11faiONU.aRt2u662nIHerIfkrv8MJrS5lO'}
 DEBUG conda.gateways.repodata:__setitem__(481): Replaced non-str RepodataState[etag] with ""
 DEBUG conda.gateways.repodata.jlap.fetch:timeme(197): Download complete https://conda.anaconda.org/anaconda-cloud/label/dev/win-64/repodata.json Took 0.29s
@@ -5101,17 +5101,17 @@ DEBUG conda.gateways.repodata.jlap.fetch:timeme(197): Apply Patches Took 0.00s
 DEBUG conda.gateways.repodata:fetch_latest(837): Local cache timed out for https://conda.anaconda.org/anaconda-cloud/label/dev/noarch/repodata.json at C:\Users\JuliaIliukhina\anaconda3\pkgs\cache\0a1883d0.json
 DEBUG conda.gateways.repodata.jlap.interface:__init__(42): Using ZstdRepoInterface
 DEBUG urllib3.connectionpool:_make_request(544): https://conda.anaconda.org:443 "GET /anaconda-cloud/label/dev/noarch/repodata.json.zst HTTP/1.1" 200 1376671
-DEBUG conda.gateways.repodata.jlap.fetch:download_and_hash(244): https://conda.anaconda.org/anaconda-cloud/label/dev/noarch/repodata.json.zst {'Date': 'Mon, 09 Mar 2026 17:40:29 GMT', 'Content-Type': 
-'application/octet-stream', 'Content-Length': '1376671', 'Connection': 'keep-alive', 'Server': 'cloudflare', 'CF-Ray': '9d9bdd6a4fb79815-DFW', 'CF-Cache-Status': 'DYNAMIC', 'Cache-Control': 'max-age=60, private', 
-'Content-Disposition': 'attachment; filename=repodata.json.zst', 'Last-Modified': 'Mon, 09 Mar 2026 13:27:21 GMT', 'Set-Cookie': 'remember_token=; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Max-Age=0; Path=/, 
-x_csrf_token=IjI1YjUzZjI2MzFiZDI3YWM2YzI4Yzk4MTA2YjY0ZmU2Y2NmMGY1NWUi.aa8GDQ.SVGrtRRQaLXFc7gRP7u9Qn6kt-0; Path=/, 
-session=eyJjc3JmX3Rva2VuIjoiMjViNTNmMjYzMWJkMjdhYzZjMjhjOTgxMDZiNjRmZTZjY2YwZjU1ZSJ9.aa8GDQ.uuNNHFahSM8tluWT1JUeYkTh6kE; Domain=anaconda.org; Secure; HttpOnly; Path=/', 'Strict-Transport-Security': 'max-age=15552000', 
+DEBUG conda.gateways.repodata.jlap.fetch:download_and_hash(244): https://conda.anaconda.org/anaconda-cloud/label/dev/noarch/repodata.json.zst {'Date': 'Mon, 09 Mar 2026 17:40:29 GMT', 'Content-Type':
+'application/octet-stream', 'Content-Length': '1376671', 'Connection': 'keep-alive', 'Server': 'cloudflare', 'CF-Ray': '9d9bdd6a4fb79815-DFW', 'CF-Cache-Status': 'DYNAMIC', 'Cache-Control': 'max-age=60, private',
+'Content-Disposition': 'attachment; filename=repodata.json.zst', 'Last-Modified': 'Mon, 09 Mar 2026 13:27:21 GMT', 'Set-Cookie': 'remember_token=; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Max-Age=0; Path=/,
+x_csrf_token=IjI1YjUzZjI2MzFiZDI3YWM2YzI4Yzk4MTA2YjY0ZmU2Y2NmMGY1NWUi.aa8GDQ.SVGrtRRQaLXFc7gRP7u9Qn6kt-0; Path=/,
+session=eyJjc3JmX3Rva2VuIjoiMjViNTNmMjYzMWJkMjdhYzZjMjhjOTgxMDZiNjRmZTZjY2YwZjU1ZSJ9.aa8GDQ.uuNNHFahSM8tluWT1JUeYkTh6kE; Domain=anaconda.org; Secure; HttpOnly; Path=/', 'Strict-Transport-Security': 'max-age=15552000',
 'Vary': 'Cookie, Accept-Encoding', 'content-security-policy': "frame-ancestors 'self';", 'referrer-policy': 'same-origin', 'x-content-type-options': 'nosniff', 'x-download-options': 'noopen'}
-INFO conda.gateways.repodata.jlap.fetch:download_and_hash(265): Download 1376671 bytes {'User-Agent': 'conda/25.5.1 requests/2.32.3 CPython/3.13.5 Windows/11 Windows/10.0.26200 solver/libmamba 
-conda-libmamba-solver/25.4.0 libmambapy/2.0.5 aau/0.7.1 c/cop_hA_a245xmyRtw61AK_ s/zmBIHg4K_8BAl8I4KdFd7w e/o_KRH71WhloEcE1Es3HchA', 'Accept-Encoding': 'gzip, deflate, br, zstd', 'Accept': '*/*', 'Connection': 
+INFO conda.gateways.repodata.jlap.fetch:download_and_hash(265): Download 1376671 bytes {'User-Agent': 'conda/25.5.1 requests/2.32.3 CPython/3.13.5 Windows/11 Windows/10.0.26200 solver/libmamba
+conda-libmamba-solver/25.4.0 libmambapy/2.0.5 aau/0.7.1 c/cop_hA_a245xmyRtw61AK_ s/zmBIHg4K_8BAl8I4KdFd7w e/o_KRH71WhloEcE1Es3HchA', 'Accept-Encoding': 'gzip, deflate, br, zstd', 'Accept': '*/*', 'Connection':
 'keep-alive', 'Anaconda-Telemetry-Channels': 'https://conda.anaconda.org/datalayer/win-64;https://conda.anaconda.org/datalayer/noarch;https://conda.anaconda.org/anaconda-cloud/label/dev/win-64;https://conda.anaconda.org/a
 naconda-cloud/label/dev/noarch;https://repo.anaconda.com/pkgs/main/win-64;https://repo.anaconda.com/pkgs/main/noarch;https://repo.anaconda.com/pkgs/r/win-64;https://repo.anaconda.com/pkgs/r/noarch;https://repo.anaconda.co
-m/pkgs/msys2/win-64;https://repo.anaconda.com/pkgs/msys2/noarch;https://conda.anaconda.org/conda-forge/w', 'Anaconda-Telemetry-Install': 'python=3.10;anaconda-mcp=1.0.0.rc.1;environments-mcp-server=1.0.0.rc.1', 
+m/pkgs/msys2/win-64;https://repo.anaconda.com/pkgs/msys2/noarch;https://conda.anaconda.org/conda-forge/w', 'Anaconda-Telemetry-Install': 'python=3.10;anaconda-mcp=1.0.0.rc.1;environments-mcp-server=1.0.0.rc.1',
 'Anaconda-Telemetry-Packages': 'defaults/win-64::_anaconda_depends-2025.06-py313_mkl_2;defaults/win-64::aiobotocore-2.19.0-py313haa95532_0;defaults/win-64::aiohappyeyeballs-2.4.4-py313haa95532_0;defaults/win-64::aiohttp-3
 .11.10-py313h827c3e9_0;defaults/noarch::aioitertools-0.7.1-pyhd3eb1b0_0;defaults/noarch::aiosignal-1.2.0-pyhd3eb1b0_0;defaults/win-64::alabaster-0.7.16-py313haa95532_0;defaults/win-64::altair-5.5.0-py313haa95532_0;default
 s/win-64::anaconda-anon-usage-0.7.1-py313hfc23b7f_100;defaults/win-64::anaconda-auth-0.8.6-py313haa95532_0;defaults/win-64::anaconda-catalogs-0.2.0-py313haa95532_2;defaults/win-64::anaconda-cli-base-0.5.2-py313haa95532_0;
@@ -5134,10 +5134,10 @@ defaults/win-64::conda-build-25.5.0-py313hcfce1f1_0;defaults/win-64::conda-conte
 defaults/win-64::conda-pack-0.7.1-py313haa95532_0;defaults/win-64::conda-package-handling-2.4.0-py313haa95532_0;defaults/win-64::conda-package-streaming-0.11.0-py313haa95532_0;defaults/win-64::conda-repo-cli-1.0.165-py313
 haa95532_0;defaults/noarch::conda-token-0.6.0-pyhd3eb1b0_0;defaults/win-64::constantly-23.10.4-py313haa95532_0;defaults/win-64::contourpy-1.3.1-py313h214f63a_0;defaults/noarch::cookiecutter-1.7.3-pyhd3eb1b0_0;defaults/win
 -64::cpp-expected-1.1.0-h214f63a_0;defaults/win-64::cryptography-44.0.1-py313hbd6ee87_0;defaults/win-64::cssselect-1.2.0-py313haa95532_0;defaults/win-64::curl-8.12.1-h51539b2_0;defaults/noarch::cycler-0.11.0-pyhd3eb1b0_0;
-defaults/win-64::cytoolz-1.0.1-py313h827c3e9_0;defaults/win-64::dask-2025.2.0-py313haa95532_0;defaults/win-64::dask-core-2025.2.0-py313haa95532_0;defaults/win-64::dask-ex', 'Anaconda-Telemetry-Sys-Info': 
-'conda_build_version:25.5.0;conda_command:create', 'Anaconda-Telemetry-Virtual-Packages': '__archspec=1=x86_64_v3;__conda=25.5.1=0;__win=10.0.26200=0', 'Cookie': 
-'x_csrf_token=IjI1YjUzZjI2MzFiZDI3YWM2YzI4Yzk4MTA2YjY0ZmU2Y2NmMGY1NWUi.aa8GCw.JJZuGocoIQc5W15ioSCR2tl9poM; 
-session=eyJjc3JmX3Rva2VuIjoiMjViNTNmMjYzMWJkMjdhYzZjMjhjOTgxMDZiNjRmZTZjY2YwZjU1ZSJ9.aa8GCw.zN5CQc7UOBF878CbM1GvWAGV-ps; 
+defaults/win-64::cytoolz-1.0.1-py313h827c3e9_0;defaults/win-64::dask-2025.2.0-py313haa95532_0;defaults/win-64::dask-core-2025.2.0-py313haa95532_0;defaults/win-64::dask-ex', 'Anaconda-Telemetry-Sys-Info':
+'conda_build_version:25.5.0;conda_command:create', 'Anaconda-Telemetry-Virtual-Packages': '__archspec=1=x86_64_v3;__conda=25.5.1=0;__win=10.0.26200=0', 'Cookie':
+'x_csrf_token=IjI1YjUzZjI2MzFiZDI3YWM2YzI4Yzk4MTA2YjY0ZmU2Y2NmMGY1NWUi.aa8GCw.JJZuGocoIQc5W15ioSCR2tl9poM;
+session=eyJjc3JmX3Rva2VuIjoiMjViNTNmMjYzMWJkMjdhYzZjMjhjOTgxMDZiNjRmZTZjY2YwZjU1ZSJ9.aa8GCw.zN5CQc7UOBF878CbM1GvWAGV-ps;
 __cf_bm=jkhuebP7p20Hyh09Hi1rYk6Io9eIGwnHOsaoHJSpdUE-1773078027-1.0.1.1-1iLdLk6olGpiXlV0RQ_kK3pSAPQmXAp.88VDQ6BJpzNsurSMmbw9T7JmoPeAzYLeGgCR5ok6HMGIC_Fqj5FskYzt8Ff4d11faiONU.aRt2u662nIHerIfkrv8MJrS5lO'}
 DEBUG conda.gateways.repodata:__setitem__(481): Replaced non-str RepodataState[etag] with ""
 DEBUG conda.gateways.repodata.jlap.fetch:timeme(197): Download complete https://conda.anaconda.org/anaconda-cloud/label/dev/noarch/repodata.json Took 2.15s
@@ -5152,17 +5152,17 @@ INFO conda_anaconda_telemetry.hooks:wrapper_timer(72): function: get_installed_p
 INFO conda_anaconda_telemetry.hooks:wrapper_timer(72): function: get_install_arguments_header_value; duration (seconds): 0.0000
 DEBUG urllib3.connectionpool:_new_conn(1049): Starting new HTTPS connection (1): repo.anaconda.com:443
 DEBUG urllib3.connectionpool:_make_request(544): https://repo.anaconda.com:443 "GET /pkgs/main/win-64/repodata.json.zst HTTP/1.1" 200 9278105
-DEBUG conda.gateways.repodata.jlap.fetch:download_and_hash(244): https://repo.anaconda.com/pkgs/main/win-64/repodata.json.zst {'Date': 'Mon, 09 Mar 2026 17:40:30 GMT', 'Content-Type': 'binary/octet-stream', 
-'Content-Length': '9278105', 'Connection': 'keep-alive', 'Server': 'cloudflare', 'CF-Ray': '9d9bdd78cf2c9815-DFW', 'CF-Cache-Status': 'HIT', 'Accept-Ranges': 'bytes', 'Age': '311', 'Cache-Control': 'public, max-age=30', 
-'ETag': '"81e3a0deda3e6376b52b985fc44496aa"', 'Expires': 'Mon, 09 Mar 2026 17:41:00 GMT', 'Last-Modified': 'Mon, 09 Mar 2026 17:35:14 GMT', 'Vary': 'Accept-Encoding', 'x-amz-id-2': 
-'HQW5+V7XQ8MieEwwsb1U9X7v7SXcYd8Cmi6UP/QcdVNayqeIv96wwFui7FZXxL+l5+2+mI4btmHV9a+qqvEiuTAsHNhikM1a', 'x-amz-request-id': 'CH357EEZY9FMSFV8', 'x-amz-version-id': 'oWo0fV1spv5RQPVq6tRc_NyPVXeRxE7w', 'Set-Cookie': 
-'__cf_bm=2y2rbuB3r.gPmX4sEowjBGTkMuglYedb2.xcRMnzMhM-1773078030-1.0.1.1-eqVMU_j_Xg9LfZhQDbcoFZtZ3eNk5s5UvLu5QhZ57zPDY.jtb0OJEUIDjlAPBbs_1QgZ5cwJ1YKLaSV_2G997or4QYvv0C1ui8W.Tbp.DL8; path=/; expires=Mon, 09-Mar-26 18:10:30 
+DEBUG conda.gateways.repodata.jlap.fetch:download_and_hash(244): https://repo.anaconda.com/pkgs/main/win-64/repodata.json.zst {'Date': 'Mon, 09 Mar 2026 17:40:30 GMT', 'Content-Type': 'binary/octet-stream',
+'Content-Length': '9278105', 'Connection': 'keep-alive', 'Server': 'cloudflare', 'CF-Ray': '9d9bdd78cf2c9815-DFW', 'CF-Cache-Status': 'HIT', 'Accept-Ranges': 'bytes', 'Age': '311', 'Cache-Control': 'public, max-age=30',
+'ETag': '"81e3a0deda3e6376b52b985fc44496aa"', 'Expires': 'Mon, 09 Mar 2026 17:41:00 GMT', 'Last-Modified': 'Mon, 09 Mar 2026 17:35:14 GMT', 'Vary': 'Accept-Encoding', 'x-amz-id-2':
+'HQW5+V7XQ8MieEwwsb1U9X7v7SXcYd8Cmi6UP/QcdVNayqeIv96wwFui7FZXxL+l5+2+mI4btmHV9a+qqvEiuTAsHNhikM1a', 'x-amz-request-id': 'CH357EEZY9FMSFV8', 'x-amz-version-id': 'oWo0fV1spv5RQPVq6tRc_NyPVXeRxE7w', 'Set-Cookie':
+'__cf_bm=2y2rbuB3r.gPmX4sEowjBGTkMuglYedb2.xcRMnzMhM-1773078030-1.0.1.1-eqVMU_j_Xg9LfZhQDbcoFZtZ3eNk5s5UvLu5QhZ57zPDY.jtb0OJEUIDjlAPBbs_1QgZ5cwJ1YKLaSV_2G997or4QYvv0C1ui8W.Tbp.DL8; path=/; expires=Mon, 09-Mar-26 18:10:30
 GMT; domain=.anaconda.com; HttpOnly; Secure; SameSite=None', 'Content-Security-Policy': "upgrade-insecure-requests; frame-ancestors 'self' https://content.anaconda.com/", 'X-Robots-Tag': 'noindex'}
-INFO conda.gateways.repodata.jlap.fetch:download_and_hash(265): Download 9278105 bytes {'User-Agent': 'conda/25.5.1 requests/2.32.3 CPython/3.13.5 Windows/11 Windows/10.0.26200 solver/libmamba 
-conda-libmamba-solver/25.4.0 libmambapy/2.0.5 aau/0.7.1 c/cop_hA_a245xmyRtw61AK_ s/zmBIHg4K_8BAl8I4KdFd7w e/o_KRH71WhloEcE1Es3HchA', 'Accept-Encoding': 'gzip, deflate, br, zstd', 'Accept': '*/*', 'Connection': 
+INFO conda.gateways.repodata.jlap.fetch:download_and_hash(265): Download 9278105 bytes {'User-Agent': 'conda/25.5.1 requests/2.32.3 CPython/3.13.5 Windows/11 Windows/10.0.26200 solver/libmamba
+conda-libmamba-solver/25.4.0 libmambapy/2.0.5 aau/0.7.1 c/cop_hA_a245xmyRtw61AK_ s/zmBIHg4K_8BAl8I4KdFd7w e/o_KRH71WhloEcE1Es3HchA', 'Accept-Encoding': 'gzip, deflate, br, zstd', 'Accept': '*/*', 'Connection':
 'keep-alive', 'Anaconda-Telemetry-Channels': 'https://conda.anaconda.org/datalayer/win-64;https://conda.anaconda.org/datalayer/noarch;https://conda.anaconda.org/anaconda-cloud/label/dev/win-64;https://conda.anaconda.org/a
 naconda-cloud/label/dev/noarch;https://repo.anaconda.com/pkgs/main/win-64;https://repo.anaconda.com/pkgs/main/noarch;https://repo.anaconda.com/pkgs/r/win-64;https://repo.anaconda.com/pkgs/r/noarch;https://repo.anaconda.co
-m/pkgs/msys2/win-64;https://repo.anaconda.com/pkgs/msys2/noarch;https://conda.anaconda.org/conda-forge/w', 'Anaconda-Telemetry-Install': 'python=3.10;anaconda-mcp=1.0.0.rc.1;environments-mcp-server=1.0.0.rc.1', 
+m/pkgs/msys2/win-64;https://repo.anaconda.com/pkgs/msys2/noarch;https://conda.anaconda.org/conda-forge/w', 'Anaconda-Telemetry-Install': 'python=3.10;anaconda-mcp=1.0.0.rc.1;environments-mcp-server=1.0.0.rc.1',
 'Anaconda-Telemetry-Packages': 'defaults/win-64::_anaconda_depends-2025.06-py313_mkl_2;defaults/win-64::aiobotocore-2.19.0-py313haa95532_0;defaults/win-64::aiohappyeyeballs-2.4.4-py313haa95532_0;defaults/win-64::aiohttp-3
 .11.10-py313h827c3e9_0;defaults/noarch::aioitertools-0.7.1-pyhd3eb1b0_0;defaults/noarch::aiosignal-1.2.0-pyhd3eb1b0_0;defaults/win-64::alabaster-0.7.16-py313haa95532_0;defaults/win-64::altair-5.5.0-py313haa95532_0;default
 s/win-64::anaconda-anon-usage-0.7.1-py313hfc23b7f_100;defaults/win-64::anaconda-auth-0.8.6-py313haa95532_0;defaults/win-64::anaconda-catalogs-0.2.0-py313haa95532_2;defaults/win-64::anaconda-cli-base-0.5.2-py313haa95532_0;
@@ -5185,9 +5185,9 @@ defaults/win-64::conda-build-25.5.0-py313hcfce1f1_0;defaults/win-64::conda-conte
 defaults/win-64::conda-pack-0.7.1-py313haa95532_0;defaults/win-64::conda-package-handling-2.4.0-py313haa95532_0;defaults/win-64::conda-package-streaming-0.11.0-py313haa95532_0;defaults/win-64::conda-repo-cli-1.0.165-py313
 haa95532_0;defaults/noarch::conda-token-0.6.0-pyhd3eb1b0_0;defaults/win-64::constantly-23.10.4-py313haa95532_0;defaults/win-64::contourpy-1.3.1-py313h214f63a_0;defaults/noarch::cookiecutter-1.7.3-pyhd3eb1b0_0;defaults/win
 -64::cpp-expected-1.1.0-h214f63a_0;defaults/win-64::cryptography-44.0.1-py313hbd6ee87_0;defaults/win-64::cssselect-1.2.0-py313haa95532_0;defaults/win-64::curl-8.12.1-h51539b2_0;defaults/noarch::cycler-0.11.0-pyhd3eb1b0_0;
-defaults/win-64::cytoolz-1.0.1-py313h827c3e9_0;defaults/win-64::dask-2025.2.0-py313haa95532_0;defaults/win-64::dask-core-2025.2.0-py313haa95532_0;defaults/win-64::dask-ex', 'Anaconda-Telemetry-Sys-Info': 
-'conda_build_version:25.5.0;conda_command:create', 'Anaconda-Telemetry-Virtual-Packages': '__archspec=1=x86_64_v3;__conda=25.5.1=0;__win=10.0.26200=0', 'Anaconda-ToS-Accept': 
-'https://repo.anaconda.com/pkgs/main=1752577200=accepted=1763492529;https://repo.anaconda.com/pkgs/r=1752577200=accepted=1763492529;https://repo.anaconda.com/pkgs/msys2=1752577200=accepted=1763492530', 'if-none-match': 
+defaults/win-64::cytoolz-1.0.1-py313h827c3e9_0;defaults/win-64::dask-2025.2.0-py313haa95532_0;defaults/win-64::dask-core-2025.2.0-py313haa95532_0;defaults/win-64::dask-ex', 'Anaconda-Telemetry-Sys-Info':
+'conda_build_version:25.5.0;conda_command:create', 'Anaconda-Telemetry-Virtual-Packages': '__archspec=1=x86_64_v3;__conda=25.5.1=0;__win=10.0.26200=0', 'Anaconda-ToS-Accept':
+'https://repo.anaconda.com/pkgs/main=1752577200=accepted=1763492529;https://repo.anaconda.com/pkgs/r=1752577200=accepted=1763492529;https://repo.anaconda.com/pkgs/msys2=1752577200=accepted=1763492530', 'if-none-match':
 '"075e3e974fd1a3fe10fe529b84d610fc"'}
 DEBUG conda.gateways.repodata.jlap.fetch:timeme(197): Download complete https://repo.anaconda.com/pkgs/main/win-64/repodata.json Took 0.82s
 INFO conda.gateways.repodata.jlap.fetch:request_url_jlap_state(432): Apply 0 patches c2772fbe1d5d9477à \u2192 c2772fbe1d5d9477à
@@ -5195,15 +5195,15 @@ DEBUG conda.gateways.repodata.jlap.fetch:timeme(197): Apply Patches Took 0.00s
 DEBUG conda.gateways.repodata:fetch_latest(837): Local cache timed out for https://repo.anaconda.com/pkgs/main/noarch/repodata.json at C:\Users\JuliaIliukhina\anaconda3\pkgs\cache\3e39a7aa.json
 DEBUG conda.gateways.repodata.jlap.interface:__init__(42): Using ZstdRepoInterface
 DEBUG urllib3.connectionpool:_make_request(544): https://repo.anaconda.com:443 "GET /pkgs/main/noarch/repodata.json.zst HTTP/1.1" 304 0
-DEBUG conda.gateways.repodata.jlap.fetch:download_and_hash(244): https://repo.anaconda.com/pkgs/main/noarch/repodata.json.zst {'Date': 'Mon, 09 Mar 2026 17:40:31 GMT', 'Connection': 'keep-alive', 'Server': 'cloudflare', 
-'CF-Ray': '9d9bdd7efd689815-DFW', 'CF-Cache-Status': 'HIT', 'Age': '4195', 'Cache-Control': 'public, max-age=30', 'ETag': '"b22b7871df18965204f442a3579a32d2"', 'Expires': 'Mon, 09 Mar 2026 17:41:01 GMT', 'Last-Modified': 
-'Mon, 09 Mar 2026 16:30:28 GMT', 'Vary': 'Accept-Encoding', 'x-amz-id-2': 'XYqrlEZh+ZBXKqa4590dXuNLgraU0phPdgIsjJlJIhtayTMq1wHWhVgwD3/9K+x+sDYFuK6OBnw=', 'x-amz-request-id': 'HXB25H4E8GHF4CBN', 'x-amz-version-id': 
+DEBUG conda.gateways.repodata.jlap.fetch:download_and_hash(244): https://repo.anaconda.com/pkgs/main/noarch/repodata.json.zst {'Date': 'Mon, 09 Mar 2026 17:40:31 GMT', 'Connection': 'keep-alive', 'Server': 'cloudflare',
+'CF-Ray': '9d9bdd7efd689815-DFW', 'CF-Cache-Status': 'HIT', 'Age': '4195', 'Cache-Control': 'public, max-age=30', 'ETag': '"b22b7871df18965204f442a3579a32d2"', 'Expires': 'Mon, 09 Mar 2026 17:41:01 GMT', 'Last-Modified':
+'Mon, 09 Mar 2026 16:30:28 GMT', 'Vary': 'Accept-Encoding', 'x-amz-id-2': 'XYqrlEZh+ZBXKqa4590dXuNLgraU0phPdgIsjJlJIhtayTMq1wHWhVgwD3/9K+x+sDYFuK6OBnw=', 'x-amz-request-id': 'HXB25H4E8GHF4CBN', 'x-amz-version-id':
 'JoFPN8JXrYIVxIJzqkdrvGSi7C7aSqh2', 'Content-Security-Policy': "upgrade-insecure-requests; frame-ancestors 'self' https://content.anaconda.com/", 'X-Robots-Tag': 'noindex'}
-INFO conda.gateways.repodata.jlap.fetch:download_and_hash(265): Download 0 bytes {'User-Agent': 'conda/25.5.1 requests/2.32.3 CPython/3.13.5 Windows/11 Windows/10.0.26200 solver/libmamba conda-libmamba-solver/25.4.0 
-libmambapy/2.0.5 aau/0.7.1 c/cop_hA_a245xmyRtw61AK_ s/zmBIHg4K_8BAl8I4KdFd7w e/o_KRH71WhloEcE1Es3HchA', 'Accept-Encoding': 'gzip, deflate, br, zstd', 'Accept': '*/*', 'Connection': 'keep-alive', 
+INFO conda.gateways.repodata.jlap.fetch:download_and_hash(265): Download 0 bytes {'User-Agent': 'conda/25.5.1 requests/2.32.3 CPython/3.13.5 Windows/11 Windows/10.0.26200 solver/libmamba conda-libmamba-solver/25.4.0
+libmambapy/2.0.5 aau/0.7.1 c/cop_hA_a245xmyRtw61AK_ s/zmBIHg4K_8BAl8I4KdFd7w e/o_KRH71WhloEcE1Es3HchA', 'Accept-Encoding': 'gzip, deflate, br, zstd', 'Accept': '*/*', 'Connection': 'keep-alive',
 'Anaconda-Telemetry-Channels': 'https://conda.anaconda.org/datalayer/win-64;https://conda.anaconda.org/datalayer/noarch;https://conda.anaconda.org/anaconda-cloud/label/dev/win-64;https://conda.anaconda.org/anaconda-cloud/
 label/dev/noarch;https://repo.anaconda.com/pkgs/main/win-64;https://repo.anaconda.com/pkgs/main/noarch;https://repo.anaconda.com/pkgs/r/win-64;https://repo.anaconda.com/pkgs/r/noarch;https://repo.anaconda.com/pkgs/msys2/w
-in-64;https://repo.anaconda.com/pkgs/msys2/noarch;https://conda.anaconda.org/conda-forge/w', 'Anaconda-Telemetry-Install': 'python=3.10;anaconda-mcp=1.0.0.rc.1;environments-mcp-server=1.0.0.rc.1', 
+in-64;https://repo.anaconda.com/pkgs/msys2/noarch;https://conda.anaconda.org/conda-forge/w', 'Anaconda-Telemetry-Install': 'python=3.10;anaconda-mcp=1.0.0.rc.1;environments-mcp-server=1.0.0.rc.1',
 'Anaconda-Telemetry-Packages': 'defaults/win-64::_anaconda_depends-2025.06-py313_mkl_2;defaults/win-64::aiobotocore-2.19.0-py313haa95532_0;defaults/win-64::aiohappyeyeballs-2.4.4-py313haa95532_0;defaults/win-64::aiohttp-3
 .11.10-py313h827c3e9_0;defaults/noarch::aioitertools-0.7.1-pyhd3eb1b0_0;defaults/noarch::aiosignal-1.2.0-pyhd3eb1b0_0;defaults/win-64::alabaster-0.7.16-py313haa95532_0;defaults/win-64::altair-5.5.0-py313haa95532_0;default
 s/win-64::anaconda-anon-usage-0.7.1-py313hfc23b7f_100;defaults/win-64::anaconda-auth-0.8.6-py313haa95532_0;defaults/win-64::anaconda-catalogs-0.2.0-py313haa95532_2;defaults/win-64::anaconda-cli-base-0.5.2-py313haa95532_0;
@@ -5226,10 +5226,10 @@ defaults/win-64::conda-build-25.5.0-py313hcfce1f1_0;defaults/win-64::conda-conte
 defaults/win-64::conda-pack-0.7.1-py313haa95532_0;defaults/win-64::conda-package-handling-2.4.0-py313haa95532_0;defaults/win-64::conda-package-streaming-0.11.0-py313haa95532_0;defaults/win-64::conda-repo-cli-1.0.165-py313
 haa95532_0;defaults/noarch::conda-token-0.6.0-pyhd3eb1b0_0;defaults/win-64::constantly-23.10.4-py313haa95532_0;defaults/win-64::contourpy-1.3.1-py313h214f63a_0;defaults/noarch::cookiecutter-1.7.3-pyhd3eb1b0_0;defaults/win
 -64::cpp-expected-1.1.0-h214f63a_0;defaults/win-64::cryptography-44.0.1-py313hbd6ee87_0;defaults/win-64::cssselect-1.2.0-py313haa95532_0;defaults/win-64::curl-8.12.1-h51539b2_0;defaults/noarch::cycler-0.11.0-pyhd3eb1b0_0;
-defaults/win-64::cytoolz-1.0.1-py313h827c3e9_0;defaults/win-64::dask-2025.2.0-py313haa95532_0;defaults/win-64::dask-core-2025.2.0-py313haa95532_0;defaults/win-64::dask-ex', 'Anaconda-Telemetry-Sys-Info': 
-'conda_build_version:25.5.0;conda_command:create', 'Anaconda-Telemetry-Virtual-Packages': '__archspec=1=x86_64_v3;__conda=25.5.1=0;__win=10.0.26200=0', 'Anaconda-ToS-Accept': 
-'https://repo.anaconda.com/pkgs/main=1752577200=accepted=1763492529;https://repo.anaconda.com/pkgs/r=1752577200=accepted=1763492529;https://repo.anaconda.com/pkgs/msys2=1752577200=accepted=1763492530', 'if-none-match': 
-'"b22b7871df18965204f442a3579a32d2"', 'Cookie': 
+defaults/win-64::cytoolz-1.0.1-py313h827c3e9_0;defaults/win-64::dask-2025.2.0-py313haa95532_0;defaults/win-64::dask-core-2025.2.0-py313haa95532_0;defaults/win-64::dask-ex', 'Anaconda-Telemetry-Sys-Info':
+'conda_build_version:25.5.0;conda_command:create', 'Anaconda-Telemetry-Virtual-Packages': '__archspec=1=x86_64_v3;__conda=25.5.1=0;__win=10.0.26200=0', 'Anaconda-ToS-Accept':
+'https://repo.anaconda.com/pkgs/main=1752577200=accepted=1763492529;https://repo.anaconda.com/pkgs/r=1752577200=accepted=1763492529;https://repo.anaconda.com/pkgs/msys2=1752577200=accepted=1763492530', 'if-none-match':
+'"b22b7871df18965204f442a3579a32d2"', 'Cookie':
 '__cf_bm=2y2rbuB3r.gPmX4sEowjBGTkMuglYedb2.xcRMnzMhM-1773078030-1.0.1.1-eqVMU_j_Xg9LfZhQDbcoFZtZ3eNk5s5UvLu5QhZ57zPDY.jtb0OJEUIDjlAPBbs_1QgZ5cwJ1YKLaSV_2G997or4QYvv0C1ui8W.Tbp.DL8'}
 DEBUG conda.gateways.repodata.jlap.fetch:timeme(197): Download complete https://repo.anaconda.com/pkgs/main/noarch/repodata.json Took 0.08s
 INFO conda.gateways.repodata.jlap.fetch:request_url_jlap_state(432): Apply 0 patches 835438c83a407ee1à \u2192 835438c83a407ee1à
@@ -5238,15 +5238,15 @@ DEBUG conda.gateways.repodata:fetch_latest(837): Local cache timed out for https
 DEBUG conda.gateways.repodata.jlap.interface:__init__(42): Using ZstdRepoInterface
 DEBUG urllib3.connectionpool:_new_conn(1049): Starting new HTTPS connection (2): repo.anaconda.com:443
 DEBUG urllib3.connectionpool:_make_request(544): https://repo.anaconda.com:443 "GET /pkgs/r/win-64/repodata.json.zst HTTP/1.1" 304 0
-DEBUG conda.gateways.repodata.jlap.fetch:download_and_hash(244): https://repo.anaconda.com/pkgs/r/win-64/repodata.json.zst {'Date': 'Mon, 09 Mar 2026 17:40:31 GMT', 'Connection': 'keep-alive', 'Server': 'cloudflare', 
-'CF-Ray': '9d9bdd800fbc9815-DFW', 'CF-Cache-Status': 'HIT', 'Age': '1447091', 'Cache-Control': 'public, max-age=30', 'ETag': '"436a37a5d7517fcc9887dd68182b4ebb"', 'Expires': 'Mon, 09 Mar 2026 17:41:01 GMT', 
-'Last-Modified': 'Thu, 06 Feb 2025 18:07:24 GMT', 'Vary': 'Accept-Encoding', 'x-amz-id-2': 'lVAAccxOEctTntNaLBOifpov2i8pDUxrHJc2ZqtJCmOVZQY4sT5tfTgQXyG7DE1tGv5bBec1PuU=', 'x-amz-request-id': '4H3ZMTWXA5286PSR', 
+DEBUG conda.gateways.repodata.jlap.fetch:download_and_hash(244): https://repo.anaconda.com/pkgs/r/win-64/repodata.json.zst {'Date': 'Mon, 09 Mar 2026 17:40:31 GMT', 'Connection': 'keep-alive', 'Server': 'cloudflare',
+'CF-Ray': '9d9bdd800fbc9815-DFW', 'CF-Cache-Status': 'HIT', 'Age': '1447091', 'Cache-Control': 'public, max-age=30', 'ETag': '"436a37a5d7517fcc9887dd68182b4ebb"', 'Expires': 'Mon, 09 Mar 2026 17:41:01 GMT',
+'Last-Modified': 'Thu, 06 Feb 2025 18:07:24 GMT', 'Vary': 'Accept-Encoding', 'x-amz-id-2': 'lVAAccxOEctTntNaLBOifpov2i8pDUxrHJc2ZqtJCmOVZQY4sT5tfTgQXyG7DE1tGv5bBec1PuU=', 'x-amz-request-id': '4H3ZMTWXA5286PSR',
 'x-amz-version-id': '9CUHeNFyWugU_mfpNts6XSYU9HKEKZe8', 'Content-Security-Policy': "upgrade-insecure-requests; frame-ancestors 'self' https://content.anaconda.com/", 'X-Robots-Tag': 'noindex'}
-INFO conda.gateways.repodata.jlap.fetch:download_and_hash(265): Download 0 bytes {'User-Agent': 'conda/25.5.1 requests/2.32.3 CPython/3.13.5 Windows/11 Windows/10.0.26200 solver/libmamba conda-libmamba-solver/25.4.0 
-libmambapy/2.0.5 aau/0.7.1 c/cop_hA_a245xmyRtw61AK_ s/zmBIHg4K_8BAl8I4KdFd7w e/o_KRH71WhloEcE1Es3HchA', 'Accept-Encoding': 'gzip, deflate, br, zstd', 'Accept': '*/*', 'Connection': 'keep-alive', 
+INFO conda.gateways.repodata.jlap.fetch:download_and_hash(265): Download 0 bytes {'User-Agent': 'conda/25.5.1 requests/2.32.3 CPython/3.13.5 Windows/11 Windows/10.0.26200 solver/libmamba conda-libmamba-solver/25.4.0
+libmambapy/2.0.5 aau/0.7.1 c/cop_hA_a245xmyRtw61AK_ s/zmBIHg4K_8BAl8I4KdFd7w e/o_KRH71WhloEcE1Es3HchA', 'Accept-Encoding': 'gzip, deflate, br, zstd', 'Accept': '*/*', 'Connection': 'keep-alive',
 'Anaconda-Telemetry-Channels': 'https://conda.anaconda.org/datalayer/win-64;https://conda.anaconda.org/datalayer/noarch;https://conda.anaconda.org/anaconda-cloud/label/dev/win-64;https://conda.anaconda.org/anaconda-cloud/
 label/dev/noarch;https://repo.anaconda.com/pkgs/main/win-64;https://repo.anaconda.com/pkgs/main/noarch;https://repo.anaconda.com/pkgs/r/win-64;https://repo.anaconda.com/pkgs/r/noarch;https://repo.anaconda.com/pkgs/msys2/w
-in-64;https://repo.anaconda.com/pkgs/msys2/noarch;https://conda.anaconda.org/conda-forge/w', 'Anaconda-Telemetry-Install': 'python=3.10;anaconda-mcp=1.0.0.rc.1;environments-mcp-server=1.0.0.rc.1', 
+in-64;https://repo.anaconda.com/pkgs/msys2/noarch;https://conda.anaconda.org/conda-forge/w', 'Anaconda-Telemetry-Install': 'python=3.10;anaconda-mcp=1.0.0.rc.1;environments-mcp-server=1.0.0.rc.1',
 'Anaconda-Telemetry-Packages': 'defaults/win-64::_anaconda_depends-2025.06-py313_mkl_2;defaults/win-64::aiobotocore-2.19.0-py313haa95532_0;defaults/win-64::aiohappyeyeballs-2.4.4-py313haa95532_0;defaults/win-64::aiohttp-3
 .11.10-py313h827c3e9_0;defaults/noarch::aioitertools-0.7.1-pyhd3eb1b0_0;defaults/noarch::aiosignal-1.2.0-pyhd3eb1b0_0;defaults/win-64::alabaster-0.7.16-py313haa95532_0;defaults/win-64::altair-5.5.0-py313haa95532_0;default
 s/win-64::anaconda-anon-usage-0.7.1-py313hfc23b7f_100;defaults/win-64::anaconda-auth-0.8.6-py313haa95532_0;defaults/win-64::anaconda-catalogs-0.2.0-py313haa95532_2;defaults/win-64::anaconda-cli-base-0.5.2-py313haa95532_0;
@@ -5269,10 +5269,10 @@ defaults/win-64::conda-build-25.5.0-py313hcfce1f1_0;defaults/win-64::conda-conte
 defaults/win-64::conda-pack-0.7.1-py313haa95532_0;defaults/win-64::conda-package-handling-2.4.0-py313haa95532_0;defaults/win-64::conda-package-streaming-0.11.0-py313haa95532_0;defaults/win-64::conda-repo-cli-1.0.165-py313
 haa95532_0;defaults/noarch::conda-token-0.6.0-pyhd3eb1b0_0;defaults/win-64::constantly-23.10.4-py313haa95532_0;defaults/win-64::contourpy-1.3.1-py313h214f63a_0;defaults/noarch::cookiecutter-1.7.3-pyhd3eb1b0_0;defaults/win
 -64::cpp-expected-1.1.0-h214f63a_0;defaults/win-64::cryptography-44.0.1-py313hbd6ee87_0;defaults/win-64::cssselect-1.2.0-py313haa95532_0;defaults/win-64::curl-8.12.1-h51539b2_0;defaults/noarch::cycler-0.11.0-pyhd3eb1b0_0;
-defaults/win-64::cytoolz-1.0.1-py313h827c3e9_0;defaults/win-64::dask-2025.2.0-py313haa95532_0;defaults/win-64::dask-core-2025.2.0-py313haa95532_0;defaults/win-64::dask-ex', 'Anaconda-Telemetry-Sys-Info': 
-'conda_build_version:25.5.0;conda_command:create', 'Anaconda-Telemetry-Virtual-Packages': '__archspec=1=x86_64_v3;__conda=25.5.1=0;__win=10.0.26200=0', 'Anaconda-ToS-Accept': 
-'https://repo.anaconda.com/pkgs/main=1752577200=accepted=1763492529;https://repo.anaconda.com/pkgs/r=1752577200=accepted=1763492529;https://repo.anaconda.com/pkgs/msys2=1752577200=accepted=1763492530', 'if-none-match': 
-'"436a37a5d7517fcc9887dd68182b4ebb"', 'Cookie': 
+defaults/win-64::cytoolz-1.0.1-py313h827c3e9_0;defaults/win-64::dask-2025.2.0-py313haa95532_0;defaults/win-64::dask-core-2025.2.0-py313haa95532_0;defaults/win-64::dask-ex', 'Anaconda-Telemetry-Sys-Info':
+'conda_build_version:25.5.0;conda_command:create', 'Anaconda-Telemetry-Virtual-Packages': '__archspec=1=x86_64_v3;__conda=25.5.1=0;__win=10.0.26200=0', 'Anaconda-ToS-Accept':
+'https://repo.anaconda.com/pkgs/main=1752577200=accepted=1763492529;https://repo.anaconda.com/pkgs/r=1752577200=accepted=1763492529;https://repo.anaconda.com/pkgs/msys2=1752577200=accepted=1763492530', 'if-none-match':
+'"436a37a5d7517fcc9887dd68182b4ebb"', 'Cookie':
 '__cf_bm=2y2rbuB3r.gPmX4sEowjBGTkMuglYedb2.xcRMnzMhM-1773078030-1.0.1.1-eqVMU_j_Xg9LfZhQDbcoFZtZ3eNk5s5UvLu5QhZ57zPDY.jtb0OJEUIDjlAPBbs_1QgZ5cwJ1YKLaSV_2G997or4QYvv0C1ui8W.Tbp.DL8'}
 DEBUG conda.gateways.repodata.jlap.fetch:timeme(197): Download complete https://repo.anaconda.com/pkgs/r/win-64/repodata.json Took 0.15s
 INFO conda.gateways.repodata.jlap.fetch:request_url_jlap_state(432): Apply 0 patches 1e8d7a60613dff4cà \u2192 1e8d7a60613dff4cà
@@ -5281,15 +5281,15 @@ DEBUG conda.gateways.repodata:fetch_latest(837): Local cache timed out for https
 DEBUG conda.gateways.repodata.jlap.interface:__init__(42): Using ZstdRepoInterface
 DEBUG urllib3.connectionpool:_new_conn(1049): Starting new HTTPS connection (3): repo.anaconda.com:443
 DEBUG urllib3.connectionpool:_make_request(544): https://repo.anaconda.com:443 "GET /pkgs/r/noarch/repodata.json.zst HTTP/1.1" 304 0
-DEBUG conda.gateways.repodata.jlap.fetch:download_and_hash(244): https://repo.anaconda.com/pkgs/r/noarch/repodata.json.zst {'Date': 'Mon, 09 Mar 2026 17:40:31 GMT', 'Connection': 'keep-alive', 'Server': 'cloudflare', 
-'CF-Ray': '9d9bdd80e97e9815-DFW', 'CF-Cache-Status': 'HIT', 'Age': '1158864', 'Cache-Control': 'public, max-age=30', 'ETag': '"f83fff10217f204c49475b9031ba7e86"', 'Expires': 'Mon, 09 Mar 2026 17:41:01 GMT', 
-'Last-Modified': 'Thu, 06 Feb 2025 18:07:11 GMT', 'Vary': 'Accept-Encoding', 'x-amz-id-2': 'pVFvYFbMJNepWD0eV6Prl+4YuCqO0BMSGQKmK4g56JzsmC3AwUQJSiJMyNju0OFPjFN+VFcCIgU=', 'x-amz-request-id': '4KP054TEQBC3FYM3', 
+DEBUG conda.gateways.repodata.jlap.fetch:download_and_hash(244): https://repo.anaconda.com/pkgs/r/noarch/repodata.json.zst {'Date': 'Mon, 09 Mar 2026 17:40:31 GMT', 'Connection': 'keep-alive', 'Server': 'cloudflare',
+'CF-Ray': '9d9bdd80e97e9815-DFW', 'CF-Cache-Status': 'HIT', 'Age': '1158864', 'Cache-Control': 'public, max-age=30', 'ETag': '"f83fff10217f204c49475b9031ba7e86"', 'Expires': 'Mon, 09 Mar 2026 17:41:01 GMT',
+'Last-Modified': 'Thu, 06 Feb 2025 18:07:11 GMT', 'Vary': 'Accept-Encoding', 'x-amz-id-2': 'pVFvYFbMJNepWD0eV6Prl+4YuCqO0BMSGQKmK4g56JzsmC3AwUQJSiJMyNju0OFPjFN+VFcCIgU=', 'x-amz-request-id': '4KP054TEQBC3FYM3',
 'x-amz-version-id': 'WPpVnH5SUNRozP5qMdxf6tDaJkqf2qAc', 'Content-Security-Policy': "upgrade-insecure-requests; frame-ancestors 'self' https://content.anaconda.com/", 'X-Robots-Tag': 'noindex'}
-INFO conda.gateways.repodata.jlap.fetch:download_and_hash(265): Download 0 bytes {'User-Agent': 'conda/25.5.1 requests/2.32.3 CPython/3.13.5 Windows/11 Windows/10.0.26200 solver/libmamba conda-libmamba-solver/25.4.0 
-libmambapy/2.0.5 aau/0.7.1 c/cop_hA_a245xmyRtw61AK_ s/zmBIHg4K_8BAl8I4KdFd7w e/o_KRH71WhloEcE1Es3HchA', 'Accept-Encoding': 'gzip, deflate, br, zstd', 'Accept': '*/*', 'Connection': 'keep-alive', 
+INFO conda.gateways.repodata.jlap.fetch:download_and_hash(265): Download 0 bytes {'User-Agent': 'conda/25.5.1 requests/2.32.3 CPython/3.13.5 Windows/11 Windows/10.0.26200 solver/libmamba conda-libmamba-solver/25.4.0
+libmambapy/2.0.5 aau/0.7.1 c/cop_hA_a245xmyRtw61AK_ s/zmBIHg4K_8BAl8I4KdFd7w e/o_KRH71WhloEcE1Es3HchA', 'Accept-Encoding': 'gzip, deflate, br, zstd', 'Accept': '*/*', 'Connection': 'keep-alive',
 'Anaconda-Telemetry-Channels': 'https://conda.anaconda.org/datalayer/win-64;https://conda.anaconda.org/datalayer/noarch;https://conda.anaconda.org/anaconda-cloud/label/dev/win-64;https://conda.anaconda.org/anaconda-cloud/
 label/dev/noarch;https://repo.anaconda.com/pkgs/main/win-64;https://repo.anaconda.com/pkgs/main/noarch;https://repo.anaconda.com/pkgs/r/win-64;https://repo.anaconda.com/pkgs/r/noarch;https://repo.anaconda.com/pkgs/msys2/w
-in-64;https://repo.anaconda.com/pkgs/msys2/noarch;https://conda.anaconda.org/conda-forge/w', 'Anaconda-Telemetry-Install': 'python=3.10;anaconda-mcp=1.0.0.rc.1;environments-mcp-server=1.0.0.rc.1', 
+in-64;https://repo.anaconda.com/pkgs/msys2/noarch;https://conda.anaconda.org/conda-forge/w', 'Anaconda-Telemetry-Install': 'python=3.10;anaconda-mcp=1.0.0.rc.1;environments-mcp-server=1.0.0.rc.1',
 'Anaconda-Telemetry-Packages': 'defaults/win-64::_anaconda_depends-2025.06-py313_mkl_2;defaults/win-64::aiobotocore-2.19.0-py313haa95532_0;defaults/win-64::aiohappyeyeballs-2.4.4-py313haa95532_0;defaults/win-64::aiohttp-3
 .11.10-py313h827c3e9_0;defaults/noarch::aioitertools-0.7.1-pyhd3eb1b0_0;defaults/noarch::aiosignal-1.2.0-pyhd3eb1b0_0;defaults/win-64::alabaster-0.7.16-py313haa95532_0;defaults/win-64::altair-5.5.0-py313haa95532_0;default
 s/win-64::anaconda-anon-usage-0.7.1-py313hfc23b7f_100;defaults/win-64::anaconda-auth-0.8.6-py313haa95532_0;defaults/win-64::anaconda-catalogs-0.2.0-py313haa95532_2;defaults/win-64::anaconda-cli-base-0.5.2-py313haa95532_0;
@@ -5312,10 +5312,10 @@ defaults/win-64::conda-build-25.5.0-py313hcfce1f1_0;defaults/win-64::conda-conte
 defaults/win-64::conda-pack-0.7.1-py313haa95532_0;defaults/win-64::conda-package-handling-2.4.0-py313haa95532_0;defaults/win-64::conda-package-streaming-0.11.0-py313haa95532_0;defaults/win-64::conda-repo-cli-1.0.165-py313
 haa95532_0;defaults/noarch::conda-token-0.6.0-pyhd3eb1b0_0;defaults/win-64::constantly-23.10.4-py313haa95532_0;defaults/win-64::contourpy-1.3.1-py313h214f63a_0;defaults/noarch::cookiecutter-1.7.3-pyhd3eb1b0_0;defaults/win
 -64::cpp-expected-1.1.0-h214f63a_0;defaults/win-64::cryptography-44.0.1-py313hbd6ee87_0;defaults/win-64::cssselect-1.2.0-py313haa95532_0;defaults/win-64::curl-8.12.1-h51539b2_0;defaults/noarch::cycler-0.11.0-pyhd3eb1b0_0;
-defaults/win-64::cytoolz-1.0.1-py313h827c3e9_0;defaults/win-64::dask-2025.2.0-py313haa95532_0;defaults/win-64::dask-core-2025.2.0-py313haa95532_0;defaults/win-64::dask-ex', 'Anaconda-Telemetry-Sys-Info': 
-'conda_build_version:25.5.0;conda_command:create', 'Anaconda-Telemetry-Virtual-Packages': '__archspec=1=x86_64_v3;__conda=25.5.1=0;__win=10.0.26200=0', 'Anaconda-ToS-Accept': 
-'https://repo.anaconda.com/pkgs/main=1752577200=accepted=1763492529;https://repo.anaconda.com/pkgs/r=1752577200=accepted=1763492529;https://repo.anaconda.com/pkgs/msys2=1752577200=accepted=1763492530', 'if-none-match': 
-'"f83fff10217f204c49475b9031ba7e86"', 'Cookie': 
+defaults/win-64::cytoolz-1.0.1-py313h827c3e9_0;defaults/win-64::dask-2025.2.0-py313haa95532_0;defaults/win-64::dask-core-2025.2.0-py313haa95532_0;defaults/win-64::dask-ex', 'Anaconda-Telemetry-Sys-Info':
+'conda_build_version:25.5.0;conda_command:create', 'Anaconda-Telemetry-Virtual-Packages': '__archspec=1=x86_64_v3;__conda=25.5.1=0;__win=10.0.26200=0', 'Anaconda-ToS-Accept':
+'https://repo.anaconda.com/pkgs/main=1752577200=accepted=1763492529;https://repo.anaconda.com/pkgs/r=1752577200=accepted=1763492529;https://repo.anaconda.com/pkgs/msys2=1752577200=accepted=1763492530', 'if-none-match':
+'"f83fff10217f204c49475b9031ba7e86"', 'Cookie':
 '__cf_bm=2y2rbuB3r.gPmX4sEowjBGTkMuglYedb2.xcRMnzMhM-1773078030-1.0.1.1-eqVMU_j_Xg9LfZhQDbcoFZtZ3eNk5s5UvLu5QhZ57zPDY.jtb0OJEUIDjlAPBbs_1QgZ5cwJ1YKLaSV_2G997or4QYvv0C1ui8W.Tbp.DL8'}
 DEBUG conda.gateways.repodata.jlap.fetch:timeme(197): Download complete https://repo.anaconda.com/pkgs/r/noarch/repodata.json Took 0.10s
 INFO conda.gateways.repodata.jlap.fetch:request_url_jlap_state(432): Apply 0 patches c25462d7872987b0à \u2192 c25462d7872987b0à
@@ -5324,15 +5324,15 @@ DEBUG conda.gateways.repodata:fetch_latest(837): Local cache timed out for https
 DEBUG conda.gateways.repodata.jlap.interface:__init__(42): Using ZstdRepoInterface
 DEBUG urllib3.connectionpool:_new_conn(1049): Starting new HTTPS connection (4): repo.anaconda.com:443
 DEBUG urllib3.connectionpool:_make_request(544): https://repo.anaconda.com:443 "GET /pkgs/msys2/win-64/repodata.json.zst HTTP/1.1" 304 0
-DEBUG conda.gateways.repodata.jlap.fetch:download_and_hash(244): https://repo.anaconda.com/pkgs/msys2/win-64/repodata.json.zst {'Date': 'Mon, 09 Mar 2026 17:40:31 GMT', 'Connection': 'keep-alive', 'Server': 'cloudflare', 
-'CF-Ray': '9d9bdd81cb509815-DFW', 'CF-Cache-Status': 'HIT', 'Age': '928676', 'Cache-Control': 'public, max-age=30', 'ETag': '"395fc9f48b5b9a57a60757e1a69342e6"', 'Expires': 'Mon, 09 Mar 2026 17:41:01 GMT', 
-'Last-Modified': 'Thu, 13 Feb 2025 22:25:23 GMT', 'Vary': 'Accept-Encoding', 'x-amz-id-2': 'veQ+Ee+vnTajRQrNfbZdVslgA6XHcRfPKe1XTr8Kafs/Mb1MHBG/hbj8fjo3I3r4FRGoz3nL74o=', 'x-amz-request-id': '8R96BXVDJRG902BH', 
+DEBUG conda.gateways.repodata.jlap.fetch:download_and_hash(244): https://repo.anaconda.com/pkgs/msys2/win-64/repodata.json.zst {'Date': 'Mon, 09 Mar 2026 17:40:31 GMT', 'Connection': 'keep-alive', 'Server': 'cloudflare',
+'CF-Ray': '9d9bdd81cb509815-DFW', 'CF-Cache-Status': 'HIT', 'Age': '928676', 'Cache-Control': 'public, max-age=30', 'ETag': '"395fc9f48b5b9a57a60757e1a69342e6"', 'Expires': 'Mon, 09 Mar 2026 17:41:01 GMT',
+'Last-Modified': 'Thu, 13 Feb 2025 22:25:23 GMT', 'Vary': 'Accept-Encoding', 'x-amz-id-2': 'veQ+Ee+vnTajRQrNfbZdVslgA6XHcRfPKe1XTr8Kafs/Mb1MHBG/hbj8fjo3I3r4FRGoz3nL74o=', 'x-amz-request-id': '8R96BXVDJRG902BH',
 'x-amz-version-id': 'QSOiVi6jOb9SeRDp3FvOFUBae5pFngIf', 'Content-Security-Policy': "upgrade-insecure-requests; frame-ancestors 'self' https://content.anaconda.com/", 'X-Robots-Tag': 'noindex'}
-INFO conda.gateways.repodata.jlap.fetch:download_and_hash(265): Download 0 bytes {'User-Agent': 'conda/25.5.1 requests/2.32.3 CPython/3.13.5 Windows/11 Windows/10.0.26200 solver/libmamba conda-libmamba-solver/25.4.0 
-libmambapy/2.0.5 aau/0.7.1 c/cop_hA_a245xmyRtw61AK_ s/zmBIHg4K_8BAl8I4KdFd7w e/o_KRH71WhloEcE1Es3HchA', 'Accept-Encoding': 'gzip, deflate, br, zstd', 'Accept': '*/*', 'Connection': 'keep-alive', 
+INFO conda.gateways.repodata.jlap.fetch:download_and_hash(265): Download 0 bytes {'User-Agent': 'conda/25.5.1 requests/2.32.3 CPython/3.13.5 Windows/11 Windows/10.0.26200 solver/libmamba conda-libmamba-solver/25.4.0
+libmambapy/2.0.5 aau/0.7.1 c/cop_hA_a245xmyRtw61AK_ s/zmBIHg4K_8BAl8I4KdFd7w e/o_KRH71WhloEcE1Es3HchA', 'Accept-Encoding': 'gzip, deflate, br, zstd', 'Accept': '*/*', 'Connection': 'keep-alive',
 'Anaconda-Telemetry-Channels': 'https://conda.anaconda.org/datalayer/win-64;https://conda.anaconda.org/datalayer/noarch;https://conda.anaconda.org/anaconda-cloud/label/dev/win-64;https://conda.anaconda.org/anaconda-cloud/
 label/dev/noarch;https://repo.anaconda.com/pkgs/main/win-64;https://repo.anaconda.com/pkgs/main/noarch;https://repo.anaconda.com/pkgs/r/win-64;https://repo.anaconda.com/pkgs/r/noarch;https://repo.anaconda.com/pkgs/msys2/w
-in-64;https://repo.anaconda.com/pkgs/msys2/noarch;https://conda.anaconda.org/conda-forge/w', 'Anaconda-Telemetry-Install': 'python=3.10;anaconda-mcp=1.0.0.rc.1;environments-mcp-server=1.0.0.rc.1', 
+in-64;https://repo.anaconda.com/pkgs/msys2/noarch;https://conda.anaconda.org/conda-forge/w', 'Anaconda-Telemetry-Install': 'python=3.10;anaconda-mcp=1.0.0.rc.1;environments-mcp-server=1.0.0.rc.1',
 'Anaconda-Telemetry-Packages': 'defaults/win-64::_anaconda_depends-2025.06-py313_mkl_2;defaults/win-64::aiobotocore-2.19.0-py313haa95532_0;defaults/win-64::aiohappyeyeballs-2.4.4-py313haa95532_0;defaults/win-64::aiohttp-3
 .11.10-py313h827c3e9_0;defaults/noarch::aioitertools-0.7.1-pyhd3eb1b0_0;defaults/noarch::aiosignal-1.2.0-pyhd3eb1b0_0;defaults/win-64::alabaster-0.7.16-py313haa95532_0;defaults/win-64::altair-5.5.0-py313haa95532_0;default
 s/win-64::anaconda-anon-usage-0.7.1-py313hfc23b7f_100;defaults/win-64::anaconda-auth-0.8.6-py313haa95532_0;defaults/win-64::anaconda-catalogs-0.2.0-py313haa95532_2;defaults/win-64::anaconda-cli-base-0.5.2-py313haa95532_0;
@@ -5355,10 +5355,10 @@ defaults/win-64::conda-build-25.5.0-py313hcfce1f1_0;defaults/win-64::conda-conte
 defaults/win-64::conda-pack-0.7.1-py313haa95532_0;defaults/win-64::conda-package-handling-2.4.0-py313haa95532_0;defaults/win-64::conda-package-streaming-0.11.0-py313haa95532_0;defaults/win-64::conda-repo-cli-1.0.165-py313
 haa95532_0;defaults/noarch::conda-token-0.6.0-pyhd3eb1b0_0;defaults/win-64::constantly-23.10.4-py313haa95532_0;defaults/win-64::contourpy-1.3.1-py313h214f63a_0;defaults/noarch::cookiecutter-1.7.3-pyhd3eb1b0_0;defaults/win
 -64::cpp-expected-1.1.0-h214f63a_0;defaults/win-64::cryptography-44.0.1-py313hbd6ee87_0;defaults/win-64::cssselect-1.2.0-py313haa95532_0;defaults/win-64::curl-8.12.1-h51539b2_0;defaults/noarch::cycler-0.11.0-pyhd3eb1b0_0;
-defaults/win-64::cytoolz-1.0.1-py313h827c3e9_0;defaults/win-64::dask-2025.2.0-py313haa95532_0;defaults/win-64::dask-core-2025.2.0-py313haa95532_0;defaults/win-64::dask-ex', 'Anaconda-Telemetry-Sys-Info': 
-'conda_build_version:25.5.0;conda_command:create', 'Anaconda-Telemetry-Virtual-Packages': '__archspec=1=x86_64_v3;__conda=25.5.1=0;__win=10.0.26200=0', 'Anaconda-ToS-Accept': 
-'https://repo.anaconda.com/pkgs/main=1752577200=accepted=1763492529;https://repo.anaconda.com/pkgs/r=1752577200=accepted=1763492529;https://repo.anaconda.com/pkgs/msys2=1752577200=accepted=1763492530', 'if-none-match': 
-'W/"395fc9f48b5b9a57a60757e1a69342e6"', 'Cookie': 
+defaults/win-64::cytoolz-1.0.1-py313h827c3e9_0;defaults/win-64::dask-2025.2.0-py313haa95532_0;defaults/win-64::dask-core-2025.2.0-py313haa95532_0;defaults/win-64::dask-ex', 'Anaconda-Telemetry-Sys-Info':
+'conda_build_version:25.5.0;conda_command:create', 'Anaconda-Telemetry-Virtual-Packages': '__archspec=1=x86_64_v3;__conda=25.5.1=0;__win=10.0.26200=0', 'Anaconda-ToS-Accept':
+'https://repo.anaconda.com/pkgs/main=1752577200=accepted=1763492529;https://repo.anaconda.com/pkgs/r=1752577200=accepted=1763492529;https://repo.anaconda.com/pkgs/msys2=1752577200=accepted=1763492530', 'if-none-match':
+'W/"395fc9f48b5b9a57a60757e1a69342e6"', 'Cookie':
 '__cf_bm=2y2rbuB3r.gPmX4sEowjBGTkMuglYedb2.xcRMnzMhM-1773078030-1.0.1.1-eqVMU_j_Xg9LfZhQDbcoFZtZ3eNk5s5UvLu5QhZ57zPDY.jtb0OJEUIDjlAPBbs_1QgZ5cwJ1YKLaSV_2G997or4QYvv0C1ui8W.Tbp.DL8'}
 DEBUG conda.gateways.repodata.jlap.fetch:timeme(197): Download complete https://repo.anaconda.com/pkgs/msys2/win-64/repodata.json Took 0.11s
 INFO conda.gateways.repodata.jlap.fetch:request_url_jlap_state(432): Apply 0 patches 25169ce295785b2fà \u2192 25169ce295785b2fà
@@ -5367,16 +5367,16 @@ DEBUG conda.gateways.repodata:fetch_latest(837): Local cache timed out for https
 DEBUG conda.gateways.repodata.jlap.interface:__init__(42): Using ZstdRepoInterface
 DEBUG urllib3.connectionpool:_new_conn(1049): Starting new HTTPS connection (5): repo.anaconda.com:443
 DEBUG urllib3.connectionpool:_make_request(544): https://repo.anaconda.com:443 "GET /pkgs/msys2/noarch/repodata.json.zst HTTP/1.1" 304 0
-DEBUG conda.gateways.repodata.jlap.fetch:download_and_hash(244): https://repo.anaconda.com/pkgs/msys2/noarch/repodata.json.zst {'Date': 'Mon, 09 Mar 2026 17:40:31 GMT', 'Connection': 'keep-alive', 'Server': 'cloudflare', 
-'CF-Ray': '9d9bdd828ceb9815-DFW', 'CF-Cache-Status': 'HIT', 'Age': '1498004', 'Cache-Control': 'public, max-age=30', 'ETag': '"55921eee6c9b6b82f4065fae46529f25"', 'Expires': 'Mon, 09 Mar 2026 17:41:01 GMT', 
-'Last-Modified': 'Thu, 13 Feb 2025 22:24:51 GMT', 'Vary': 'Accept-Encoding', 'x-amz-id-2': 'ePwsuWxe4WzptNIE3d1oyHdJgpDQBYtbe0tbemD6sN7Pys1ZyNly93jfo/lMlCubONP+xeBXgRn6w+6biFXNbGtThCOJiuIzfNwGVeLbKWc=', 
-'x-amz-request-id': '21K6SVC471N43Z64', 'x-amz-version-id': 'roOyNRMZYwzjS_Iv_SlgWU5OfLFRACAm', 'Content-Security-Policy': "upgrade-insecure-requests; frame-ancestors 'self' https://content.anaconda.com/", 
+DEBUG conda.gateways.repodata.jlap.fetch:download_and_hash(244): https://repo.anaconda.com/pkgs/msys2/noarch/repodata.json.zst {'Date': 'Mon, 09 Mar 2026 17:40:31 GMT', 'Connection': 'keep-alive', 'Server': 'cloudflare',
+'CF-Ray': '9d9bdd828ceb9815-DFW', 'CF-Cache-Status': 'HIT', 'Age': '1498004', 'Cache-Control': 'public, max-age=30', 'ETag': '"55921eee6c9b6b82f4065fae46529f25"', 'Expires': 'Mon, 09 Mar 2026 17:41:01 GMT',
+'Last-Modified': 'Thu, 13 Feb 2025 22:24:51 GMT', 'Vary': 'Accept-Encoding', 'x-amz-id-2': 'ePwsuWxe4WzptNIE3d1oyHdJgpDQBYtbe0tbemD6sN7Pys1ZyNly93jfo/lMlCubONP+xeBXgRn6w+6biFXNbGtThCOJiuIzfNwGVeLbKWc=',
+'x-amz-request-id': '21K6SVC471N43Z64', 'x-amz-version-id': 'roOyNRMZYwzjS_Iv_SlgWU5OfLFRACAm', 'Content-Security-Policy': "upgrade-insecure-requests; frame-ancestors 'self' https://content.anaconda.com/",
 'X-Robots-Tag': 'noindex'}
-INFO conda.gateways.repodata.jlap.fetch:download_and_hash(265): Download 0 bytes {'User-Agent': 'conda/25.5.1 requests/2.32.3 CPython/3.13.5 Windows/11 Windows/10.0.26200 solver/libmamba conda-libmamba-solver/25.4.0 
-libmambapy/2.0.5 aau/0.7.1 c/cop_hA_a245xmyRtw61AK_ s/zmBIHg4K_8BAl8I4KdFd7w e/o_KRH71WhloEcE1Es3HchA', 'Accept-Encoding': 'gzip, deflate, br, zstd', 'Accept': '*/*', 'Connection': 'keep-alive', 
+INFO conda.gateways.repodata.jlap.fetch:download_and_hash(265): Download 0 bytes {'User-Agent': 'conda/25.5.1 requests/2.32.3 CPython/3.13.5 Windows/11 Windows/10.0.26200 solver/libmamba conda-libmamba-solver/25.4.0
+libmambapy/2.0.5 aau/0.7.1 c/cop_hA_a245xmyRtw61AK_ s/zmBIHg4K_8BAl8I4KdFd7w e/o_KRH71WhloEcE1Es3HchA', 'Accept-Encoding': 'gzip, deflate, br, zstd', 'Accept': '*/*', 'Connection': 'keep-alive',
 'Anaconda-Telemetry-Channels': 'https://conda.anaconda.org/datalayer/win-64;https://conda.anaconda.org/datalayer/noarch;https://conda.anaconda.org/anaconda-cloud/label/dev/win-64;https://conda.anaconda.org/anaconda-cloud/
 label/dev/noarch;https://repo.anaconda.com/pkgs/main/win-64;https://repo.anaconda.com/pkgs/main/noarch;https://repo.anaconda.com/pkgs/r/win-64;https://repo.anaconda.com/pkgs/r/noarch;https://repo.anaconda.com/pkgs/msys2/w
-in-64;https://repo.anaconda.com/pkgs/msys2/noarch;https://conda.anaconda.org/conda-forge/w', 'Anaconda-Telemetry-Install': 'python=3.10;anaconda-mcp=1.0.0.rc.1;environments-mcp-server=1.0.0.rc.1', 
+in-64;https://repo.anaconda.com/pkgs/msys2/noarch;https://conda.anaconda.org/conda-forge/w', 'Anaconda-Telemetry-Install': 'python=3.10;anaconda-mcp=1.0.0.rc.1;environments-mcp-server=1.0.0.rc.1',
 'Anaconda-Telemetry-Packages': 'defaults/win-64::_anaconda_depends-2025.06-py313_mkl_2;defaults/win-64::aiobotocore-2.19.0-py313haa95532_0;defaults/win-64::aiohappyeyeballs-2.4.4-py313haa95532_0;defaults/win-64::aiohttp-3
 .11.10-py313h827c3e9_0;defaults/noarch::aioitertools-0.7.1-pyhd3eb1b0_0;defaults/noarch::aiosignal-1.2.0-pyhd3eb1b0_0;defaults/win-64::alabaster-0.7.16-py313haa95532_0;defaults/win-64::altair-5.5.0-py313haa95532_0;default
 s/win-64::anaconda-anon-usage-0.7.1-py313hfc23b7f_100;defaults/win-64::anaconda-auth-0.8.6-py313haa95532_0;defaults/win-64::anaconda-catalogs-0.2.0-py313haa95532_2;defaults/win-64::anaconda-cli-base-0.5.2-py313haa95532_0;
@@ -5399,10 +5399,10 @@ defaults/win-64::conda-build-25.5.0-py313hcfce1f1_0;defaults/win-64::conda-conte
 defaults/win-64::conda-pack-0.7.1-py313haa95532_0;defaults/win-64::conda-package-handling-2.4.0-py313haa95532_0;defaults/win-64::conda-package-streaming-0.11.0-py313haa95532_0;defaults/win-64::conda-repo-cli-1.0.165-py313
 haa95532_0;defaults/noarch::conda-token-0.6.0-pyhd3eb1b0_0;defaults/win-64::constantly-23.10.4-py313haa95532_0;defaults/win-64::contourpy-1.3.1-py313h214f63a_0;defaults/noarch::cookiecutter-1.7.3-pyhd3eb1b0_0;defaults/win
 -64::cpp-expected-1.1.0-h214f63a_0;defaults/win-64::cryptography-44.0.1-py313hbd6ee87_0;defaults/win-64::cssselect-1.2.0-py313haa95532_0;defaults/win-64::curl-8.12.1-h51539b2_0;defaults/noarch::cycler-0.11.0-pyhd3eb1b0_0;
-defaults/win-64::cytoolz-1.0.1-py313h827c3e9_0;defaults/win-64::dask-2025.2.0-py313haa95532_0;defaults/win-64::dask-core-2025.2.0-py313haa95532_0;defaults/win-64::dask-ex', 'Anaconda-Telemetry-Sys-Info': 
-'conda_build_version:25.5.0;conda_command:create', 'Anaconda-Telemetry-Virtual-Packages': '__archspec=1=x86_64_v3;__conda=25.5.1=0;__win=10.0.26200=0', 'Anaconda-ToS-Accept': 
-'https://repo.anaconda.com/pkgs/main=1752577200=accepted=1763492529;https://repo.anaconda.com/pkgs/r=1752577200=accepted=1763492529;https://repo.anaconda.com/pkgs/msys2=1752577200=accepted=1763492530', 'if-none-match': 
-'W/"55921eee6c9b6b82f4065fae46529f25"', 'Cookie': 
+defaults/win-64::cytoolz-1.0.1-py313h827c3e9_0;defaults/win-64::dask-2025.2.0-py313haa95532_0;defaults/win-64::dask-core-2025.2.0-py313haa95532_0;defaults/win-64::dask-ex', 'Anaconda-Telemetry-Sys-Info':
+'conda_build_version:25.5.0;conda_command:create', 'Anaconda-Telemetry-Virtual-Packages': '__archspec=1=x86_64_v3;__conda=25.5.1=0;__win=10.0.26200=0', 'Anaconda-ToS-Accept':
+'https://repo.anaconda.com/pkgs/main=1752577200=accepted=1763492529;https://repo.anaconda.com/pkgs/r=1752577200=accepted=1763492529;https://repo.anaconda.com/pkgs/msys2=1752577200=accepted=1763492530', 'if-none-match':
+'W/"55921eee6c9b6b82f4065fae46529f25"', 'Cookie':
 '__cf_bm=2y2rbuB3r.gPmX4sEowjBGTkMuglYedb2.xcRMnzMhM-1773078030-1.0.1.1-eqVMU_j_Xg9LfZhQDbcoFZtZ3eNk5s5UvLu5QhZ57zPDY.jtb0OJEUIDjlAPBbs_1QgZ5cwJ1YKLaSV_2G997or4QYvv0C1ui8W.Tbp.DL8'}
 DEBUG conda.gateways.repodata.jlap.fetch:timeme(197): Download complete https://repo.anaconda.com/pkgs/msys2/noarch/repodata.json Took 0.10s
 INFO conda.gateways.repodata.jlap.fetch:request_url_jlap_state(432): Apply 0 patches cad9c00a6efeb221à \u2192 cad9c00a6efeb221à
@@ -5414,17 +5414,17 @@ DEBUG conda.gateways.repodata:read_cache(908): Loading raw json for https://cond
 DEBUG conda.gateways.repodata:fetch_latest(837): Local cache timed out for https://conda.anaconda.org/anaconda-connector/win-64/repodata.json at C:\Users\JuliaIliukhina\anaconda3\pkgs\cache\dcd7f264.json
 DEBUG conda.gateways.repodata.jlap.interface:__init__(42): Using ZstdRepoInterface
 DEBUG urllib3.connectionpool:_make_request(544): https://conda.anaconda.org:443 "GET /t/<TOKEN>/anaconda-connector/win-64/repodata.json.zst HTTP/1.1" 200 124
-DEBUG conda.gateways.repodata.jlap.fetch:download_and_hash(244): https://conda.anaconda.org/t/<TOKEN>/anaconda-connector/win-64/repodata.json.zst {'Date': 'Mon, 09 Mar 2026 17:40:32 GMT', 'Content-Type': 
-'application/octet-stream', 'Content-Length': '124', 'Connection': 'keep-alive', 'Server': 'cloudflare', 'CF-Ray': '9d9bdd894a439815-DFW', 'CF-Cache-Status': 'DYNAMIC', 'Cache-Control': 'max-age=60, private', 
-'Content-Disposition': 'attachment; filename=repodata.json.zst', 'Last-Modified': 'Mon, 02 Mar 2026 16:23:46 GMT', 'Set-Cookie': 'remember_token=; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Max-Age=0; Path=/, 
-x_csrf_token=IjI1YjUzZjI2MzFiZDI3YWM2YzI4Yzk4MTA2YjY0ZmU2Y2NmMGY1NWUi.aa8GEA.jN6gUA2KvZm08gQWZBLyuvrm2d8; Path=/, 
-session=eyJjc3JmX3Rva2VuIjoiMjViNTNmMjYzMWJkMjdhYzZjMjhjOTgxMDZiNjRmZTZjY2YwZjU1ZSJ9.aa8GEA.1o0Ssja57C_RlJmVFlCBTti2jv8; Domain=anaconda.org; Secure; HttpOnly; Path=/', 'Strict-Transport-Security': 'max-age=15552000', 
+DEBUG conda.gateways.repodata.jlap.fetch:download_and_hash(244): https://conda.anaconda.org/t/<TOKEN>/anaconda-connector/win-64/repodata.json.zst {'Date': 'Mon, 09 Mar 2026 17:40:32 GMT', 'Content-Type':
+'application/octet-stream', 'Content-Length': '124', 'Connection': 'keep-alive', 'Server': 'cloudflare', 'CF-Ray': '9d9bdd894a439815-DFW', 'CF-Cache-Status': 'DYNAMIC', 'Cache-Control': 'max-age=60, private',
+'Content-Disposition': 'attachment; filename=repodata.json.zst', 'Last-Modified': 'Mon, 02 Mar 2026 16:23:46 GMT', 'Set-Cookie': 'remember_token=; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Max-Age=0; Path=/,
+x_csrf_token=IjI1YjUzZjI2MzFiZDI3YWM2YzI4Yzk4MTA2YjY0ZmU2Y2NmMGY1NWUi.aa8GEA.jN6gUA2KvZm08gQWZBLyuvrm2d8; Path=/,
+session=eyJjc3JmX3Rva2VuIjoiMjViNTNmMjYzMWJkMjdhYzZjMjhjOTgxMDZiNjRmZTZjY2YwZjU1ZSJ9.aa8GEA.1o0Ssja57C_RlJmVFlCBTti2jv8; Domain=anaconda.org; Secure; HttpOnly; Path=/', 'Strict-Transport-Security': 'max-age=15552000',
 'Vary': 'Cookie, Accept-Encoding', 'content-security-policy': "frame-ancestors 'self';", 'referrer-policy': 'same-origin', 'x-content-type-options': 'nosniff', 'x-download-options': 'noopen'}
-INFO conda.gateways.repodata.jlap.fetch:download_and_hash(265): Download 124 bytes {'User-Agent': 'conda/25.5.1 requests/2.32.3 CPython/3.13.5 Windows/11 Windows/10.0.26200 solver/libmamba conda-libmamba-solver/25.4.0 
-libmambapy/2.0.5 aau/0.7.1 c/cop_hA_a245xmyRtw61AK_ s/zmBIHg4K_8BAl8I4KdFd7w e/o_KRH71WhloEcE1Es3HchA', 'Accept-Encoding': 'gzip, deflate, br, zstd', 'Accept': '*/*', 'Connection': 'keep-alive', 
+INFO conda.gateways.repodata.jlap.fetch:download_and_hash(265): Download 124 bytes {'User-Agent': 'conda/25.5.1 requests/2.32.3 CPython/3.13.5 Windows/11 Windows/10.0.26200 solver/libmamba conda-libmamba-solver/25.4.0
+libmambapy/2.0.5 aau/0.7.1 c/cop_hA_a245xmyRtw61AK_ s/zmBIHg4K_8BAl8I4KdFd7w e/o_KRH71WhloEcE1Es3HchA', 'Accept-Encoding': 'gzip, deflate, br, zstd', 'Accept': '*/*', 'Connection': 'keep-alive',
 'Anaconda-Telemetry-Channels': 'https://conda.anaconda.org/datalayer/win-64;https://conda.anaconda.org/datalayer/noarch;https://conda.anaconda.org/anaconda-cloud/label/dev/win-64;https://conda.anaconda.org/anaconda-cloud/
 label/dev/noarch;https://repo.anaconda.com/pkgs/main/win-64;https://repo.anaconda.com/pkgs/main/noarch;https://repo.anaconda.com/pkgs/r/win-64;https://repo.anaconda.com/pkgs/r/noarch;https://repo.anaconda.com/pkgs/msys2/w
-in-64;https://repo.anaconda.com/pkgs/msys2/noarch;https://conda.anaconda.org/conda-forge/w', 'Anaconda-Telemetry-Install': 'python=3.10;anaconda-mcp=1.0.0.rc.1;environments-mcp-server=1.0.0.rc.1', 
+in-64;https://repo.anaconda.com/pkgs/msys2/noarch;https://conda.anaconda.org/conda-forge/w', 'Anaconda-Telemetry-Install': 'python=3.10;anaconda-mcp=1.0.0.rc.1;environments-mcp-server=1.0.0.rc.1',
 'Anaconda-Telemetry-Packages': 'defaults/win-64::_anaconda_depends-2025.06-py313_mkl_2;defaults/win-64::aiobotocore-2.19.0-py313haa95532_0;defaults/win-64::aiohappyeyeballs-2.4.4-py313haa95532_0;defaults/win-64::aiohttp-3
 .11.10-py313h827c3e9_0;defaults/noarch::aioitertools-0.7.1-pyhd3eb1b0_0;defaults/noarch::aiosignal-1.2.0-pyhd3eb1b0_0;defaults/win-64::alabaster-0.7.16-py313haa95532_0;defaults/win-64::altair-5.5.0-py313haa95532_0;default
 s/win-64::anaconda-anon-usage-0.7.1-py313hfc23b7f_100;defaults/win-64::anaconda-auth-0.8.6-py313haa95532_0;defaults/win-64::anaconda-catalogs-0.2.0-py313haa95532_2;defaults/win-64::anaconda-cli-base-0.5.2-py313haa95532_0;
@@ -5447,10 +5447,10 @@ defaults/win-64::conda-build-25.5.0-py313hcfce1f1_0;defaults/win-64::conda-conte
 defaults/win-64::conda-pack-0.7.1-py313haa95532_0;defaults/win-64::conda-package-handling-2.4.0-py313haa95532_0;defaults/win-64::conda-package-streaming-0.11.0-py313haa95532_0;defaults/win-64::conda-repo-cli-1.0.165-py313
 haa95532_0;defaults/noarch::conda-token-0.6.0-pyhd3eb1b0_0;defaults/win-64::constantly-23.10.4-py313haa95532_0;defaults/win-64::contourpy-1.3.1-py313h214f63a_0;defaults/noarch::cookiecutter-1.7.3-pyhd3eb1b0_0;defaults/win
 -64::cpp-expected-1.1.0-h214f63a_0;defaults/win-64::cryptography-44.0.1-py313hbd6ee87_0;defaults/win-64::cssselect-1.2.0-py313haa95532_0;defaults/win-64::curl-8.12.1-h51539b2_0;defaults/noarch::cycler-0.11.0-pyhd3eb1b0_0;
-defaults/win-64::cytoolz-1.0.1-py313h827c3e9_0;defaults/win-64::dask-2025.2.0-py313haa95532_0;defaults/win-64::dask-core-2025.2.0-py313haa95532_0;defaults/win-64::dask-ex', 'Anaconda-Telemetry-Sys-Info': 
-'conda_build_version:25.5.0;conda_command:create', 'Anaconda-Telemetry-Virtual-Packages': '__archspec=1=x86_64_v3;__conda=25.5.1=0;__win=10.0.26200=0', 'Cookie': 
-'x_csrf_token=IjI1YjUzZjI2MzFiZDI3YWM2YzI4Yzk4MTA2YjY0ZmU2Y2NmMGY1NWUi.aa8GDQ.SVGrtRRQaLXFc7gRP7u9Qn6kt-0; 
-session=eyJjc3JmX3Rva2VuIjoiMjViNTNmMjYzMWJkMjdhYzZjMjhjOTgxMDZiNjRmZTZjY2YwZjU1ZSJ9.aa8GDQ.uuNNHFahSM8tluWT1JUeYkTh6kE; 
+defaults/win-64::cytoolz-1.0.1-py313h827c3e9_0;defaults/win-64::dask-2025.2.0-py313haa95532_0;defaults/win-64::dask-core-2025.2.0-py313haa95532_0;defaults/win-64::dask-ex', 'Anaconda-Telemetry-Sys-Info':
+'conda_build_version:25.5.0;conda_command:create', 'Anaconda-Telemetry-Virtual-Packages': '__archspec=1=x86_64_v3;__conda=25.5.1=0;__win=10.0.26200=0', 'Cookie':
+'x_csrf_token=IjI1YjUzZjI2MzFiZDI3YWM2YzI4Yzk4MTA2YjY0ZmU2Y2NmMGY1NWUi.aa8GDQ.SVGrtRRQaLXFc7gRP7u9Qn6kt-0;
+session=eyJjc3JmX3Rva2VuIjoiMjViNTNmMjYzMWJkMjdhYzZjMjhjOTgxMDZiNjRmZTZjY2YwZjU1ZSJ9.aa8GDQ.uuNNHFahSM8tluWT1JUeYkTh6kE;
 __cf_bm=jkhuebP7p20Hyh09Hi1rYk6Io9eIGwnHOsaoHJSpdUE-1773078027-1.0.1.1-1iLdLk6olGpiXlV0RQ_kK3pSAPQmXAp.88VDQ6BJpzNsurSMmbw9T7JmoPeAzYLeGgCR5ok6HMGIC_Fqj5FskYzt8Ff4d11faiONU.aRt2u662nIHerIfkrv8MJrS5lO'}
 DEBUG conda.gateways.repodata:__setitem__(481): Replaced non-str RepodataState[etag] with ""
 DEBUG conda.gateways.repodata.jlap.fetch:timeme(197): Download complete https://conda.anaconda.org/t/<TOKEN>/anaconda-connector/win-64/repodata.json Took 0.18s
@@ -5459,17 +5459,17 @@ DEBUG conda.gateways.repodata.jlap.fetch:timeme(197): Apply Patches Took 0.00s
 DEBUG conda.gateways.repodata:fetch_latest(837): Local cache timed out for https://conda.anaconda.org/anaconda-connector/noarch/repodata.json at C:\Users\JuliaIliukhina\anaconda3\pkgs\cache\fa4a38ea.json
 DEBUG conda.gateways.repodata.jlap.interface:__init__(42): Using ZstdRepoInterface
 DEBUG urllib3.connectionpool:_make_request(544): https://conda.anaconda.org:443 "GET /t/<TOKEN>/anaconda-connector/noarch/repodata.json.zst HTTP/1.1" 200 5264
-DEBUG conda.gateways.repodata.jlap.fetch:download_and_hash(244): https://conda.anaconda.org/t/<TOKEN>/anaconda-connector/noarch/repodata.json.zst {'Date': 'Mon, 09 Mar 2026 17:40:33 GMT', 'Content-Type': 
-'application/octet-stream', 'Content-Length': '5264', 'Connection': 'keep-alive', 'Server': 'cloudflare', 'CF-Ray': '9d9bdd8a6ce09815-DFW', 'CF-Cache-Status': 'DYNAMIC', 'Cache-Control': 'max-age=60, private', 
-'Content-Disposition': 'attachment; filename=repodata.json.zst', 'Last-Modified': 'Mon, 02 Mar 2026 16:23:46 GMT', 'Set-Cookie': 'remember_token=; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Max-Age=0; Path=/, 
-x_csrf_token=IjI1YjUzZjI2MzFiZDI3YWM2YzI4Yzk4MTA2YjY0ZmU2Y2NmMGY1NWUi.aa8GEQ.ap9j5XB1GEcSjICvSPrKbBfVQFk; Path=/, 
-session=eyJjc3JmX3Rva2VuIjoiMjViNTNmMjYzMWJkMjdhYzZjMjhjOTgxMDZiNjRmZTZjY2YwZjU1ZSJ9.aa8GEQ.1oFSbDpJneVhBDwFW4nnZJWIpDk; Domain=anaconda.org; Secure; HttpOnly; Path=/', 'Strict-Transport-Security': 'max-age=15552000', 
+DEBUG conda.gateways.repodata.jlap.fetch:download_and_hash(244): https://conda.anaconda.org/t/<TOKEN>/anaconda-connector/noarch/repodata.json.zst {'Date': 'Mon, 09 Mar 2026 17:40:33 GMT', 'Content-Type':
+'application/octet-stream', 'Content-Length': '5264', 'Connection': 'keep-alive', 'Server': 'cloudflare', 'CF-Ray': '9d9bdd8a6ce09815-DFW', 'CF-Cache-Status': 'DYNAMIC', 'Cache-Control': 'max-age=60, private',
+'Content-Disposition': 'attachment; filename=repodata.json.zst', 'Last-Modified': 'Mon, 02 Mar 2026 16:23:46 GMT', 'Set-Cookie': 'remember_token=; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Max-Age=0; Path=/,
+x_csrf_token=IjI1YjUzZjI2MzFiZDI3YWM2YzI4Yzk4MTA2YjY0ZmU2Y2NmMGY1NWUi.aa8GEQ.ap9j5XB1GEcSjICvSPrKbBfVQFk; Path=/,
+session=eyJjc3JmX3Rva2VuIjoiMjViNTNmMjYzMWJkMjdhYzZjMjhjOTgxMDZiNjRmZTZjY2YwZjU1ZSJ9.aa8GEQ.1oFSbDpJneVhBDwFW4nnZJWIpDk; Domain=anaconda.org; Secure; HttpOnly; Path=/', 'Strict-Transport-Security': 'max-age=15552000',
 'Vary': 'Cookie, Accept-Encoding', 'content-security-policy': "frame-ancestors 'self';", 'referrer-policy': 'same-origin', 'x-content-type-options': 'nosniff', 'x-download-options': 'noopen'}
-INFO conda.gateways.repodata.jlap.fetch:download_and_hash(265): Download 5264 bytes {'User-Agent': 'conda/25.5.1 requests/2.32.3 CPython/3.13.5 Windows/11 Windows/10.0.26200 solver/libmamba conda-libmamba-solver/25.4.0 
-libmambapy/2.0.5 aau/0.7.1 c/cop_hA_a245xmyRtw61AK_ s/zmBIHg4K_8BAl8I4KdFd7w e/o_KRH71WhloEcE1Es3HchA', 'Accept-Encoding': 'gzip, deflate, br, zstd', 'Accept': '*/*', 'Connection': 'keep-alive', 
+INFO conda.gateways.repodata.jlap.fetch:download_and_hash(265): Download 5264 bytes {'User-Agent': 'conda/25.5.1 requests/2.32.3 CPython/3.13.5 Windows/11 Windows/10.0.26200 solver/libmamba conda-libmamba-solver/25.4.0
+libmambapy/2.0.5 aau/0.7.1 c/cop_hA_a245xmyRtw61AK_ s/zmBIHg4K_8BAl8I4KdFd7w e/o_KRH71WhloEcE1Es3HchA', 'Accept-Encoding': 'gzip, deflate, br, zstd', 'Accept': '*/*', 'Connection': 'keep-alive',
 'Anaconda-Telemetry-Channels': 'https://conda.anaconda.org/datalayer/win-64;https://conda.anaconda.org/datalayer/noarch;https://conda.anaconda.org/anaconda-cloud/label/dev/win-64;https://conda.anaconda.org/anaconda-cloud/
 label/dev/noarch;https://repo.anaconda.com/pkgs/main/win-64;https://repo.anaconda.com/pkgs/main/noarch;https://repo.anaconda.com/pkgs/r/win-64;https://repo.anaconda.com/pkgs/r/noarch;https://repo.anaconda.com/pkgs/msys2/w
-in-64;https://repo.anaconda.com/pkgs/msys2/noarch;https://conda.anaconda.org/conda-forge/w', 'Anaconda-Telemetry-Install': 'python=3.10;anaconda-mcp=1.0.0.rc.1;environments-mcp-server=1.0.0.rc.1', 
+in-64;https://repo.anaconda.com/pkgs/msys2/noarch;https://conda.anaconda.org/conda-forge/w', 'Anaconda-Telemetry-Install': 'python=3.10;anaconda-mcp=1.0.0.rc.1;environments-mcp-server=1.0.0.rc.1',
 'Anaconda-Telemetry-Packages': 'defaults/win-64::_anaconda_depends-2025.06-py313_mkl_2;defaults/win-64::aiobotocore-2.19.0-py313haa95532_0;defaults/win-64::aiohappyeyeballs-2.4.4-py313haa95532_0;defaults/win-64::aiohttp-3
 .11.10-py313h827c3e9_0;defaults/noarch::aioitertools-0.7.1-pyhd3eb1b0_0;defaults/noarch::aiosignal-1.2.0-pyhd3eb1b0_0;defaults/win-64::alabaster-0.7.16-py313haa95532_0;defaults/win-64::altair-5.5.0-py313haa95532_0;default
 s/win-64::anaconda-anon-usage-0.7.1-py313hfc23b7f_100;defaults/win-64::anaconda-auth-0.8.6-py313haa95532_0;defaults/win-64::anaconda-catalogs-0.2.0-py313haa95532_2;defaults/win-64::anaconda-cli-base-0.5.2-py313haa95532_0;
@@ -5492,10 +5492,10 @@ defaults/win-64::conda-build-25.5.0-py313hcfce1f1_0;defaults/win-64::conda-conte
 defaults/win-64::conda-pack-0.7.1-py313haa95532_0;defaults/win-64::conda-package-handling-2.4.0-py313haa95532_0;defaults/win-64::conda-package-streaming-0.11.0-py313haa95532_0;defaults/win-64::conda-repo-cli-1.0.165-py313
 haa95532_0;defaults/noarch::conda-token-0.6.0-pyhd3eb1b0_0;defaults/win-64::constantly-23.10.4-py313haa95532_0;defaults/win-64::contourpy-1.3.1-py313h214f63a_0;defaults/noarch::cookiecutter-1.7.3-pyhd3eb1b0_0;defaults/win
 -64::cpp-expected-1.1.0-h214f63a_0;defaults/win-64::cryptography-44.0.1-py313hbd6ee87_0;defaults/win-64::cssselect-1.2.0-py313haa95532_0;defaults/win-64::curl-8.12.1-h51539b2_0;defaults/noarch::cycler-0.11.0-pyhd3eb1b0_0;
-defaults/win-64::cytoolz-1.0.1-py313h827c3e9_0;defaults/win-64::dask-2025.2.0-py313haa95532_0;defaults/win-64::dask-core-2025.2.0-py313haa95532_0;defaults/win-64::dask-ex', 'Anaconda-Telemetry-Sys-Info': 
-'conda_build_version:25.5.0;conda_command:create', 'Anaconda-Telemetry-Virtual-Packages': '__archspec=1=x86_64_v3;__conda=25.5.1=0;__win=10.0.26200=0', 'Cookie': 
-'x_csrf_token=IjI1YjUzZjI2MzFiZDI3YWM2YzI4Yzk4MTA2YjY0ZmU2Y2NmMGY1NWUi.aa8GEA.jN6gUA2KvZm08gQWZBLyuvrm2d8; 
-session=eyJjc3JmX3Rva2VuIjoiMjViNTNmMjYzMWJkMjdhYzZjMjhjOTgxMDZiNjRmZTZjY2YwZjU1ZSJ9.aa8GEA.1o0Ssja57C_RlJmVFlCBTti2jv8; 
+defaults/win-64::cytoolz-1.0.1-py313h827c3e9_0;defaults/win-64::dask-2025.2.0-py313haa95532_0;defaults/win-64::dask-core-2025.2.0-py313haa95532_0;defaults/win-64::dask-ex', 'Anaconda-Telemetry-Sys-Info':
+'conda_build_version:25.5.0;conda_command:create', 'Anaconda-Telemetry-Virtual-Packages': '__archspec=1=x86_64_v3;__conda=25.5.1=0;__win=10.0.26200=0', 'Cookie':
+'x_csrf_token=IjI1YjUzZjI2MzFiZDI3YWM2YzI4Yzk4MTA2YjY0ZmU2Y2NmMGY1NWUi.aa8GEA.jN6gUA2KvZm08gQWZBLyuvrm2d8;
+session=eyJjc3JmX3Rva2VuIjoiMjViNTNmMjYzMWJkMjdhYzZjMjhjOTgxMDZiNjRmZTZjY2YwZjU1ZSJ9.aa8GEA.1o0Ssja57C_RlJmVFlCBTti2jv8;
 __cf_bm=jkhuebP7p20Hyh09Hi1rYk6Io9eIGwnHOsaoHJSpdUE-1773078027-1.0.1.1-1iLdLk6olGpiXlV0RQ_kK3pSAPQmXAp.88VDQ6BJpzNsurSMmbw9T7JmoPeAzYLeGgCR5ok6HMGIC_Fqj5FskYzt8Ff4d11faiONU.aRt2u662nIHerIfkrv8MJrS5lO'}
 DEBUG conda.gateways.repodata:__setitem__(481): Replaced non-str RepodataState[etag] with ""
 DEBUG conda.gateways.repodata.jlap.fetch:timeme(197): Download complete https://conda.anaconda.org/t/<TOKEN>/anaconda-connector/noarch/repodata.json Took 0.25s
@@ -5510,12 +5510,12 @@ DEBUG conda.conda_libmamba_solver.index:_load_repo_info_from_json_path(416): Loa
 info     libmamba Reading repodata.json file "C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\cache\\ef7af08e.json" for repo https://conda.anaconda.org/datalayer/noarch using mamba
 debug    libmamba No signatures available or requested. Downloading without verifying artifacts.
 DEBUG conda.conda_libmamba_solver.index:_load_repo_info_from_json_path(384): Overriding truthy 'try_solv' as False on Windows for performance reasons.
-DEBUG conda.conda_libmamba_solver.index:_load_repo_info_from_json_path(416): Loading anaconda-cloud/label/dev (https://conda.anaconda.org/anaconda-cloud/label/dev/win-64) from JSON repodata at 
+DEBUG conda.conda_libmamba_solver.index:_load_repo_info_from_json_path(416): Loading anaconda-cloud/label/dev (https://conda.anaconda.org/anaconda-cloud/label/dev/win-64) from JSON repodata at
 C:\Users\JuliaIliukhina\anaconda3\pkgs\cache\3040ce44.json
 info     libmamba Reading repodata.json file "C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\cache\\3040ce44.json" for repo https://conda.anaconda.org/anaconda-cloud/label/dev/win-64 using mamba
 debug    libmamba No signatures available or requested. Downloading without verifying artifacts.
 DEBUG conda.conda_libmamba_solver.index:_load_repo_info_from_json_path(384): Overriding truthy 'try_solv' as False on Windows for performance reasons.
-DEBUG conda.conda_libmamba_solver.index:_load_repo_info_from_json_path(416): Loading anaconda-cloud/label/dev (https://conda.anaconda.org/anaconda-cloud/label/dev/noarch) from JSON repodata at 
+DEBUG conda.conda_libmamba_solver.index:_load_repo_info_from_json_path(416): Loading anaconda-cloud/label/dev (https://conda.anaconda.org/anaconda-cloud/label/dev/noarch) from JSON repodata at
 C:\Users\JuliaIliukhina\anaconda3\pkgs\cache\0a1883d0.json
 info     libmamba Reading repodata.json file "C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\cache\\0a1883d0.json" for repo https://conda.anaconda.org/anaconda-cloud/label/dev/noarch using mamba
 debug    libmamba No signatures available or requested. Downloading without verifying artifacts.
@@ -5536,32 +5536,32 @@ DEBUG conda.conda_libmamba_solver.index:_load_repo_info_from_json_path(416): Loa
 info     libmamba Reading repodata.json file "C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\cache\\4ea078d6.json" for repo https://repo.anaconda.com/pkgs/r/noarch using mamba
 debug    libmamba No signatures available or requested. Downloading without verifying artifacts.
 DEBUG conda.conda_libmamba_solver.index:_load_repo_info_from_json_path(384): Overriding truthy 'try_solv' as False on Windows for performance reasons.
-DEBUG conda.conda_libmamba_solver.index:_load_repo_info_from_json_path(416): Loading pkgs/msys2 (https://repo.anaconda.com/pkgs/msys2/win-64) from JSON repodata at 
+DEBUG conda.conda_libmamba_solver.index:_load_repo_info_from_json_path(416): Loading pkgs/msys2 (https://repo.anaconda.com/pkgs/msys2/win-64) from JSON repodata at
 C:\Users\JuliaIliukhina\anaconda3\pkgs\cache\5ca77eed.json
 info     libmamba Reading repodata.json file "C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\cache\\5ca77eed.json" for repo https://repo.anaconda.com/pkgs/msys2/win-64 using mamba
 debug    libmamba No signatures available or requested. Downloading without verifying artifacts.
 DEBUG conda.conda_libmamba_solver.index:_load_repo_info_from_json_path(384): Overriding truthy 'try_solv' as False on Windows for performance reasons.
-DEBUG conda.conda_libmamba_solver.index:_load_repo_info_from_json_path(416): Loading pkgs/msys2 (https://repo.anaconda.com/pkgs/msys2/noarch) from JSON repodata at 
+DEBUG conda.conda_libmamba_solver.index:_load_repo_info_from_json_path(416): Loading pkgs/msys2 (https://repo.anaconda.com/pkgs/msys2/noarch) from JSON repodata at
 C:\Users\JuliaIliukhina\anaconda3\pkgs\cache\c4a505b4.json
 info     libmamba Reading repodata.json file "C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\cache\\c4a505b4.json" for repo https://repo.anaconda.com/pkgs/msys2/noarch using mamba
 debug    libmamba No signatures available or requested. Downloading without verifying artifacts.
 DEBUG conda.conda_libmamba_solver.index:_load_repo_info_from_json_path(384): Overriding truthy 'try_solv' as False on Windows for performance reasons.
-DEBUG conda.conda_libmamba_solver.index:_load_repo_info_from_json_path(416): Loading conda-forge (https://conda.anaconda.org/conda-forge/win-64) from JSON repodata at 
+DEBUG conda.conda_libmamba_solver.index:_load_repo_info_from_json_path(416): Loading conda-forge (https://conda.anaconda.org/conda-forge/win-64) from JSON repodata at
 C:\Users\JuliaIliukhina\anaconda3\pkgs\cache\5afe41e9.json
 info     libmamba Reading repodata.json file "C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\cache\\5afe41e9.json" for repo https://conda.anaconda.org/conda-forge/win-64 using mamba
 debug    libmamba No signatures available or requested. Downloading without verifying artifacts.
 DEBUG conda.conda_libmamba_solver.index:_load_repo_info_from_json_path(384): Overriding truthy 'try_solv' as False on Windows for performance reasons.
-DEBUG conda.conda_libmamba_solver.index:_load_repo_info_from_json_path(416): Loading conda-forge (https://conda.anaconda.org/conda-forge/noarch) from JSON repodata at 
+DEBUG conda.conda_libmamba_solver.index:_load_repo_info_from_json_path(416): Loading conda-forge (https://conda.anaconda.org/conda-forge/noarch) from JSON repodata at
 C:\Users\JuliaIliukhina\anaconda3\pkgs\cache\09cdf8bf.json
 info     libmamba Reading repodata.json file "C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\cache\\09cdf8bf.json" for repo https://conda.anaconda.org/conda-forge/noarch using mamba
 debug    libmamba No signatures available or requested. Downloading without verifying artifacts.
 DEBUG conda.conda_libmamba_solver.index:_load_repo_info_from_json_path(384): Overriding truthy 'try_solv' as False on Windows for performance reasons.
-DEBUG conda.conda_libmamba_solver.index:_load_repo_info_from_json_path(416): Loading anaconda-connector (https://conda.anaconda.org/anaconda-connector/win-64) from JSON repodata at 
+DEBUG conda.conda_libmamba_solver.index:_load_repo_info_from_json_path(416): Loading anaconda-connector (https://conda.anaconda.org/anaconda-connector/win-64) from JSON repodata at
 C:\Users\JuliaIliukhina\anaconda3\pkgs\cache\dcd7f264.json
 info     libmamba Reading repodata.json file "C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\cache\\dcd7f264.json" for repo https://conda.anaconda.org/anaconda-connector/win-64 using mamba
 debug    libmamba No signatures available or requested. Downloading without verifying artifacts.
 DEBUG conda.conda_libmamba_solver.index:_load_repo_info_from_json_path(384): Overriding truthy 'try_solv' as False on Windows for performance reasons.
-DEBUG conda.conda_libmamba_solver.index:_load_repo_info_from_json_path(416): Loading anaconda-connector (https://conda.anaconda.org/anaconda-connector/noarch) from JSON repodata at 
+DEBUG conda.conda_libmamba_solver.index:_load_repo_info_from_json_path(416): Loading anaconda-connector (https://conda.anaconda.org/anaconda-connector/noarch) from JSON repodata at
 C:\Users\JuliaIliukhina\anaconda3\pkgs\cache\fa4a38ea.json
 info     libmamba Reading repodata.json file "C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\cache\\fa4a38ea.json" for repo https://conda.anaconda.org/anaconda-connector/noarch using mamba
 debug    libmamba No signatures available or requested. Downloading without verifying artifacts.
@@ -5795,7 +5795,7 @@ debug    libmamba Solution: Install mcp-compose-0.1.11-py_0
 debug    libmamba Solution: Install anaconda-connector-conda-0.1.10-pypy_0
 debug    libmamba Solution: Install environments-mcp-server-1.0.0.rc.1-py_0
 debug    libmamba Solution: Install anaconda-mcp-1.0.0.rc.1-py_0
-DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items: 
+DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items:
   - defaults/noarch::pip-26.0.1-pyhc872135_0
   - defaults/noarch::toml-0.10.2-pyhd3eb1b0_0
   - defaults/win-64::conda-26.1.1-py310haa95532_0
@@ -5814,7 +5814,7 @@ DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependenc
   - anaconda-connector/noarch::anaconda-connector-conda-0.1.10-pypy_0
   - anaconda-cloud/label/dev/noarch::environments-mcp-server-1.0.0.rc.1-py_0
   - anaconda-cloud/label/dev/noarch::anaconda-mcp-1.0.0.rc.1-py_0
-DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items: 
+DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items:
   - defaults/noarch::pip-26.0.1-pyhc872135_0
   - defaults/noarch::toml-0.10.2-pyhd3eb1b0_0
   - defaults/win-64::conda-26.1.1-py310haa95532_0
@@ -5832,7 +5832,7 @@ DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependenc
   - anaconda-connector/noarch::anaconda-connector-conda-0.1.10-pypy_0
   - anaconda-cloud/label/dev/noarch::environments-mcp-server-1.0.0.rc.1-py_0
   - anaconda-cloud/label/dev/noarch::anaconda-mcp-1.0.0.rc.1-py_0
-DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items: 
+DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items:
   - defaults/noarch::pip-26.0.1-pyhc872135_0
   - defaults/noarch::toml-0.10.2-pyhd3eb1b0_0
   - defaults/win-64::conda-26.1.1-py310haa95532_0
@@ -5849,7 +5849,7 @@ DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependenc
   - anaconda-connector/noarch::anaconda-connector-conda-0.1.10-pypy_0
   - anaconda-cloud/label/dev/noarch::environments-mcp-server-1.0.0.rc.1-py_0
   - anaconda-cloud/label/dev/noarch::anaconda-mcp-1.0.0.rc.1-py_0
-DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items: 
+DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items:
   - defaults/noarch::pip-26.0.1-pyhc872135_0
   - defaults/noarch::toml-0.10.2-pyhd3eb1b0_0
   - defaults/win-64::conda-26.1.1-py310haa95532_0
@@ -5865,7 +5865,7 @@ DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependenc
   - anaconda-connector/noarch::anaconda-connector-conda-0.1.10-pypy_0
   - anaconda-cloud/label/dev/noarch::environments-mcp-server-1.0.0.rc.1-py_0
   - anaconda-cloud/label/dev/noarch::anaconda-mcp-1.0.0.rc.1-py_0
-DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items: 
+DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items:
   - defaults/noarch::pip-26.0.1-pyhc872135_0
   - defaults/noarch::toml-0.10.2-pyhd3eb1b0_0
   - defaults/win-64::conda-26.1.1-py310haa95532_0
@@ -5880,7 +5880,7 @@ DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependenc
   - anaconda-connector/noarch::anaconda-connector-conda-0.1.10-pypy_0
   - anaconda-cloud/label/dev/noarch::environments-mcp-server-1.0.0.rc.1-py_0
   - anaconda-cloud/label/dev/noarch::anaconda-mcp-1.0.0.rc.1-py_0
-DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items: 
+DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items:
   - defaults/noarch::pip-26.0.1-pyhc872135_0
   - defaults/noarch::toml-0.10.2-pyhd3eb1b0_0
   - defaults/win-64::conda-26.1.1-py310haa95532_0
@@ -5894,7 +5894,7 @@ DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependenc
   - datalayer/noarch::mcp-compose-0.1.11-py_0
   - anaconda-cloud/label/dev/noarch::environments-mcp-server-1.0.0.rc.1-py_0
   - anaconda-cloud/label/dev/noarch::anaconda-mcp-1.0.0.rc.1-py_0
-DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items: 
+DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items:
   - defaults/noarch::pip-26.0.1-pyhc872135_0
   - defaults/noarch::toml-0.10.2-pyhd3eb1b0_0
   - defaults/win-64::conda-26.1.1-py310haa95532_0
@@ -5907,7 +5907,7 @@ DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependenc
   - datalayer/noarch::mcp-compose-0.1.11-py_0
   - anaconda-cloud/label/dev/noarch::environments-mcp-server-1.0.0.rc.1-py_0
   - anaconda-cloud/label/dev/noarch::anaconda-mcp-1.0.0.rc.1-py_0
-DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items: 
+DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items:
   - defaults/noarch::pip-26.0.1-pyhc872135_0
   - defaults/noarch::toml-0.10.2-pyhd3eb1b0_0
   - defaults/win-64::conda-26.1.1-py310haa95532_0
@@ -5919,7 +5919,7 @@ DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependenc
   - datalayer/noarch::mcp-compose-0.1.11-py_0
   - anaconda-cloud/label/dev/noarch::environments-mcp-server-1.0.0.rc.1-py_0
   - anaconda-cloud/label/dev/noarch::anaconda-mcp-1.0.0.rc.1-py_0
-DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items: 
+DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items:
   - defaults/noarch::pip-26.0.1-pyhc872135_0
   - defaults/noarch::toml-0.10.2-pyhd3eb1b0_0
   - defaults/win-64::conda-26.1.1-py310haa95532_0
@@ -5930,7 +5930,7 @@ DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependenc
   - datalayer/noarch::mcp-compose-0.1.11-py_0
   - anaconda-cloud/label/dev/noarch::environments-mcp-server-1.0.0.rc.1-py_0
   - anaconda-cloud/label/dev/noarch::anaconda-mcp-1.0.0.rc.1-py_0
-DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items: 
+DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items:
   - defaults/noarch::pip-26.0.1-pyhc872135_0
   - defaults/noarch::toml-0.10.2-pyhd3eb1b0_0
   - defaults/win-64::conda-26.1.1-py310haa95532_0
@@ -5940,7 +5940,7 @@ DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependenc
   - datalayer/noarch::mcp-compose-0.1.11-py_0
   - anaconda-cloud/label/dev/noarch::environments-mcp-server-1.0.0.rc.1-py_0
   - anaconda-cloud/label/dev/noarch::anaconda-mcp-1.0.0.rc.1-py_0
-DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items: 
+DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items:
   - defaults/noarch::pip-26.0.1-pyhc872135_0
   - defaults/noarch::toml-0.10.2-pyhd3eb1b0_0
   - defaults/win-64::conda-26.1.1-py310haa95532_0
@@ -5949,7 +5949,7 @@ DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependenc
   - datalayer/noarch::mcp-compose-0.1.11-py_0
   - anaconda-cloud/label/dev/noarch::environments-mcp-server-1.0.0.rc.1-py_0
   - anaconda-cloud/label/dev/noarch::anaconda-mcp-1.0.0.rc.1-py_0
-DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items: 
+DEBUG conda.models.prefix_graph:_topo_sort_handle_cycles(260): CyclicalDependencyError: Cyclic dependencies exist among these items:
   - defaults/noarch::pip-26.0.1-pyhc872135_0
   - defaults/noarch::toml-0.10.2-pyhd3eb1b0_0
   - defaults/win-64::conda-26.1.1-py310haa95532_0
@@ -5971,7 +5971,7 @@ Please update conda by running
 INFO conda.core.link:__init__(259): initializing UnlinkLinkTransaction with
   target_prefix: C:\Users\JuliaIliukhina\anaconda3\envs\anaconda-mcp-rc-py310
   unlink_precs:
-    
+
   link_precs:
     defaults/win-64::ca-certificates-2025.12.2-haa95532_0
     defaults/win-64::nlohmann_json-3.11.2-h6c2663c_0
@@ -6375,57 +6375,57 @@ DEBUG conda.gateways.disk.create:extract_tarball(227): extracting C:\Users\Julia
   to C:\Users\JuliaIliukhina\anaconda3\pkgs\h11-0.16.0-py310haa95532_1
 DEBUG conda.core.package_cache_data:execute(800): prepared package cache actions:
   cache_actions:
-    CacheUrlAction<url='https://conda.anaconda.org/t/<TOKEN>/anaconda-connector/noarch/anaconda-connector-core-0.1.10-pypy_0.conda', 
+    CacheUrlAction<url='https://conda.anaconda.org/t/<TOKEN>/anaconda-connector/noarch/anaconda-connector-core-0.1.10-pypy_0.conda',
 target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\anaconda-connector-core-0.1.10-pypy_0.conda'>
-    CacheUrlAction<url='https://conda.anaconda.org/t/<TOKEN>/anaconda-connector/noarch/anaconda-connector-utilities-0.1.10-pypy_0.conda', 
+    CacheUrlAction<url='https://conda.anaconda.org/t/<TOKEN>/anaconda-connector/noarch/anaconda-connector-utilities-0.1.10-pypy_0.conda',
 target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\anaconda-connector-utilities-0.1.10-pypy_0.conda'>
-    CacheUrlAction<url='https://conda.anaconda.org/t/<TOKEN>/anaconda-connector/noarch/anaconda-connector-conda-0.1.10-pypy_0.conda', 
+    CacheUrlAction<url='https://conda.anaconda.org/t/<TOKEN>/anaconda-connector/noarch/anaconda-connector-conda-0.1.10-pypy_0.conda',
 target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\anaconda-connector-conda-0.1.10-pypy_0.conda'>
     CacheUrlAction<url='https://repo.anaconda.com/pkgs/main/noarch/archspec-0.2.5-pyhd3eb1b0_0.conda', target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\archspec-0.2.5-pyhd3eb1b0_0.conda'>
     CacheUrlAction<url='https://repo.anaconda.com/pkgs/main/win-64/jsonschema-path-0.4.5-py310haa95532_0.conda', target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\jsonschema-path-0.4.5-py310haa95532_0.conda'>
     CacheUrlAction<url='https://repo.anaconda.com/pkgs/main/win-64/pywin32-ctypes-0.2.3-py310haa95532_0.conda', target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\pywin32-ctypes-0.2.3-py310haa95532_0.conda'>
     CacheUrlAction<url='https://repo.anaconda.com/pkgs/main/win-64/jsonpointer-3.0.0-py310haa95532_0.conda', target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\jsonpointer-3.0.0-py310haa95532_0.conda'>
-    CacheUrlAction<url='https://repo.anaconda.com/pkgs/main/win-64/backports-datetime-fromisoformat-2.0.3-py310h827c3e9_0.conda', 
+    CacheUrlAction<url='https://repo.anaconda.com/pkgs/main/win-64/backports-datetime-fromisoformat-2.0.3-py310h827c3e9_0.conda',
 target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\backports-datetime-fromisoformat-2.0.3-py310h827c3e9_0.conda'>
     CacheUrlAction<url='https://repo.anaconda.com/pkgs/main/win-64/pathable-0.5.0-py310haa95532_0.conda', target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\pathable-0.5.0-py310haa95532_0.conda'>
     CacheUrlAction<url='https://repo.anaconda.com/pkgs/main/win-64/exceptiongroup-1.3.0-py310haa95532_0.conda', target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\exceptiongroup-1.3.0-py310haa95532_0.conda'>
     CacheUrlAction<url='https://repo.anaconda.com/pkgs/main/win-64/truststore-0.10.1-py310haa95532_1.conda', target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\truststore-0.10.1-py310haa95532_1.conda'>
     CacheUrlAction<url='https://repo.anaconda.com/pkgs/main/win-64/libbrotlidec-1.2.0-h02c67a5_0.conda', target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\libbrotlidec-1.2.0-h02c67a5_0.conda'>
     CacheUrlAction<url='https://repo.anaconda.com/pkgs/main/win-64/pluggy-1.5.0-py310haa95532_0.conda', target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\pluggy-1.5.0-py310haa95532_0.conda'>
-    CacheUrlAction<url='https://repo.anaconda.com/pkgs/main/win-64/uvicorn-standard-0.40.0-py310haa95532_0.conda', 
+    CacheUrlAction<url='https://repo.anaconda.com/pkgs/main/win-64/uvicorn-standard-0.40.0-py310haa95532_0.conda',
 target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\uvicorn-standard-0.40.0-py310haa95532_0.conda'>
     CacheUrlAction<url='https://conda.anaconda.org/conda-forge/win-64/caio-0.9.25-py310h1637853_0.conda', target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\caio-0.9.25-py310h1637853_0.conda'>
     CacheUrlAction<url='https://conda.anaconda.org/anaconda-cloud/label/dev/noarch/anaconda-auth-0.10.0rc1-py_0.conda', target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\anaconda-auth-0.10.0rc1-py_0.conda'>
-    CacheUrlAction<url='https://repo.anaconda.com/pkgs/main/win-64/opentelemetry-exporter-otlp-proto-grpc-1.38.0-py310haa95532_0.conda', 
+    CacheUrlAction<url='https://repo.anaconda.com/pkgs/main/win-64/opentelemetry-exporter-otlp-proto-grpc-1.38.0-py310haa95532_0.conda',
 target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\opentelemetry-exporter-otlp-proto-grpc-1.38.0-py310haa95532_0.conda'>
     CacheUrlAction<url='https://repo.anaconda.com/pkgs/main/win-64/platformdirs-4.5.0-py310haa95532_0.conda', target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\platformdirs-4.5.0-py310haa95532_0.conda'>
     CacheUrlAction<url='https://repo.anaconda.com/pkgs/main/win-64/markupsafe-3.0.2-py310h827c3e9_0.conda', target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\markupsafe-3.0.2-py310h827c3e9_0.conda'>
     CacheUrlAction<url='https://repo.anaconda.com/pkgs/main/win-64/cachetools-6.2.2-py310haa95532_0.conda', target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\cachetools-6.2.2-py310haa95532_0.conda'>
-    CacheUrlAction<url='https://repo.anaconda.com/pkgs/main/win-64/opentelemetry-exporter-otlp-proto-common-1.38.0-py310haa95532_0.conda', 
+    CacheUrlAction<url='https://repo.anaconda.com/pkgs/main/win-64/opentelemetry-exporter-otlp-proto-common-1.38.0-py310haa95532_0.conda',
 target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\opentelemetry-exporter-otlp-proto-common-1.38.0-py310haa95532_0.conda'>
     CacheUrlAction<url='https://repo.anaconda.com/pkgs/main/win-64/colorama-0.4.6-py310haa95532_0.conda', target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\colorama-0.4.6-py310haa95532_0.conda'>
     CacheUrlAction<url='https://repo.anaconda.com/pkgs/main/win-64/expat-2.7.4-hd7fb8db_0.conda', target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\expat-2.7.4-hd7fb8db_0.conda'>
-    CacheUrlAction<url='https://repo.anaconda.com/pkgs/main/win-64/conda-package-streaming-0.12.0-py310haa95532_1.conda', 
+    CacheUrlAction<url='https://repo.anaconda.com/pkgs/main/win-64/conda-package-streaming-0.12.0-py310haa95532_1.conda',
 target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\conda-package-streaming-0.12.0-py310haa95532_1.conda'>
-    CacheUrlAction<url='https://repo.anaconda.com/pkgs/main/win-64/opentelemetry-exporter-otlp-proto-http-1.38.0-py310haa95532_0.conda', 
+    CacheUrlAction<url='https://repo.anaconda.com/pkgs/main/win-64/opentelemetry-exporter-otlp-proto-http-1.38.0-py310haa95532_0.conda',
 target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\opentelemetry-exporter-otlp-proto-http-1.38.0-py310haa95532_0.conda'>
     CacheUrlAction<url='https://repo.anaconda.com/pkgs/main/win-64/pysocks-1.7.1-py310haa95532_1.conda', target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\pysocks-1.7.1-py310haa95532_1.conda'>
     CacheUrlAction<url='https://repo.anaconda.com/pkgs/main/win-64/zipp-3.23.0-py310haa95532_0.conda', target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\zipp-3.23.0-py310haa95532_0.conda'>
-    CacheUrlAction<url='https://repo.anaconda.com/pkgs/main/win-64/typing-inspection-0.4.2-py310haa95532_0.conda', 
+    CacheUrlAction<url='https://repo.anaconda.com/pkgs/main/win-64/typing-inspection-0.4.2-py310haa95532_0.conda',
 target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\typing-inspection-0.4.2-py310haa95532_0.conda'>
-    CacheUrlAction<url='https://conda.anaconda.org/anaconda-cloud/label/dev/noarch/environments-mcp-server-1.0.0.rc.1-py_0.conda', 
+    CacheUrlAction<url='https://conda.anaconda.org/anaconda-cloud/label/dev/noarch/environments-mcp-server-1.0.0.rc.1-py_0.conda',
 target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\environments-mcp-server-1.0.0.rc.1-py_0.conda'>
     CacheUrlAction<url='https://repo.anaconda.com/pkgs/main/win-64/rich-rst-1.3.2-py310haa95532_0.conda', target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\rich-rst-1.3.2-py310haa95532_0.conda'>
     CacheUrlAction<url='https://repo.anaconda.com/pkgs/main/win-64/mdurl-0.1.2-py310haa95532_0.conda', target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\mdurl-0.1.2-py310haa95532_0.conda'>
     CacheUrlAction<url='https://repo.anaconda.com/pkgs/main/win-64/annotated-types-0.6.0-py310haa95532_1.conda', target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\annotated-types-0.6.0-py310haa95532_1.conda'>
-    CacheUrlAction<url='https://conda.anaconda.org/anaconda-cloud/label/dev/noarch/anaconda-cli-base-0.7.0rc1.dev1+g8024904-py_0.conda', 
+    CacheUrlAction<url='https://conda.anaconda.org/anaconda-cloud/label/dev/noarch/anaconda-cli-base-0.7.0rc1.dev1+g8024904-py_0.conda',
 target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\anaconda-cli-base-0.7.0rc1.dev1+g8024904-py_0.conda'>
-    CacheUrlAction<url='https://repo.anaconda.com/pkgs/main/win-64/jaraco.functools-4.4.0-py310haa95532_0.conda', 
+    CacheUrlAction<url='https://repo.anaconda.com/pkgs/main/win-64/jaraco.functools-4.4.0-py310haa95532_0.conda',
 target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\jaraco.functools-4.4.0-py310haa95532_0.conda'>
     CacheUrlAction<url='https://conda.anaconda.org/conda-forge/noarch/aiofile-3.9.0-pyhd8ed1ab_2.conda', target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\aiofile-3.9.0-pyhd8ed1ab_2.conda'>
     CacheUrlAction<url='https://repo.anaconda.com/pkgs/main/win-64/shellingham-1.5.4-py310haa95532_0.conda', target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\shellingham-1.5.4-py310haa95532_0.conda'>
     CacheUrlAction<url='https://repo.anaconda.com/pkgs/main/win-64/sse-starlette-2.2.1-py310haa95532_0.conda', target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\sse-starlette-2.2.1-py310haa95532_0.conda'>
-    CacheUrlAction<url='https://repo.anaconda.com/pkgs/main/win-64/vs2015_runtime-14.44.35208-ha6b5a95_10.conda', 
+    CacheUrlAction<url='https://repo.anaconda.com/pkgs/main/win-64/vs2015_runtime-14.44.35208-ha6b5a95_10.conda',
 target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\vs2015_runtime-14.44.35208-ha6b5a95_10.conda'>
     CacheUrlAction<url='https://repo.anaconda.com/pkgs/main/win-64/vc-14.3-h2df5915_10.conda', target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\vc-14.3-h2df5915_10.conda'>
     CacheUrlAction<url='https://repo.anaconda.com/pkgs/main/win-64/readchar-4.2.1-py310haa95532_0.conda', target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\readchar-4.2.1-py310haa95532_0.conda'>
@@ -6433,109 +6433,109 @@ target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\vs2015_runtime-14.
     CacheUrlAction<url='https://conda.anaconda.org/anaconda-cloud/label/dev/noarch/anaconda-mcp-1.0.0.rc.1-py_0.conda', target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\anaconda-mcp-1.0.0.rc.1-py_0.conda'>
     CacheUrlAction<url='https://conda.anaconda.org/conda-forge/noarch/environs-11.2.1-pyhd8ed1ab_1.conda', target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\environs-11.2.1-pyhd8ed1ab_1.conda'>
     CacheUrlAction<url='https://conda.anaconda.org/conda-forge/noarch/pyperclip-1.11.0-pyh7428d3b_0.conda', target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\pyperclip-1.11.0-pyh7428d3b_0.conda'>
-    CacheUrlAction<url='https://repo.anaconda.com/pkgs/main/win-64/jsonschema-specifications-2025.9.1-py310haa95532_0.conda', 
+    CacheUrlAction<url='https://repo.anaconda.com/pkgs/main/win-64/jsonschema-specifications-2025.9.1-py310haa95532_0.conda',
 target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\jsonschema-specifications-2025.9.1-py310haa95532_0.conda'>
     CacheUrlAction<url='https://repo.anaconda.com/pkgs/main/win-64/sniffio-1.3.1-py310haa95532_0.conda', target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\sniffio-1.3.1-py310haa95532_0.conda'>
     CacheUrlAction<url='https://repo.anaconda.com/pkgs/main/win-64/httpx-sse-0.4.0-py310haa95532_0.conda', target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\httpx-sse-0.4.0-py310haa95532_0.conda'>
     CacheUrlAction<url='https://repo.anaconda.com/pkgs/main/win-64/jaraco.context-6.1.0-py310haa95532_0.conda', target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\jaraco.context-6.1.0-py310haa95532_0.conda'>
     CacheUrlAction<url='https://conda.anaconda.org/conda-forge/noarch/jsonref-1.1.0-pyhd8ed1ab_0.conda', target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\jsonref-1.1.0-pyhd8ed1ab_0.conda'>
     CacheUrlAction<url='https://repo.anaconda.com/pkgs/main/noarch/pybind11-abi-5-hd3eb1b0_0.conda', target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\pybind11-abi-5-hd3eb1b0_0.conda'>
-    CacheUrlAction<url='https://repo.anaconda.com/pkgs/main/win-64/typing-extensions-4.15.0-py310haa95532_0.conda', 
+    CacheUrlAction<url='https://repo.anaconda.com/pkgs/main/win-64/typing-extensions-4.15.0-py310haa95532_0.conda',
 target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\typing-extensions-4.15.0-py310haa95532_0.conda'>
     CacheUrlAction<url='https://repo.anaconda.com/pkgs/main/win-64/annotated-doc-0.0.4-py310haa95532_0.conda', target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\annotated-doc-0.0.4-py310haa95532_0.conda'>
     CacheUrlAction<url='https://repo.anaconda.com/pkgs/main/win-64/pkce-1.0.3-py310haa95532_0.conda', target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\pkce-1.0.3-py310haa95532_0.conda'>
     CacheUrlAction<url='https://repo.anaconda.com/pkgs/main/win-64/win_inet_pton-1.1.0-py310haa95532_1.conda', target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\win_inet_pton-1.1.0-py310haa95532_1.conda'>
-    CacheUrlAction<url='https://repo.anaconda.com/pkgs/main/win-64/typer-slim-standard-0.20.0-py310haa95532_1.conda', 
+    CacheUrlAction<url='https://repo.anaconda.com/pkgs/main/win-64/typer-slim-standard-0.20.0-py310haa95532_1.conda',
 target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\typer-slim-standard-0.20.0-py310haa95532_1.conda'>
     CacheUrlAction<url='https://repo.anaconda.com/pkgs/main/win-64/python_abi-3.10-3_cp310.conda', target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\python_abi-3.10-3_cp310.conda'>
   extract_actions:
-    ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\anaconda-connector-core-0.1.10-pypy_0.conda', 
+    ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\anaconda-connector-core-0.1.10-pypy_0.conda',
 target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\anaconda-connector-core-0.1.10-pypy_0'>
-    ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\anaconda-connector-utilities-0.1.10-pypy_0.conda', 
+    ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\anaconda-connector-utilities-0.1.10-pypy_0.conda',
 target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\anaconda-connector-utilities-0.1.10-pypy_0'>
-    ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\anaconda-connector-conda-0.1.10-pypy_0.conda', 
+    ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\anaconda-connector-conda-0.1.10-pypy_0.conda',
 target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\anaconda-connector-conda-0.1.10-pypy_0'>
     ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\archspec-0.2.5-pyhd3eb1b0_0.conda', target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\archspec-0.2.5-pyhd3eb1b0_0'>
-    ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\jsonschema-path-0.4.5-py310haa95532_0.conda', 
+    ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\jsonschema-path-0.4.5-py310haa95532_0.conda',
 target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\jsonschema-path-0.4.5-py310haa95532_0'>
-    ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\pywin32-ctypes-0.2.3-py310haa95532_0.conda', 
+    ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\pywin32-ctypes-0.2.3-py310haa95532_0.conda',
 target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\pywin32-ctypes-0.2.3-py310haa95532_0'>
-    ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\jsonpointer-3.0.0-py310haa95532_0.conda', 
+    ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\jsonpointer-3.0.0-py310haa95532_0.conda',
 target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\jsonpointer-3.0.0-py310haa95532_0'>
-    ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\backports-datetime-fromisoformat-2.0.3-py310h827c3e9_0.conda', 
+    ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\backports-datetime-fromisoformat-2.0.3-py310h827c3e9_0.conda',
 target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\backports-datetime-fromisoformat-2.0.3-py310h827c3e9_0'>
     ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\pathable-0.5.0-py310haa95532_0.conda', target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\pathable-0.5.0-py310haa95532_0'>
-    ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\exceptiongroup-1.3.0-py310haa95532_0.conda', 
+    ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\exceptiongroup-1.3.0-py310haa95532_0.conda',
 target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\exceptiongroup-1.3.0-py310haa95532_0'>
-    ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\truststore-0.10.1-py310haa95532_1.conda', 
+    ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\truststore-0.10.1-py310haa95532_1.conda',
 target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\truststore-0.10.1-py310haa95532_1'>
     ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\libbrotlidec-1.2.0-h02c67a5_0.conda', target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\libbrotlidec-1.2.0-h02c67a5_0'>
     ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\pluggy-1.5.0-py310haa95532_0.conda', target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\pluggy-1.5.0-py310haa95532_0'>
-    ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\uvicorn-standard-0.40.0-py310haa95532_0.conda', 
+    ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\uvicorn-standard-0.40.0-py310haa95532_0.conda',
 target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\uvicorn-standard-0.40.0-py310haa95532_0'>
     ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\caio-0.9.25-py310h1637853_0.conda', target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\caio-0.9.25-py310h1637853_0'>
     ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\anaconda-auth-0.10.0rc1-py_0.conda', target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\anaconda-auth-0.10.0rc1-py_0'>
-    ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\opentelemetry-exporter-otlp-proto-grpc-1.38.0-py310haa95532_0.conda', 
+    ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\opentelemetry-exporter-otlp-proto-grpc-1.38.0-py310haa95532_0.conda',
 target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\opentelemetry-exporter-otlp-proto-grpc-1.38.0-py310haa95532_0'>
-    ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\platformdirs-4.5.0-py310haa95532_0.conda', 
+    ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\platformdirs-4.5.0-py310haa95532_0.conda',
 target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\platformdirs-4.5.0-py310haa95532_0'>
-    ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\markupsafe-3.0.2-py310h827c3e9_0.conda', 
+    ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\markupsafe-3.0.2-py310h827c3e9_0.conda',
 target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\markupsafe-3.0.2-py310h827c3e9_0'>
-    ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\cachetools-6.2.2-py310haa95532_0.conda', 
+    ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\cachetools-6.2.2-py310haa95532_0.conda',
 target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\cachetools-6.2.2-py310haa95532_0'>
-    ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\opentelemetry-exporter-otlp-proto-common-1.38.0-py310haa95532_0.conda', 
+    ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\opentelemetry-exporter-otlp-proto-common-1.38.0-py310haa95532_0.conda',
 target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\opentelemetry-exporter-otlp-proto-common-1.38.0-py310haa95532_0'>
     ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\colorama-0.4.6-py310haa95532_0.conda', target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\colorama-0.4.6-py310haa95532_0'>
     ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\expat-2.7.4-hd7fb8db_0.conda', target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\expat-2.7.4-hd7fb8db_0'>
-    ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\conda-package-streaming-0.12.0-py310haa95532_1.conda', 
+    ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\conda-package-streaming-0.12.0-py310haa95532_1.conda',
 target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\conda-package-streaming-0.12.0-py310haa95532_1'>
-    ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\opentelemetry-exporter-otlp-proto-http-1.38.0-py310haa95532_0.conda', 
+    ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\opentelemetry-exporter-otlp-proto-http-1.38.0-py310haa95532_0.conda',
 target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\opentelemetry-exporter-otlp-proto-http-1.38.0-py310haa95532_0'>
     ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\pysocks-1.7.1-py310haa95532_1.conda', target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\pysocks-1.7.1-py310haa95532_1'>
     ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\zipp-3.23.0-py310haa95532_0.conda', target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\zipp-3.23.0-py310haa95532_0'>
-    ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\typing-inspection-0.4.2-py310haa95532_0.conda', 
+    ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\typing-inspection-0.4.2-py310haa95532_0.conda',
 target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\typing-inspection-0.4.2-py310haa95532_0'>
-    ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\environments-mcp-server-1.0.0.rc.1-py_0.conda', 
+    ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\environments-mcp-server-1.0.0.rc.1-py_0.conda',
 target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\environments-mcp-server-1.0.0.rc.1-py_0'>
     ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\rich-rst-1.3.2-py310haa95532_0.conda', target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\rich-rst-1.3.2-py310haa95532_0'>
     ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\mdurl-0.1.2-py310haa95532_0.conda', target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\mdurl-0.1.2-py310haa95532_0'>
-    ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\annotated-types-0.6.0-py310haa95532_1.conda', 
+    ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\annotated-types-0.6.0-py310haa95532_1.conda',
 target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\annotated-types-0.6.0-py310haa95532_1'>
-    ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\anaconda-cli-base-0.7.0rc1.dev1+g8024904-py_0.conda', 
+    ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\anaconda-cli-base-0.7.0rc1.dev1+g8024904-py_0.conda',
 target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\anaconda-cli-base-0.7.0rc1.dev1+g8024904-py_0'>
-    ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\jaraco.functools-4.4.0-py310haa95532_0.conda', 
+    ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\jaraco.functools-4.4.0-py310haa95532_0.conda',
 target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\jaraco.functools-4.4.0-py310haa95532_0'>
     ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\aiofile-3.9.0-pyhd8ed1ab_2.conda', target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\aiofile-3.9.0-pyhd8ed1ab_2'>
-    ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\shellingham-1.5.4-py310haa95532_0.conda', 
+    ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\shellingham-1.5.4-py310haa95532_0.conda',
 target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\shellingham-1.5.4-py310haa95532_0'>
-    ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\sse-starlette-2.2.1-py310haa95532_0.conda', 
+    ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\sse-starlette-2.2.1-py310haa95532_0.conda',
 target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\sse-starlette-2.2.1-py310haa95532_0'>
-    ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\vs2015_runtime-14.44.35208-ha6b5a95_10.conda', 
+    ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\vs2015_runtime-14.44.35208-ha6b5a95_10.conda',
 target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\vs2015_runtime-14.44.35208-ha6b5a95_10'>
     ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\vc-14.3-h2df5915_10.conda', target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\vc-14.3-h2df5915_10'>
     ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\readchar-4.2.1-py310haa95532_0.conda', target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\readchar-4.2.1-py310haa95532_0'>
-    ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\jaraco.classes-3.4.0-py310haa95532_0.conda', 
+    ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\jaraco.classes-3.4.0-py310haa95532_0.conda',
 target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\jaraco.classes-3.4.0-py310haa95532_0'>
     ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\anaconda-mcp-1.0.0.rc.1-py_0.conda', target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\anaconda-mcp-1.0.0.rc.1-py_0'>
     ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\environs-11.2.1-pyhd8ed1ab_1.conda', target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\environs-11.2.1-pyhd8ed1ab_1'>
     ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\pyperclip-1.11.0-pyh7428d3b_0.conda', target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\pyperclip-1.11.0-pyh7428d3b_0'>
-    ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\jsonschema-specifications-2025.9.1-py310haa95532_0.conda', 
+    ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\jsonschema-specifications-2025.9.1-py310haa95532_0.conda',
 target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\jsonschema-specifications-2025.9.1-py310haa95532_0'>
     ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\sniffio-1.3.1-py310haa95532_0.conda', target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\sniffio-1.3.1-py310haa95532_0'>
-    ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\httpx-sse-0.4.0-py310haa95532_0.conda', 
+    ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\httpx-sse-0.4.0-py310haa95532_0.conda',
 target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\httpx-sse-0.4.0-py310haa95532_0'>
-    ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\jaraco.context-6.1.0-py310haa95532_0.conda', 
+    ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\jaraco.context-6.1.0-py310haa95532_0.conda',
 target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\jaraco.context-6.1.0-py310haa95532_0'>
     ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\jsonref-1.1.0-pyhd8ed1ab_0.conda', target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\jsonref-1.1.0-pyhd8ed1ab_0'>
     ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\pybind11-abi-5-hd3eb1b0_0.conda', target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\pybind11-abi-5-hd3eb1b0_0'>
-    ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\typing-extensions-4.15.0-py310haa95532_0.conda', 
+    ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\typing-extensions-4.15.0-py310haa95532_0.conda',
 target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\typing-extensions-4.15.0-py310haa95532_0'>
-    ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\annotated-doc-0.0.4-py310haa95532_0.conda', 
+    ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\annotated-doc-0.0.4-py310haa95532_0.conda',
 target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\annotated-doc-0.0.4-py310haa95532_0'>
     ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\pkce-1.0.3-py310haa95532_0.conda', target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\pkce-1.0.3-py310haa95532_0'>
-    ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\win_inet_pton-1.1.0-py310haa95532_1.conda', 
+    ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\win_inet_pton-1.1.0-py310haa95532_1.conda',
 target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\win_inet_pton-1.1.0-py310haa95532_1'>
-    ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\typer-slim-standard-0.20.0-py310haa95532_1.conda', 
+    ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\typer-slim-standard-0.20.0-py310haa95532_1.conda',
 target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\typer-slim-standard-0.20.0-py310haa95532_1'>
     ExtractPackageAction<source_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\python_abi-3.10-3_cp310.conda', target_full_path='C:\\Users\\JuliaIliukhina\\anaconda3\\pkgs\\python_abi-3.10-3_cp310'>
 
@@ -6549,9 +6549,9 @@ DEBUG urllib3.connectionpool:_new_conn(1049): Starting new HTTPS connection (1):
 DEBUG urllib3.connectionpool:_new_conn(1049): Starting new HTTPS connection (1): repo.anaconda.com:443
 DEBUG urllib3.connectionpool:_new_conn(1049): Starting new HTTPS connection (1): repo.anaconda.com:443
 DEBUG urllib3.connectionpool:_make_request(544): https://repo.anaconda.com:443 "GET /pkgs/main/win-64/jsonschema-path-0.4.5-py310haa95532_0.conda HTTP/1.1" 206 30150
-DEBUG conda.gateways.connection.download:download_inner(111): 
+DEBUG conda.gateways.connection.download:download_inner(111):
 >>GET /pkgs/main/win-64/jsonschema-path-0.4.5-py310haa95532_0.conda HTTPS
-> User-Agent: conda/25.5.1 requests/2.32.3 CPython/3.13.5 Windows/11 Windows/10.0.26200 solver/libmamba conda-libmamba-solver/25.4.0 libmambapy/2.0.5 aau/0.7.1 c/cop_hA_a245xmyRtw61AK_ s/zmBIHg4K_8BAl8I4KdFd7w 
+> User-Agent: conda/25.5.1 requests/2.32.3 CPython/3.13.5 Windows/11 Windows/10.0.26200 solver/libmamba conda-libmamba-solver/25.4.0 libmambapy/2.0.5 aau/0.7.1 c/cop_hA_a245xmyRtw61AK_ s/zmBIHg4K_8BAl8I4KdFd7w
 e/o_KRH71WhloEcE1Es3HchA
 > Accept: */*
 > Accept-Encoding: gzip, deflate, br, zstd
@@ -6601,7 +6601,7 @@ efaults/win-64::cytoolz-1.0.1-py313h827c3e9_0;defaults/win-64::dask-2025.2.0-py3
 < Expires: Mon, 09 Mar 2026 17:41:26 GMT
 < Last-Modified: Wed, 04 Mar 2026 16:50:09 GMT
 < Server: cloudflare
-< Set-Cookie: __cf_bm=AdDFBxHBmE04S7dw2_9T26m4w5wNQQFcCrUUuwtKO6k-1773078056-1.0.1.1-7im3W.5M.VmM.1747EXp7f5AyMm5dHeXPWukYbtTpGlTY90.PZ7vaWL5J.ltgYH7bO4TN8HPiq6FnH3IFrnJiC_1GhfetyCYnmmu1ezlcNE; path=/; expires=Mon, 
+< Set-Cookie: __cf_bm=AdDFBxHBmE04S7dw2_9T26m4w5wNQQFcCrUUuwtKO6k-1773078056-1.0.1.1-7im3W.5M.VmM.1747EXp7f5AyMm5dHeXPWukYbtTpGlTY90.PZ7vaWL5J.ltgYH7bO4TN8HPiq6FnH3IFrnJiC_1GhfetyCYnmmu1ezlcNE; path=/; expires=Mon,
 09-Mar-26 18:10:56 GMT; domain=.anaconda.com; HttpOnly; Secure; SameSite=None
 < Vary: Accept-Encoding
 < x-amz-id-2: Fp+aiDo0bBUUpfzz4iBHaBUS02Euwk7IJa7eVcUJrOM4hEiKfwbr2YpSQPXXrV17Gd0ZgE7iaiI=
@@ -6614,9 +6614,9 @@ efaults/win-64::cytoolz-1.0.1-py313h827c3e9_0;defaults/win-64::dask-2025.2.0-py3
 
 
 DEBUG urllib3.connectionpool:_make_request(544): https://repo.anaconda.com:443 "GET /pkgs/main/noarch/archspec-0.2.5-pyhd3eb1b0_0.conda HTTP/1.1" 206 32877
-DEBUG conda.gateways.connection.download:download_inner(111): 
+DEBUG conda.gateways.connection.download:download_inner(111):
 >>GET /pkgs/main/noarch/archspec-0.2.5-pyhd3eb1b0_0.conda HTTPS
-> User-Agent: conda/25.5.1 requests/2.32.3 CPython/3.13.5 Windows/11 Windows/10.0.26200 solver/libmamba conda-libmamba-solver/25.4.0 libmambapy/2.0.5 aau/0.7.1 c/cop_hA_a245xmyRtw61AK_ s/zmBIHg4K_8BAl8I4KdFd7w 
+> User-Agent: conda/25.5.1 requests/2.32.3 CPython/3.13.5 Windows/11 Windows/10.0.26200 solver/libmamba conda-libmamba-solver/25.4.0 libmambapy/2.0.5 aau/0.7.1 c/cop_hA_a245xmyRtw61AK_ s/zmBIHg4K_8BAl8I4KdFd7w
 e/o_KRH71WhloEcE1Es3HchA
 > Accept: */*
 > Accept-Encoding: gzip, deflate, br, zstd
@@ -6666,7 +6666,7 @@ efaults/win-64::cytoolz-1.0.1-py313h827c3e9_0;defaults/win-64::dask-2025.2.0-py3
 < Expires: Mon, 09 Mar 2026 17:41:26 GMT
 < Last-Modified: Wed, 17 Sep 2025 16:21:47 GMT
 < Server: cloudflare
-< Set-Cookie: __cf_bm=_BG8YO45y5Z5S8C_d.Ekd_0RW0IrGwN2eReS4aDgCYA-1773078056-1.0.1.1-2Mlt_dhv7s0Zn0vuBDwX4VDSPBTLTqtwtACRCYUqBoYnomlDZQm8hZNxe.NVWzAvCd5MFJeqDVMWEYHjBE3V1UCGSi3q8EGg7woZw3OPhtU; path=/; expires=Mon, 
+< Set-Cookie: __cf_bm=_BG8YO45y5Z5S8C_d.Ekd_0RW0IrGwN2eReS4aDgCYA-1773078056-1.0.1.1-2Mlt_dhv7s0Zn0vuBDwX4VDSPBTLTqtwtACRCYUqBoYnomlDZQm8hZNxe.NVWzAvCd5MFJeqDVMWEYHjBE3V1UCGSi3q8EGg7woZw3OPhtU; path=/; expires=Mon,
 09-Mar-26 18:10:56 GMT; domain=.anaconda.com; HttpOnly; Secure; SameSite=None
 < Vary: Accept-Encoding
 < x-amz-id-2: CC+0WdBQnTr1CgBFnqDI6fFkLTJiSTaNQStvATMJSjMe1u8iz0eyT+GaijF2pyUTyrcdJbbDCts=
@@ -6689,9 +6689,9 @@ DEBUG urllib3.connectionpool:_new_conn(1049): Starting new HTTPS connection (1):
 DEBUG urllib3.connectionpool:_new_conn(1049): Starting new HTTPS connection (1): binstar-cio-packages-prod.s3.amazonaws.com:443
 DEBUG urllib3.connectionpool:_new_conn(1049): Starting new HTTPS connection (1): binstar-cio-packages-prod.s3.amazonaws.com:443
 DEBUG urllib3.connectionpool:_make_request(544): https://repo.anaconda.com:443 "GET /pkgs/main/win-64/jsonpointer-3.0.0-py310haa95532_0.conda HTTP/1.1" 200 45542
-DEBUG conda.gateways.connection.download:download_inner(111): 
+DEBUG conda.gateways.connection.download:download_inner(111):
 >>GET /pkgs/main/win-64/jsonpointer-3.0.0-py310haa95532_0.conda HTTPS
-> User-Agent: conda/25.5.1 requests/2.32.3 CPython/3.13.5 Windows/11 Windows/10.0.26200 solver/libmamba conda-libmamba-solver/25.4.0 libmambapy/2.0.5 aau/0.7.1 c/cop_hA_a245xmyRtw61AK_ s/zmBIHg4K_8BAl8I4KdFd7w 
+> User-Agent: conda/25.5.1 requests/2.32.3 CPython/3.13.5 Windows/11 Windows/10.0.26200 solver/libmamba conda-libmamba-solver/25.4.0 libmambapy/2.0.5 aau/0.7.1 c/cop_hA_a245xmyRtw61AK_ s/zmBIHg4K_8BAl8I4KdFd7w
 e/o_KRH71WhloEcE1Es3HchA
 > Accept: */*
 > Accept-Encoding: gzip, deflate, br, zstd
@@ -6752,9 +6752,9 @@ efaults/win-64::cytoolz-1.0.1-py313h827c3e9_0;defaults/win-64::dask-2025.2.0-py3
 
 
 DEBUG urllib3.connectionpool:_make_request(544): https://repo.anaconda.com:443 "GET /pkgs/main/win-64/pywin32-ctypes-0.2.3-py310haa95532_0.conda HTTP/1.1" 200 46470
-DEBUG conda.gateways.connection.download:download_inner(111): 
+DEBUG conda.gateways.connection.download:download_inner(111):
 >>GET /pkgs/main/win-64/pywin32-ctypes-0.2.3-py310haa95532_0.conda HTTPS
-> User-Agent: conda/25.5.1 requests/2.32.3 CPython/3.13.5 Windows/11 Windows/10.0.26200 solver/libmamba conda-libmamba-solver/25.4.0 libmambapy/2.0.5 aau/0.7.1 c/cop_hA_a245xmyRtw61AK_ s/zmBIHg4K_8BAl8I4KdFd7w 
+> User-Agent: conda/25.5.1 requests/2.32.3 CPython/3.13.5 Windows/11 Windows/10.0.26200 solver/libmamba conda-libmamba-solver/25.4.0 libmambapy/2.0.5 aau/0.7.1 c/cop_hA_a245xmyRtw61AK_ s/zmBIHg4K_8BAl8I4KdFd7w
 e/o_KRH71WhloEcE1Es3HchA
 > Accept: */*
 > Accept-Encoding: gzip, deflate, br, zstd
@@ -6817,9 +6817,9 @@ efaults/win-64::cytoolz-1.0.1-py313h827c3e9_0;defaults/win-64::dask-2025.2.0-py3
 DEBUG conda.gateways.disk.create:extract_tarball(227): extracting C:\Users\JuliaIliukhina\anaconda3\pkgs\jsonpointer-3.0.0-py310haa95532_0.conda
   to C:\Users\JuliaIliukhina\anaconda3\pkgs\jsonpointer-3.0.0-py310haa95532_0
 DEBUG urllib3.connectionpool:_make_request(544): https://repo.anaconda.com:443 "GET /pkgs/main/win-64/pathable-0.5.0-py310haa95532_0.conda HTTP/1.1" 200 44652
-DEBUG conda.gateways.connection.download:download_inner(111): 
+DEBUG conda.gateways.connection.download:download_inner(111):
 >>GET /pkgs/main/win-64/pathable-0.5.0-py310haa95532_0.conda HTTPS
-> User-Agent: conda/25.5.1 requests/2.32.3 CPython/3.13.5 Windows/11 Windows/10.0.26200 solver/libmamba conda-libmamba-solver/25.4.0 libmambapy/2.0.5 aau/0.7.1 c/cop_hA_a245xmyRtw61AK_ s/zmBIHg4K_8BAl8I4KdFd7w 
+> User-Agent: conda/25.5.1 requests/2.32.3 CPython/3.13.5 Windows/11 Windows/10.0.26200 solver/libmamba conda-libmamba-solver/25.4.0 libmambapy/2.0.5 aau/0.7.1 c/cop_hA_a245xmyRtw61AK_ s/zmBIHg4K_8BAl8I4KdFd7w
 e/o_KRH71WhloEcE1Es3HchA
 > Accept: */*
 > Accept-Encoding: gzip, deflate, br, zstd
@@ -6880,9 +6880,9 @@ efaults/win-64::cytoolz-1.0.1-py313h827c3e9_0;defaults/win-64::dask-2025.2.0-py3
 
 
 DEBUG urllib3.connectionpool:_make_request(544): https://repo.anaconda.com:443 "GET /pkgs/main/win-64/backports-datetime-fromisoformat-2.0.3-py310h827c3e9_0.conda HTTP/1.1" 200 45230
-DEBUG conda.gateways.connection.download:download_inner(111): 
+DEBUG conda.gateways.connection.download:download_inner(111):
 >>GET /pkgs/main/win-64/backports-datetime-fromisoformat-2.0.3-py310h827c3e9_0.conda HTTPS
-> User-Agent: conda/25.5.1 requests/2.32.3 CPython/3.13.5 Windows/11 Windows/10.0.26200 solver/libmamba conda-libmamba-solver/25.4.0 libmambapy/2.0.5 aau/0.7.1 c/cop_hA_a245xmyRtw61AK_ s/zmBIHg4K_8BAl8I4KdFd7w 
+> User-Agent: conda/25.5.1 requests/2.32.3 CPython/3.13.5 Windows/11 Windows/10.0.26200 solver/libmamba conda-libmamba-solver/25.4.0 libmambapy/2.0.5 aau/0.7.1 c/cop_hA_a245xmyRtw61AK_ s/zmBIHg4K_8BAl8I4KdFd7w
 e/o_KRH71WhloEcE1Es3HchA
 > Accept: */*
 > Accept-Encoding: gzip, deflate, br, zstd
@@ -6951,7 +6951,7 @@ CT2Zj85hRWESTZToB0gDpGofUQxxfrkL9mYemWhq8HWk5bwgbcy4o%2BFj8%2BFfYkR1VanuubtYCx5y
 OMlojiEB2ENzlkTTs%2BXjZfc97JjMWspf8wtZ5sDI1Gyjv3y05yXz8yJtej%2BD8xkrgTnl5mZh7RSqJ3E4v22Zc5y3bHAewpioYLSzK4wVSVJjuN9XjsO96gQi5TGmNtMVY08tXw2x0XMc%2FEdNm9hqhc9VUbVHkbWdWeGa8AE8b%2B5mCyhjm%2Fgf3C0rn8AvujwECEP97%2FtZRLy9MxxEE
 IVn9xemQAG8OXa2UYAFS%2B%2F3RHPCkMgQYe0aWJjppplcuXe0ydD55ra1uCYhCxb4afviwGwU8CoegcWS5fvFK95D4MJ%2BDvM0GOpgBqGvw1ozkBFtSCF6fwPgtjYelJdVTGvJDMHHXcn0NOeDAB%2FzzyARrr5fH7PtBGBy%2BXCbkSuqF16rOPb0XAM9RkUUUbXNEayKzTfrxQWNaFsImzUV
 znTgcIwbaA3tPzyOnYRcqELJPHTqkn6YV1KOzHcXwj21eBXHJkek6V7Yj1y2K2jcGbo8MJziMVdtfM8Zq%2FeAFYw8tzMw%3D&X-Amz-Signature=2e905f5ae574f76f0ba2cc763a3c3cf949911bf3ae01e11b26ca9d25d7893c1c HTTP/1.1" 400 None
-DEBUG conda.gateways.connection.download:download_inner(111): 
+DEBUG conda.gateways.connection.download:download_inner(111):
 >>GET /698304d40a0f659d73244fe9/69a5b991eb5ef7934c3cef9a?response-content-disposition=attachment%3B%20filename%3D%22anaconda-connector-utilities-0.1.10-pypy_0.conda%22%3B%20filename%2A%3DUTF-8%27%27anaconda-connector-util
 ities-0.1.10-pypy_0.conda&response-content-type=application%2Foctet-stream&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAWUI46DZFHTOLPDUS%2F20260309%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260309T174056Z&X-Am
 z-Expires=600&X-Amz-SignedHeaders=host&X-Amz-Security-Token=IQoJb3JpZ2luX2VjEGoaCXVzLWVhc3QtMSJHMEUCIQDNFHeKhymIdXGs%2BmjqHmmOLxqzeJ06rkBb9yhceuYUNAIgasb89AX5ZRz%2FgnRHnFVpJqpxosmQr6J1eLSSH1b5OtQqgAUIMhAAGgw0NTU4NjQwOTgzN
@@ -6961,7 +6961,7 @@ ZEpN6L8CuKTdlfaZrAW0i1z8sl6UEZzYZAs%2B7IaEQCnOxBLK%2FxFf1lz6AJP8CLAlYAEPzgD8fopb
 zK4wVSVJjuN9XjsO96gQi5TGmNtMVY08tXw2x0XMc%2FEdNm9hqhc9VUbVHkbWdWeGa8AE8b%2B5mCyhjm%2Fgf3C0rn8AvujwECEP97%2FtZRLy9MxxEEIVn9xemQAG8OXa2UYAFS%2B%2F3RHPCkMgQYe0aWJjppplcuXe0ydD55ra1uCYhCxb4afviwGwU8CoegcWS5fvFK95D4MJ%2BDvM0GO
 pgBqGvw1ozkBFtSCF6fwPgtjYelJdVTGvJDMHHXcn0NOeDAB%2FzzyARrr5fH7PtBGBy%2BXCbkSuqF16rOPb0XAM9RkUUUbXNEayKzTfrxQWNaFsImzUVznTgcIwbaA3tPzyOnYRcqELJPHTqkn6YV1KOzHcXwj21eBXHJkek6V7Yj1y2K2jcGbo8MJziMVdtfM8Zq%2FeAFYw8tzMw%3D&X-Amz
 -Signature=2e905f5ae574f76f0ba2cc763a3c3cf949911bf3ae01e11b26ca9d25d7893c1c HTTPS
-> User-Agent: conda/25.5.1 requests/2.32.3 CPython/3.13.5 Windows/11 Windows/10.0.26200 solver/libmamba conda-libmamba-solver/25.4.0 libmambapy/2.0.5 aau/0.7.1 c/cop_hA_a245xmyRtw61AK_ s/zmBIHg4K_8BAl8I4KdFd7w 
+> User-Agent: conda/25.5.1 requests/2.32.3 CPython/3.13.5 Windows/11 Windows/10.0.26200 solver/libmamba conda-libmamba-solver/25.4.0 libmambapy/2.0.5 aau/0.7.1 c/cop_hA_a245xmyRtw61AK_ s/zmBIHg4K_8BAl8I4KdFd7w
 e/o_KRH71WhloEcE1Es3HchA
 > Accept: */*
 > Accept-Encoding: gzip, deflate, br, zstd
@@ -7019,7 +7019,7 @@ aBogmDlpB8Ua6acuOaAiBoRNnHqUy8BU0BOmHmf7dBJ4TW4YVFrgrXN3m9YU%2FdcyqABQgyEAAaDDQ1
 Q%2FRO3U%2BlbaC1q8zdRQAm5wTRLKH2YU%2BcANQ6eddWagqjAIk5pC%2B5kpTI1SqH%2FHDv0EZARNj1gPYgN0HzhyvorkI2Qt4dSrT0LclvDpJyp10Gfwe4YZoABsbFKItiNCve9LEZfQrIXuVpm3gWoPnpX2zZyblZa9gULikhJgrA1mhdW%2BE41CO9Tv%2BWT4YWFtbDDlZ268Eganr1nY9
 5nnUjcubxRETvtc85Dj%2B0vHhc6ubE21%2FEWm%2FGlyMBPP3XDnwRYOTynqdTQVwPmKXh%2Bkyn%2B6aFvcJgzUwkIG8zQY6mQFY%2BEVvG%2B3XIahAR6fQMznHmtdSHE29vitzWOgClFbvYtrljnzbnZ20VW5tmM06OcTueHmHlE9AJMetC64B%2FhN9KAqHumuMNPEThpXgqH2SqddxFJVDi
 r98%2BDWjfsuQ1ACJX0vdRuIEiLD%2BartqOMG%2BAJ9x8u4SpnxT7Upufs2Z427ApccPr%2BZvTtc7m3fLnl2xuUXwfVv3EyI%3D&X-Amz-Signature=7f5fb724f1f60930e47f1f5856a4a2b1d55b393a7f88364c0c4004b27c6cbc52 HTTP/1.1" 400 None
-DEBUG conda.gateways.connection.download:download_inner(111): 
+DEBUG conda.gateways.connection.download:download_inner(111):
 >>GET /698304bf102465b1a30043c4/69a5b97f82df0d9b20de51bb?response-content-disposition=attachment%3B%20filename%3D%22anaconda-connector-conda-0.1.10-pypy_0.conda%22%3B%20filename%2A%3DUTF-8%27%27anaconda-connector-conda-0.
 1.10-pypy_0.conda&response-content-type=application%2Foctet-stream&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAWUI46DZFLH662QBL%2F20260309%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260309T174056Z&X-Amz-Expire
 s=600&X-Amz-SignedHeaders=host&X-Amz-Security-Token=IQoJb3JpZ2luX2VjEGoaCXVzLWVhc3QtMSJGMEQCIHWXMwObIDl1iwQOgC4TJpl0HGaBogmDlpB8Ua6acuOaAiBoRNnHqUy8BU0BOmHmf7dBJ4TW4YVFrgrXN3m9YU%2FdcyqABQgyEAAaDDQ1NTg2NDA5ODM3OCIM7EXC6kw
@@ -7029,7 +7029,7 @@ dXa6gFUyWgqOF0wzYG13tOhORJ%2F064AJlFuCR4vKFTUL8L8SbdLcqJdJ0AGjTVxlHkfeTw1tTj%2FM
 rT0LclvDpJyp10Gfwe4YZoABsbFKItiNCve9LEZfQrIXuVpm3gWoPnpX2zZyblZa9gULikhJgrA1mhdW%2BE41CO9Tv%2BWT4YWFtbDDlZ268Eganr1nY95nnUjcubxRETvtc85Dj%2B0vHhc6ubE21%2FEWm%2FGlyMBPP3XDnwRYOTynqdTQVwPmKXh%2Bkyn%2B6aFvcJgzUwkIG8zQY6mQFY%
 2BEVvG%2B3XIahAR6fQMznHmtdSHE29vitzWOgClFbvYtrljnzbnZ20VW5tmM06OcTueHmHlE9AJMetC64B%2FhN9KAqHumuMNPEThpXgqH2SqddxFJVDir98%2BDWjfsuQ1ACJX0vdRuIEiLD%2BartqOMG%2BAJ9x8u4SpnxT7Upufs2Z427ApccPr%2BZvTtc7m3fLnl2xuUXwfVv3EyI%3D&X
 -Amz-Signature=7f5fb724f1f60930e47f1f5856a4a2b1d55b393a7f88364c0c4004b27c6cbc52 HTTPS
-> User-Agent: conda/25.5.1 requests/2.32.3 CPython/3.13.5 Windows/11 Windows/10.0.26200 solver/libmamba conda-libmamba-solver/25.4.0 libmambapy/2.0.5 aau/0.7.1 c/cop_hA_a245xmyRtw61AK_ s/zmBIHg4K_8BAl8I4KdFd7w 
+> User-Agent: conda/25.5.1 requests/2.32.3 CPython/3.13.5 Windows/11 Windows/10.0.26200 solver/libmamba conda-libmamba-solver/25.4.0 libmambapy/2.0.5 aau/0.7.1 c/cop_hA_a245xmyRtw61AK_ s/zmBIHg4K_8BAl8I4KdFd7w
 e/o_KRH71WhloEcE1Es3HchA
 > Accept: */*
 > Accept-Encoding: gzip, deflate, br, zstd
@@ -7087,7 +7087,7 @@ VlkVQu7%2B84Mq%2Fz9FxRAiASLyQMkJflExiK2etVtqcPJtotpJwEg6C1dE%2BzqNHqGSqABQgyEAAa
 PosNmZVzT29oltwUi98AyFzA%2F0qCrcZaiqdqZ4pQ%2F1Qgf2FAemDFcJHJ%2F1e0Vwo4%2Fuwuul7zipMjFlXjzyYyacvMmFZWZ4%2FmEda1fjHT18HRATU4pY17VuRUQpy6i9YlVlXkOwP3tqh%2FydWJJ6szZZtz7Ofh1L0cXLeVgOI9EoQk%2FY4ZVhOD9dQ7kxxuIkMdxVyI8%2FdPSbfCF
 KyUHBw3E3S7x2h%2FGi6kyC%2FEyOMowLuA4%2BWYrFZqVMiZYCFsQxbyNRu0HVIEqcUBGgxNyYHuE%2BninBgAPfwz0we3Kh5kw9P67zQY6mQH%2FUgdHBOO6CUXdLbENQocHTcP1oo6e87DN4Rk5NoFbWf3pNzOQgyMF7BqWlvxfhb%2B8VRDeP5LzOxXGcR9KbQHKbcP9J3tkSGFN73gU5qUXd
 6WgmTMDIWmbsI%2B9%2BNbx%2FSoXURwb5SsYR8BJEa8DUIRzXHhJUgZRhCUxtlJnUkacu3JHPrgDCU%2FNcyMNRy%2BN0fviy%2BhT9nLjrgs%3D&X-Amz-Signature=446516a807c171a087a4d7844b9aea6ae8a56472ff6825bb7aae37918018ece4 HTTP/1.1" 400 None
-DEBUG conda.gateways.connection.download:download_inner(111): 
+DEBUG conda.gateways.connection.download:download_inner(111):
 >>GET /698304c44059d9d2ff0043ce/69a5b9846c13193da7de51ca?response-content-disposition=attachment%3B%20filename%3D%22anaconda-connector-core-0.1.10-pypy_0.conda%22%3B%20filename%2A%3DUTF-8%27%27anaconda-connector-core-0.1.
 10-pypy_0.conda&response-content-type=application%2Foctet-stream&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAWUI46DZFK3N74ALS%2F20260309%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260309T174056Z&X-Amz-Expires=
 600&X-Amz-SignedHeaders=host&X-Amz-Security-Token=IQoJb3JpZ2luX2VjEGoaCXVzLWVhc3QtMSJGMEQCIHotokND%2B0zz0Bk0DOQrWNETyLVlkVQu7%2B84Mq%2Fz9FxRAiASLyQMkJflExiK2etVtqcPJtotpJwEg6C1dE%2BzqNHqGSqABQgyEAAaDDQ1NTg2NDA5ODM3OCIMn2g
@@ -7097,7 +7097,7 @@ pq9ZewbsIhLpxNrWfFmmDQZSWJvpfSPFjglDwmDb2KQzGihTm6B2khwZuA7OWy71kD1W%2B%2F4EPkgG
 2FmEda1fjHT18HRATU4pY17VuRUQpy6i9YlVlXkOwP3tqh%2FydWJJ6szZZtz7Ofh1L0cXLeVgOI9EoQk%2FY4ZVhOD9dQ7kxxuIkMdxVyI8%2FdPSbfCFKyUHBw3E3S7x2h%2FGi6kyC%2FEyOMowLuA4%2BWYrFZqVMiZYCFsQxbyNRu0HVIEqcUBGgxNyYHuE%2BninBgAPfwz0we3Kh5kw9P6
 7zQY6mQH%2FUgdHBOO6CUXdLbENQocHTcP1oo6e87DN4Rk5NoFbWf3pNzOQgyMF7BqWlvxfhb%2B8VRDeP5LzOxXGcR9KbQHKbcP9J3tkSGFN73gU5qUXd6WgmTMDIWmbsI%2B9%2BNbx%2FSoXURwb5SsYR8BJEa8DUIRzXHhJUgZRhCUxtlJnUkacu3JHPrgDCU%2FNcyMNRy%2BN0fviy%2BhT
 9nLjrgs%3D&X-Amz-Signature=446516a807c171a087a4d7844b9aea6ae8a56472ff6825bb7aae37918018ece4 HTTPS
-> User-Agent: conda/25.5.1 requests/2.32.3 CPython/3.13.5 Windows/11 Windows/10.0.26200 solver/libmamba conda-libmamba-solver/25.4.0 libmambapy/2.0.5 aau/0.7.1 c/cop_hA_a245xmyRtw61AK_ s/zmBIHg4K_8BAl8I4KdFd7w 
+> User-Agent: conda/25.5.1 requests/2.32.3 CPython/3.13.5 Windows/11 Windows/10.0.26200 solver/libmamba conda-libmamba-solver/25.4.0 libmambapy/2.0.5 aau/0.7.1 c/cop_hA_a245xmyRtw61AK_ s/zmBIHg4K_8BAl8I4KdFd7w
 e/o_KRH71WhloEcE1Es3HchA
 > Accept: */*
 > Accept-Encoding: gzip, deflate, br, zstd
@@ -7147,9 +7147,9 @@ efaults/win-64::cytoolz-1.0.1-py313h827c3e9_0;defaults/win-64::dask-2025.2.0-py3
 
 DEBUG urllib3.connectionpool:_new_conn(1049): Starting new HTTPS connection (1): repo.anaconda.com:443
 DEBUG urllib3.connectionpool:_make_request(544): https://repo.anaconda.com:443 "GET /pkgs/main/win-64/exceptiongroup-1.3.0-py310haa95532_0.conda HTTP/1.1" 200 41687
-DEBUG conda.gateways.connection.download:download_inner(111): 
+DEBUG conda.gateways.connection.download:download_inner(111):
 >>GET /pkgs/main/win-64/exceptiongroup-1.3.0-py310haa95532_0.conda HTTPS
-> User-Agent: conda/25.5.1 requests/2.32.3 CPython/3.13.5 Windows/11 Windows/10.0.26200 solver/libmamba conda-libmamba-solver/25.4.0 libmambapy/2.0.5 aau/0.7.1 c/cop_hA_a245xmyRtw61AK_ s/zmBIHg4K_8BAl8I4KdFd7w 
+> User-Agent: conda/25.5.1 requests/2.32.3 CPython/3.13.5 Windows/11 Windows/10.0.26200 solver/libmamba conda-libmamba-solver/25.4.0 libmambapy/2.0.5 aau/0.7.1 c/cop_hA_a245xmyRtw61AK_ s/zmBIHg4K_8BAl8I4KdFd7w
 e/o_KRH71WhloEcE1Es3HchA
 > Accept: */*
 > Accept-Encoding: gzip, deflate, br, zstd
@@ -7198,7 +7198,7 @@ efaults/win-64::cytoolz-1.0.1-py313h827c3e9_0;defaults/win-64::dask-2025.2.0-py3
 < Expires: Mon, 09 Mar 2026 17:41:26 GMT
 < Last-Modified: Mon, 27 Oct 2025 11:29:59 GMT
 < Server: cloudflare
-< Set-Cookie: __cf_bm=6JkWl4He5eban5Ns_HFKuLCx5_PiC1dCqSVm0D_5x9k-1773078056-1.0.1.1-5eKtOhI1cLYTUAh5h.qHKvEU2GBwBTFp67UDXiUL.dahWILsVTm0jMjsuleoD_7VBElHOU0lEXZNdMA1qYhr4Q2dtEAxVYRbgDAwn8p1RT4; path=/; expires=Mon, 
+< Set-Cookie: __cf_bm=6JkWl4He5eban5Ns_HFKuLCx5_PiC1dCqSVm0D_5x9k-1773078056-1.0.1.1-5eKtOhI1cLYTUAh5h.qHKvEU2GBwBTFp67UDXiUL.dahWILsVTm0jMjsuleoD_7VBElHOU0lEXZNdMA1qYhr4Q2dtEAxVYRbgDAwn8p1RT4; path=/; expires=Mon,
 09-Mar-26 18:10:56 GMT; domain=.anaconda.com; HttpOnly; Secure; SameSite=None
 < Vary: Accept-Encoding
 < x-amz-id-2: OXWBBn7EaF7Y1n8Mj8vkyEjTJIzv08piJhkdYmh6D5PMb17V2haHiV9FPY6OqIcyFfbVLu6OgHhVc5L2AexvwK8yLkPVyoAU
@@ -7211,9 +7211,9 @@ efaults/win-64::cytoolz-1.0.1-py313h827c3e9_0;defaults/win-64::dask-2025.2.0-py3
 
 
 DEBUG urllib3.connectionpool:_make_request(544): https://repo.anaconda.com:443 "GET /pkgs/main/win-64/conda-package-streaming-0.12.0-py310haa95532_1.conda HTTP/1.1" 206 15730
-DEBUG conda.gateways.connection.download:download_inner(111): 
+DEBUG conda.gateways.connection.download:download_inner(111):
 >>GET /pkgs/main/win-64/conda-package-streaming-0.12.0-py310haa95532_1.conda HTTPS
-> User-Agent: conda/25.5.1 requests/2.32.3 CPython/3.13.5 Windows/11 Windows/10.0.26200 solver/libmamba conda-libmamba-solver/25.4.0 libmambapy/2.0.5 aau/0.7.1 c/cop_hA_a245xmyRtw61AK_ s/zmBIHg4K_8BAl8I4KdFd7w 
+> User-Agent: conda/25.5.1 requests/2.32.3 CPython/3.13.5 Windows/11 Windows/10.0.26200 solver/libmamba conda-libmamba-solver/25.4.0 libmambapy/2.0.5 aau/0.7.1 c/cop_hA_a245xmyRtw61AK_ s/zmBIHg4K_8BAl8I4KdFd7w
 e/o_KRH71WhloEcE1Es3HchA
 > Accept: */*
 > Accept-Encoding: gzip, deflate, br, zstd
@@ -7275,9 +7275,9 @@ efaults/win-64::cytoolz-1.0.1-py313h827c3e9_0;defaults/win-64::dask-2025.2.0-py3
 
 
 DEBUG urllib3.connectionpool:_make_request(544): https://repo.anaconda.com:443 "GET /pkgs/main/win-64/libbrotlidec-1.2.0-h02c67a5_0.conda HTTP/1.1" 200 40440
-DEBUG conda.gateways.connection.download:download_inner(111): 
+DEBUG conda.gateways.connection.download:download_inner(111):
 >>GET /pkgs/main/win-64/libbrotlidec-1.2.0-h02c67a5_0.conda HTTPS
-> User-Agent: conda/25.5.1 requests/2.32.3 CPython/3.13.5 Windows/11 Windows/10.0.26200 solver/libmamba conda-libmamba-solver/25.4.0 libmambapy/2.0.5 aau/0.7.1 c/cop_hA_a245xmyRtw61AK_ s/zmBIHg4K_8BAl8I4KdFd7w 
+> User-Agent: conda/25.5.1 requests/2.32.3 CPython/3.13.5 Windows/11 Windows/10.0.26200 solver/libmamba conda-libmamba-solver/25.4.0 libmambapy/2.0.5 aau/0.7.1 c/cop_hA_a245xmyRtw61AK_ s/zmBIHg4K_8BAl8I4KdFd7w
 e/o_KRH71WhloEcE1Es3HchA
 > Accept: */*
 > Accept-Encoding: gzip, deflate, br, zstd
@@ -7326,7 +7326,7 @@ efaults/win-64::cytoolz-1.0.1-py313h827c3e9_0;defaults/win-64::dask-2025.2.0-py3
 < Expires: Mon, 09 Mar 2026 17:41:26 GMT
 < Last-Modified: Wed, 05 Nov 2025 19:53:03 GMT
 < Server: cloudflare
-< Set-Cookie: __cf_bm=Vokl4NA_iZNaQaQEI3T32nKs.aXSJEzwSicTGjEHa2Y-1773078056-1.0.1.1-Z0a8_ksrijwQ_Yhikvgqh_PU1fXqI7CtfUej_3XSspA667W9K.ISVpGziqRM5VjBe2NM99pN4JHoxlYJaZgeGavHB1xLBGHaC8cQQeKduVo; path=/; expires=Mon, 
+< Set-Cookie: __cf_bm=Vokl4NA_iZNaQaQEI3T32nKs.aXSJEzwSicTGjEHa2Y-1773078056-1.0.1.1-Z0a8_ksrijwQ_Yhikvgqh_PU1fXqI7CtfUej_3XSspA667W9K.ISVpGziqRM5VjBe2NM99pN4JHoxlYJaZgeGavHB1xLBGHaC8cQQeKduVo; path=/; expires=Mon,
 09-Mar-26 18:10:56 GMT; domain=.anaconda.com; HttpOnly; Secure; SameSite=None
 < Vary: Accept-Encoding
 < x-amz-id-2: Nl9vf8b4gSZiS4a5hxe8GLCwtIpPwclgTq+pYlqd9p5f7PjmAqEdfi2HUT5WFE/9xHbQhJXsbrcwZfujP5cShniDAu20Dzoz
@@ -7339,9 +7339,9 @@ efaults/win-64::cytoolz-1.0.1-py313h827c3e9_0;defaults/win-64::dask-2025.2.0-py3
 
 
 DEBUG urllib3.connectionpool:_make_request(544): https://repo.anaconda.com:443 "GET /pkgs/main/win-64/shellingham-1.5.4-py310haa95532_0.conda HTTP/1.1" 200 20115
-DEBUG conda.gateways.connection.download:download_inner(111): 
+DEBUG conda.gateways.connection.download:download_inner(111):
 >>GET /pkgs/main/win-64/shellingham-1.5.4-py310haa95532_0.conda HTTPS
-> User-Agent: conda/25.5.1 requests/2.32.3 CPython/3.13.5 Windows/11 Windows/10.0.26200 solver/libmamba conda-libmamba-solver/25.4.0 libmambapy/2.0.5 aau/0.7.1 c/cop_hA_a245xmyRtw61AK_ s/zmBIHg4K_8BAl8I4KdFd7w 
+> User-Agent: conda/25.5.1 requests/2.32.3 CPython/3.13.5 Windows/11 Windows/10.0.26200 solver/libmamba conda-libmamba-solver/25.4.0 libmambapy/2.0.5 aau/0.7.1 c/cop_hA_a245xmyRtw61AK_ s/zmBIHg4K_8BAl8I4KdFd7w
 e/o_KRH71WhloEcE1Es3HchA
 > Accept: */*
 > Accept-Encoding: gzip, deflate, br, zstd
@@ -7402,9 +7402,9 @@ efaults/win-64::cytoolz-1.0.1-py313h827c3e9_0;defaults/win-64::dask-2025.2.0-py3
 
 
 DEBUG urllib3.connectionpool:_make_request(544): https://repo.anaconda.com:443 "GET /pkgs/main/win-64/opentelemetry-exporter-otlp-proto-http-1.38.0-py310haa95532_0.conda HTTP/1.1" 200 30858
-DEBUG conda.gateways.connection.download:download_inner(111): 
+DEBUG conda.gateways.connection.download:download_inner(111):
 >>GET /pkgs/main/win-64/opentelemetry-exporter-otlp-proto-http-1.38.0-py310haa95532_0.conda HTTPS
-> User-Agent: conda/25.5.1 requests/2.32.3 CPython/3.13.5 Windows/11 Windows/10.0.26200 solver/libmamba conda-libmamba-solver/25.4.0 libmambapy/2.0.5 aau/0.7.1 c/cop_hA_a245xmyRtw61AK_ s/zmBIHg4K_8BAl8I4KdFd7w 
+> User-Agent: conda/25.5.1 requests/2.32.3 CPython/3.13.5 Windows/11 Windows/10.0.26200 solver/libmamba conda-libmamba-solver/25.4.0 libmambapy/2.0.5 aau/0.7.1 c/cop_hA_a245xmyRtw61AK_ s/zmBIHg4K_8BAl8I4KdFd7w
 e/o_KRH71WhloEcE1Es3HchA
 > Accept: */*
 > Accept-Encoding: gzip, deflate, br, zstd
@@ -7452,7 +7452,7 @@ efaults/win-64::cytoolz-1.0.1-py313h827c3e9_0;defaults/win-64::dask-2025.2.0-py3
 < Expires: Mon, 09 Mar 2026 17:41:26 GMT
 < Last-Modified: Thu, 27 Nov 2025 15:17:53 GMT
 < Server: cloudflare
-< Set-Cookie: __cf_bm=N3lrd62.CRXpDkr9vxO65.0vpo2TBGSM2KfhEbBDGNI-1773078056-1.0.1.1-mZwKSXd4yEyf_w7UUlDHvcO7gBzpGZTlFcn.Aw_CtYgKtDc_35F_ikZ_oqjBtDftO0EJSQqcrD3YMqgEJflXIhC_QeEiDD4bACgb9wTQB.M; path=/; expires=Mon, 
+< Set-Cookie: __cf_bm=N3lrd62.CRXpDkr9vxO65.0vpo2TBGSM2KfhEbBDGNI-1773078056-1.0.1.1-mZwKSXd4yEyf_w7UUlDHvcO7gBzpGZTlFcn.Aw_CtYgKtDc_35F_ikZ_oqjBtDftO0EJSQqcrD3YMqgEJflXIhC_QeEiDD4bACgb9wTQB.M; path=/; expires=Mon,
 09-Mar-26 18:10:56 GMT; domain=.anaconda.com; HttpOnly; Secure; SameSite=None
 < Vary: Accept-Encoding
 < x-amz-id-2: iOJLLtPIMRcXMFtB1p4PxsrSlwebsG9xmBjQd4XaRSmFYD96ICgpTuiS3Ly4gy0ArBmD15V/UJs=
@@ -7520,6 +7520,3 @@ Elapsed: 00:00.277661
 
 An HTTP error occurred when trying to retrieve this URL.
 HTTP errors are often intermittent, and a simple retry will get you on your way.
-
-
-

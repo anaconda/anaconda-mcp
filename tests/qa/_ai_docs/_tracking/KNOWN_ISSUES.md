@@ -289,7 +289,7 @@ But this command starts server in **STDIO mode**, not HTTP mode. Claude Desktop 
 **Component**: `environments_mcp_server`
 **Platform**: Windows only
 **Auth state**: Any (logged in or logged out)
-**Bug report**: [`KI-018-bug-report.md`](win_start/KI-018-bug-report.md)
+**Bug report**: [`KI-018-bug-report.md`](../bug_details/win_start/KI-018-bug-report.md)
 
 The first conda tool call after server startup always exceeds the 30-second GET SSE stream timeout on Windows. Windows cold-start overhead (DLL loading, Windows Defender scanning, conda batch script activation) makes the first `conda` invocation take >30 seconds. The result is computed and returned by the server ("duplicate response suppressed") but is lost in the proxy layer. On macOS the identical call completes in <1 second. Fix: pre-warm conda in `environments_mcp_server` at startup time.
 
@@ -301,7 +301,7 @@ The first conda tool call after server startup always exceeds the 30-second GET 
 **Component**: `environments_mcp_server` / `anaconda_mcp` auth/telemetry
 **Platform**: Windows only
 **Auth state**: Logged in (telemetry initialized)
-**Bug report**: [`KI-019-bug-report.md`](win_start/KI-019-bug-report.md)
+**Bug report**: [`KI-019-bug-report.md`](../bug_details/win_start/KI-019-bug-report.md)
 
 When the user is logged in, the retry after the KI-018 first-call hang also fails with `unhandled errors in a TaskGroup`. Telemetry initialization causes additional background work per tool call; after the GET SSE stream disconnects and reconnects, this work encounters an unhandled error that corrupts the async task group. Logged-out sessions recover on retry (no telemetry work → no corruption). Fix KI-018 to eliminate the trigger; additionally harden telemetry error handling to degrade gracefully on session invalidation.
 
@@ -371,7 +371,7 @@ This confirms `mcp-compose` **received the result from `environments_mcp_server`
 
 **Note on March 10 session**: A similar first-call hang with "duplicate response suppressed" was observed on 2026-03-10 (rapid init/close cycles, full Anaconda install). Same proxy response-loss pattern; different precondition.
 
-**Windows first-call hang (2026-03-11)**: The same `duplicate response suppressed` mechanism was reproduced on Windows (stdio transport, Claude Desktop). Root cause and full investigation — including 5 test sessions, macOS comparison, and auth-state analysis — are documented in [KI-018](win_start/KI-018-bug-report.md) (cold-start hang, any auth state) and [KI-019](win_start/KI-019-bug-report.md) / [DESK-1386](https://anaconda.atlassian.net/browse/DESK-1386) (telemetry blocks retry when logged in).
+**Windows first-call hang (2026-03-11)**: The same `duplicate response suppressed` mechanism was reproduced on Windows (stdio transport, Claude Desktop). Root cause and full investigation — including 5 test sessions, macOS comparison, and auth-state analysis — are documented in [KI-018](../bug_details/win_start/KI-018-bug-report.md) (cold-start hang, any auth state) and [KI-019](../bug_details/win_start/KI-019-bug-report.md) / [DESK-1386](https://anaconda.atlassian.net/browse/DESK-1386) (telemetry blocks retry when logged in).
 
 **Workaround**: Restart `mcp-compose` when hangs occur:
 ```bash

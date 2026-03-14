@@ -205,7 +205,7 @@ Re-enable after testing if desired:
 conda config --set anaconda_anon_usage true
 ```
 
-**Better long-term solution**: Use Miniconda instead of full Anaconda. See [CONDA_SETUP.md](../tech_details/CONDA_SETUP.md).
+**Better long-term solution**: Use Miniconda instead of full Anaconda. See [CONDA_SETUP.md](../../tech_details/CONDA_SETUP.md).
 
 ---
 

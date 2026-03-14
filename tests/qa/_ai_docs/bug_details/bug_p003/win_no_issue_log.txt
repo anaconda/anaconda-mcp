@@ -202,7 +202,7 @@ The following NEW packages will be INSTALLED:
   conda-package-han~ pkgs/main/win-64::conda-package-handling-2.4.0-py311haa95532_1
   conda-package-str~ pkgs/main/win-64::conda-package-streaming-0.12.0-py311haa95532_1
   cpp-expected       pkgs/main/win-64::cpp-expected-1.1.0-h214f63a_0
-  cryptography       pkgs/main/win-64::cryptography-46.0.5-py311hbfe00f4_1 
+  cryptography       pkgs/main/win-64::cryptography-46.0.5-py311hbfe00f4_1
   cyclopts           pkgs/main/win-64::cyclopts-4.6.0-py311haa95532_0
   distro             pkgs/main/win-64::distro-1.9.0-py311haa95532_0
   dnspython          pkgs/main/win-64::dnspython-2.8.0-py311haa95532_0
@@ -369,21 +369,21 @@ Proceed ([y]/n)? y
 
 
 Downloading and Extracting Packages:
-                                                                                                                                                                                
-Preparing transaction: done                                                                                                                                                     
-Verifying transaction: done                                                                                                                                                     
-Executing transaction: done                                                                                                                                                     
+
+Preparing transaction: done
+Verifying transaction: done
+Executing transaction: done
 #
-# To activate this environment, use                                                                                                                                             
-#                                                                                                                                                                               
-#     $ conda activate anaconda-mcp-rc-py311                                                                                                                                    
-#                                                                                                                                                                               
-# To deactivate an active environment, use                                                                                                                                      
-#                                                                                                                                                                               
-#     $ conda deactivate                                                                                                                                                        
-                                                                                                                                                                                
-PS C:\projects\anaconda-desktop> conda activate anaconda-mcp-rc-py311                                                                                                           
-PS C:\projects\anaconda-desktop> conda list | findstr /R "anaconda-mcp environments-mcp anaconda-connector python"                                                              
+# To activate this environment, use
+#
+#     $ conda activate anaconda-mcp-rc-py311
+#
+# To deactivate an active environment, use
+#
+#     $ conda deactivate
+
+PS C:\projects\anaconda-desktop> conda activate anaconda-mcp-rc-py311
+PS C:\projects\anaconda-desktop> conda list | findstr /R "anaconda-mcp environments-mcp anaconda-connector python"
 gitpython                        3.1.45                py313haa95532_0
 ipython                          9.7.0                 py313haa95532_0
 ipython_pygments_lexers          1.1.1                 py313haa95532_0
@@ -402,4 +402,4 @@ python-lsp-server                1.13.1                py313h4442805_0
 python-slugify                   8.0.4                 py313haa95532_0
 python-tzdata                    2025.2                pyhd3eb1b0_0
 python_abi                       3.13                  2_cp313
-PS C:\projects\anaconda-desktop> 
+PS C:\projects\anaconda-desktop>
