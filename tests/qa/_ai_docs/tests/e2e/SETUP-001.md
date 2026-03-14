@@ -1,6 +1,6 @@
 # SETUP-001: Installation Disclaimer Verification
 
-> ← [Back to Test Catalog](../../INDEX.md#3-test-catalog)
+> ← [Back to Test Catalog](../../QA_WALKTHROUGH.md#3-test-catalog)
 
 Verify terms and conditions disclaimer is displayed during/after installation.
 

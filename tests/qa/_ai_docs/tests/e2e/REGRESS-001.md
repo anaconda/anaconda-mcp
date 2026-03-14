@@ -1,6 +1,6 @@
 # REGRESS-001: Known Issues Regression
 
-> ← [Back to Test Catalog](../../INDEX.md#3-test-catalog)
+> ← [Back to Test Catalog](../../QA_WALKTHROUGH.md#3-test-catalog)
 
 Regression tests for previously fixed bugs.
 

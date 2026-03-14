@@ -1,6 +1,6 @@
 # CHAN-001: Override Channels Behavior
 
-> ← [Back to Test Catalog](../../INDEX.md#3-test-catalog)
+> ← [Back to Test Catalog](../../QA_WALKTHROUGH.md#3-test-catalog)
 
 Verify `override_channels` parameter visibility based on env var setting.
 

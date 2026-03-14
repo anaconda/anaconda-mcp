@@ -1,6 +1,6 @@
 # Authentication Setup & Cleanup
 
-This document defines prerequisites and post-conditions for authentication-related tests. Referenced from [INDEX.md](../../../INDEX.md) and individual test files in [e2e/](../).
+This document defines prerequisites and post-conditions for authentication-related tests. Referenced from [QA_WALKTHROUGH.md](../../../QA_WALKTHROUGH.md) and individual test files in [e2e/](../).
 
 ---
 

@@ -1,6 +1,6 @@
 # AUTH-002: Authenticated Mode
 
-> ← [Back to Test Catalog](../../INDEX.md#3-test-catalog)
+> ← [Back to Test Catalog](../../QA_WALKTHROUGH.md#3-test-catalog)
 
 Verify authenticated user can access private channels via MCP.
 

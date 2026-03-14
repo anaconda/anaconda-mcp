@@ -1,6 +1,6 @@
 # AUTH-001: Anonymous Mode
 
-> ← [Back to Test Catalog](../../INDEX.md#3-test-catalog)
+> ← [Back to Test Catalog](../../QA_WALKTHROUGH.md#3-test-catalog)
 
 Verify anonymous user can create environments and install packages using public channels.
 

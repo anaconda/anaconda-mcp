@@ -91,7 +91,7 @@ See [TEST_MATRIX_rc2.md](../_planning/TEST_MATRIX_rc2.md) for assignment rationa
 | QA | OS | Client | Python | Transport | Status | Result | Notes |
 |----|----|--------|--------|-----------|--------|--------|-------|
 | QA 2 | macOS | Claude Desktop | 3.13 | STDIO | 🔶 In progress | 5 passed / 3 failed / 0 unexecuted | DESK-1401; DESK-1402; DESK-1403 |
-| QA 1 | macOS | Claude Desktop | 3.10 | STDIO | ⬜ Not started | 0 passed / 0 failed / 2 unexecuted| |
+| QA 1 | macOS | Claude Desktop | 3.10 | STDIO | ⬜ Not started | 0 passed / 0 failed / 3 unexecuted| |
 | QA 1 | Windows | Claude Desktop | 3.10 | STDIO | ⬜ Not started | 0 passed / 0 failed / 5 unexecuted |  |
 | QA 2 | Windows | Claude Desktop | 3.13 | STDIO | ⬜ Not started | 0 passed / 0 failed / 3 unexecuted| |
 

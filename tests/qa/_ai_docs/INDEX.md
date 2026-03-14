@@ -1,96 +1,62 @@
-# QA Testing Guide
+# QA Documentation Index
 
-## Quick Navigation
+## Quick Links
 
-```mermaid
-flowchart TD
-    Start["I need to test"] --> Platform{Platform?}
-
-    Platform -->|macOS| QS[QUICK_START.md]
-    Platform -->|Windows| Win[WINDOWS_SETUP.md]
-
-    QS --> Auth{Need auth?}
-    Win --> WinQS[QUICK_START.md]
-    WinQS --> Auth
-
-    Auth -->|Yes| AuthSetup[AUTH_SETUP.md]
-    Auth -->|No| Tests
-
-    AuthSetup --> Tests[Test Catalog]
-```
-
-## 1. Setup
-
-| Platform | Guide |
-|----------|-------|
-| macOS | [QUICK_START.md](./tests/e2e/setup/QUICK_START.md) |
-| Windows | [WINDOWS_SETUP.md](./tests/e2e/setup/WINDOWS_SETUP.md) → [QUICK_START.md](./tests/e2e/setup/QUICK_START.md) |
-| Windows + Claude Code | [WINDOWS_CLAUDE_CODE.md](./tests/e2e/setup/WINDOWS_CLAUDE_CODE.md) |
-
-## 2. Prerequisites (if test requires auth)
-
-| State | Guide | Used by |
-|-------|-------|---------|
-| Backup .condarc | [AUTH_SETUP.md#backup](./tests/e2e/setup/AUTH_SETUP.md#before-you-begin--backup-recommended) | All auth tests |
-| Logged In | [AUTH_SETUP.md#logged-in](./tests/e2e/setup/AUTH_SETUP.md#prerequisites-logged-in-core-001-auth-002) | CORE-001, AUTH-002 |
-| Logged Out + Public | [AUTH_SETUP.md#logged-out-public](./tests/e2e/setup/AUTH_SETUP.md#prerequisites-logged-out--public-channels-core-001a) | CORE-001a |
-| Logged Out + Private | [AUTH_SETUP.md#logged-out-private](./tests/e2e/setup/AUTH_SETUP.md#prerequisites-logged-out--private-channels-auth-001a) | AUTH-001a |
-| Cleanup | [AUTH_SETUP.md#cleanup](./tests/e2e/setup/AUTH_SETUP.md#post-conditions--cleanup) | After auth tests |
-
-## 3. Test Catalog
-
-| Test | Description | RC1 | RC2 |
-|------|-------------|:---:|:---:|
-| [SETUP-001](./tests/e2e/SETUP-001.md) | Installation disclaimer verification | | + |
-| [CORE-001](./tests/e2e/CORE-001.md) | Full tools flow — logged in | + | + |
-| [CORE-001a](./tests/e2e/CORE-001a.md) | Full tools flow — logged out (public channels) | + | + |
-| [AUTH-001](./tests/e2e/AUTH-001.md) | Anonymous mode (public channels) | + | + |
-| [AUTH-001a](./tests/e2e/AUTH-001a.md) | Anonymous + private channels → 403 | | + |
-| [AUTH-002](./tests/e2e/AUTH-002.md) | Authenticated mode | + | + |
-| [GUARD-001](./tests/e2e/GUARD-001.md) | Guardrails (no pip fallback, deletion confirm) | + | + |
-| [CHAN-001](./tests/e2e/CHAN-001.md) | Override channels behavior | | + |
-| [REGRESS-001](./tests/e2e/REGRESS-001.md) | Known issues regression (KI-001, KI-002, KI-003) | + | + |
-| [REGRESS-002](./tests/e2e/REGRESS-002.md) | Remove environment by name (DESK-1342) | + | + |
-
-**Legend**: `+` = in scope for release
-
-## 4. Tracking & Reference
-
-| Document | Purpose |
-|----------|---------|
-| [TEST_MATRIX_rc2.md](./_planning/TEST_MATRIX_rc2.md) | Test assignments per QA/config |
-| [TEST_PROGRESS.md](./_tracking/TEST_PROGRESS.md) | Results tracking |
-| [KNOWN_ISSUES.md](./_tracking/KNOWN_ISSUES.md) | Bugs and workarounds |
-
-## 5. Workflow
-
-1. **Setup**: Follow platform guide to install and configure
-2. **Backup**: Run backup command from AUTH_SETUP.md (once, before any auth tests)
-3. **Prerequisites**: Set auth state per test requirements
-4. **Execute**: Run test steps, record results
-5. **Cleanup**: Restore original state after auth tests
-6. **Report**: Update TEST_PROGRESS.md with results
+| Priority | Document | Purpose |
+|----------|----------|---------|
+| 1 | [QA_WALKTHROUGH.md](./QA_WALKTHROUGH.md) | Step-by-step guide for running E2E tests |
+| 2 | [TEST_PROGRESS.md](./_tracking/TEST_PROGRESS.md) | Current testing status and bug tracking |
+| 3 | [TEST_MATRIX_rc2.md](./_planning/TEST_MATRIX_rc2.md) | RC2 test assignments and configurations |
 
 ---
 
-## Additional Documentation
+## Structure Overview
 
-### Product Documentation
-| Document | Description |
-|----------|-------------|
-| [PRODUCT_OVERVIEW.md](./_product/PRODUCT_OVERVIEW.md) | Product features, architecture, constraints |
-| [FEATURE_TREE.md](./_product/FEATURE_TREE.md) | 3-level feature tree with diagrams |
-| [CONFIGURATION.md](./tech_details/CONFIGURATION.md) | Configuration options reference |
+```
+_ai_docs/
+├── INDEX.md                    ← You are here
+├── QA_WALKTHROUGH.md           ← Start here for testing
+│
+├── _product/                   # What we're testing
+│   ├── PRODUCT_OVERVIEW.md     # Architecture, features, constraints
+│   ├── FEATURE_TREE.md         # Feature catalog with release scope
+│   └── COVERAGE_MAP.md         # Feature → test mapping
+│
+├── _planning/                  # How we planned testing
+│   ├── TEST_MATRIX_rc2.md      # Current release assignments
+│   ├── TEST_MATRIX.md          # RC1 assignments (historical)
+│   ├── TEST_DESIGN.md          # Test strategy rationale
+│   ├── TEST_COVERAGE_ANALYSIS.md
+│   └── TESTING_WORKFLOW.md
+│
+├── _tracking/                  # Progress and issues
+│   ├── TEST_PROGRESS.md        # Results and bug summary
+│   ├── KNOWN_ISSUES.md         # Bugs, workarounds, investigations
+│   └── OPEN_QUESTIONS.md       # Decisions log
+│
+├── tech_details/               # Technical references
+│   ├── CONFIGURATION.md        # Config options
+│   ├── INSTALL_OPTIONS.md      # Installation methods
+│   ├── LOCAL-DEV-SETUP.md      # Dev environment setup
+│   └── CONDA_SETUP.md          # Miniconda vs Anaconda
+│
+├── tests/
+│   ├── e2e/                    # E2E test definitions
+│   │   ├── setup/              # Prerequisites (auth, Windows, etc.)
+│   │   └── *.md                # Individual test flows
+│   └── automation/             # Automatable tests (CLI, Config, API)
+│
+└── bug_details/                # Investigation artifacts
+```
 
-### Automation Test Docs
-| Document | Description |
-|----------|-------------|
-| [TESTS_CLI.md](./tests/automation/TESTS_CLI.md) | CLI-only flows (automatable) |
-| [TESTS_CONFIG.md](./tests/automation/TESTS_CONFIG.md) | Configuration tests (automatable) |
-| [TESTS_API_TOOLS.md](./tests/automation/TESTS_API_TOOLS.md) | Direct API tool tests (automatable) |
+---
 
-### Test Projects (automation)
-| Folder | Purpose |
-|--------|---------|
-| [`tests/qa/http_tools/`](../http_tools/README.md) | HTTP API regression suite |
-| [`tests/qa/stdio_tools/`](../stdio_tools/README.md) | STDIO regression suite |
+## By Role
+
+**QA Tester**: Start with [QA_WALKTHROUGH.md](./QA_WALKTHROUGH.md)
+
+**New to project**: Read [PRODUCT_OVERVIEW.md](./_product/PRODUCT_OVERVIEW.md) then [TEST_MATRIX_rc2.md](./_planning/TEST_MATRIX_rc2.md)
+
+**Checking status**: See [TEST_PROGRESS.md](./_tracking/TEST_PROGRESS.md)
+
+**Hit a bug**: Check [KNOWN_ISSUES.md](./_tracking/KNOWN_ISSUES.md)
