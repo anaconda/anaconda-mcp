@@ -136,7 +136,7 @@ Run in Miniconda Prompt:
 python -m anaconda_mcp claude-desktop setup-config
 ```
 
-> **Important**: Claude Desktop on Windows reads config from a different location than where the command writes it. See [WINDOWS_CLAUDE_CODE.md](./WINDOWS_CLAUDE_CODE.md) for the workaround.
+> **Important**: Claude Desktop on Windows reads config from a different location than where the command writes it. See [WINDOWS_CLAUDE_DESKTOP.md](./WINDOWS_CLAUDE_DESKTOP.md) for the workaround.
 
 ---
 
@@ -175,7 +175,7 @@ anaconda-mcp              0.1.dev...  C:\path\to\anaconda-mcp
 environments-mcp-server   0.1.dev...  C:\path\to\environments-mcp
 ```
 
-**Step 3 — Restart Claude Desktop** (kill all processes — see [WINDOWS_CLAUDE_CODE.md](./WINDOWS_CLAUDE_CODE.md)) so it picks up the updated packages.
+**Step 3 — Restart Claude Desktop** (kill all processes — see [WINDOWS_CLAUDE_DESKTOP.md](./WINDOWS_CLAUDE_DESKTOP.md)) so it picks up the updated packages.
 
 **To reset back to the released RC versions:**
 
@@ -210,7 +210,7 @@ anaconda-mcp              1.0.0rc2.dev1+g...  C:\projects\anaconda-mcp
 environments-mcp-server   0.1.dev223+g...     C:\projects\environments-mcp
 ```
 
-**Step 3 — Restart Claude Desktop** so it picks up the new code. See [WINDOWS_CLAUDE_CODE.md](./WINDOWS_CLAUDE_CODE.md) for how to fully kill and relaunch it.
+**Step 3 — Restart Claude Desktop** so it picks up the new code. See [WINDOWS_CLAUDE_DESKTOP.md](./WINDOWS_CLAUDE_DESKTOP.md) for how to fully kill and relaunch it.
 
 **To revert to the released RC version:**
 

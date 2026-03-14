@@ -25,7 +25,7 @@ flowchart TD
 |----------|-------|
 | macOS | [QUICK_START.md](./tests/e2e/setup/QUICK_START.md) |
 | Windows | [WINDOWS_SETUP.md](./tests/e2e/setup/WINDOWS_SETUP.md) → [QUICK_START.md](./tests/e2e/setup/QUICK_START.md) |
-| Windows + Claude Code | [WINDOWS_CLAUDE_CODE.md](./tests/e2e/setup/WINDOWS_CLAUDE_CODE.md) |
+| Windows + Claude Desktop | [WINDOWS_CLAUDE_DESKTOP.md](./tests/e2e/setup/WINDOWS_CLAUDE_DESKTOP.md) |
 
 ## 2. Prerequisites (if test requires auth)
 

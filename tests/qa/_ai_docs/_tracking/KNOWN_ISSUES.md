@@ -547,7 +547,7 @@ Incomplete restart:
 - Closing the Claude Desktop window leaves background processes alive.
 - The new config is never read until all Claude processes are fully killed.
 
-- **Workaround**: See [WINDOWS_CLAUDE_CODE.md](./tests/e2e/setup/WINDOWS_CLAUDE_CODE.md) for full step-by-step instructions.
+- **Workaround**: See [WINDOWS_CLAUDE_DESKTOP.md](./tests/e2e/setup/WINDOWS_CLAUDE_DESKTOP.md) for full step-by-step instructions.
 
 ### KI-016: `create_environment` Fails with `frozen_instance` Error When `environment_root_path` Is Provided
 **Status**: Fixed locally — fix not yet committed or released
@@ -635,7 +635,7 @@ Server disconnected.
 
 **Impact**: MCP server is completely non-functional until the config is updated to point to the new environment path. The repeated retry loop provides no additional diagnostic value.
 
-**Fix required**: Update `claude_desktop_config.json` to point to the correct Python executable. On Windows MSIX this requires writing to the virtualized config path (see PI-002 / WINDOWS_CLAUDE_CODE.md).
+**Fix required**: Update `claude_desktop_config.json` to point to the correct Python executable. On Windows MSIX this requires writing to the virtualized config path (see PI-002 / WINDOWS_CLAUDE_DESKTOP.md).
 
 **Workaround**: After deleting or renaming the conda environment used by the MCP server, update the config manually and do a full Claude Desktop restart (kill all processes — see PI-002).
 
