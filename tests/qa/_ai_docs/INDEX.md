@@ -17,12 +17,6 @@ flowchart TD
     Auth -->|No| Tests
 
     AuthSetup --> Tests[Test Catalog]
-
-    click QS "./QUICK_START.md" "Setup for macOS"
-    click Win "./WINDOWS_SETUP.md" "Setup for Windows"
-    click WinQS "./QUICK_START.md" "Setup for Windows"
-    click AuthSetup "./AUTH_SETUP.md" "Configure auth state"
-    click Tests "#3-test-catalog" "Pick a test"
 ```
 
 ## 1. Setup
