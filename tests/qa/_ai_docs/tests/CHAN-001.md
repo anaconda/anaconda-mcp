@@ -6,6 +6,7 @@ Verify `override_channels` is disabled by default and can be enabled via environ
 
 | Step | Action | Expected | RC1 | RC2 |
 |------|--------|----------|:---:|:---:|
+| Pre | [Logged Out + Public Channels](../AUTH_SETUP.md#prerequisites-logged-out--public-channels-core-001a) | Clean auth state | | + |
 | Pre | Terminal: `unset ALLOW_OVERRIDE_CHANNELS` then restart Claude Desktop | Env var cleared | | + |
 | 1 | "Create environment chan-test with Python 3.11 using only conda-forge channel" | Environment created | | + |
 | 2 | Terminal: `conda list -n chan-test --show-channel-urls` | Packages from default channels (NOT restricted to conda-forge) | | + |
@@ -15,6 +16,7 @@ Verify `override_channels` is disabled by default and can be enabled via environ
 
 | Step | Action | Expected | RC1 | RC2 |
 |------|--------|----------|:---:|:---:|
+| Pre | [Logged Out + Public Channels](../AUTH_SETUP.md#prerequisites-logged-out--public-channels-core-001a) | Clean auth state | | + |
 | Pre | Terminal: `export ALLOW_OVERRIDE_CHANNELS=true` then restart Claude Desktop | Env var set | | + |
 | 1 | "Create environment chan-test-override with Python 3.11 using only conda-forge channel" | Environment created | | + |
 | 2 | Terminal: `conda list -n chan-test-override --show-channel-urls` | Packages from conda-forge ONLY | | + |
