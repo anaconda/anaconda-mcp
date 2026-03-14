@@ -23,19 +23,19 @@ flowchart TD
 
 | Platform | Guide |
 |----------|-------|
-| macOS | [QUICK_START.md](./QUICK_START.md) |
-| Windows | [WINDOWS_SETUP.md](./WINDOWS_SETUP.md) → [QUICK_START.md](./QUICK_START.md) |
-| Windows + Claude Code | [WINDOWS_CLAUDE_CODE.md](./WINDOWS_CLAUDE_CODE.md) |
+| macOS | [QUICK_START.md](./tests/e2e/setup/QUICK_START.md) |
+| Windows | [WINDOWS_SETUP.md](./tests/e2e/setup/WINDOWS_SETUP.md) → [QUICK_START.md](./tests/e2e/setup/QUICK_START.md) |
+| Windows + Claude Code | [WINDOWS_CLAUDE_CODE.md](./tests/e2e/setup/WINDOWS_CLAUDE_CODE.md) |
 
 ## 2. Prerequisites (if test requires auth)
 
 | State | Guide | Used by |
 |-------|-------|---------|
-| Backup .condarc | [AUTH_SETUP.md#backup](./AUTH_SETUP.md#before-you-begin--backup-recommended) | All auth tests |
-| Logged In | [AUTH_SETUP.md#logged-in](./AUTH_SETUP.md#prerequisites-logged-in-core-001-auth-002) | CORE-001, AUTH-002 |
-| Logged Out + Public | [AUTH_SETUP.md#logged-out-public](./AUTH_SETUP.md#prerequisites-logged-out--public-channels-core-001a) | CORE-001a |
-| Logged Out + Private | [AUTH_SETUP.md#logged-out-private](./AUTH_SETUP.md#prerequisites-logged-out--private-channels-auth-001a) | AUTH-001a |
-| Cleanup | [AUTH_SETUP.md#cleanup](./AUTH_SETUP.md#post-conditions--cleanup) | After auth tests |
+| Backup .condarc | [AUTH_SETUP.md#backup](./tests/e2e/setup/AUTH_SETUP.md#before-you-begin--backup-recommended) | All auth tests |
+| Logged In | [AUTH_SETUP.md#logged-in](./tests/e2e/setup/AUTH_SETUP.md#prerequisites-logged-in-core-001-auth-002) | CORE-001, AUTH-002 |
+| Logged Out + Public | [AUTH_SETUP.md#logged-out-public](./tests/e2e/setup/AUTH_SETUP.md#prerequisites-logged-out--public-channels-core-001a) | CORE-001a |
+| Logged Out + Private | [AUTH_SETUP.md#logged-out-private](./tests/e2e/setup/AUTH_SETUP.md#prerequisites-logged-out--private-channels-auth-001a) | AUTH-001a |
+| Cleanup | [AUTH_SETUP.md#cleanup](./tests/e2e/setup/AUTH_SETUP.md#post-conditions--cleanup) | After auth tests |
 
 ## 3. Test Catalog
 

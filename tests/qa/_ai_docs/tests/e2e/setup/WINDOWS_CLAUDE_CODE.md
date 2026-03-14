@@ -75,7 +75,7 @@ Closing the window is **not enough** — background processes keep running.
 
 ## Step 4 – Verify it's working
 
-In a new Claude chat, look for the **🔨 hammer icon** in the chat input area.  
+In a new Claude chat, look for the **🔨 hammer icon** in the chat input area.
 Click it — you should see Anaconda MCP tools listed.
 
 If the hammer icon doesn't appear:

@@ -547,7 +547,7 @@ Incomplete restart:
 - Closing the Claude Desktop window leaves background processes alive.
 - The new config is never read until all Claude processes are fully killed.
 
-- **Workaround**: See [WINDOWS_CLAUDE_CODE.md](./tests/qa/_ai_docs/WINDOWS_CLAUDE_CODE.md) for full step-by-step instructions.
+- **Workaround**: See [WINDOWS_CLAUDE_CODE.md](./tests/e2e/setup/WINDOWS_CLAUDE_CODE.md) for full step-by-step instructions.
 
 ### KI-016: `create_environment` Fails with `frozen_instance` Error When `environment_root_path` Is Provided
 **Status**: Fixed locally — fix not yet committed or released

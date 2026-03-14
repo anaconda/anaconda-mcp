@@ -112,4 +112,4 @@ REM Run from source
 python -m anaconda_mcp serve --delay 5
 ```
 
-See [WINDOWS_SETUP.md](./WINDOWS_SETUP.md) for detailed Windows instructions.
+See [WINDOWS_SETUP.md](./tests/e2e/setup/WINDOWS_SETUP.md) for detailed Windows instructions.

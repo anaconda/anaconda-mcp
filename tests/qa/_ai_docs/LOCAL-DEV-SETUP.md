@@ -241,7 +241,7 @@ Replace macOS/Linux commands as follows:
 | `pkill -9 -f "..."` | Use Task Manager or `taskkill /IM python.exe /F` |
 | `./scripts/start-http-server.sh` | `python -m anaconda_mcp serve --http --port 8888` |
 
-For full Windows setup including Claude Desktop config workarounds, see [WINDOWS_SETUP.md](./WINDOWS_SETUP.md).
+For full Windows setup including Claude Desktop config workarounds, see [WINDOWS_SETUP.md](./tests/e2e/setup/WINDOWS_SETUP.md).
 
 ---
 

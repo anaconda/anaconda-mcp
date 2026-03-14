@@ -18,21 +18,21 @@ Questions requiring product owner decision before finalizing test scope and prio
 | D | Multiple versions (regression across releases) |
 
 **Current assumption**: Option A (conda channels, latest release)
-**Answer**: We need to use specific versions for 
-- anaconda-mcp=1.0.0.rc.1 
+**Answer**: We need to use specific versions for
+- anaconda-mcp=1.0.0.rc.1
 - environments-mcp-server=1.0.0.rc.1
 - anaconda-connector — transitive dependency, version resolved by conda solver (record from `conda list` after install)
-easiest way to have all specific versions (including python) is to use [Pinned RC Versions — Current Test Cycle](./QUICK_START.md#pinned-rc-versions--current-test-cycle)
+easiest way to have all specific versions (including python) is to use [Pinned RC Versions — Current Test Cycle](./tests/e2e/setup/QUICK_START.md#pinned-rc-versions--current-test-cycle)
 ---
 
 ## Constraints (FYI)
 
 ### Platform and Transport/Client Constraints
-**E2E testing**: 
+**E2E testing**:
 - macOS mostly (Claude Desktop and Cursor are available on macOS only)
     - Claude Desktop OR Cursor for STDIO transport
     - Cursor for HTTP transport [Claude Desktop does not support HTTP transport - KI-009](./KNOWN_ISSUES.md#ki-009-claude-desktop-does-not-support-http-transport)
-- Windows as lower priority (likely we could have Claude Desktop here)    
+- Windows as lower priority (likely we could have Claude Desktop here)
 
 
 ---

@@ -4,7 +4,7 @@ Regression tests for previously fixed bugs.
 
 | Step | Action | Expected | RC1 | RC2 |
 |------|--------|----------|:---:|:---:|
-| Pre | [Logged Out + Public Channels](../../AUTH_SETUP.md#prerequisites-logged-out--public-channels-core-001a) | Clean auth state | + | + |
+| Pre | [Logged Out + Public Channels](./setup/AUTH_SETUP.md#prerequisites-logged-out--public-channels-core-001a) | Clean auth state | + | + |
 | Pre | Terminal: `conda create -n regress-test python=3.11 -y` | Test env created | + | + |
 | 1 | "List my conda environments" | Shows "regress-test" (not "base") — KI-002 | + | + |
 | 2 | "Install numpy in regress-test" | Found by name, installs — KI-003 | + | + |

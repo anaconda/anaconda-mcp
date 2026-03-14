@@ -38,9 +38,9 @@ Based on RC1 findings (13 bugs filed, Phase 1 complete):
 |----------|---------|
 | [INDEX.md](./INDEX.md) | Test catalog and navigation |
 | [tests/](./tests/) | Individual test definitions |
-| [AUTH_SETUP.md](./AUTH_SETUP.md) | Authentication prerequisites and cleanup procedures |
+| [AUTH_SETUP.md](./tests/e2e/setup/AUTH_SETUP.md) | Authentication prerequisites and cleanup procedures |
 | [KNOWN_ISSUES.md](./KNOWN_ISSUES.md) | Bug details and workarounds |
-| [WINDOWS_SETUP.md](./WINDOWS_SETUP.md) | Windows-specific setup instructions |
+| [WINDOWS_SETUP.md](./tests/e2e/setup/WINDOWS_SETUP.md) | Windows-specific setup instructions |
 
 ---
 
@@ -59,7 +59,7 @@ Based on RC1 findings (13 bugs filed, Phase 1 complete):
 
 **Auth state on macOS**: currently safe to test logged-in only — DESK-1385/1386 trigger (GET stream disconnect) never fires on macOS as the first call completes in <1s. However, the fixes for DESK-1385/1386 will change `environments_mcp_server` startup (warmup) and telemetry error handling — code paths that run on macOS too. **Add one logged-out pass on macOS config 1 when DESK-1385/1386 fixes are included in RC2**, to catch any regressions introduced by those changes.
 
-> **DESK-1385/1386 status**: Not confirmed fixed in RC2. Test both auth states on Windows and document failures explicitly — anaconda-connector changes may have affected behavior. See [WINDOWS_SETUP.md](./WINDOWS_SETUP.md#3-open-claude-desktop-and-wait-for-connection) for setup.
+> **DESK-1385/1386 status**: Not confirmed fixed in RC2. Test both auth states on Windows and document failures explicitly — anaconda-connector changes may have affected behavior. See [WINDOWS_SETUP.md](./tests/e2e/setup/WINDOWS_SETUP.md#3-open-claude-desktop-and-wait-for-connection) for setup.
 
 
 ### Tests Per Configuration
@@ -141,8 +141,8 @@ RC1 filed 10 bugs. Fixed bugs require verification before release.
 macOS, Python 3.13:
 [ ] Setup: Install anaconda-mcp RC2, configure Claude Desktop
 [ ] SETUP-001: Installation disclaimer verification
-[ ] CORE-001: Full tools flow — logged in (see [AUTH_SETUP.md](./AUTH_SETUP.md))
-[ ] CORE-001a: Full tools flow — logged out (run cleanup after CORE-001, see [AUTH_SETUP.md](./AUTH_SETUP.md))
+[ ] CORE-001: Full tools flow — logged in (see [AUTH_SETUP.md](./tests/e2e/setup/AUTH_SETUP.md))
+[ ] CORE-001a: Full tools flow — logged out (run cleanup after CORE-001, see [AUTH_SETUP.md](./tests/e2e/setup/AUTH_SETUP.md))
 [ ] AUTH-002: Authenticated mode
 [ ] AUTH-001a: Private channel denial — anonymous user gets 403 on repo.anaconda.cloud (unblocked)
 [ ] GUARD-001: Guardrails (with RC2 confirmation verification)

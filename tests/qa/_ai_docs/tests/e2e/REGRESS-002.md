@@ -4,7 +4,7 @@ Verify `conda_remove_environment` resolves correct prefix when called by name (D
 
 | Step | Action | Expected | RC1 | RC2 |
 |------|--------|----------|:---:|:---:|
-| Pre | [Logged Out + Public Channels](../../AUTH_SETUP.md#prerequisites-logged-out--public-channels-core-001a) | Clean auth state | + | + |
+| Pre | [Logged Out + Public Channels](./setup/AUTH_SETUP.md#prerequisites-logged-out--public-channels-core-001a) | Clean auth state | + | + |
 | Pre | Terminal: `conda create -n regress-remove-test python=3.11 -y` | Test env created | + | + |
 | 1 | "Delete the regress-remove-test environment" | Single `conda_remove_environment` call with `environment_name` param | + | + |
 | 2 | Terminal: `conda env list \| grep regress-remove-test` | Empty (env is gone) | + | + |

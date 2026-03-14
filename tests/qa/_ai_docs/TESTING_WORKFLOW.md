@@ -13,7 +13,7 @@
 ## Phase 1: Preparation (Each QA Participant)
 
 ### Step 1: Environment Setup
-1. Follow [QUICK_START.md](./QUICK_START.md) for your assigned configuration
+1. Follow [QUICK_START.md](./tests/e2e/setup/QUICK_START.md) for your assigned configuration
 2. Record your test configuration:
    - Python version
    - Transport mode (STDIO/HTTP)
@@ -87,7 +87,7 @@ Examples:
 
 | Resource | Link |
 |----------|------|
-| Quick Start | [QUICK_START.md](./QUICK_START.md) |
+| Quick Start | [QUICK_START.md](./tests/e2e/setup/QUICK_START.md) |
 | Test Matrix | [TEST_MATRIX.md](./TEST_MATRIX.md) |
 | Open Questions | [OPEN_QUESTIONS.md](./OPEN_QUESTIONS.md) |
 | Known Issues | [KNOWN_ISSUES.md](./KNOWN_ISSUES.md) |
