@@ -80,7 +80,7 @@ flowchart TD
 |----------|-------------|
 | [PRODUCT_OVERVIEW.md](./PRODUCT_OVERVIEW.md) | Product features, architecture, constraints |
 | [FEATURE_TREE.md](./FEATURE_TREE.md) | 3-level feature tree with diagrams |
-| [CONFIGURATION.md](./CONFIGURATION.md) | Configuration options reference |
+| [CONFIGURATION.md](./tech_details/CONFIGURATION.md) | Configuration options reference |
 
 ### Automation Test Docs
 | Document | Description |

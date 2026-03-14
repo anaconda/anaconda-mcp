@@ -1,6 +1,6 @@
 # Windows Setup Guide
 
-Before running anything on Windows, check your conda installation: [CONDA_SETUP.md](./CONDA_SETUP.md).
+Before running anything on Windows, check your conda installation: [CONDA_SETUP.md](../../../tech_details/CONDA_SETUP.md).
 
 ---
 
@@ -142,7 +142,7 @@ python -m anaconda_mcp claude-desktop setup-config
 
 ## Local Development Setup
 
-For testing local code changes (editable installs, running from source), see [LOCAL-DEV-SETUP.md](./LOCAL-DEV-SETUP.md).
+For testing local code changes (editable installs, running from source), see [LOCAL-DEV-SETUP.md](../../../tech_details/LOCAL-DEV-SETUP.md).
 
 Windows-specific notes are included at the bottom of that guide.
 

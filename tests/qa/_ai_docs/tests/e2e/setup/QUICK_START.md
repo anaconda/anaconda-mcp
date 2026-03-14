@@ -1,8 +1,8 @@
 # Quick Start
 
-For general installation options (latest release, specific versions, from source) see [INSTALL_OPTIONS.md](./INSTALL_OPTIONS.md).
+For general installation options (latest release, specific versions, from source) see [INSTALL_OPTIONS.md](../../../tech_details/INSTALL_OPTIONS.md).
 
-> **Before you start**: Verify your conda installation is Miniconda (not full Anaconda) — see [CONDA_SETUP.md](./CONDA_SETUP.md).
+> **Before you start**: Verify your conda installation is Miniconda (not full Anaconda) — see [CONDA_SETUP.md](../../../tech_details/CONDA_SETUP.md).
 
 > **Windows users**: Follow [WINDOWS_SETUP.md](./WINDOWS_SETUP.md) — contains Windows-specific commands, Claude Desktop config workarounds, and troubleshooting.
 
