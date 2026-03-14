@@ -34,14 +34,16 @@ The `environments-mcp-server` has an `override_channels: list[str]` parameter on
 
 ## Part C: Env Var = "false"
 
+> **Known issue**: [DESK-1403](https://anaconda.atlassian.net/browse/DESK-1403) — string `"false"` is parsed as truthy.
+
 | Step | Action | Expected | RC1 | RC2 |
 |------|--------|----------|:---:|:---:|
 | Pre | [Logged Out + Public Channels](../AUTH_SETUP.md#prerequisites-logged-out--public-channels-core-001a) | Clean auth state | | + |
 | Pre | Set `CONDA_MCP_SERVER_ALLOW_OVERRIDE_CHANNELS`: `"false"` in Claude Desktop config | Config updated | | + |
 | Pre | Restart Claude Desktop | Config reloaded | | + |
 | 1 | "What parameters does conda_create_environment accept?" | `override_channels` NOT in list | | + |
-| 2 | "Create environment chan-test-false with Python 3.11 using only conda-forge" | Created (agent may try workaround) | | + |
-| 3 | Terminal: `conda list -n chan-test-false --show-channel-urls` | Packages from mixed channels (defaults + conda-forge) — NOT restricted to conda-forge only | | + |
+| 2 | "Create environment chan-test-false with Python 3.11 using only conda-forge" | Agent workaround, mixed channels | | + |
+| 3 | Terminal: `conda list -n chan-test-false --show-channel-urls` | Packages from mixed channels — NOT restricted to conda-forge only | | + |
 | Post | Terminal: `conda remove -n chan-test-false --all -y` | Cleanup | | + |
 | Post | Remove env var from Claude Desktop config, restart | Restore default | | + |
 

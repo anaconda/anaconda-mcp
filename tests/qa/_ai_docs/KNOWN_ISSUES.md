@@ -153,6 +153,24 @@ Retry with identical parameters succeeds immediately after "Loading tools" appea
 
 ---
 
+### KI-022: `CONDA_MCP_SERVER_ALLOW_OVERRIDE_CHANNELS=false` Parsed as Truthy
+**Status**: Open — [DESK-1403](https://anaconda.atlassian.net/browse/DESK-1403)
+**Severity**: Low
+**Component**: `environments-mcp-server`
+**Observed**: 2026-03-13 (macOS, Python 3.13, Claude Desktop)
+
+**Description**: Setting `CONDA_MCP_SERVER_ALLOW_OVERRIDE_CHANNELS=false` does not hide the `override_channels` parameter. The string `"false"` is parsed as truthy instead of boolean `False`.
+
+**Root cause**: In Python, `bool("false")` → `True` (non-empty string). Pydantic Settings should parse boolean strings but isn't doing so for this field.
+
+**Impact**: Users cannot explicitly disable `override_channels` via env var.
+
+**Workaround**: Don't set the env var at all — default is `False`.
+
+**Related**: CHAN-001 Part C, [BUG_REPORT_KI-022.md](./BUG_REPORT_KI-022.md)
+
+---
+
 ### KI-006: Tool Selection Conflicts
 **Status**: By Design (Claude behavior)
 **Severity**: Low
