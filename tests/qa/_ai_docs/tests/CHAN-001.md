@@ -17,7 +17,7 @@ The `environments-mcp-server` has an `override_channels: list[str]` parameter on
 | Pre | Restart Claude Desktop | Config reloaded | | + |
 | 1 | "What parameters does conda_create_environment accept?" | `override_channels` NOT in list | | + |
 | 2 | "Create environment chan-test-default with Python 3.11 using only conda-forge" | Created (agent may try workaround) | | + |
-| 3 | Terminal: `conda list -n chan-test-default --show-channel-urls` | Packages from DEFAULT channels | | + |
+| 3 | Terminal: `conda list -n chan-test-default --show-channel-urls` | Packages from mixed channels (defaults + conda-forge) — NOT restricted to conda-forge only | | + |
 | Post | Terminal: `conda remove -n chan-test-default --all -y` | Cleanup | | + |
 
 ## Part B: Env Var = "true"
@@ -41,7 +41,7 @@ The `environments-mcp-server` has an `override_channels: list[str]` parameter on
 | Pre | Restart Claude Desktop | Config reloaded | | + |
 | 1 | "What parameters does conda_create_environment accept?" | `override_channels` NOT in list | | + |
 | 2 | "Create environment chan-test-false with Python 3.11 using only conda-forge" | Created (agent may try workaround) | | + |
-| 3 | Terminal: `conda list -n chan-test-false --show-channel-urls` | Packages from DEFAULT channels | | + |
+| 3 | Terminal: `conda list -n chan-test-false --show-channel-urls` | Packages from mixed channels (defaults + conda-forge) — NOT restricted to conda-forge only | | + |
 | Post | Terminal: `conda remove -n chan-test-false --all -y` | Cleanup | | + |
 | Post | Remove env var from Claude Desktop config, restart | Restore default | | + |
 
@@ -74,9 +74,9 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
 
 | Part | Env Var | `override_channels` visible? | Channels used |
 |------|---------|------------------------------|---------------|
-| A | (not set) | No | Default |
-| B | `"true"` | Yes | conda-forge only |
-| C | `"false"` | No | Default |
+| A | (not set) | No | Normal resolution (mixed channels) |
+| B | `"true"` | Yes | conda-forge ONLY |
+| C | `"false"` | No | Normal resolution (mixed channels) |
 
 ## Notes
 
