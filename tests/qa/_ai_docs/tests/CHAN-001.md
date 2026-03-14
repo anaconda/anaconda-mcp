@@ -1,50 +1,66 @@
 # CHAN-001: Override Channels Behavior
 
-Verify `override_channels` parameter is hidden by default and can be enabled.
+Verify `override_channels` parameter visibility based on env var setting.
 
 ## Background
 
-The `environments-mcp-server` has an `override_channels: list[str]` parameter on `conda_create_environment` and `conda_install_packages`. By default, this parameter is **stripped from the tool schema** so the agent cannot use it.
+The `environments-mcp-server` has an `override_channels: list[str]` parameter on `conda_create_environment` and `conda_install_packages`. Visibility is controlled by:
 
-**Config options:**
-- CLI flag: `--allow-override-channels`
-- Env var: `CONDA_MCP_SERVER_ALLOW_OVERRIDE_CHANNELS=true`
+**Env var**: `CONDA_MCP_SERVER_ALLOW_OVERRIDE_CHANNELS`
 
-## Part A: Default Behavior (disabled)
+## Part A: No Config (default)
 
 | Step | Action | Expected | RC1 | RC2 |
 |------|--------|----------|:---:|:---:|
 | Pre | [Logged Out + Public Channels](../AUTH_SETUP.md#prerequisites-logged-out--public-channels-core-001a) | Clean auth state | | + |
-| Pre | Verify `mcp_compose.toml` does NOT have `--allow-override-channels` flag | Default config | | + |
+| Pre | Verify Claude Desktop config has NO `CONDA_MCP_SERVER_ALLOW_OVERRIDE_CHANNELS` | Default config | | + |
 | Pre | Restart Claude Desktop | Config reloaded | | + |
 | 1 | "What parameters does conda_create_environment accept?" | `override_channels` NOT in list | | + |
-| 2 | "Create environment chan-test with Python 3.11 using only conda-forge channel" | Environment created (agent may try workaround) | | + |
-| 3 | Terminal: `conda list -n chan-test --show-channel-urls` | Packages from DEFAULT channels (not restricted to conda-forge) | | + |
-| Post | Terminal: `conda remove -n chan-test --all -y` | Cleanup | | + |
+| 2 | "Create environment chan-test-default with Python 3.11 using only conda-forge" | Created (agent may try workaround) | | + |
+| 3 | Terminal: `conda list -n chan-test-default --show-channel-urls` | Packages from DEFAULT channels | | + |
+| Post | Terminal: `conda remove -n chan-test-default --all -y` | Cleanup | | + |
 
-## Part B: Enabled via Config
+## Part B: Env Var = "true"
 
 | Step | Action | Expected | RC1 | RC2 |
 |------|--------|----------|:---:|:---:|
 | Pre | [Logged Out + Public Channels](../AUTH_SETUP.md#prerequisites-logged-out--public-channels-core-001a) | Clean auth state | | + |
-| Pre | Edit `mcp_compose.toml`: add `--allow-override-channels` to command (see below) | Config updated | | + |
+| Pre | Set `CONDA_MCP_SERVER_ALLOW_OVERRIDE_CHANNELS`: `"true"` in Claude Desktop config | Config updated | | + |
 | Pre | Restart Claude Desktop | Config reloaded | | + |
 | 1 | "What parameters does conda_create_environment accept?" | `override_channels` IS in list | | + |
-| 2 | "Create environment chan-test-override with Python 3.11 using only conda-forge channel" | Environment created | | + |
-| 3 | Terminal: `conda list -n chan-test-override --show-channel-urls` | Packages from conda-forge ONLY | | + |
-| Post | Terminal: `conda remove -n chan-test-override --all -y` | Cleanup | | + |
-| Post | Revert `mcp_compose.toml` changes, restart Claude Desktop | Restore default | | + |
+| 2 | "Create environment chan-test-true with Python 3.11 using only conda-forge" | Created with override_channels param | | + |
+| 3 | Terminal: `conda list -n chan-test-true --show-channel-urls` | Packages from conda-forge ONLY | | + |
+| Post | Terminal: `conda remove -n chan-test-true --all -y` | Cleanup | | + |
 
-## Config Change for Part B
+## Part C: Env Var = "false"
 
-Edit `mcp_compose.toml` (location: `<env>/lib/python3.X/site-packages/anaconda_mcp/mcp_compose.toml`):
+| Step | Action | Expected | RC1 | RC2 |
+|------|--------|----------|:---:|:---:|
+| Pre | [Logged Out + Public Channels](../AUTH_SETUP.md#prerequisites-logged-out--public-channels-core-001a) | Clean auth state | | + |
+| Pre | Set `CONDA_MCP_SERVER_ALLOW_OVERRIDE_CHANNELS`: `"false"` in Claude Desktop config | Config updated | | + |
+| Pre | Restart Claude Desktop | Config reloaded | | + |
+| 1 | "What parameters does conda_create_environment accept?" | `override_channels` NOT in list | | + |
+| 2 | "Create environment chan-test-false with Python 3.11 using only conda-forge" | Created (agent may try workaround) | | + |
+| 3 | Terminal: `conda list -n chan-test-false --show-channel-urls` | Packages from DEFAULT channels | | + |
+| Post | Terminal: `conda remove -n chan-test-false --all -y` | Cleanup | | + |
+| Post | Remove env var from Claude Desktop config, restart | Restore default | | + |
 
-```toml
-# Before:
-command = ["python", "-m", "environments_mcp_server", "start", "--transport", "streamable-http", "--port", "4041"]
+## Claude Desktop Config
 
-# After:
-command = ["python", "-m", "environments_mcp_server", "start", "--transport", "streamable-http", "--port", "4041", "--allow-override-channels"]
+Edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "anaconda-mcp": {
+      "command": "...",
+      "args": ["..."],
+      "env": {
+        "CONDA_MCP_SERVER_ALLOW_OVERRIDE_CHANNELS": "true"
+      }
+    }
+  }
+}
 ```
 
 ## Release Notes
@@ -52,14 +68,18 @@ command = ["python", "-m", "environments_mcp_server", "start", "--transport", "s
 | Release | Status |
 |---------|--------|
 | RC1 | Not applicable (feature not implemented) |
-| RC2 | New feature: `override_channels` disabled by default, can be enabled |
+| RC2 | New feature: `override_channels` disabled by default |
 
-## Pass Criteria
+## Expected Results Summary
 
-- **Part A**: `override_channels` NOT visible in schema; channels cannot be overridden
-- **Part B**: `override_channels` visible in schema; agent passes `override_channels: ["conda-forge"]`
+| Part | Env Var | `override_channels` visible? | Channels used |
+|------|---------|------------------------------|---------------|
+| A | (not set) | No | Default |
+| B | `"true"` | Yes | conda-forge only |
+| C | `"false"` | No | Default |
 
 ## Notes
 
-- If Part A shows agent passing `--channel` flags in packages array, that's expected (agent workaround) but packages should still come from default channels
-- The test verifies the **server-side control** over the parameter visibility
+- Part A and C should behave identically (explicit false = default)
+- If agent puts `--channel` flags in packages array, that's a workaround — verify packages still come from default channels
+- **Other MCP hosts**: Examples use Claude Desktop config. For other hosts (Cursor, Claude Code, etc.), set `CONDA_MCP_SERVER_ALLOW_OVERRIDE_CHANNELS` via their environment variable configuration mechanism.
