@@ -1,5 +1,7 @@
 # CORE-001a: Full Tools Flow — Logged Out
 
+> ← [Back to Test Catalog](../../INDEX.md#3-test-catalog)
+
 E2E happy path covering all 6 conda tools with anonymous user (public channels).
 
 | Step | Action | Expected | RC1 | RC2 |

@@ -1,5 +1,7 @@
 # GUARD-001: Guardrails
 
+> ← [Back to Test Catalog](../../INDEX.md#3-test-catalog)
+
 Verify guardrail behaviors: no pip fallback, deletion confirmation.
 
 | Step | Action | Expected | RC1 | RC2 |

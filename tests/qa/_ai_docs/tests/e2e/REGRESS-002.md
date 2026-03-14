@@ -1,5 +1,7 @@
 # REGRESS-002: Remove Environment by Name
 
+> ← [Back to Test Catalog](../../INDEX.md#3-test-catalog)
+
 Verify `conda_remove_environment` resolves correct prefix when called by name (DESK-1342 fix).
 
 | Step | Action | Expected | RC1 | RC2 |

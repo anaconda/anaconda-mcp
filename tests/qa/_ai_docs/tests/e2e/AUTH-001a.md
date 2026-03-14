@@ -1,5 +1,7 @@
 # AUTH-001a: Anonymous Mode — Private Channel Denial
 
+> ← [Back to Test Catalog](../../INDEX.md#3-test-catalog)
+
 Verify anonymous user gets explicit 403 error (not 404 or silent fallback) when accessing private channels.
 
 | Step | Action | Expected | RC1 | RC2 |

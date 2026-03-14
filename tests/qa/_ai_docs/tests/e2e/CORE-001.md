@@ -1,5 +1,7 @@
 # CORE-001: Full Tools Flow — Logged In
 
+> ← [Back to Test Catalog](../../INDEX.md#3-test-catalog)
+
 E2E happy path covering all 6 conda tools with authenticated user.
 
 | Step | Action | Expected | RC1 | RC2 |

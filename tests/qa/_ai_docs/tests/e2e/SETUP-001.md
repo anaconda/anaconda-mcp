@@ -1,5 +1,7 @@
 # SETUP-001: Installation Disclaimer Verification
 
+> ← [Back to Test Catalog](../../INDEX.md#3-test-catalog)
+
 Verify terms and conditions disclaimer is displayed during/after installation.
 
 | Step | Action | Expected | RC1 | RC2 |
