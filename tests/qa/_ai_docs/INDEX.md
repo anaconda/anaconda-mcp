@@ -82,11 +82,9 @@ flowchart TD
 | [FEATURE_TREE.md](./FEATURE_TREE.md) | 3-level feature tree with diagrams |
 | [CONFIGURATION.md](./CONFIGURATION.md) | Configuration options reference |
 
-### Legacy Test Docs (reference)
+### Automation Test Docs
 | Document | Description |
 |----------|-------------|
-| [TESTS_E2E.md](./TESTS_E2E.md) | Base E2E test definitions |
-| [TESTS_E2E_RC2.md](./TESTS_E2E_RC2.md) | RC2 modifications (legacy format) |
 | [TESTS_CLI.md](./TESTS_CLI.md) | CLI-only flows (automatable) |
 | [TESTS_CONFIG.md](./TESTS_CONFIG.md) | Configuration tests (automatable) |
 | [TESTS_API_TOOLS.md](./TESTS_API_TOOLS.md) | Direct API tool tests (automatable) |

@@ -36,8 +36,8 @@ Based on RC1 findings (13 bugs filed, Phase 1 complete):
 
 | Document | Purpose |
 |----------|---------|
-| [TESTS_E2E_RC2.md](./TESTS_E2E_RC2.md) | RC2-specific test definitions and modifications |
-| [TESTS_E2E.md](./TESTS_E2E.md) | Base E2E test definitions (reference) |
+| [INDEX.md](./INDEX.md) | Test catalog and navigation |
+| [tests/](./tests/) | Individual test definitions |
 | [AUTH_SETUP.md](./AUTH_SETUP.md) | Authentication prerequisites and cleanup procedures |
 | [KNOWN_ISSUES.md](./KNOWN_ISSUES.md) | Bug details and workarounds |
 | [WINDOWS_SETUP.md](./WINDOWS_SETUP.md) | Windows-specific setup instructions |
@@ -71,7 +71,7 @@ Based on RC1 findings (13 bugs filed, Phase 1 complete):
 | QA 1 | Windows, 3.13 | + | + | + | + | — | + | — | — | 5 |
 | QA 2 | Windows, 3.10 | + | + | + | — | — | — | — | — | 3 |
 
-> **New tests for RC2**: SETUP-001 (installation disclaimer), CHAN-001 (override_channels behavior), REGRESS-002 (DESK-1342 fix). See [TESTS_E2E_RC2.md](./TESTS_E2E_RC2.md) for details.
+> **New tests for RC2**: SETUP-001 (installation disclaimer), CHAN-001 (override_channels behavior), REGRESS-002 (DESK-1342 fix). See [tests/](./tests/) for details.
 >
 > **AUTH-001a unblocked**: URL routing fixed — anonymous users now correctly get 403 auth error on `repo.anaconda.cloud`. AUTH-002 still blocked by DESK-1401 (credentials not passed).
 
@@ -108,7 +108,7 @@ RC1 filed 10 bugs. Fixed bugs require verification before release.
 | AUTH-001 | Anonymous mode = CORE-001 without login; implicit coverage |
 | AUTH-001a | Blocked by KI-005; still blocked in RC2 |
 
-> **Note**: REGRESS-002 was previously eliminated but is **reinstated for RC2** to explicitly verify the DESK-1342 fix (environment name operations). See [TESTS_E2E_RC2.md](./TESTS_E2E_RC2.md#regress-002-remove-environment-by-name-desk-1342-verification).
+> **Note**: REGRESS-002 was previously eliminated but is **reinstated for RC2** to explicitly verify the DESK-1342 fix (environment name operations). See [REGRESS-002.md](./tests/REGRESS-002.md).
 
 ---
 
@@ -141,8 +141,8 @@ RC1 filed 10 bugs. Fixed bugs require verification before release.
 macOS, Python 3.13:
 [ ] Setup: Install anaconda-mcp RC2, configure Claude Desktop
 [ ] SETUP-001: Installation disclaimer verification
-[ ] CORE-001: Full tools flow — logged in (see prerequisites in TESTS_E2E_RC2.md)
-[ ] CORE-001a: Full tools flow — logged out (run cleanup after CORE-001, see TESTS_E2E_RC2.md)
+[ ] CORE-001: Full tools flow — logged in (see [AUTH_SETUP.md](./AUTH_SETUP.md))
+[ ] CORE-001a: Full tools flow — logged out (run cleanup after CORE-001, see [AUTH_SETUP.md](./AUTH_SETUP.md))
 [ ] AUTH-002: Authenticated mode
 [ ] AUTH-001a: Private channel denial — anonymous user gets 403 on repo.anaconda.cloud (unblocked)
 [ ] GUARD-001: Guardrails (with RC2 confirmation verification)
