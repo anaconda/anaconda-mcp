@@ -21,10 +21,10 @@
 
 ### Step 2: Review Test Documentation
 1. Read your assigned test files:
-   - [TESTS_E2E.md](./TESTS_E2E.md) (macOS only, recommend to start with this option as an initial iteration)
-   - [TESTS_CLI.md](./TESTS_CLI.md)
-   - [TESTS_CONFIG.md](./TESTS_CONFIG.md)
-   - [TESTS_API_TOOLS.md](./TESTS_API_TOOLS.md)
+   - [tests/e2e/](./tests/e2e/) (E2E manual tests)
+   - [TESTS_CLI.md](./tests/automation/TESTS_CLI.md)
+   - [TESTS_CONFIG.md](./tests/automation/TESTS_CONFIG.md)
+   - [TESTS_API_TOOLS.md](./tests/automation/TESTS_API_TOOLS.md)
 2. Check [TEST_MATRIX.md](./TEST_MATRIX.md) for your specific assignments
 3. Review [KNOWN_ISSUES.md](./KNOWN_ISSUES.md) for expected behaviors
 4. Ask questions if anything is unclear
@@ -91,7 +91,7 @@ Examples:
 | Test Matrix | [TEST_MATRIX.md](./TEST_MATRIX.md) |
 | Open Questions | [OPEN_QUESTIONS.md](./OPEN_QUESTIONS.md) |
 | Known Issues | [KNOWN_ISSUES.md](./KNOWN_ISSUES.md) |
-| E2E Tests | [TESTS_E2E.md](./TESTS_E2E.md) |
-| CLI Tests | [TESTS_CLI.md](./TESTS_CLI.md) |
-| Config Tests | [TESTS_CONFIG.md](./TESTS_CONFIG.md) |
-| API Tool Tests | [TESTS_API_TOOLS.md](./TESTS_API_TOOLS.md) |
+| E2E Tests | [tests/e2e/](./tests/e2e/) |
+| CLI Tests | [TESTS_CLI.md](./tests/automation/TESTS_CLI.md) |
+| Config Tests | [TESTS_CONFIG.md](./tests/automation/TESTS_CONFIG.md) |
+| API Tool Tests | [TESTS_API_TOOLS.md](./tests/automation/TESTS_API_TOOLS.md) |

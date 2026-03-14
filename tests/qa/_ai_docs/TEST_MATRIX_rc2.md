@@ -108,7 +108,7 @@ RC1 filed 10 bugs. Fixed bugs require verification before release.
 | AUTH-001 | Anonymous mode = CORE-001 without login; implicit coverage |
 | AUTH-001a | Blocked by KI-005; still blocked in RC2 |
 
-> **Note**: REGRESS-002 was previously eliminated but is **reinstated for RC2** to explicitly verify the DESK-1342 fix (environment name operations). See [REGRESS-002.md](./tests/REGRESS-002.md).
+> **Note**: REGRESS-002 was previously eliminated but is **reinstated for RC2** to explicitly verify the DESK-1342 fix (environment name operations). See [REGRESS-002.md](./tests/e2e/REGRESS-002.md).
 
 ---
 

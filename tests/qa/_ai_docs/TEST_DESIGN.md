@@ -34,10 +34,10 @@ This document describes the test strategy for anaconda-mcp: what layers exist, w
 
 | Priority | Layer | Why This Priority | Details |
 |----------|-------|-------------------|---------|
-| **P0** | API Tool Tests | Highest value — tests actual MCP tool behavior across transports and platforms; catches regressions in core functionality | [TESTS_API_TOOLS.md](./TESTS_API_TOOLS.md) |
-| **P1** | CLI Tests | User-facing commands; platform-sensitive paths and shell behavior | [TESTS_CLI.md](./TESTS_CLI.md) |
-| **P1** | Config Tests | Complex precedence rules; platform-specific defaults | [TESTS_CONFIG.md](./TESTS_CONFIG.md) |
-| **—** | E2E Manual | Cannot automate — LLM non-determinism, client variability, auth flows | [TESTS_E2E.md](./TESTS_E2E.md) |
+| **P0** | API Tool Tests | Highest value — tests actual MCP tool behavior across transports and platforms; catches regressions in core functionality | [TESTS_API_TOOLS.md](./tests/automation/TESTS_API_TOOLS.md) |
+| **P1** | CLI Tests | User-facing commands; platform-sensitive paths and shell behavior | [TESTS_CLI.md](./tests/automation/TESTS_CLI.md) |
+| **P1** | Config Tests | Complex precedence rules; platform-specific defaults | [TESTS_CONFIG.md](./tests/automation/TESTS_CONFIG.md) |
+| **—** | E2E Manual | Cannot automate — LLM non-determinism, client variability, auth flows | [tests/e2e/](./tests/e2e/) |
 
 ---
 
@@ -129,9 +129,9 @@ No external scripts — fixture manages server lifecycle (platform-independent).
 
 | Document | Description |
 |----------|-------------|
-| [TESTS_API_TOOLS.md](./TESTS_API_TOOLS.md) | API tool test design (P0) |
-| [TESTS_CLI.md](./TESTS_CLI.md) | CLI test design (P1) |
-| [TESTS_CONFIG.md](./TESTS_CONFIG.md) | Config test design (P1) |
-| [TESTS_E2E.md](./TESTS_E2E.md) | E2E manual test flows |
+| [TESTS_API_TOOLS.md](./tests/automation/TESTS_API_TOOLS.md) | API tool test design (P0) |
+| [TESTS_CLI.md](./tests/automation/TESTS_CLI.md) | CLI test design (P1) |
+| [TESTS_CONFIG.md](./tests/automation/TESTS_CONFIG.md) | Config test design (P1) |
+| [tests/e2e/](./tests/e2e/) | E2E manual test flows |
 | [TEST_MATRIX.md](./TEST_MATRIX.md) | Platform/version coverage |
 | [KNOWN_ISSUES.md](./KNOWN_ISSUES.md) | Bug references for regressions |

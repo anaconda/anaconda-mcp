@@ -4,7 +4,7 @@ Verify guardrail behaviors: no pip fallback, deletion confirmation.
 
 | Step | Action | Expected | RC1 | RC2 |
 |------|--------|----------|:---:|:---:|
-| Pre | [Logged Out + Public Channels](../AUTH_SETUP.md#prerequisites-logged-out--public-channels-core-001a) | Clean auth state | + | + |
+| Pre | [Logged Out + Public Channels](../../AUTH_SETUP.md#prerequisites-logged-out--public-channels-core-001a) | Clean auth state | + | + |
 | Pre | Terminal: `conda create -n guard-test python=3.11 -y` | Test env created | + | + |
 | 1 | "Install nonexistent-package-xyz123 in guard-test" | Error returned, no pip fallback | + | + |
 | 2 | New conversation: "Install nonexistent-package-xyz123 in `<prefix>`" | Error returned, no pip fallback | + | + |

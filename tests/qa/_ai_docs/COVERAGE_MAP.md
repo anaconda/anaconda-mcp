@@ -4,10 +4,10 @@
 
 | File | Platform | RC1 | RC2 |
 |------|----------|:---:|:---:|
-| [tests/](./tests/) | macOS, Windows | + | + |
-| [TESTS_CLI.md](./TESTS_CLI.md) | All platforms | + | + |
-| [TESTS_CONFIG.md](./TESTS_CONFIG.md) | All platforms | + | + |
-| [TESTS_API_TOOLS.md](./TESTS_API_TOOLS.md) | Win365 first, then CI | + | + |
+| [tests/e2e/](./tests/e2e/) | macOS, Windows | + | + |
+| [TESTS_CLI.md](./tests/automation/TESTS_CLI.md) | All platforms | + | + |
+| [TESTS_CONFIG.md](./tests/automation/TESTS_CONFIG.md) | All platforms | + | + |
+| [TESTS_API_TOOLS.md](./tests/automation/TESTS_API_TOOLS.md) | Win365 first, then CI | + | + |
 
 ---
 

@@ -219,4 +219,4 @@ pytest tests/qa/cli/ \
 
 - [TESTS_API_TOOLS.md](./TESTS_API_TOOLS.md) — MCP protocol tests (requires server)
 - [TESTS_CONFIG.md](./TESTS_CONFIG.md) — Configuration and environment variable tests
-- [KNOWN_ISSUES.md](./KNOWN_ISSUES.md) — Bug references for regression tests
+- [KNOWN_ISSUES.md](../../KNOWN_ISSUES.md) — Bug references for regression tests

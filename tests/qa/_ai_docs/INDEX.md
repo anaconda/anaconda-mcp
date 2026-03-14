@@ -41,16 +41,16 @@ flowchart TD
 
 | Test | Description | RC1 | RC2 |
 |------|-------------|:---:|:---:|
-| [SETUP-001](./tests/SETUP-001.md) | Installation disclaimer verification | | + |
-| [CORE-001](./tests/CORE-001.md) | Full tools flow — logged in | + | + |
-| [CORE-001a](./tests/CORE-001a.md) | Full tools flow — logged out (public channels) | + | + |
-| [AUTH-001](./tests/AUTH-001.md) | Anonymous mode (public channels) | + | + |
-| [AUTH-001a](./tests/AUTH-001a.md) | Anonymous + private channels → 403 | | + |
-| [AUTH-002](./tests/AUTH-002.md) | Authenticated mode | + | + |
-| [GUARD-001](./tests/GUARD-001.md) | Guardrails (no pip fallback, deletion confirm) | + | + |
-| [CHAN-001](./tests/CHAN-001.md) | Override channels behavior | | + |
-| [REGRESS-001](./tests/REGRESS-001.md) | Known issues regression (KI-001, KI-002, KI-003) | + | + |
-| [REGRESS-002](./tests/REGRESS-002.md) | Remove environment by name (DESK-1342) | + | + |
+| [SETUP-001](./tests/e2e/SETUP-001.md) | Installation disclaimer verification | | + |
+| [CORE-001](./tests/e2e/CORE-001.md) | Full tools flow — logged in | + | + |
+| [CORE-001a](./tests/e2e/CORE-001a.md) | Full tools flow — logged out (public channels) | + | + |
+| [AUTH-001](./tests/e2e/AUTH-001.md) | Anonymous mode (public channels) | + | + |
+| [AUTH-001a](./tests/e2e/AUTH-001a.md) | Anonymous + private channels → 403 | | + |
+| [AUTH-002](./tests/e2e/AUTH-002.md) | Authenticated mode | + | + |
+| [GUARD-001](./tests/e2e/GUARD-001.md) | Guardrails (no pip fallback, deletion confirm) | + | + |
+| [CHAN-001](./tests/e2e/CHAN-001.md) | Override channels behavior | | + |
+| [REGRESS-001](./tests/e2e/REGRESS-001.md) | Known issues regression (KI-001, KI-002, KI-003) | + | + |
+| [REGRESS-002](./tests/e2e/REGRESS-002.md) | Remove environment by name (DESK-1342) | + | + |
 
 **Legend**: `+` = in scope for release
 
@@ -85,9 +85,9 @@ flowchart TD
 ### Automation Test Docs
 | Document | Description |
 |----------|-------------|
-| [TESTS_CLI.md](./TESTS_CLI.md) | CLI-only flows (automatable) |
-| [TESTS_CONFIG.md](./TESTS_CONFIG.md) | Configuration tests (automatable) |
-| [TESTS_API_TOOLS.md](./TESTS_API_TOOLS.md) | Direct API tool tests (automatable) |
+| [TESTS_CLI.md](./tests/automation/TESTS_CLI.md) | CLI-only flows (automatable) |
+| [TESTS_CONFIG.md](./tests/automation/TESTS_CONFIG.md) | Configuration tests (automatable) |
+| [TESTS_API_TOOLS.md](./tests/automation/TESTS_API_TOOLS.md) | Direct API tool tests (automatable) |
 
 ### Test Projects (automation)
 | Folder | Purpose |

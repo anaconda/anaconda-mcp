@@ -12,7 +12,7 @@ The `environments-mcp-server` has an `override_channels: list[str]` parameter on
 
 | Step | Action | Expected | RC1 | RC2 |
 |------|--------|----------|:---:|:---:|
-| Pre | [Logged Out + Public Channels](../AUTH_SETUP.md#prerequisites-logged-out--public-channels-core-001a) | Clean auth state | | + |
+| Pre | [Logged Out + Public Channels](../../AUTH_SETUP.md#prerequisites-logged-out--public-channels-core-001a) | Clean auth state | | + |
 | Pre | Verify Claude Desktop config has NO `CONDA_MCP_SERVER_ALLOW_OVERRIDE_CHANNELS` | Default config | | + |
 | Pre | Restart Claude Desktop | Config reloaded | | + |
 | 1 | "What parameters does conda_create_environment accept?" | `override_channels` NOT in list | | + |
@@ -24,7 +24,7 @@ The `environments-mcp-server` has an `override_channels: list[str]` parameter on
 
 | Step | Action | Expected | RC1 | RC2 |
 |------|--------|----------|:---:|:---:|
-| Pre | [Logged Out + Public Channels](../AUTH_SETUP.md#prerequisites-logged-out--public-channels-core-001a) | Clean auth state | | + |
+| Pre | [Logged Out + Public Channels](../../AUTH_SETUP.md#prerequisites-logged-out--public-channels-core-001a) | Clean auth state | | + |
 | Pre | Set `CONDA_MCP_SERVER_ALLOW_OVERRIDE_CHANNELS`: `"true"` in Claude Desktop config | Config updated | | + |
 | Pre | Restart Claude Desktop | Config reloaded | | + |
 | 1 | "What parameters does conda_create_environment accept?" | `override_channels` IS in list | | + |
@@ -38,7 +38,7 @@ The `environments-mcp-server` has an `override_channels: list[str]` parameter on
 
 | Step | Action | Expected | RC1 | RC2 |
 |------|--------|----------|:---:|:---:|
-| Pre | [Logged Out + Public Channels](../AUTH_SETUP.md#prerequisites-logged-out--public-channels-core-001a) | Clean auth state | | + |
+| Pre | [Logged Out + Public Channels](../../AUTH_SETUP.md#prerequisites-logged-out--public-channels-core-001a) | Clean auth state | | + |
 | Pre | Set `CONDA_MCP_SERVER_ALLOW_OVERRIDE_CHANNELS`: `"false"` in Claude Desktop config | Config updated | | + |
 | Pre | Restart Claude Desktop | Config reloaded | | + |
 | 1 | "What parameters does conda_create_environment accept?" | `override_channels` NOT in list | | + |

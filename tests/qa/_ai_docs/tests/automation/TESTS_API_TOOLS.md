@@ -283,4 +283,4 @@ Logs are attached to pytest HTML report on test failure.
 
 - [TESTS_CLI.md](./TESTS_CLI.md) — CLI command tests (no server required)
 - [TESTS_CONFIG.md](./TESTS_CONFIG.md) — Configuration and environment variable tests
-- [KNOWN_ISSUES.md](./KNOWN_ISSUES.md) — Bug references for regression tests
+- [KNOWN_ISSUES.md](../../KNOWN_ISSUES.md) — Bug references for regression tests

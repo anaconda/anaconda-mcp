@@ -45,13 +45,13 @@
 
 | QA | OS | Client | Python | Transport | Document |
 |----|-----|--------|--------|-----------|----------|
-| QA 1 | macOS | Claude Desktop | 3.10 | STDIO | [tests/](./tests/) |
-| QA 1 | macOS | Claude Desktop | 3.11 | STDIO | [tests/](./tests/) |
-| QA 1 | macOS | Claude Desktop | 3.12 | STDIO | [tests/](./tests/) |
-| QA 1 | macOS | Claude Desktop | 3.13 | STDIO | [tests/](./tests/) |
-| QA 2 | macOS | Cursor | 3.12 | STDIO | [tests/](./tests/) |
-| QA 2 | macOS | Cursor | 3.13 | HTTP | [tests/](./tests/) |
-| QA 1 | Windows | Claude Desktop | 3.13 | STDIO | [tests/](./tests/) |
+| QA 1 | macOS | Claude Desktop | 3.10 | STDIO | [tests/e2e/](./tests/e2e/) |
+| QA 1 | macOS | Claude Desktop | 3.11 | STDIO | [tests/e2e/](./tests/e2e/) |
+| QA 1 | macOS | Claude Desktop | 3.12 | STDIO | [tests/e2e/](./tests/e2e/) |
+| QA 1 | macOS | Claude Desktop | 3.13 | STDIO | [tests/e2e/](./tests/e2e/) |
+| QA 2 | macOS | Cursor | 3.12 | STDIO | [tests/e2e/](./tests/e2e/) |
+| QA 2 | macOS | Cursor | 3.13 | HTTP | [tests/e2e/](./tests/e2e/) |
+| QA 1 | Windows | Claude Desktop | 3.13 | STDIO | [tests/e2e/](./tests/e2e/) |
 
 > Each E2E run includes both `AUTH-001` (anonymous) and `AUTH-002` (authenticated) test cases.
 
@@ -61,8 +61,8 @@
 
 | QA | OS | Client | Python | Transport | Document | Status |
 |----|-----|--------|--------|-----------|----------|--------|
-| QA 2 | macOS | Claude Code | 3.10 | HTTP | [tests/](./tests/) | ✅ Done |
-| QA ? | Windows | Claude Desktop | 3.10 | STDIO | [tests/](./tests/) | ⬜ Not started |
+| QA 2 | macOS | Claude Code | 3.10 | HTTP | [tests/e2e/](./tests/e2e/) | ✅ Done |
+| QA ? | Windows | Claude Desktop | 3.10 | STDIO | [tests/e2e/](./tests/e2e/) | ⬜ Not started |
 
 ### Regression Tests (Known Issues)
 
@@ -80,10 +80,10 @@ Owned by QA 2, split across platforms for OS coverage:
 
 | QA | Platform | Python | Tests |
 |----|----------|--------|-------|
-| QA 2 | macOS | 3.10 | TESTS_CLI.md, TESTS_CONFIG.md |
-| QA 2 | Win365 | 3.13 | TESTS_CLI.md, TESTS_CONFIG.md, TESTS_API_TOOLS.md |
+| QA 2 | macOS | 3.10 | [TESTS_CLI.md](./tests/automation/TESTS_CLI.md), [TESTS_CONFIG.md](./tests/automation/TESTS_CONFIG.md) |
+| QA 2 | Win365 | 3.13 | [TESTS_CLI.md](./tests/automation/TESTS_CLI.md), [TESTS_CONFIG.md](./tests/automation/TESTS_CONFIG.md), [TESTS_API_TOOLS.md](./tests/automation/TESTS_API_TOOLS.md) |
 
-> `TESTS_CONFIG.md` includes `ENV-002` (telemetry control), which requires an authenticated session.
+> `[TESTS_CONFIG.md](./tests/automation/TESTS_CONFIG.md)` includes `ENV-002` (telemetry control), which requires an authenticated session.
 
 **Coverage**: 2 OS + 2 Python boundary versions + all low-level test types
 
@@ -168,17 +168,17 @@ After manual testing passes, automate on CI runners:
 ```
 E2E — Claude Desktop, STDIO, all Python versions (macOS):
 [x] 1. Install Python 3.10 (anaconda-mcp=1.0.0.rc.1, environments-mcp-server=1.0.0.rc.1)
-[x]    Run [tests/](./tests/) — Claude Desktop, STDIO — AUTH-001 + AUTH-002
+[x]    Run [tests/e2e/](./tests/e2e/) — Claude Desktop, STDIO — AUTH-001 + AUTH-002
 [~]    Run REGRESS-002 (KI-003) — partial (via GUARD-001)
 
 [x] 2. Install Python 3.11 (same versions)
-[x]    Run [tests/](./tests/) — Claude Desktop, STDIO — AUTH-001 + AUTH-002
+[x]    Run [tests/e2e/](./tests/e2e/) — Claude Desktop, STDIO — AUTH-001 + AUTH-002
 
 [x] 3. Install Python 3.12 (same versions)
-[x]    Run [tests/](./tests/) — Claude Desktop, STDIO — AUTH-001 + AUTH-002
+[x]    Run [tests/e2e/](./tests/e2e/) — Claude Desktop, STDIO — AUTH-001 + AUTH-002
 
 [x] 4. Install Python 3.13 (same versions)
-[x]    Run [tests/](./tests/) — Claude Desktop, STDIO — AUTH-001 + AUTH-002
+[x]    Run [tests/e2e/](./tests/e2e/) — Claude Desktop, STDIO — AUTH-001 + AUTH-002
 
 E2E — Windows (reassigned from QA 3):
 [~] 5. Install Python 3.13 on Windows — Claude Desktop, STDIO
@@ -190,27 +190,27 @@ E2E — Windows (reassigned from QA 3):
 ```
 macOS — E2E (Cursor HTTP, 3.13):
 [x] 1. Install Python 3.13 (anaconda-mcp=1.0.0.rc.1, environments-mcp-server=1.0.0.rc.1)
-[x]    Run [tests/](./tests/) — Cursor, HTTP — AUTH-001 + AUTH-002
+[x]    Run [tests/e2e/](./tests/e2e/) — Cursor, HTTP — AUTH-001 + AUTH-002
 [x]    Run REGRESS-002 (KI-003) — KI-003 confirmed, DESK-1342 filed
 
 macOS — E2E (Cursor STDIO, 3.12):
 [x] 2. Install Python 3.12
-[x]    Run [tests/](./tests/) — Cursor, STDIO — AUTH-001 + AUTH-002
+[x]    Run [tests/e2e/](./tests/e2e/) — Cursor, STDIO — AUTH-001 + AUTH-002
 
 macOS — E2E (Claude Code HTTP, 3.10) — optional, completed:
 [x] 3. Install Python 3.10
-[x]    Run [tests/](./tests/) — Claude Code, HTTP — AUTH-001 + AUTH-002
+[x]    Run [tests/e2e/](./tests/e2e/) — Claude Code, HTTP — AUTH-001 + AUTH-002
 [x]    Run REGRESS-002 (KI-003) — KI-003 confirmed, DESK-1342 filed
 
 macOS — Low-level (Python 3.10):
-[ ] 4. Run TESTS_CLI.md
-[ ]    Run TESTS_CONFIG.md — includes ENV-002 (telemetry, requires login)
+[ ] 4. Run [TESTS_CLI.md](./tests/automation/TESTS_CLI.md)
+[ ]    Run [TESTS_CONFIG.md](./tests/automation/TESTS_CONFIG.md) — includes ENV-002 (telemetry, requires login)
 
 Win365 — Low-level (Python 3.13):
 [ ] 5. Install Python 3.13 (same versions)
-[ ]    Run TESTS_CLI.md
-[ ]    Run TESTS_CONFIG.md — includes ENV-002 (telemetry, requires login)
-[ ]    Run TESTS_API_TOOLS.md
+[ ]    Run [TESTS_CLI.md](./tests/automation/TESTS_CLI.md)
+[ ]    Run [TESTS_CONFIG.md](./tests/automation/TESTS_CONFIG.md) — includes ENV-002 (telemetry, requires login)
+[ ]    Run [TESTS_API_TOOLS.md](./tests/automation/TESTS_API_TOOLS.md)
 ```
 
 ### QA 3 — Windows, E2E only (~2 working hours)

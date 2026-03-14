@@ -5,9 +5,9 @@
 This document analyzes the **existing pytest unit/integration tests** in the codebase (`/tests/`).
 
 For QA test flows (manual + CI automation), see:
-- [TESTS_E2E.md](./TESTS_E2E.md) - E2E flows (macOS)
-- [TESTS_CLI.md](./TESTS_CLI.md) - CLI flows (all platforms)
-- [TESTS_CONFIG.md](./TESTS_CONFIG.md) - Config tests (all platforms)
+- [tests/e2e/](./tests/e2e/) - E2E flows (macOS, Windows)
+- [TESTS_CLI.md](./tests/automation/TESTS_CLI.md) - CLI flows (all platforms)
+- [TESTS_CONFIG.md](./tests/automation/TESTS_CONFIG.md) - Config tests (all platforms)
 
 ---
 
@@ -16,9 +16,9 @@ For QA test flows (manual + CI automation), see:
 | Type | Location | Purpose |
 |------|----------|---------|
 | **Unit/Integration** | `/tests/*.py` | Developer tests (pytest) |
-| **QA E2E** | `TESTS_E2E.md` | Manual E2E (Claude Desktop or Cursor) |
-| **QA CLI** | `TESTS_CLI.md` | CLI automation (CI) |
-| **QA Config** | `TESTS_CONFIG.md` | Configuration testing (CI) |
+| **QA E2E** | `tests/` | Manual E2E (Claude Desktop or Cursor) |
+| **QA CLI** | `tests/automation/TESTS_CLI.md` | CLI automation (CI) |
+| **QA Config** | `tests/automation/TESTS_CONFIG.md` | Configuration testing (CI) |
 
 ---
 
@@ -176,6 +176,6 @@ curl http://localhost:8888/mcp ...
 3. Add pytest tests for compose/discover commands
 
 ### For QA
-1. Run TESTS_CLI.md flows in CI (all platforms)
-2. Run TESTS_CONFIG.md flows in CI (all platforms)
-3. Run TESTS_E2E.md manually on macOS before release
+1. Run tests/automation/TESTS_CLI.md flows in CI (all platforms)
+2. Run tests/automation/TESTS_CONFIG.md flows in CI (all platforms)
+3. Run tests/ E2E flows manually on macOS before release
