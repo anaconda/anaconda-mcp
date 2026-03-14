@@ -2,7 +2,7 @@
 
 ## Why it matters
 
-Full Anaconda installs 500+ packages into the base environment. This triggers [PI-003](./KNOWN_ISSUES.md#pi-003-anaconda-connector-packages-fail-to-download--conda-anaconda-telemetry-sends-oversized-headers-to-s3): conda's telemetry plugin sends the full base package list as an HTTP header on every download request. The `anaconda-connector` channel redirects to AWS S3, which has a hard 8192-byte header limit — the oversized header causes downloads to fail with HTTP 400.
+Full Anaconda installs 500+ packages into the base environment. This triggers [PI-003](../_tracking/KNOWN_ISSUES.md#pi-003): conda's telemetry plugin sends the full base package list as an HTTP header on every download request. The `anaconda-connector` channel redirects to AWS S3, which has a hard 8192-byte header limit — the oversized header causes downloads to fail with HTTP 400.
 
 **Miniconda** (~30–50 packages in base) stays well under the limit. Use it for QA.
 

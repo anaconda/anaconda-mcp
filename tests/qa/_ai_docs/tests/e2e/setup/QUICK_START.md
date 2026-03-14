@@ -56,7 +56,7 @@ Config created:
 
 ### HTTP Transport
 
-> **Note [KI-009]**: Claude Desktop does not support HTTP transport. Use **Cursor** or direct API calls. See [KNOWN_ISSUES.md](./KNOWN_ISSUES.md#ki-009-claude-desktop-does-not-support-http-transport).
+> **Note [KI-009]**: Claude Desktop does not support HTTP transport. Use **Cursor** or direct API calls. See [KNOWN_ISSUES.md](../../../_tracking/KNOWN_ISSUES.md#ki-009).
 
 **Step 1: Start server**
 ```bash
@@ -117,8 +117,8 @@ Total tools: 6
   • conda_remove_packages
 ```
 
-Press `Ctrl+C` to stop. If server hangs, see [KI-007](./KNOWN_ISSUES.md#ki-007-http-transport-hangs-or-fails-to-connect).
+Press `Ctrl+C` to stop. If server hangs, see [KI-007](../../../_tracking/KNOWN_ISSUES.md#ki-007).
 
 ---
 
-For architecture details, see [PRODUCT_OVERVIEW.md](./PRODUCT_OVERVIEW.md).
+For architecture details, see [PRODUCT_OVERVIEW.md](../../../_product/PRODUCT_OVERVIEW.md).

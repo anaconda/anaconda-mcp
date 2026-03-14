@@ -86,7 +86,7 @@ Windows E2E results show significantly higher instability than macOS. The table 
 
 ## Phase 2: E2E RC2 Progress
 
-See [TEST_MATRIX_rc2.md](./TEST_MATRIX_rc2.md) for assignment rationale. Test definitions: [tests/](./tests/)
+See [TEST_MATRIX_rc2.md](../_planning/TEST_MATRIX_rc2.md) for assignment rationale. Test definitions: [tests/](../tests/)
 
 | QA | OS | Client | Python | Transport | Status | Result | Notes |
 |----|----|--------|--------|-----------|--------|--------|-------|
@@ -99,7 +99,7 @@ See [TEST_MATRIX_rc2.md](./TEST_MATRIX_rc2.md) for assignment rationale. Test de
 
 ## Phase 1: E2E Progress (RC1)
 
-See [TEST_MATRIX.md](./TEST_MATRIX.md) for full assignment rationale.
+See [TEST_MATRIX.md](../_planning/TEST_MATRIX.md) for full assignment rationale.
 
 | QA | OS | Client | Python | Transport | Status | Result | Notes |
 |----|----|--------|--------|-----------|--------|--------|-------|

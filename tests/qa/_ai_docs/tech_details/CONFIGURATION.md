@@ -162,7 +162,7 @@ anaconda-mcp claude-desktop path
 
 ## Claude Desktop Setup Quirks
 
-From internal testing (see [KNOWN_ISSUES.md](./KNOWN_ISSUES.md)):
+From internal testing (see [KNOWN_ISSUES.md](../_tracking/KNOWN_ISSUES.md)):
 
 ### Required Setting
 Users MUST enable in Claude Desktop:

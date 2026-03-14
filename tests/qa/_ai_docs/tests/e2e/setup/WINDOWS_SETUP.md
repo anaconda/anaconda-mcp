@@ -18,7 +18,7 @@ Fully terminate Claude Desktop via Task Manager:
 3. Right-click each → **End Task**
 4. Confirm no Claude processes remain before continuing
 
-Then clear any orphaned server processes on port 4041 (Claude Desktop does not kill child processes on Windows — see [KI-017](./KNOWN_ISSUES.md#ki-017)):
+Then clear any orphaned server processes on port 4041 (Claude Desktop does not kill child processes on Windows — see [KI-017](../../../_tracking/KNOWN_ISSUES.md#ki-017)):
 
 ```cmd
 netstat -ano | findstr :4041
@@ -124,7 +124,7 @@ Throughout the QA docs, replace macOS/Linux commands as follows:
 | `grep -E "..."` | `findstr /R "..."` |
 | `./tests/qa/_ai_docs/scripts/start-http-server.sh 8888` | `python -m anaconda_mcp serve --http --port 8888` |
 
-**Why `anaconda-mcp` doesn't work on Windows**: conda installs an extensionless Unix-style script into `Scripts\`. Windows only executes `.exe`, `.bat`, or `.cmd` files, so the script is silently ignored. Use `python -m anaconda_mcp` instead. See [PI-001](./KNOWN_ISSUES.md#pi-001-anaconda-mcp-cli-not-executable-on-windows--missing-exe-wrapper).
+**Why `anaconda-mcp` doesn't work on Windows**: conda installs an extensionless Unix-style script into `Scripts\`. Windows only executes `.exe`, `.bat`, or `.cmd` files, so the script is silently ignored. Use `python -m anaconda_mcp` instead. See [PI-001](../../../_tracking/KNOWN_ISSUES.md#pi-001).
 
 ---
 

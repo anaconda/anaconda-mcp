@@ -58,9 +58,9 @@ flowchart TD
 
 | Document | Purpose |
 |----------|---------|
-| [TEST_MATRIX_rc2.md](./TEST_MATRIX_rc2.md) | Test assignments per QA/config |
-| [TEST_PROGRESS.md](./TEST_PROGRESS.md) | Results tracking |
-| [KNOWN_ISSUES.md](./KNOWN_ISSUES.md) | Bugs and workarounds |
+| [TEST_MATRIX_rc2.md](./_planning/TEST_MATRIX_rc2.md) | Test assignments per QA/config |
+| [TEST_PROGRESS.md](./_tracking/TEST_PROGRESS.md) | Results tracking |
+| [KNOWN_ISSUES.md](./_tracking/KNOWN_ISSUES.md) | Bugs and workarounds |
 
 ## 5. Workflow
 
@@ -78,8 +78,8 @@ flowchart TD
 ### Product Documentation
 | Document | Description |
 |----------|-------------|
-| [PRODUCT_OVERVIEW.md](./PRODUCT_OVERVIEW.md) | Product features, architecture, constraints |
-| [FEATURE_TREE.md](./FEATURE_TREE.md) | 3-level feature tree with diagrams |
+| [PRODUCT_OVERVIEW.md](./_product/PRODUCT_OVERVIEW.md) | Product features, architecture, constraints |
+| [FEATURE_TREE.md](./_product/FEATURE_TREE.md) | 3-level feature tree with diagrams |
 | [CONFIGURATION.md](./tech_details/CONFIGURATION.md) | Configuration options reference |
 
 ### Automation Test Docs

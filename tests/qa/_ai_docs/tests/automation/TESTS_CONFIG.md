@@ -288,4 +288,4 @@ pytest tests/qa/config/ \
 - [TESTS_API_TOOLS.md](./TESTS_API_TOOLS.md) — MCP protocol tests
 - [TESTS_CLI.md](./TESTS_CLI.md) — CLI command tests
 - [CONFIGURATION.md](../../tech_details/CONFIGURATION.md) — Full configuration reference
-- [KNOWN_ISSUES.md](../../KNOWN_ISSUES.md) — KI-004 regression reference
+- [KNOWN_ISSUES.md](../../_tracking/KNOWN_ISSUES.md) — KI-004 regression reference

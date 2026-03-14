@@ -130,8 +130,8 @@ No external scripts — fixture manages server lifecycle (platform-independent).
 | Document | Description |
 |----------|-------------|
 | [TESTS_API_TOOLS.md](./tests/automation/TESTS_API_TOOLS.md) | API tool test design (P0) |
-| [TESTS_CLI.md](./tests/automation/TESTS_CLI.md) | CLI test design (P1) |
-| [TESTS_CONFIG.md](./tests/automation/TESTS_CONFIG.md) | Config test design (P1) |
-| [tests/e2e/](./tests/e2e/) | E2E manual test flows |
+| [TESTS_CLI.md](../tests/automation/TESTS_CLI.md) | CLI test design (P1) |
+| [TESTS_CONFIG.md](../tests/automation/TESTS_CONFIG.md) | Config test design (P1) |
+| [tests/e2e/](../tests/e2e/) | E2E manual test flows |
 | [TEST_MATRIX.md](./TEST_MATRIX.md) | Platform/version coverage |
-| [KNOWN_ISSUES.md](./KNOWN_ISSUES.md) | Bug references for regressions |
+| [KNOWN_ISSUES.md](../_tracking/KNOWN_ISSUES.md) | Bug references for regressions |

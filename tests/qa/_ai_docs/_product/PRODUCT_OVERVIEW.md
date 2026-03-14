@@ -138,7 +138,7 @@ sequenceDiagram
 | Client | Status | Notes |
 |--------|--------|-------|
 | **Claude Desktop** | Supported | Dedicated CLI integration (`claude-desktop` commands); STDIO transport only |
-| **Cursor** | Supported for HTTP testing | Required for HTTP transport E2E validation (Claude Desktop does not support HTTP — [KI-009](./KNOWN_ISSUES.md#ki-009-claude-desktop-does-not-support-http-transport)) |
+| **Cursor** | Supported for HTTP testing | Required for HTTP transport E2E validation (Claude Desktop does not support HTTP — [KI-009](../_tracking/KNOWN_ISSUES.md#ki-009)) |
 
 **Other MCP clients** (Claude Code, VS Code) may work via standard MCP protocol but are not in scope for current release testing.
 

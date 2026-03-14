@@ -249,4 +249,4 @@ For full Windows setup including Claude Desktop config workarounds, see [WINDOWS
 
 - [HTTP Transport Tests README](../http_tools/README.md)
 - [STDIO Transport Tests README](../stdio_tools/README.md)
-- [Known Issues](./KNOWN_ISSUES.md)
+- [Known Issues](../_tracking/KNOWN_ISSUES.md)

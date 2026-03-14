@@ -98,7 +98,7 @@ make test-coverage
 
 ### Windows Notes
 
-On Windows, use `python -m anaconda_mcp` instead of `anaconda-mcp` CLI (see [PI-001](./KNOWN_ISSUES.md#pi-001)).
+On Windows, use `python -m anaconda_mcp` instead of `anaconda-mcp` CLI (see [PI-001](../_tracking/KNOWN_ISSUES.md#pi-001)).
 
 ```cmd
 REM Create dev environment

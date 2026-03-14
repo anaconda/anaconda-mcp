@@ -36,11 +36,11 @@ Based on RC1 findings (13 bugs filed, Phase 1 complete):
 
 | Document | Purpose |
 |----------|---------|
-| [INDEX.md](./INDEX.md) | Test catalog and navigation |
-| [tests/](./tests/) | Individual test definitions |
-| [AUTH_SETUP.md](./tests/e2e/setup/AUTH_SETUP.md) | Authentication prerequisites and cleanup procedures |
-| [KNOWN_ISSUES.md](./KNOWN_ISSUES.md) | Bug details and workarounds |
-| [WINDOWS_SETUP.md](./tests/e2e/setup/WINDOWS_SETUP.md) | Windows-specific setup instructions |
+| [INDEX.md](../INDEX.md) | Test catalog and navigation |
+| [tests/](../tests/) | Individual test definitions |
+| [AUTH_SETUP.md](../tests/e2e/setup/AUTH_SETUP.md) | Authentication prerequisites and cleanup procedures |
+| [KNOWN_ISSUES.md](../_tracking/KNOWN_ISSUES.md) | Bug details and workarounds |
+| [WINDOWS_SETUP.md](../tests/e2e/setup/WINDOWS_SETUP.md) | Windows-specific setup instructions |
 
 ---
 

@@ -3,7 +3,7 @@
 ## Phase 0: Kickoff (One QA)
 
 ### Step 1: Resolve Open Questions
-1. Review [OPEN_QUESTIONS.md](./OPEN_QUESTIONS.md) with Product Owner
+1. Review [OPEN_QUESTIONS.md](../_tracking/OPEN_QUESTIONS.md) with Product Owner
 2. Document decisions in Decision Log section
 3. Update [TEST_MATRIX.md](./TEST_MATRIX.md) based on decisions
 
@@ -13,7 +13,7 @@
 ## Phase 1: Preparation (Each QA Participant)
 
 ### Step 1: Environment Setup
-1. Follow [QUICK_START.md](./tests/e2e/setup/QUICK_START.md) for your assigned configuration
+1. Follow [QUICK_START.md](../tests/e2e/setup/QUICK_START.md) for your assigned configuration
 2. Record your test configuration:
    - Python version
    - Transport mode (STDIO/HTTP)
@@ -21,12 +21,12 @@
 
 ### Step 2: Review Test Documentation
 1. Read your assigned test files:
-   - [tests/e2e/](./tests/e2e/) (E2E manual tests)
-   - [TESTS_CLI.md](./tests/automation/TESTS_CLI.md)
-   - [TESTS_CONFIG.md](./tests/automation/TESTS_CONFIG.md)
-   - [TESTS_API_TOOLS.md](./tests/automation/TESTS_API_TOOLS.md)
+   - [tests/e2e/](../tests/e2e/) (E2E manual tests)
+   - [TESTS_CLI.md](../tests/automation/TESTS_CLI.md)
+   - [TESTS_CONFIG.md](../tests/automation/TESTS_CONFIG.md)
+   - [TESTS_API_TOOLS.md](../tests/automation/TESTS_API_TOOLS.md)
 2. Check [TEST_MATRIX.md](./TEST_MATRIX.md) for your specific assignments
-3. Review [KNOWN_ISSUES.md](./KNOWN_ISSUES.md) for expected behaviors
+3. Review [KNOWN_ISSUES.md](../_tracking/KNOWN_ISSUES.md) for expected behaviors
 4. Ask questions if anything is unclear
 
 ### Step 3: Zephyr Setup
@@ -56,7 +56,7 @@
 
 ### Step 2: Bug Reporting
 For any failures:
-1. Check [KNOWN_ISSUES.md](./KNOWN_ISSUES.md) - may be expected
+1. Check [KNOWN_ISSUES.md](../_tracking/KNOWN_ISSUES.md) - may be expected
 2. Create bug ticket with:
    - Steps to reproduce
    - Expected vs actual behavior
@@ -87,11 +87,11 @@ Examples:
 
 | Resource | Link |
 |----------|------|
-| Quick Start | [QUICK_START.md](./tests/e2e/setup/QUICK_START.md) |
+| Quick Start | [QUICK_START.md](../tests/e2e/setup/QUICK_START.md) |
 | Test Matrix | [TEST_MATRIX.md](./TEST_MATRIX.md) |
-| Open Questions | [OPEN_QUESTIONS.md](./OPEN_QUESTIONS.md) |
-| Known Issues | [KNOWN_ISSUES.md](./KNOWN_ISSUES.md) |
-| E2E Tests | [tests/e2e/](./tests/e2e/) |
-| CLI Tests | [TESTS_CLI.md](./tests/automation/TESTS_CLI.md) |
-| Config Tests | [TESTS_CONFIG.md](./tests/automation/TESTS_CONFIG.md) |
-| API Tool Tests | [TESTS_API_TOOLS.md](./tests/automation/TESTS_API_TOOLS.md) |
+| Open Questions | [OPEN_QUESTIONS.md](../_tracking/OPEN_QUESTIONS.md) |
+| Known Issues | [KNOWN_ISSUES.md](../_tracking/KNOWN_ISSUES.md) |
+| E2E Tests | [tests/e2e/](../tests/e2e/) |
+| CLI Tests | [TESTS_CLI.md](../tests/automation/TESTS_CLI.md) |
+| Config Tests | [TESTS_CONFIG.md](../tests/automation/TESTS_CONFIG.md) |
+| API Tool Tests | [TESTS_API_TOOLS.md](../tests/automation/TESTS_API_TOOLS.md) |
