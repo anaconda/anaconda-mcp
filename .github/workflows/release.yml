@@ -10,6 +10,7 @@ on:
 
 jobs:
   conda-build:
+<<<<<<< Updated upstream
     name: Build conda package (${{ matrix.os }})
     runs-on: ${{ matrix.runner }}
 
@@ -26,20 +27,30 @@ jobs:
           - os: windows
             runner: windows-latest
             shell: cmd /C CALL {0}
+=======
+    name: Build conda package (py${{ matrix.python-version }})
+    runs-on: [self-hosted-amd64-medium-privileged-on-demand]
+>>>>>>> Stashed changes
 
     defaults:
       run:
         shell: ${{ matrix.shell }}
 
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # required so GIT_DESCRIBE_TAG is resolved correctly
+          fetch-depth: 0
 
       - name: Setup Miniconda
         uses: conda-incubator/setup-miniconda@v3
         with:
           auto-activate-base: true
+          python-version: ${{ matrix.python-version }}
           use-mamba: true
           conda-solver: libmamba
 
@@ -104,7 +115,11 @@ jobs:
       - name: Upload conda artifact
         uses: actions/upload-artifact@v4
         with:
+<<<<<<< Updated upstream
           name: conda-package-${{ matrix.os }}
+=======
+          name: conda-package-py${{ matrix.python-version }}
+>>>>>>> Stashed changes
           path: build/conda/
 
   publish:
@@ -172,6 +187,7 @@ jobs:
           pattern: conda-package-*
           path: build/conda/
           merge-multiple: true
+<<<<<<< Updated upstream
 
       - name: Rename packages to include platform suffix
         # conda build outputs files like linux-64/pkg.conda — after merge-multiple
@@ -186,6 +202,8 @@ jobs:
             platform=$(basename "$dir")   # e.g. linux-64, osx-arm64, win-64
             mv "$f" "${dir}/${base}-${platform}.conda"
           done
+=======
+>>>>>>> Stashed changes
 
       - name: Determine if pre-release
         id: prerelease
