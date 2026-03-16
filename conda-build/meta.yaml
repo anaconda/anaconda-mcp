@@ -14,10 +14,10 @@ build:
 
 requirements:
   host:
-    - python >=3.10,<3.14
-    - pip
-    - hatchling >=1.25
     - hatch-vcs >=0.4
+    - hatchling >=1.25
+    - python
+    - pip
   run:
     - python >=3.10,<3.14
     - environments-mcp-server >=0.1.0,<2.0.0

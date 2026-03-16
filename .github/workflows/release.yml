@@ -10,36 +10,22 @@ on:
 
 jobs:
   conda-build:
-<<<<<<< Updated upstream
-    name: Build conda package (${{ matrix.os }})
-    runs-on: ${{ matrix.runner }}
-
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: linux
-            runner: [self-hosted-amd64-medium-privileged-on-demand]
-            shell: bash -el {0}
-          - os: macos
-            runner: macos-latest
-            shell: bash -el {0}
-          - os: windows
-            runner: windows-latest
-            shell: cmd /C CALL {0}
-=======
-    name: Build conda package (py${{ matrix.python-version }})
-    runs-on: [self-hosted-amd64-medium-privileged-on-demand]
->>>>>>> Stashed changes
+    name: Build conda package (${{ matrix.config.os }}, py${{ matrix.python-version }})
+    runs-on: ${{ matrix.config.runner }}
 
     defaults:
       run:
-        shell: ${{ matrix.shell }}
+        shell: bash -el {0}
 
     strategy:
       fail-fast: false
       matrix:
         python-version: ["3.10", "3.11", "3.12", "3.13"]
+        config:
+          - os: linux
+            runner: [self-hosted-amd64-medium-privileged-on-demand]
+          - os: macos
+            runner: macos-latest
 
     steps:
       - uses: actions/checkout@v4
@@ -57,8 +43,7 @@ jobs:
       - name: Install conda-build
         run: conda install -y conda-build
 
-      - name: Configure private conda channels (unix)
-        if: matrix.os != 'windows'
+      - name: Configure private conda channels
         run: |
           conda config --add channels conda-forge
           conda config --add channels datalayer
@@ -66,18 +51,13 @@ jobs:
           conda config --add channels https://conda.anaconda.org/t/${{ secrets.ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN }}/anaconda-cloud/label/dev
           conda config --add channels https://conda.anaconda.org/t/${{ secrets.ANACONDA_CONNECTOR_TOKEN }}/anaconda-connector
 
-      - name: Configure private conda channels (windows)
-        if: matrix.os == 'windows'
-        shell: bash -el {0}
+      - name: Write conda build config
         run: |
-          conda config --add channels conda-forge
-          conda config --add channels datalayer
-          conda config --add channels https://conda.anaconda.org/t/${{ secrets.ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN }}/anaconda-cloud
-          conda config --add channels https://conda.anaconda.org/t/${{ secrets.ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN }}/anaconda-cloud/label/dev
-          conda config --add channels https://conda.anaconda.org/t/${{ secrets.ANACONDA_CONNECTOR_TOKEN }}/anaconda-connector
+          printf 'python:\n  - "${{ matrix.python-version }}"\n' > conda-build/conda_build_config.yaml
+          echo "=== conda_build_config.yaml contents ==="
+          cat conda-build/conda_build_config.yaml
 
-      - name: Build conda package (unix)
-        if: matrix.os != 'windows'
+      - name: Build conda package
         run: |
           mkdir -p build/conda
           conda build \
@@ -86,40 +66,17 @@ jobs:
             -c https://conda.anaconda.org/t/${{ secrets.ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN }}/anaconda-cloud \
             -c https://conda.anaconda.org/t/${{ secrets.ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN }}/anaconda-cloud/label/dev \
             -c https://conda.anaconda.org/t/${{ secrets.ANACONDA_CONNECTOR_TOKEN }}/anaconda-connector \
+            -m conda-build/conda_build_config.yaml \
             --output-folder build/conda \
             conda-build
 
-      - name: Build conda package (windows)
-        if: matrix.os == 'windows'
-        shell: bash -el {0}
-        run: |
-          mkdir -p build/conda
-          conda build \
-            -c conda-forge \
-            -c datalayer \
-            -c https://conda.anaconda.org/t/${{ secrets.ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN }}/anaconda-cloud \
-            -c https://conda.anaconda.org/t/${{ secrets.ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN }}/anaconda-cloud/label/dev \
-            -c https://conda.anaconda.org/t/${{ secrets.ANACONDA_CONNECTOR_TOKEN }}/anaconda-connector \
-            --output-folder build/conda \
-            conda-build
-
-      - name: Show built package (unix)
-        if: matrix.os != 'windows'
-        run: ls -lh build/conda/**/*.conda || ls -lh build/conda/**/*.tar.bz2
-
-      - name: Show built package (windows)
-        if: matrix.os == 'windows'
-        shell: bash -el {0}
+      - name: Show built package
         run: ls -lh build/conda/**/*.conda || ls -lh build/conda/**/*.tar.bz2
 
       - name: Upload conda artifact
         uses: actions/upload-artifact@v4
         with:
-<<<<<<< Updated upstream
-          name: conda-package-${{ matrix.os }}
-=======
-          name: conda-package-py${{ matrix.python-version }}
->>>>>>> Stashed changes
+          name: conda-package-${{ matrix.config.os }}-py${{ matrix.python-version }}
           path: build/conda/
 
   publish:
@@ -187,23 +144,6 @@ jobs:
           pattern: conda-package-*
           path: build/conda/
           merge-multiple: true
-<<<<<<< Updated upstream
-
-      - name: Rename packages to include platform suffix
-        # conda build outputs files like linux-64/pkg.conda — after merge-multiple
-        # all three platforms produce the same basename, which causes GitHub Release
-        # asset upload collisions. We rename them to pkg-linux.conda etc. here.
-        # The original platform-tagged files are still uploaded to Anaconda Cloud
-        # by the publish job, so conda tooling is unaffected.
-        run: |
-          for f in build/conda/**/*.conda; do
-            dir=$(dirname "$f")
-            base=$(basename "$f" .conda)
-            platform=$(basename "$dir")   # e.g. linux-64, osx-arm64, win-64
-            mv "$f" "${dir}/${base}-${platform}.conda"
-          done
-=======
->>>>>>> Stashed changes
 
       - name: Determine if pre-release
         id: prerelease
