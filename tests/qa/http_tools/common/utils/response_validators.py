@@ -57,10 +57,45 @@ def _validate_no_pydantic_validation_error(
     all_text = "\n".join([error_desc] + raw_texts)
     if "frozen_instance" in all_text or "Instance is frozen" in all_text:
         raise AssertionError(
-            f"Pydantic frozen_instance validation error in response (KI-016 regression). "
+            "Pydantic frozen_instance validation error in response (KI-016 regression). "
             + (f"Context: {context}. " if context else "")
             + f"error_description={error_desc!r}  raw_content_texts={raw_texts!r}"
         )
+
+
+def _validate_install_success(result: dict, context: str = "") -> None:
+    """
+    Assert that the tool result represents a successful package installation.
+
+    Checks is_error is falsy.  A truthy is_error means conda refused or failed
+    the install; the test should surface the error_description for diagnosis.
+    """
+    if result.get(ToolResultFields.IS_ERROR):
+        parts = ["Expected is_error=false (successful install)"]
+        if context:
+            parts.append(context)
+        error_desc = result.get(ToolResultFields.ERROR_DESCRIPTION, "")
+        if error_desc:
+            parts.append(f"error_description: {error_desc!r}")
+        parts.append(f"got: {result!r}")
+        raise AssertionError(" — ".join(parts))
+
+
+def _validate_install_has_message(result: dict, context: str = "") -> None:
+    """
+    Assert that a successful install result carries a non-empty message.
+
+    install_packages.py sets tool_result={"message": ...} on success.
+    An empty or missing message suggests the response was parsed incorrectly
+    or the server returned an unexpected shape.
+    """
+    tool_result = result.get(ToolResultFields.TOOL_RESULT, {})
+    if not isinstance(tool_result, dict) or not tool_result.get("message"):
+        parts = ["Expected tool_result.message to be present and non-empty"]
+        if context:
+            parts.append(context)
+        parts.append(f"tool_result={tool_result!r}")
+        raise AssertionError(" — ".join(parts))
 
 
 def _validate_package_resolution_error(result: dict, env_name: str) -> None:

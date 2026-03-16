@@ -37,3 +37,4 @@ class RemoveEnvironmentArgs(str, Enum):
 class ToolResultFields(str, Enum):
     IS_ERROR = "is_error"
     ERROR_DESCRIPTION = "error_description"
+    TOOL_RESULT = "tool_result"
