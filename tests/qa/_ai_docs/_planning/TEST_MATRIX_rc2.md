@@ -127,3 +127,7 @@ RC1 filed 10 bugs. Fixed bugs require verification before release.
 ## Execution
 
 See [Tests Per Configuration](#tests-per-configuration) table for assignments. Track progress in [TEST_PROGRESS.md](../_tracking/TEST_PROGRESS.md).
+
+---
+
+> **Next iteration**: [TEST_MATRIX_rc2_iter2.md](./TEST_MATRIX_rc2_iter2.md) — connector 0.1.11, all 4 Python versions, Windows excluded
