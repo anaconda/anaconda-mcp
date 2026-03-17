@@ -27,5 +27,32 @@ E2E happy path covering all 6 conda tools with authenticated user.
 ## Pass Criteria
 
 - **Step 3**: Claude describes numpy availability (name, versions, channel) from its own knowledge; **no MCP tool is called** — `conda_search_packages` does not exist in this product; the step contributes 0 to the tool-call count
+  - **Alternative behavior**: Claude may interpret "search packages" as "list installed packages matching X" and call `conda_list_environment_packages` to filter results. This is acceptable but adds 1 to tool-call count.
 - **Step 7**: single `conda_remove_environment` call with `environment_name` param (RC2+)
 - **Tool call total**: 7 across the full flow (steps 1, 2, 4, 5, 6, 7, 8 — one call each)
+  - If Step 3 alternative behavior: 8 total
+
+## Expected Channel Information (Logged-In User)
+
+When user is authenticated to Anaconda, `conda_list_environment_packages` response includes channel details:
+
+| Field | Expected Value |
+|-------|---------------|
+| `base_url` | `https://repo.anaconda.cloud/repo/main` |
+| `channel` | `repo/main` |
+| `platform` | `osx-arm64` (or user's platform) |
+| `platform` (noarch) | `noarch` for pure-Python packages (pip, tzdata, etc.) |
+
+Example package entry:
+```json
+{
+  "name": "numpy",
+  "version": "1.26.4",
+  "channel": "repo/main",
+  "base_url": "https://repo.anaconda.cloud/repo/main",
+  "platform": "osx-arm64",
+  "build_string": "py311h7125f55_0",
+  "build_number": 0,
+  "dist_name": "numpy-1.26.4-py311h7125f55_0"
+}
+```

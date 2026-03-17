@@ -27,8 +27,25 @@ E2E happy path covering all 6 conda tools with anonymous user (public channels).
 ## Pass Criteria
 
 - **Step 3**: Claude describes numpy availability (name, versions, channel) from its own knowledge; **no MCP tool is called** — `conda_search_packages` does not exist in this product; the step contributes 0 to the tool-call count
+  - **Alternative behavior**: Claude may interpret "search packages" as "list installed packages matching X" and call `conda_list_environment_packages` to filter results. This is acceptable but adds 1 to tool-call count.
 - **Step 7**: single `conda_remove_environment` call with `environment_name` param (RC2+)
 - **Tool call total**: 7 across the full flow (steps 1, 2, 4, 5, 6, 7, 8 — one call each)
+  - If Step 3 alternative behavior: 8 total
+
+## Expected Channel Information (Logged-Out User / Public Channels)
+
+When user is NOT authenticated, packages come from public channels:
+
+| Field | Expected Value |
+|-------|---------------|
+| `base_url` | `https://repo.anaconda.com/pkgs/main` |
+| `channel` | `pkgs/main` |
+| `platform` | `osx-arm64` (or user's platform) |
+| `platform` (noarch) | `noarch` for pure-Python packages |
+
+Compare to logged-in user (CORE-001):
+- Logged in: `repo.anaconda.cloud/repo/main`
+- Logged out: `repo.anaconda.com/pkgs/main`
 
 ## Notes
 

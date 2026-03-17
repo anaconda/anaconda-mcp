@@ -551,6 +551,29 @@ Then reload Cursor.
 
 ---
 
+### KI-026: Cannot run `anaconda login` while Claude Desktop with anaconda-mcp is running (port 8000 conflict)
+**Status**: Open
+**Severity**: Medium
+**Component**: anaconda-mcp / mcp-compose
+**Detailed docs**: `tests/qa/_ai_docs/bug_details/port_conflict/`
+
+**Description**: User cannot login to Anaconda from command line while Claude Desktop with anaconda-mcp is running. Both mcp-compose and `anaconda login` OAuth flow require port 8000, causing "Address already in use" error.
+
+**User scenario**: User has Claude Desktop running → opens terminal → runs `anaconda login` → fails with `OSError: [Errno 48] Address already in use`.
+
+**Root cause**: Port 8000 conflict:
+- mcp-compose uses port 8000 for upstream HTTP server
+- anaconda-auth uses port 8000 for OAuth redirect callback
+
+**Workarounds**:
+1. Quit Claude Desktop → `anaconda login` → restart Claude Desktop
+2. Login before starting Claude Desktop
+3. Use API key instead: `export ANACONDA_AUTH_API_KEY="your-key"`
+
+**Proposed resolution (feature request)**: Make mcp-compose upstream port configurable, or change default to avoid conflict with anaconda-auth.
+
+---
+
 ## Troubleshooting
 
 ### Accessing MCP server logs
