@@ -1,5 +1,7 @@
 # KI-026: Cannot run `anaconda login` while Claude Desktop with anaconda-mcp is running (port 8000 conflict)
 
+**Jira**: [DESK-1411](https://anaconda.atlassian.net/browse/DESK-1411)
+
 ## Summary
 
 User cannot login to Anaconda from command line while Claude Desktop with anaconda-mcp is running. Both anaconda-mcp (via mcp-compose) and `anaconda login` OAuth flow require port 8000, causing "Address already in use" error.

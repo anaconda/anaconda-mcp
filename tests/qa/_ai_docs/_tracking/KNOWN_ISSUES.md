@@ -552,7 +552,7 @@ Then reload Cursor.
 ---
 
 ### KI-026: Cannot run `anaconda login` while Claude Desktop with anaconda-mcp is running (port 8000 conflict)
-**Status**: Open
+**Status**: Open — [DESK-1411](https://anaconda.atlassian.net/browse/DESK-1411)
 **Severity**: Medium
 **Component**: anaconda-mcp / mcp-compose
 **Detailed docs**: `tests/qa/_ai_docs/bug_details/port_conflict/`
