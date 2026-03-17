@@ -307,16 +307,29 @@ When the user is logged in, the retry after the KI-018 first-call hang also fail
 
 ---
 
-### KI-011: mcp-compose Proxy Hangs and Corrupts Session on Tool Error
-**Status**: Partially Fixed — Two contributing factors identified
+### KI-011: mcp-compose Proxy Hangs and Corrupts Session on Tool Calls
+**Status**: Open — Root cause confirmed in `mcp-compose` library
 **Internal Ticket**: [DESK-1355](https://anaconda.atlassian.net/browse/DESK-1355)
-**Components**: `mcp-compose` AND `environments_mcp_server`
+**Component**: `mcp-compose` (confirmed 2026-03-16)
+**Report to**: https://github.com/datalayer/mcp-compose
 
-**Contributing Factors**:
-1. **mcp-compose** (Fixed in 0.1.11): [PR #28](https://github.com/datalayer/mcp-compose/pull/28) — improved hang threshold from ~4 to ~16 iterations
-2. **environments_mcp_server** (Open): [KI-015](#ki-015-loggerexception-causes-server-hang-after-15-calls) / [DESK-1366](https://anaconda.atlassian.net/browse/DESK-1366) — `logger.exception()` causes hang after ~15 calls
+**Root cause confirmed (2026-03-16)**: Isolation testing definitively proved the bug is in `mcp-compose` library itself, NOT in `environments_mcp_server` or `anaconda-mcp` wrapper:
+
+| Test | Result | Hang at |
+|------|--------|---------|
+| `environments_mcp_server` direct (50 iterations) | PASS | — |
+| `mcp-compose` direct, no anaconda-mcp wrapper (20 iterations) | FAIL | iteration 18 |
+| `anaconda-mcp serve` full stack (20 iterations) | FAIL | iteration 18 |
+
+**Key evidence**:
+- `environments_mcp_server` handles 50+ rapid sequential calls without any hang
+- `mcp-compose` hangs at iteration 18 when invoked directly via `python -m mcp_compose serve` (no `anaconda-mcp` code involved)
+- Same hang iteration (~18) whether using `anaconda-mcp serve` or `mcp-compose` directly
+
+**Diagnostic scripts**: `tests/qa/_ai_docs/scripts/test-env-mcp-direct.sh`, `tests/qa/_ai_docs/scripts/test-mcp-compose-direct.sh`
+
 **Severity**: High (process-wide corruption; server restart required to recover)
-**Version**: mcp-compose 0.1.10 (original), 0.1.11 (partial fix)
+**Version**: mcp-compose 0.1.10 (original), 0.1.11 (partial fix, still hangs at ~17-18)
 **Regression tests**: `tests/qa/http_tools/test_guard_proxy_error_hang.py`, `tests/qa/http_tools/test_guard_happy_path_hang.py`, `tests/qa/stdio_tools/test_guard_proxy_error_hang_stdio.py`
 
 **Description**: When `mcp-compose` receives a tool result (whether a success or an error response), it can hang and corrupt the httpx connection pool under rapid sequential calls. All subsequent calls block indefinitely. Only restarting `mcp-compose` recovers.
@@ -338,11 +351,20 @@ The hang was originally observed only on error-returning calls; testing on 2026-
 | HANG-001 (remove_environment × 20) | Hangs at iteration 4 | ✅ **Passed** (all 20) | 2026-03-10 |
 | HANG-002 (install_packages × 20, error path) | Hangs at iteration 4 | ❌ Hangs at iteration ~16-17 | 2026-03-10 |
 | HANG-003 (mixed error + health × 40) | Hangs early | ❌ Other error (see below) | 2026-03-10 |
-| HANG-004 (install_packages × 20, **happy path**) | — | ❌ Hangs at iteration 17 | 2026-03-16 |
+| HANG-004 (install_packages × 20, **happy path**) | — | ❌ Hangs at iteration 17-18 | 2026-03-16 |
 
 **HANG-003 note**: Now fails with `'NoneType' object has no attribute 'kill'` — this is an unrelated bug in `environments_mcp_server`, not KI-011.
 
 **HANG-004 note**: Happy-path installs (success response, `is_error=false`) trigger the same hang as error-path installs. See **Happy-path hang** observation below.
+
+**Isolation test results** (2026-03-16, mcp-compose 0.1.11):
+
+| Test | Iterations | Result | Conclusion |
+|------|------------|--------|------------|
+| `test-env-mcp-direct.sh` (environments_mcp_server only) | 50 | ✅ All passed | Server is NOT the problem |
+| `test-env-mcp-direct.sh` with DELAY=0 | 30 | ✅ All passed | Server handles max pressure |
+| `test-mcp-compose-direct.sh` (mcp-compose, no anaconda-mcp) | 20 | ❌ Hangs at 18 | Bug is in mcp-compose |
+| pytest `test_guard_happy_path_hang.py` (anaconda-mcp serve) | 20 | ❌ Hangs at 18 | Confirms mcp-compose is root cause |
 
 **Remaining issue**: The SSE response handler receives 0 events and times out after 60 seconds. Debug logging shows:
 1. `POST tools/call` returns 200 OK with `content-type: text/event-stream`
@@ -351,7 +373,7 @@ The hang was originally observed only on error-returning calls; testing on 2026-
 4. `[SSE_RESP] EXCEPTION: after 0 events elapsed=60.001s`
 5. `GET stream disconnected, reconnecting in 1000ms...`
 
-**Root cause hypothesis**: The downstream server (environments_mcp_server) sends the HTTP headers but fails to write the SSE event body when rapid sequential calls exhaust some resource (connection pool, file descriptors, etc.).
+**Root cause** (confirmed 2026-03-16): The bug is in `mcp-compose`'s connection/session management. When handling rapid sequential tool calls, `mcp-compose` fails to forward the response to the client after ~17-18 iterations. The downstream server (`environments_mcp_server`) processes all requests correctly — isolation testing confirmed it handles 50+ rapid calls without issue. The response is computed and returned by `environments_mcp_server`, but `mcp-compose` drops it.
 
 **Additional observation — hang on happy-path install (2026-03-16, reproducible)**:
 
