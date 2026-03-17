@@ -2,8 +2,8 @@
 
 ## Summary
 
-- **Last updated**: 2026-03-13
-- **Bugs filed**: 14 active bugs (3 today) · 6 fixed/closed · 3 feature requests
+- **Last updated**: 2026-03-17
+- **Bugs filed**: 15 active bugs · 7 fixed/closed · 3 feature requests
 
 | Phase | What | Status |
 |-------|------|--------|
@@ -57,8 +57,15 @@ Windows E2E results show significantly higher instability than macOS. The table 
 | [DESK-1366](https://anaconda.atlassian.net/browse/DESK-1366) | `logger.exception()` causes MCP server hang after ~15 tool calls | Done | Fixed |
 | [DESK-1384](https://anaconda.atlassian.net/browse/DESK-1384) | `create_environment` fails with Pydantic `frozen_instance` error when `environment_root_path` provided | Done | Fixed |
 | [DESK-1364](https://anaconda.atlassian.net/browse/DESK-1364) | Generic error message for `conda_create_environment` | Closed: No Action | — |
+| [DESK-1405](https://anaconda.atlassian.net/browse/DESK-1405) | RC2 installation fails with Python 3.10 / 3.11 / 3.12 | Done | Fixed 2026-03-16; RC2 now installs on all supported Python versions (3.10–3.13) |
 
-### Today's Bugs (2026-03-13)
+### Bugs (2026-03-16)
+
+| ID | Title | Status | Platform | Severity |
+|----|-------|--------|----------|----------|
+| [DESK-1408](https://anaconda.atlassian.net/browse/DESK-1408) | Claude Desktop 1.1.6679 — MCP server launch/kill loop, `tools/call` never dispatched | New | macOS | High |
+
+### Bugs (2026-03-13)
 
 | ID | Title | Status | Platform | Severity |
 |----|-------|--------|----------|----------|

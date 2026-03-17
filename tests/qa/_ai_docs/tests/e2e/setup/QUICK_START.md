@@ -10,22 +10,22 @@ For general installation options (latest release, specific versions, from source
 
 ## Create the RC Environment
 
-**Versions under test**: `anaconda-mcp=1.0.0.rc.1` · `environments-mcp-server=1.0.0.rc.1` · `anaconda-connector` (transitive dependency)
+**Versions under test**: `anaconda-mcp=1.0.0.rc.2` · `environments-mcp-server=1.0.0.rc.2` · `anaconda-connector` (transitive dependency)
 
 Run once per Python version required. Replace `X.Y` with `3.10` | `3.11` | `3.12` | `3.13`:
 
 ```bash
-conda create --name anaconda-mcp-rc-pyXY \
+conda create --name anaconda-mcp-rc2-pyXY \
   -c datalayer \
   -c anaconda-cloud/label/dev \
   -c defaults \
   -c conda-forge \
   --channel 'https://conda.anaconda.org/t/an-19ec59a6-f3b4-4d62-a686-a882d9c1f209/anaconda-connector/' \
   python=X.Y \
-  anaconda-mcp=1.0.0.rc.1 \
-  environments-mcp-server=1.0.0.rc.1
+  anaconda-mcp=1.0.0.rc.2 \
+  environments-mcp-server=1.0.0.rc.2
 
-conda activate anaconda-mcp-rc-pyXY
+conda activate anaconda-mcp-rc2-pyXY
 
 # Verify (anaconda-connector is a transitive dep — confirm it resolved)
 anaconda-mcp --help
@@ -34,13 +34,15 @@ conda list | grep -E "anaconda-mcp|environments-mcp|anaconda-connector|python"
 
 > **To lock a specific `anaconda-connector` version** for reproducibility:
 > ```bash
-> conda list --explicit -n anaconda-mcp-rc-pyXY > spec-exact.txt
-> # Recreate: conda create --name anaconda-mcp-rc-pyXY --file spec-exact.txt
+> conda list --explicit -n anaconda-mcp-rc2-pyXY > spec-exact.txt
+> # Recreate: conda create --name anaconda-mcp-rc2-pyXY --file spec-exact.txt
 > ```
 
 ---
 
 ## Configure Claude Desktop
+
+> **[KI-023] Claude Desktop 1.1.6679 (macOS) — MCP server fails to receive tool calls**: After the Claude Desktop auto-update on 2026-03-13, the server enters a launch/kill loop and never dispatches `tools/call`. **Workaround**: add `"--delay", "15"` to the `args` in your config (see [KI-023](../../../_tracking/KNOWN_ISSUES.md#ki-023-claude-desktop-116679--mcp-server-launchkill-loop-toolscall-never-dispatched)).
 
 ### STDIO Transport (default)
 
@@ -53,6 +55,8 @@ Config created:
 ```json
 {"command": "/path/to/python", "args": ["-m", "anaconda_mcp", "serve"]}
 ```
+
+> **If using Claude Desktop 1.1.6679**: manually edit the config to add `"--delay", "15"` — see [KI-023](../../../_tracking/KNOWN_ISSUES.md#ki-023-claude-desktop-116679--mcp-server-launchkill-loop-toolscall-never-dispatched) for full config snippet.
 
 ### HTTP Transport
 
