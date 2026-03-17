@@ -58,9 +58,7 @@ flowchart TD
 
 | Document | Purpose |
 |----------|---------|
-| [TEST_MATRIX_rc2.md](./_planning/TEST_MATRIX_rc2.md) | Test assignments — RC2 Iteration 1 |
-| [TEST_MATRIX_rc2_iter2.md](./_planning/TEST_MATRIX_rc2_iter2.md) | Test assignments — RC2 Iteration 2 (connector 0.1.11) |
-| [TEST_PROGRESS.md](./_tracking/TEST_PROGRESS.md) | Results tracking |
+| [TEST_PROGRESS.md](./_tracking/TEST_PROGRESS.md) | Testing overview — all stages, matrices, progress, active bugs |
 | [KNOWN_ISSUES.md](./_tracking/KNOWN_ISSUES.md) | Bugs and workarounds |
 
 ## 5. Workflow
