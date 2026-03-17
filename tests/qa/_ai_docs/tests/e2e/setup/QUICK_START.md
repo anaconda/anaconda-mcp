@@ -10,7 +10,7 @@ For general installation options (latest release, specific versions, from source
 
 ## Create the RC Environment
 
-**Versions under test**: `anaconda-mcp=1.0.0.rc.2` · `environments-mcp-server=1.0.0.rc.2` · `anaconda-connector` (transitive dependency)
+**Versions under test**: `anaconda-mcp=1.0.0.rc.2` · `environments-mcp-server=1.0.0.rc.2` · `anaconda-connector-core=0.1.11` · `anaconda-connector-conda=0.1.11` · `anaconda-connector-utilities=0.1.11`
 
 Run once per Python version required. Replace `X.Y` with `3.10` | `3.11` | `3.12` | `3.13`:
 
@@ -32,10 +32,20 @@ anaconda-mcp --help
 conda list | grep -E "anaconda-mcp|environments-mcp|anaconda-connector|python"
 ```
 
-> **To lock a specific `anaconda-connector` version** for reproducibility:
+> **To pin specific `anaconda-connector` versions** for reproducibility (e.g. `0.1.11`):
 > ```bash
-> conda list --explicit -n anaconda-mcp-rc2-pyXY > spec-exact.txt
-> # Recreate: conda create --name anaconda-mcp-rc2-pyXY --file spec-exact.txt
+> conda create --name anaconda-mcp-rc2-pyXY \
+>   -c datalayer \
+>   -c anaconda-cloud/label/dev \
+>   -c defaults \
+>   -c conda-forge \
+>   --channel 'https://conda.anaconda.org/t/an-19ec59a6-f3b4-4d62-a686-a882d9c1f209/anaconda-connector/' \
+>   python=X.Y \
+>   anaconda-mcp=1.0.0.rc.2 \
+>   environments-mcp-server=1.0.0.rc.2 \
+>   anaconda-connector-core=0.1.11 \
+>   anaconda-connector-conda=0.1.11 \
+>   anaconda-connector-utilities=0.1.11
 > ```
 
 ---
