@@ -358,10 +358,20 @@ When the user is logged in, the retry after the KI-018 first-call hang also fail
 ---
 
 ### KI-011: mcp-compose Proxy Hangs and Corrupts Session on Tool Calls
-**Status**: Open — Root cause confirmed in `mcp-compose` library
-**Internal Ticket**: [DESK-1355](https://anaconda.atlassian.net/browse/DESK-1355)
-**Component**: `mcp-compose` (confirmed 2026-03-16)
+**Status**: Open — Root cause identified (SSE stream timeout after 30 seconds)
+**Jira**: [DESK-1409](https://anaconda.atlassian.net/browse/DESK-1409) (new), [DESK-1355](https://anaconda.atlassian.net/browse/DESK-1355) (partial fix)
+**Component**: `mcp-compose` / MCP SDK SSE handling
 **Report to**: https://github.com/datalayer/mcp-compose
+**Detailed docs**: `tests/qa/_ai_docs/bug_details/proxy_hang/`
+
+**Root cause identified (2026-03-17)**: Live diagnostics captured during hang show the SSE stream disconnects after exactly 30 seconds when the response stops arriving:
+```
+17:39:55 - GET http://localhost:4041/mcp "HTTP/1.1 200 OK"   <- SSE stream opened
+... 30 SECONDS - RESPONSE NEVER ARRIVES ...
+17:40:25 - GET stream disconnected, reconnecting in 1000ms... <- TIMEOUT!
+```
+
+After ~17 tool calls, responses stop being forwarded. The 30-second SSE read timeout fires, and TaskGroup state becomes corrupted. All subsequent requests fail with "unhandled errors in a TaskGroup (1 sub-exception)".
 
 **Root cause confirmed (2026-03-16)**: Isolation testing definitively proved the bug is in `mcp-compose` library itself, NOT in `environments_mcp_server` or `anaconda-mcp` wrapper:
 
@@ -386,7 +396,9 @@ When the user is logged in, the retry after the KI-018 first-call hang also fail
 
 The hang was originally observed only on error-returning calls; testing on 2026-03-16 confirmed it also occurs on happy-path (success) calls — see **Happy-path hang** observation below.
 
-**Root cause**: `mcp-compose` uses deprecated `streamablehttp_client` which has a hidden 5-minute SSE read timeout. When FastMCP serves results inline (200 OK) instead of via SSE, the SSE cleanup hangs waiting for the timeout, leaking the connection pool slot.
+**Root cause (updated 2026-03-17)**: After ~17 tool call sessions, responses stop being forwarded from downstream server. The SSE stream has a 30-second read timeout; when no data arrives, the stream disconnects and mcp-compose attempts reconnection which fails to recover the pending request. TaskGroup internal state becomes corrupted, blocking all subsequent requests.
+
+**Previous hypothesis**: `mcp-compose` uses deprecated `streamablehttp_client` which has a hidden 5-minute SSE read timeout. When FastMCP serves results inline (200 OK) instead of via SSE, the SSE cleanup hangs waiting for the timeout, leaking the connection pool slot.
 
 **Fix status** (as of 2026-03-10):
 - PR #28 merged into mcp-compose 0.1.11 on 2026-03-07

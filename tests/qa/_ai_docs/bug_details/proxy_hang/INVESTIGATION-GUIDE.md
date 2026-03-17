@@ -1,5 +1,7 @@
 # Investigation Guide: MCP Proxy Hang
 
+**Jira**: [DESK-1409](https://anaconda.atlassian.net/browse/DESK-1409)
+
 How to debug, reproduce, and capture evidence for the mcp-compose proxy hang issue.
 
 ## Quick Reference

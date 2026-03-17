@@ -1,5 +1,7 @@
 # Technical Analysis: MCP Proxy Hang
 
+**Jira**: [DESK-1409](https://anaconda.atlassian.net/browse/DESK-1409)
+
 Deep dive into root cause, protocol flow, and suggested fixes.
 
 ## Event Chain Overview

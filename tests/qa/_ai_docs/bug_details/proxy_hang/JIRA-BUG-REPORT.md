@@ -1,6 +1,6 @@
 # Jira Bug Report: MCP Proxy Hang
 
-**Copy-paste ready for Jira submission**
+**Jira**: [DESK-1409](https://anaconda.atlassian.net/browse/DESK-1409)
 
 ---
 

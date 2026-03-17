@@ -1,5 +1,7 @@
 # Evidence Index: MCP Proxy Hang
 
+**Jira**: [DESK-1409](https://anaconda.atlassian.net/browse/DESK-1409)
+
 Catalog of all evidence files for KI-011.
 
 ## Key Evidence (Attach to Jira)

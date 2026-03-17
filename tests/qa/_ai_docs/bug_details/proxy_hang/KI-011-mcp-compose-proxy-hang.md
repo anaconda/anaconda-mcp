@@ -19,7 +19,8 @@ mcp-compose proxy stops forwarding responses after approximately 17 sequential t
 
 | Field | Value |
 |-------|-------|
-| Jira | DESK-1355 (marked Done, but issue persists) |
+| Jira | [DESK-1409](https://anaconda.atlassian.net/browse/DESK-1409) |
+| Related | DESK-1355 (partial fix, improved threshold from ~4 to ~17) |
 | Severity | High |
 | Component | mcp-compose / MCP SDK SSE handling |
 | Root Cause | Response stops arriving after ~17 sessions; 30s SSE timeout fires |
