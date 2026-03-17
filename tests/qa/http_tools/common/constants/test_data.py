@@ -17,7 +17,7 @@ REMOVABLE_ENV_NAME = "guard-env-remove-test"
 NONEXISTENT_PKG = "nonexistent-package-xyz123"
 
 # Small, real package available in conda defaults; used for happy-path install tests.
-EXISTING_PKG = "numpy"
+EXISTING_PKG = "pyyaml"
 
 # Absolute path guaranteed not to be a real conda environment prefix.
 # Used to trigger "environment not found" error responses from tools that

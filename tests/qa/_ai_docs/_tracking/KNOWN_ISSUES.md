@@ -317,9 +317,11 @@ When the user is logged in, the retry after the KI-018 first-call hang also fail
 2. **environments_mcp_server** (Open): [KI-015](#ki-015-loggerexception-causes-server-hang-after-15-calls) / [DESK-1366](https://anaconda.atlassian.net/browse/DESK-1366) — `logger.exception()` causes hang after ~15 calls
 **Severity**: High (process-wide corruption; server restart required to recover)
 **Version**: mcp-compose 0.1.10 (original), 0.1.11 (partial fix)
-**Regression tests**: `tests/qa/http_tools/test_guard_proxy_error_hang.py`, `tests/qa/stdio_tools/test_guard_proxy_error_hang_stdio.py`
+**Regression tests**: `tests/qa/http_tools/test_guard_proxy_error_hang.py`, `tests/qa/http_tools/test_guard_happy_path_hang.py`, `tests/qa/stdio_tools/test_guard_proxy_error_hang_stdio.py`
 
-**Description**: When a tool returns quickly (validation errors, etc.), `mcp-compose`'s proxy hangs and corrupts the httpx connection pool. All subsequent calls block indefinitely. Only restarting `mcp-compose` recovers.
+**Description**: When `mcp-compose` receives a tool result (whether a success or an error response), it can hang and corrupt the httpx connection pool under rapid sequential calls. All subsequent calls block indefinitely. Only restarting `mcp-compose` recovers.
+
+The hang was originally observed only on error-returning calls; testing on 2026-03-16 confirmed it also occurs on happy-path (success) calls — see **Happy-path hang** observation below.
 
 **Root cause**: `mcp-compose` uses deprecated `streamablehttp_client` which has a hidden 5-minute SSE read timeout. When FastMCP serves results inline (200 OK) instead of via SSE, the SSE cleanup hangs waiting for the timeout, leaking the connection pool slot.
 
@@ -329,15 +331,18 @@ When the user is logged in, the retry after the KI-018 first-call hang also fail
 - **Improvement**: Hang threshold improved from ~4 iterations to ~16-17 iterations
 - **Still failing**: After ~16-17 rapid sequential calls, the hang still occurs
 
-**Test results** (mcp-compose 0.1.11, MCP SDK 1.26.0, 2026-03-10):
+**Test results** (mcp-compose 0.1.11, MCP SDK 1.26.0):
 
-| Test | Before Fix | After Fix (0.1.11) |
-|------|------------|-------------------|
-| HANG-001 (remove_environment × 20) | Hangs at iteration 4 | ✅ **Passed** (all 20) |
-| HANG-002 (install_packages × 20) | Hangs at iteration 4 | ❌ Hangs at iteration ~16-17 |
-| HANG-003 (mixed error + health × 40) | Hangs early | ❌ Other error (see below) |
+| Test | Before Fix | After Fix (0.1.11) | Date |
+|------|------------|-------------------|------|
+| HANG-001 (remove_environment × 20) | Hangs at iteration 4 | ✅ **Passed** (all 20) | 2026-03-10 |
+| HANG-002 (install_packages × 20, error path) | Hangs at iteration 4 | ❌ Hangs at iteration ~16-17 | 2026-03-10 |
+| HANG-003 (mixed error + health × 40) | Hangs early | ❌ Other error (see below) | 2026-03-10 |
+| HANG-004 (install_packages × 20, **happy path**) | — | ❌ Hangs at iteration 17 | 2026-03-16 |
 
 **HANG-003 note**: Now fails with `'NoneType' object has no attribute 'kill'` — this is an unrelated bug in `environments_mcp_server`, not KI-011.
+
+**HANG-004 note**: Happy-path installs (success response, `is_error=false`) trigger the same hang as error-path installs. See **Happy-path hang** observation below.
 
 **Remaining issue**: The SSE response handler receives 0 events and times out after 60 seconds. Debug logging shows:
 1. `POST tools/call` returns 200 OK with `content-type: text/event-stream`
@@ -347,6 +352,39 @@ When the user is logged in, the retry after the KI-018 first-call hang also fail
 5. `GET stream disconnected, reconnecting in 1000ms...`
 
 **Root cause hypothesis**: The downstream server (environments_mcp_server) sends the HTTP headers but fails to write the SSE event body when rapid sequential calls exhaust some resource (connection pool, file descriptors, etc.).
+
+**Additional observation — hang on happy-path install (2026-03-16, reproducible)**:
+
+The hang is **not limited to error responses**. HANG-004 (`test_guard_happy_path_hang.py`) demonstrated the same hang at iteration 17/20 of back-to-back `conda_install_packages` calls that all returned `is_error=false`.
+
+**Server-side signature** (from `mcp-compose` log, iteration 17, starting at 21:32:26):
+
+```
+POST  → 200 OK       (initialize)
+GET   → 200 OK       (SSE stream — opened BEFORE 202, indicating the race condition)
+POST  → 202 Accepted (notifications/initialized — out of order)
+POST  → 200 OK       (tools/call dispatched)
+— 60 seconds of silence —
+GET stream disconnected, reconnecting in 1000ms...
+```
+
+The **5th POST** (result forwarded to client) and the **DELETE** (session cleanup) never arrived. The proxy received the tool result from `environments_mcp_server` but failed to forward it to the test client, which hit the 60-second `httpx.ReadTimeout`.
+
+Compare with a healthy iteration (e.g. iteration 16):
+```
+POST  → 200 OK       (initialize)
+POST  → 202 Accepted (notifications/initialized — correct order)
+GET   → 200 OK       (SSE stream)
+POST  → 200 OK       (tools/call)
+POST  → 200 OK       (5th POST — result forwarded ✓)
+DELETE → 200 OK      (session cleanup ✓)
+```
+
+**Why this matters for Claude Desktop**: Real sessions mix `conda_install_packages` success calls with `conda_list_environments` and other tools. The hang does not require any error to be present — any rapid sequence of tool calls can trigger the proxy race. This explains the extended Claude Desktop sessions hanging on happy-path installs that motivated this test.
+
+**Regression test**: `tests/qa/http_tools/test_guard_happy_path_hang.py::TestHappyPathHangHttp::test_hang_004_repeated_install_does_not_hang`
+
+---
 
 **Additional observation — hang on first single call (2026-03-11, one-time, not reproducible)**:
 
