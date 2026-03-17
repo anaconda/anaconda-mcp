@@ -112,13 +112,13 @@ timeline
         Cleanup : TIME_WAIT then closed
 
     section Hang (request 17)
-        17:39:55 : Session init (ESTABLISHED)
-        17:39:55 : SSE stream opened
-        17:39:55 : Partial response
-        17:39:56 to 17:40:24 : Waiting... (still ESTABLISHED)
-        17:40:25 : SSE timeout fires
-        17:40:25 : Stream disconnected
-        17:40:26 : Connections close
+        17.39.55 : Session init (ESTABLISHED)
+        17.39.55 : SSE stream opened
+        17.39.55 : Partial response
+        17.39.56 to 17.40.24 : Waiting... (still ESTABLISHED)
+        17.40.25 : SSE timeout fires
+        17.40.25 : Stream disconnected
+        17.40.26 : Connections close
 
     section Post-Hang (requests 18+)
         Any request : TaskGroup error
