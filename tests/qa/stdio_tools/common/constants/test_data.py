@@ -4,6 +4,12 @@ Reusable test data constants for the stdio_tools suite.
 
 from __future__ import annotations
 
+# Small, real package available in conda defaults; used for happy-path install tests.
+EXISTING_PKG = "pyyaml"
+
+# Ephemeral conda environment created and destroyed per test module (happy-path tests).
+ENV_NAME = "guard-stdio-test"
+
 # Absolute path guaranteed not to be a real conda environment prefix.
 # Used to trigger "environment not found" error responses without touching
 # any real environment.

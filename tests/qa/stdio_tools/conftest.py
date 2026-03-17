@@ -10,14 +10,15 @@ Provides:
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 import signal
 import subprocess
 
 import pytest
-
 from common.constants.config import DOWNSTREAM_PORT
+from common.constants.test_data import ENV_NAME
 from common.utils.stdio_client import _recv, _send, _write_stdio_config
 
 logger = logging.getLogger(__name__)
@@ -26,6 +27,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 # CLI options
 # ---------------------------------------------------------------------------
+
 
 def pytest_configure(config: pytest.Config) -> None:
     """
@@ -63,6 +65,7 @@ def pytest_addoption(parser: pytest.Parser) -> None:
 # Fixtures
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture
 def stdio_server(request: pytest.FixtureRequest):
     """
@@ -78,13 +81,22 @@ def stdio_server(request: pytest.FixtureRequest):
     config_path = _write_stdio_config(DOWNSTREAM_PORT, conda_env)
     logger.info(
         "Starting mcp-compose STDIO server (env=%s, downstream_port=%d, config=%s)",
-        conda_env, DOWNSTREAM_PORT, config_path,
+        conda_env,
+        DOWNSTREAM_PORT,
+        config_path,
     )
 
     proc = subprocess.Popen(
         [
-            "conda", "run", "-n", conda_env, "--no-capture-output",
-            "anaconda-mcp", "serve", "--config", str(config_path),
+            "conda",
+            "run",
+            "-n",
+            conda_env,
+            "--no-capture-output",
+            "anaconda-mcp",
+            "serve",
+            "--config",
+            str(config_path),
         ],
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
@@ -93,16 +105,19 @@ def stdio_server(request: pytest.FixtureRequest):
     )
 
     try:
-        _send(proc, {
-            "jsonrpc": "2.0",
-            "id": 0,
-            "method": "initialize",
-            "params": {
-                "protocolVersion": "2024-11-05",
-                "capabilities": {},
-                "clientInfo": {"name": "stdio-hang-test", "version": "1.0"},
+        _send(
+            proc,
+            {
+                "jsonrpc": "2.0",
+                "id": 0,
+                "method": "initialize",
+                "params": {
+                    "protocolVersion": "2024-11-05",
+                    "capabilities": {},
+                    "clientInfo": {"name": "stdio-hang-test", "version": "1.0"},
+                },
             },
-        })
+        )
 
         init_resp = _recv(proc, timeout=45)
         logger.info(
@@ -132,9 +147,47 @@ def stdio_server(request: pytest.FixtureRequest):
     logger.info("STDIO server stopped")
 
 
+@pytest.fixture(scope="module")
+def conda_env():
+    """
+    Create the guard-stdio-test conda environment once for the module; remove it after.
+
+    Module-scoped so the environment is shared across all tests in a file but
+    never bleeds into other test files.
+    """
+    logger.info("Creating conda environment '%s'", ENV_NAME)
+    subprocess.run(
+        ["conda", "create", "-n", ENV_NAME, "python=3.11", "-y"],
+        check=True,
+    )
+    prefix = _conda_env_prefix(ENV_NAME)
+    logger.debug("Conda env '%s' prefix: %s", ENV_NAME, prefix)
+    yield {"name": ENV_NAME, "prefix": prefix}
+    logger.info("Removing conda environment '%s'", ENV_NAME)
+    subprocess.run(
+        ["conda", "remove", "-n", ENV_NAME, "--all", "-y"],
+        check=False,
+    )
+
+
+def _conda_env_prefix(name: str) -> str:
+    """Return the absolute prefix path for a conda environment by name."""
+    result = subprocess.run(
+        ["conda", "info", "--envs", "--json"],
+        capture_output=True,
+        text=True,
+    )
+    data = json.loads(result.stdout)
+    for prefix in data.get("envs", []):
+        if prefix.endswith(f"/{name}") or prefix.endswith(f"\\{name}"):
+            return prefix
+    raise ValueError(f"Conda environment '{name}' not found")
+
+
 # ---------------------------------------------------------------------------
 # HTML report metadata
 # ---------------------------------------------------------------------------
+
 
 def pytest_sessionstart(session: pytest.Session) -> None:
     config = session.config

@@ -12,7 +12,7 @@ mcp-compose proxy stops forwarding responses after approximately 17-18 rapid seq
 
 ## End User Impact
 
-**Affected users**: Claude Desktop users with Anaconda MCP configured (HTTP transport)
+**Affected users**: Claude Desktop users with Anaconda MCP configured (both HTTP and STDIO transports)
 
 ### What happens
 
@@ -39,12 +39,38 @@ During an active chat session, after approximately 17-18 tool calls that involve
 - Iterative debugging that requires repeated environment modifications
 - Automated or scripted interactions making rapid tool calls
 
+### Likelihood assessment
+
+**Confirmed: Bug is triggered by operation complexity, not just timing**
+
+| Test | Operation | Duration | Complexity | Result |
+|------|-----------|----------|------------|--------|
+| Echo server | ping | ~0.8s | Simple | **PASS** |
+| HANG-006 | `list_environments` | ~0.06s | Shallow | **40/40 PASS** |
+| HANG-004 | `install_packages` | ~0.8s+ | Deep | 19/40 FAIL |
+| HANG-005 | `install` + `list` | mixed | Mixed | 15/40 FAIL |
+
+**Impact by user profile:**
+
+| User Profile | Likelihood | Rationale |
+|--------------|------------|-----------|
+| **Casual user** (list envs, check packages) | **Low** | Shallow operations don't trigger bug |
+| **Active developer** (occasional installs) | **Medium** | May hit threshold during project setup |
+| **Power user** (frequent env modifications) | **High** | Will hit threshold in complex workflows |
+| **Batch operations** (multi-package installs) | **Very High** | Deep operations quickly trigger bug |
+
+**Why the ~17 call threshold matters:**
+- A single "set up my ML project" request can generate 10+ tool calls
+- Users don't see individual tool calls - they just see Claude "thinking" then freezing
+- The bug is silent - no error, no recovery, no explanation
+
 ### Why this matters
 
 - Breaks user trust in Anaconda MCP reliability
 - Interrupts productive workflows at critical moments
 - No actionable error message to help users understand or report the issue
 - Workaround (restart) loses conversation context
+- Most likely to occur during complex tasks where context loss is most painful
 
 ## Related Issues
 
@@ -57,7 +83,8 @@ During an active chat session, after approximately 17-18 tool calls that involve
 ## Environment
 
 - **mcp-compose version**: 0.1.11
-- **Transport**: Streamable HTTP
+- **Upstream transport**: Both HTTP and STDIO affected
+- **Internal transport**: Streamable HTTP (mcp-compose → environments_mcp_server)
 - **OS**: macOS (also reproducible on other platforms)
 - **Python**: 3.10+
 
@@ -135,28 +162,53 @@ The downstream server logs show all 25 requests processed successfully. The hang
 
 ## Isolation Test Results
 
+### HTTP Transport
+
 | Component | Test | Result |
 |-----------|------|--------|
 | environments_mcp_server direct | 50 rapid calls | 50/50 PASS |
-| mcp-compose proxy | 25 rapid calls | 18/25 PASS (hangs at 18) |
-| anaconda-mcp serve | 25 rapid calls | 18/25 PASS (hangs at 18) |
+| mcp-compose proxy (HTTP) | 25 rapid calls | 18/25 PASS (hangs at 18) |
+| anaconda-mcp serve (HTTP) | 25 rapid calls | 18/25 PASS (hangs at 18) |
+
+### STDIO Transport
+
+| Test | Iterations | Result |
+|------|------------|--------|
+| STDIO-HANG-004 (repeated install) | 40 | 19/40 PASS (hangs at 19) |
+| STDIO-HANG-005 (install + list interleaved) | 40 | 15/40 PASS (hangs at 15, = 29 total calls) |
+| STDIO-HANG-006 (repeated list_environments) | 40 | **40/40 PASS** |
+
+**Key findings**:
+1. Bug reproduces on both transports → root cause is in mcp-compose's internal Streamable HTTP connection
+2. Bug is **complexity-dependent**, not purely timing-dependent:
+   - Simple echo with 0.8s delay: PASS
+   - Shallow `list_environments`: PASS
+   - Deep `install_packages`: FAIL at ~17-19
 
 ## Key Observations
 
 1. **Bug is in mcp-compose proxy layer** - confirmed by isolation testing
 2. **Downstream server is NOT the problem** - handles 50+ direct calls without issue
-3. **Timing-dependent** - only occurs with tools that take time (~0.8s+)
-4. **Instant tools work** - DELAY=0 does not trigger the bug
-5. **Connection/session related** - likely involves connection pooling, SSE handling, or session state
-6. **Simple echo server does NOT reproduce** - suggests bug may be triggered by response size, multiple tool registrations, or specific async patterns
+3. **Transport-agnostic** - reproduces on both HTTP and STDIO upstream transports
+4. **NOT purely timing-dependent** - complexity matters more than duration:
+   - Echo server with 0.8s delay: **PASS** (simple response)
+   - `list_environments` (~0.06s): **PASS** (shallow operation)
+   - `install_packages` (~0.8s+): **FAIL at ~17-19** (deep operation)
+5. **Operation depth/complexity is the trigger** - `install_packages` involves:
+   - Multiple subprocess calls (conda solve, download, install)
+   - Complex async patterns
+   - Larger response payloads
+   - Deeper data retrieval chains
+6. **Connection/session related** - likely involves internal Streamable HTTP connection pooling or session state corruption under complex async load
 
 ## Hypothesis
 
 The bug may be related to:
-- SSE (Server-Sent Events) connection timeout handling
-- Connection pool exhaustion under rapid sequential requests
-- Session state corruption after multiple concurrent responses
-- Keep-alive connection reuse issues
+- **Async operation depth** - deep operations (subprocess calls, network I/O) may not complete cleanly in mcp-compose's internal task handling
+- **Response payload size** - larger responses from complex operations may trigger buffer or connection issues
+- **Connection pool behavior under sustained async load** - simple requests work, but complex async patterns exhaust or corrupt the pool
+- SSE (Server-Sent Events) connection timeout handling during long-running operations
+- Session state corruption when handling multiple concurrent internal async tasks
 
 ## Workaround
 
@@ -164,16 +216,28 @@ The bug may be related to:
 
 ## Minimal Reproduction Attempt
 
-A minimal echo server was created in `tests/qa/_ai_docs/bug_details/proxy_hang` but it does **not** trigger the bug even with 0.8s delay. This suggests the bug requires specific conditions present in environments_mcp_server:
-- Response size/complexity
-- Multiple tool registrations
-- Specific async patterns
+A minimal echo server was created in `tests/qa/_ai_docs/bug_details/proxy_hang` but it does **not** trigger the bug even with 0.8s delay. Combined with HANG-006 passing (fast `list_environments`), this confirms the bug is **complexity-dependent**, not timing-dependent.
+
+The bug requires conditions present in complex operations like `install_packages`:
+- **Deep async call chains** - conda solve → download → install involves multiple subprocess calls
+- **Response payload complexity** - install results contain structured data about packages, dependencies
+- **Sustained async load** - operations that keep internal connections busy for extended periods
+- **Multiple internal I/O operations** - file system, network, subprocess communication
 
 ## Files
 
+### Diagnostic scripts
 - `tests/qa/_ai_docs/scripts/test-env-mcp-direct.sh` - Tests environments_mcp_server directly (PASS)
 - `tests/qa/_ai_docs/scripts/test-mcp-compose-direct.sh` - Tests mcp-compose proxy (FAIL at 18)
-- `tests/qa/http_tools/test_guard_happy_path_hang.py` - Pytest that reproduces the issue
+
+### Automated tests
+- `tests/qa/http_tools/test_guard_happy_path_hang.py` - HTTP transport regression tests
+- `tests/qa/stdio_tools/test_guard_happy_path_hang_stdio.py` - STDIO transport regression tests
+
+### Minimal reproduction
+- `tests/qa/_ai_docs/bug_details/proxy_hang/echo_server.py` - Minimal MCP server (does NOT reproduce)
+- `tests/qa/_ai_docs/bug_details/proxy_hang/proxy.toml` - mcp-compose config for echo server
+- `tests/qa/_ai_docs/bug_details/proxy_hang/test_hang.sh` - Shell script test runner
 
 ## History
 

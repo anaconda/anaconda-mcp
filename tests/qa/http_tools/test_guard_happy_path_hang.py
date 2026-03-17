@@ -169,3 +169,47 @@ class TestHappyPathHangHttp:
             )
             if ITERATION_DELAY > 0 and i < WARM_ITERATIONS:
                 time.sleep(ITERATION_DELAY)
+
+    @pytest.mark.timeout(_BASE_TIMEOUT)
+    def test_hang_006_repeated_list_environments_does_not_hang(self, fresh_session_id):
+        """
+        HANG-006: conda_list_environments (lightweight read-only) must return within
+        TOOL_TIMEOUT on each of WARM_ITERATIONS repeated calls.
+
+        This test uses the lightest possible endpoint to establish baseline
+        behavior. list_environments is fast (~0.1-0.5s) and read-only.
+
+        If this test passes but HANG-004/005 fail, the bug is timing-dependent
+        and only triggers with slower operations.
+
+        If this test also fails, the bug affects all operations regardless of
+        execution time, making it much more likely to impact casual users.
+        """
+        for i in range(1, WARM_ITERATIONS + 1):
+            logger.info(
+                "HANG-006 [%d/%d] list_environments",
+                i,
+                WARM_ITERATIONS,
+            )
+            response, elapsed = _call_no_hang(
+                Tools.CONDA_LIST_ENVIRONMENTS,
+                {},
+                fresh_session_id,
+                f"HANG-006: conda_list_environments hung for > {TOOL_TIMEOUT}s "
+                f"(iteration {i}/{WARM_ITERATIONS}). "
+                "mcp-compose proxy failed on lightweight read-only operation. "
+                "KI-011 affects ALL operations, not just slow ones.",
+            )
+            result = _tool_result(response)
+            logger.info(
+                "HANG-006 [%d/%d] done in %.2fs — is_error=%s",
+                i,
+                WARM_ITERATIONS,
+                elapsed,
+                result.get(ToolResultFields.IS_ERROR),
+            )
+            assert not result.get(ToolResultFields.IS_ERROR), (
+                f"HANG-006 [{i}/{WARM_ITERATIONS}]: " f"conda_list_environments returned an error: {result}"
+            )
+            if ITERATION_DELAY > 0 and i < WARM_ITERATIONS:
+                time.sleep(ITERATION_DELAY)
