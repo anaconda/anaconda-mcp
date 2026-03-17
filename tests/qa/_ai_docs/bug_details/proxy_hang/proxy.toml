@@ -1,0 +1,28 @@
+# Minimal mcp-compose config for reproducing the proxy hang bug.
+#
+# Usage:
+#   python -m mcp_compose serve --config tests/qa/_ai_docs/bug_details/proxy_hang/proxy.toml
+
+[composer]
+name = "proxy"
+port = 7000
+log_level = "INFO"
+
+[transport]
+stdio_enabled = false
+streamable_http_enabled = true
+sse_enabled = false
+
+[[servers.proxied.streamable-http]]
+name = "echo"
+url = "http://localhost:7041/mcp"
+timeout = 60
+keep_alive = true
+reconnect_on_failure = true
+mode = "proxy"
+auto_start = true
+command = ["bash", "-c", "DELAY=0.8 python tests/qa/_ai_docs/bug_details/proxy_hang/echo_server.py"]
+startup_delay = 2
+
+[tool_manager]
+conflict_resolution = "prefix"
