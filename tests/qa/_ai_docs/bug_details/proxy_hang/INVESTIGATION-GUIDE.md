@@ -38,7 +38,7 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
 }
 ```
 
-**Warning**: Do NOT use `PYTHONASYNCIODEBUG=1` - it causes a separate issue (KI-012) with environment creation.
+**Warning**: Do NOT use `PYTHONASYNCIODEBUG=1` - it causes a separate issue (KI-025) with environment creation.
 
 ## Process Cleanup
 
@@ -230,7 +230,7 @@ GET stream disconnected, reconnecting in 1000ms...  <- TIMEOUT
 
 **Cause**: `PYTHONASYNCIODEBUG=1` in config
 
-**Fix**: Remove that environment variable (see KI-012)
+**Fix**: Remove that environment variable (see KI-025)
 
 ### Can't reproduce the hang
 

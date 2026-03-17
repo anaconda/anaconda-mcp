@@ -67,7 +67,7 @@ See [EVIDENCE-INDEX.md](./EVIDENCE-INDEX.md) for complete catalog.
 | Issue | Summary | Relationship |
 |-------|---------|--------------|
 | DESK-1355 | Chat Session Freezes | Same issue; PR #28 improved threshold from ~4 to ~17 |
-| KI-012 | Asyncio Thread Violation | Different bug - `create_environment` fails with PYTHONASYNCIODEBUG=1 |
+| KI-025 | Asyncio Thread Violation | Different bug - `create_environment` fails with PYTHONASYNCIODEBUG=1 |
 
 ## Environment
 

@@ -1,24 +1,45 @@
-# KI-012: Asyncio Event Loop Thread Violation in create_environment
+# KI-025: Claude Desktop fails to create conda environment after user adds PYTHONASYNCIODEBUG=1 to MCP config
+
+**Jira**: [DESK-1410](https://anaconda.atlassian.net/browse/DESK-1410)
 
 ## Summary
 
-`conda_create_environment` fails with "Non-thread-safe operation invoked on an event loop other than the current one" error. The operation fails but does not corrupt process state - subsequent requests succeed.
+User extends their Claude Desktop MCP server configuration with `PYTHONASYNCIODEBUG=1` (e.g., for debugging KI-011 proxy hang or other async issues). After this change, `conda_create_environment` fails with a cryptic "Non-thread-safe operation" error. The user sees environment creation fail repeatedly, but other operations like `list_environments` continue to work.
+
+**User action that triggers the bug**: Adding `"PYTHONASYNCIODEBUG": "1"` to the `env` section of anaconda-mcp configuration in Claude Desktop.
+
+**Workaround**: Remove `PYTHONASYNCIODEBUG=1` from the MCP config. Environment creation will work normally.
 
 ## Status
 
-- **Severity**: Low (production) / Medium (debug mode)
-- **Component**: environments_mcp_server (conda transaction layer)
-- **Related**: May be related to KI-011 (proxy hang) - both involve async operation issues
-- **Root cause**: Thread-safety violation exposed by `PYTHONASYNCIODEBUG=1`
+| Field | Value |
+|-------|-------|
+| Severity | Low (production) / Medium (debug mode) |
+| Component | environments_mcp_server (conda transaction layer) |
+| Affects | Users who added `PYTHONASYNCIODEBUG=1` to MCP config |
+| Does NOT affect | Users with default anaconda-mcp configuration |
+| Related | KI-011 (proxy hang) - both involve async operation issues |
+
+## User-Visible Symptoms (Claude Desktop)
+
+1. User adds debug settings to MCP config (including `PYTHONASYNCIODEBUG=1`)
+2. User asks Claude: "Create a conda environment called test-env"
+3. Claude attempts to create environment
+4. Error message appears: "Transaction execution failed: Non-thread-safe operation invoked on an event loop other than the current one"
+5. Environment is NOT created
+6. User retries - same error
+7. Other operations (list environments, install packages) still work
 
 ## Key Finding
 
 **The bug only manifests when `PYTHONASYNCIODEBUG=1` is set.**
 
-- With `PYTHONASYNCIODEBUG=1`: `create_environment` fails with thread-safety error
-- Without `PYTHONASYNCIODEBUG=1`: `create_environment` works normally
+| Configuration | Result |
+|---------------|--------|
+| With `PYTHONASYNCIODEBUG=1` | `create_environment` fails with thread-safety error |
+| Without `PYTHONASYNCIODEBUG=1` | `create_environment` works normally |
 
-This means:
+**What this means technically:**
 1. A real thread-safety violation exists in the code
 2. Python's asyncio debug mode enforces strict checks and raises the error
 3. In production (without debug flag), the violation is **silent**
@@ -32,20 +53,23 @@ This means:
 
 ## End User Impact
 
-**Affected users**: Claude Desktop users with Anaconda MCP
+**Affected users**: Claude Desktop users who extended their MCP server configuration with `PYTHONASYNCIODEBUG=1` for debugging purposes.
+
+**Not affected**: Users with default/standard anaconda-mcp configuration (no `PYTHONASYNCIODEBUG` setting).
 
 ### What happens
 
-1. User asks Claude to create a conda environment
-2. Tool call fails with transaction error
-3. User sees error message about operation failure
-4. Subsequent operations (like `list_environments`) still work
+1. User adds `PYTHONASYNCIODEBUG=1` to their Claude Desktop MCP config (e.g., for debugging other issues)
+2. User asks Claude to create a conda environment
+3. Tool call fails with transaction error
+4. User sees error message about operation failure
+5. Subsequent operations (like `list_environments`) still work
 
 ### User experience
 
 - **Symptom**: Environment creation fails with cryptic error
 - **Recovery**: Automatic - no restart needed
-- **Workaround**: Retry may work, or create environment manually
+- **Workaround**: Remove `PYTHONASYNCIODEBUG=1` from MCP config, or create environment manually
 
 ## Environment
 
@@ -53,6 +77,54 @@ This means:
 - **Transport**: STDIO (observed), likely affects HTTP too
 - **Python**: 3.13
 - **OS**: macOS
+
+## MCP Server Settings That Trigger This Bug
+
+The bug was observed with the following Claude Desktop configuration (`~/Library/Application Support/Claude/claude_desktop_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "anaconda-mcp": {
+      "command": "/opt/miniconda3/envs/anaconda-mcp-rc2-c111-py313/bin/python",
+      "args": ["-m", "anaconda_mcp", "serve", "--delay", "15"],
+      "env": {
+        "ANACONDA_MCP_PYTHON_EXECUTABLE": "/opt/miniconda3/envs/anaconda-mcp-rc2-c111-py313/bin/python",
+        "MCP_COMPOSE_CONFIG_DIR": "/opt/miniconda3/envs/anaconda-mcp-rc2-c111-py313/lib/python3.13/site-packages/anaconda_mcp",
+        "PYTHONUNBUFFERED": "1",
+        "PYTHONFAULTHANDLER": "1",
+        "PYTHONASYNCIODEBUG": "1",
+        "LOG_LEVEL": "DEBUG",
+        "MCP_COMPOSE_LOG_LEVEL": "DEBUG",
+        "MCP_LOG_LEVEL": "DEBUG",
+        "CONDA_MCP_SERVER_LOG_LEVEL": "DEBUG",
+        "HTTPX_LOG_LEVEL": "DEBUG",
+        "HTTPCORE_LOG_LEVEL": "DEBUG"
+      }
+    }
+  }
+}
+```
+
+**The problematic setting**: `"PYTHONASYNCIODEBUG": "1"` - This enables Python's asyncio debug mode which enforces strict thread-safety checks.
+
+**Safe configuration** (remove PYTHONASYNCIODEBUG):
+```json
+{
+  "mcpServers": {
+    "anaconda-mcp": {
+      "command": "/opt/miniconda3/envs/YOUR_ENV/bin/python",
+      "args": ["-m", "anaconda_mcp", "serve", "--delay", "15"],
+      "env": {
+        "PYTHONUNBUFFERED": "1",
+        "LOG_LEVEL": "DEBUG",
+        "MCP_COMPOSE_LOG_LEVEL": "DEBUG",
+        "CONDA_MCP_SERVER_LOG_LEVEL": "DEBUG"
+      }
+    }
+  }
+}
+```
 
 ## Reproduction
 
@@ -110,7 +182,7 @@ The error message format `('conda:transaction:failed', ...)` suggests:
 
 ### Difference from KI-011 (proxy hang)
 
-| Aspect | KI-011 (Hang) | KI-012 (This bug) |
+| Aspect | KI-011 (Hang) | KI-025 (This bug) |
 |--------|---------------|-------------------|
 | Symptom | Silent hang, no response | Error returned |
 | Transport | Incomplete (missing DELETE) | Complete cycle |

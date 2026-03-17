@@ -533,6 +533,24 @@ Then reload Cursor.
 
 ---
 
+### KI-025: Claude Desktop fails to create conda environment after user adds PYTHONASYNCIODEBUG=1 to MCP config
+**Status**: Open — [DESK-1410](https://anaconda.atlassian.net/browse/DESK-1410)
+**Severity**: Low (production) / Medium (debug mode)
+**Component**: environments_mcp_server (conda transaction layer)
+**Detailed docs**: `tests/qa/_ai_docs/bug_details/asyncio_thread/`
+
+**Description**: User extends their Claude Desktop MCP server configuration with `PYTHONASYNCIODEBUG=1` (e.g., for debugging KI-011 proxy hang). After this change, `conda_create_environment` fails with "Non-thread-safe operation invoked on an event loop other than the current one" error.
+
+**User action that triggers the bug**: Adding `"PYTHONASYNCIODEBUG": "1"` to the `env` section of anaconda-mcp configuration.
+
+**Key finding**: The bug only manifests when `PYTHONASYNCIODEBUG=1` is set. Without this flag, environment creation works normally. The flag exposes a latent thread-safety violation that is silent in production.
+
+**Workaround**: Remove `PYTHONASYNCIODEBUG=1` from MCP config.
+
+**Related**: KI-011 (proxy hang) - this issue was discovered while debugging KI-011.
+
+---
+
 ## Troubleshooting
 
 ### Accessing MCP server logs

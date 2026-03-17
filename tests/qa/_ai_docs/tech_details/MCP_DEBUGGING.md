@@ -148,9 +148,9 @@ kill <PID shown>
 
 **Fix**: Remove `PYTHONASYNCIODEBUG=1` from environment configuration
 
-**Note**: This flag is useful for debugging asyncio issues but causes `create_environment` to fail. See [KI-012](../bug_details/asyncio_thread/KI-012-asyncio-event-loop-thread-violation.md).
+**Note**: This flag is useful for debugging asyncio issues but causes `create_environment` to fail. See [KI-025](../bug_details/asyncio_thread/KI-025-asyncio-event-loop-thread-violation.md).
 
 ## Related Documentation
 
 - [KI-011: mcp-compose Proxy Hang](../bug_details/proxy_hang/KI-011-mcp-compose-proxy-hang.md)
-- [KI-012: Asyncio Event Loop Thread Violation](../bug_details/asyncio_thread/KI-012-asyncio-event-loop-thread-violation.md)
+- [KI-025: Asyncio Event Loop Thread Violation](../bug_details/asyncio_thread/KI-025-asyncio-event-loop-thread-violation.md)
