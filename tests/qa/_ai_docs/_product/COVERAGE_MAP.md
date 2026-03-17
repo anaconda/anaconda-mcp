@@ -36,6 +36,7 @@
 | | Installation Disclaimer | SETUP-001 | | + |
 | **Authentication** | Auto Login | AUTH-002 | + | + |
 | | Manual Login | AUTH-002 | + | + |
+| | API Key Authentication | CORE-001b | | + |
 | | Anonymous Mode | AUTH-001 | + | + |
 | | Private Channel Denial | AUTH-001a | | + |
 | | Token Management | AUTH-002 | + | + |

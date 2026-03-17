@@ -56,6 +56,9 @@ mindmap
       Anaconda Login
         Auto: Browser opens on serve
         Manual: anaconda login before serve
+      API Key Authentication
+        Env: ANACONDA_AUTH_API_KEY
+        Config: ~/.anaconda/config.toml
       Token Management
         Auto: Stored in system keyring
         Check: Token used for telemetry
@@ -100,6 +103,7 @@ mindmap
 | | Get Config Path | `anaconda-mcp claude-desktop path` | + | + |
 | | Installation Disclaimer | Terms shown after install | | + |
 | **Authentication** | Anaconda Login | Auto: Browser opens on serve | + | + |
+| | API Key Authentication | Env var or config file | | + |
 | | Token Management | Auto: Stored in system keyring | + | + |
 | **Configuration** | Environment Variables | `ANACONDA_MCP_LOG_LEVEL`, `ANACONDA_MCP_SEND_METRICS` | + | + |
 | | Config File | `mcp_compose.toml.template` | + | + |

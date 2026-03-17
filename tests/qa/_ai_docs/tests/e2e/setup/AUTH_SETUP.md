@@ -25,6 +25,7 @@ This backup is used by the cleanup procedure to restore your exact original stat
 | State | Tests | Channel Source |
 |-------|-------|----------------|
 | Logged in | CORE-001, AUTH-002 | `repo.anaconda.cloud` (private) |
+| API key auth | CORE-001b | `repo.anaconda.cloud` (private) |
 | Logged out + private channels | AUTH-001a | `repo.anaconda.cloud` (expect 403) |
 | Logged out + public channels | CORE-001a | `repo.anaconda.com` (public) |
 
@@ -71,6 +72,63 @@ flowchart LR
 | 4 | `conda config --remove-key default_channels` | Restores default channel routing |
 | 5 | Restore `.condarc.backup` | Ensures exact original state |
 | 6 | Restart Claude Desktop | MCP server picks up restored config |
+
+---
+
+## Prerequisites: API Key Authentication (CORE-001b)
+
+> **Use case**: User cannot run `anaconda login` due to port 8000 conflict with running Claude Desktop (see [KI-026/DESK-1411](../../../bug_details/port_conflict/KI-026-port-8000-conflict-anaconda-login.md)).
+
+### Option A: Environment Variable
+
+Set `ANACONDA_AUTH_API_KEY` in Claude Desktop MCP config:
+
+```json
+{
+  "mcpServers": {
+    "anaconda-mcp": {
+      "command": "/path/to/python",
+      "args": ["-m", "anaconda_mcp", "serve", "--delay", "15"],
+      "env": {
+        "ANACONDA_AUTH_API_KEY": "your-api-key-here"
+      }
+    }
+  }
+}
+```
+
+### Option B: Config File
+
+Add API key to `~/.anaconda/config.toml`:
+
+```toml
+[plugin.auth]
+api_key = "your-api-key-here"
+```
+
+### How to Get API Key
+
+1. Login via web browser at https://anaconda.cloud
+2. Go to Account Settings → API Keys
+3. Generate new API key
+4. Copy and use in Option A or B above
+
+### Verify Authentication
+
+Before running test, verify auth is working:
+
+```bash
+# Should show your username without prompting for login
+anaconda whoami
+```
+
+If you see `AuthenticationMissingError`, the API key is not configured correctly.
+
+### Gate Check
+
+Do NOT proceed if:
+- `anaconda whoami` does not show your username
+- Private channel access fails with 403
 
 ---
 
@@ -283,6 +341,13 @@ conda config --show channel_settings
 ---
 
 ## State Verification Checklist
+
+### API Key Auth State
+```
+[ ] ANACONDA_AUTH_API_KEY set (env var or config file)
+[ ] anaconda whoami → shows username (no login prompt)
+[ ] Terminal: conda create -n test python=3.11 → succeeds with private channels
+```
 
 ### Logged In State
 ```

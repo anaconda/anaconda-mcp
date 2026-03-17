@@ -4,6 +4,7 @@
 
 | Variable | Default | Description |
 |----------|---------|-------------|
+| `ANACONDA_AUTH_API_KEY` | (none) | API key for authentication (alternative to `anaconda login`) |
 | `ANACONDA_MCP_ANACONDA_DOMAIN` | (auto) | Anaconda API domain |
 | `ANACONDA_MCP_ENVIRONMENT` | production | Environment mode: production/staging |
 | `ANACONDA_MCP_LOG_LEVEL` | INFO | Logging level: DEBUG/INFO/WARNING/ERROR |
@@ -158,6 +159,30 @@ anaconda-mcp claude-desktop path
     }
   }
 }
+```
+
+### STDIO with API Key Authentication
+
+Use this to authenticate without running `anaconda login` (avoids port 8000 conflict — see [KI-026](../_tracking/KNOWN_ISSUES.md#ki-026)):
+
+```json
+{
+  "mcpServers": {
+    "anaconda-mcp": {
+      "command": "/path/to/python",
+      "args": ["-m", "anaconda_mcp", "serve", "--delay", "15"],
+      "env": {
+        "ANACONDA_AUTH_API_KEY": "your-api-key-here"
+      }
+    }
+  }
+}
+```
+
+**Alternative**: Add API key to `~/.anaconda/config.toml`:
+```toml
+[plugin.auth]
+api_key = "your-api-key-here"
 ```
 
 ## Claude Desktop Setup Quirks

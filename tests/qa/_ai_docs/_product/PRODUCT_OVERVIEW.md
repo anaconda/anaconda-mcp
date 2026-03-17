@@ -161,9 +161,10 @@ Currently, anaconda-mcp exposes tools from the **Environments MCP Server** with 
 ## Key Features
 
 ### 1. Authentication (Optional)
-- Browser-based Anaconda login
+- Browser-based Anaconda login (`anaconda login`)
+- API key authentication via `ANACONDA_AUTH_API_KEY` env var or `~/.anaconda/config.toml`
 - Token stored in system keyring
-- Required for some downstream features
+- Required for some downstream features (private channels)
 
 ### 2. Telemetry (Optional)
 - Sends metrics to Anaconda SnakeEyes service
