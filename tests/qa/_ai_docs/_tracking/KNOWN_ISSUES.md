@@ -357,12 +357,20 @@ When the user is logged in, the retry after the KI-018 first-call hang also fail
 
 ---
 
-### KI-011: mcp-compose Proxy Hangs and Corrupts Session on Tool Calls
+### KI-011: mcp-compose Proxy Hangs and Corrupts Session After ~17 Sequential Tool Calls
 **Status**: Open — Root cause identified (SSE stream timeout after 30 seconds)
 **Jira**: [DESK-1409](https://anaconda.atlassian.net/browse/DESK-1409) (new), [DESK-1355](https://anaconda.atlassian.net/browse/DESK-1355) (partial fix)
 **Component**: `mcp-compose` / MCP SDK SSE handling
 **Report to**: https://github.com/datalayer/mcp-compose
 **Detailed docs**: `tests/qa/_ai_docs/bug_details/proxy_hang/`
+
+**Affects ALL tool types** (confirmed 2026-03-18): This bug is NOT limited to `conda_install_packages`. Any sequence of ~17+ MCP tool calls triggers the hang, including:
+- `conda_install_packages` — original scenario (install packages one by one)
+- `conda_remove_environment` — batch deletion ("delete all test environments")
+- `conda_list_environments` — fails after threshold reached
+- Any mix of tools in a productive session
+
+**Common trigger: batch operations**. User asks "delete all environments with 'test' in name" → Claude makes 15-20+ sequential `conda_remove_environment` calls → hang occurs mid-deletion.
 
 **Root cause identified (2026-03-17)**: Live diagnostics captured during hang show the SSE stream disconnects after exactly 30 seconds when the response stops arriving:
 ```

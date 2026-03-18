@@ -6,15 +6,26 @@
 
 ## Title
 
-Claude Desktop chat freezes after ~17 conda_install_packages calls (mcp-compose proxy hang)
+~~Claude Desktop chat freezes after ~17 conda_install_packages calls (mcp-compose proxy hang)~~
+
+**Proposed update**: Claude Desktop chat freezes after ~17 sequential MCP tool calls (mcp-compose proxy hang)
 
 ## Summary
 
-Claude Desktop chat becomes unresponsive after approximately 17 sequential `conda_install_packages` tool calls during normal user workflow. The user sees Claude "thinking" indefinitely with no response or error message. After ~4 minutes, a timeout occurs, and all subsequent MCP requests fail until Claude Desktop is restarted.
+Claude Desktop chat becomes unresponsive after approximately 17 sequential MCP tool calls during normal user workflow. The user sees Claude "thinking" indefinitely with no response or error message. After ~4 minutes, a timeout occurs, and all subsequent MCP requests fail until Claude Desktop is restarted.
 
-**Reproduction scenario**: User creates a conda environment, then installs packages one by one (pyyaml, requests, six, python-dateutil, pytz, packaging, attrs...). Around the 11th-14th package install (~17th total tool call), the chat freezes.
+**Key finding (2026-03-18)**: This bug affects **ALL tool types**, not just `conda_install_packages`. Any sequence of ~17+ tool calls triggers the hang, including:
+- `conda_install_packages` (original scenario)
+- `conda_remove_environment` (batch deletion)
+- `conda_list_environments` (fails after threshold reached)
+- Any mix of tools
 
-**Relation to DESK-1355**: This issue belongs to the same category as [DESK-1355](https://anaconda.atlassian.net/browse/DESK-1355) (Chat Session Freezes After Tool Error), which was fixed in mcp-compose PR #28. That fix improved the hang threshold from ~4 to ~17 tool calls but did not fully resolve the underlying issue. DESK-1355 was triggered by tool errors returned in correct format; this case occurs during **successful `conda_install_packages` operations** when responses stop being forwarded after ~17 sessions.
+**Common trigger scenarios**:
+1. **Batch package installation**: User installs packages one by one (pyyaml, requests, six...) — hang around package 11-14
+2. **Batch environment deletion**: User asks "delete all environments with 'test' in name" — Claude makes 15-20+ sequential `conda_remove_environment` calls — hang occurs mid-deletion
+3. **Extended workflow**: Any productive session with many tool calls
+
+**Relation to DESK-1355**: This issue belongs to the same category as [DESK-1355](https://anaconda.atlassian.net/browse/DESK-1355) (Chat Session Freezes After Tool Error), which was fixed in mcp-compose PR #28. That fix improved the hang threshold from ~4 to ~17 tool calls but did not fully resolve the underlying issue. DESK-1355 was triggered by tool errors returned in correct format; this case occurs during **successful operations** when responses stop being forwarded after ~17 sessions.
 
 **Root cause**: After ~17 tool call sessions, the mcp-compose proxy stops forwarding responses from the downstream server. The SSE stream times out after 30 seconds of waiting, and internal TaskGroup state becomes corrupted.
 
@@ -150,6 +161,27 @@ python3.1 1508  localhost:4041 (LISTEN)                        <- server healthy
 3. Improve TaskGroup error isolation (don't poison all requests)
 4. Fix reconnection to recover pending requests
 
+## Additional Evidence: Batch Deletion Scenario (2026-03-18)
+
+User asked Claude to "delete all environments with 'test' in name" (20 environments). Claude made sequential `conda_remove_environment` calls:
+
+```
+22:46:19 - conda_remove_environment (call #6) - SUCCESS
+22:46:24 - conda_remove_environment (call #7) - SUCCESS
+...
+22:46:55 - conda_remove_environment (call #14) - SUCCESS
+22:46:57 - conda_remove_environment (call #15) - starts...
+22:48:34 - conda_list_environments (call #16) - starts...
+22:48:57 - GET stream disconnected, reconnecting in 1000ms...  <- HANG
+22:49:04 - Error executing tool conda_list_environments: unhandled errors in a TaskGroup (1 sub-exception)
+```
+
+**Key observations**:
+- Hang occurred at call #15-16 (consistent with ~17 threshold)
+- The error surfaced on `conda_list_environments`, not the deletion tool
+- Same `TaskGroup` error as original scenario
+- Batch deletion is a **very common user request** that easily triggers this bug
+
 ## Related Issues
 
 | Issue | Relationship |
@@ -159,6 +191,12 @@ python3.1 1508  localhost:4041 (LISTEN)                        <- server healthy
 ## Workaround
 
 None. User must restart Claude Desktop after hang occurs.
+
+**Mitigation suggestion**: For batch operations, users could run them in terminal instead:
+```bash
+# Instead of asking Claude to delete 20 environments
+conda env list | grep test | awk '{print $1}' | xargs -I {} conda remove -n {} --all -y
+```
 
 ---
 
