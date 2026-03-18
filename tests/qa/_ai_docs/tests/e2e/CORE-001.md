@@ -2,7 +2,9 @@
 
 > ← [Back to Test Catalog](../../QA_WALKTHROUGH.md#3-test-catalog)
 
-E2E happy path covering all 6 conda tools with authenticated user.
+E2E happy path covering all 6 conda tools with authenticated user (interactive login).
+
+> **Important**: Use EITHER interactive login OR API key auth — not both. For API key authentication, see [CORE-001b](./CORE-001b.md).
 
 | Step | Action | Expected | RC1 | RC2 |
 |------|--------|----------|:---:|:---:|
@@ -15,7 +17,7 @@ E2E happy path covering all 6 conda tools with authenticated user.
 | 6 | "Remove numpy from e2e-test" | Package removed | + | + |
 | 7 | "Delete e2e-test environment" | Environment removed | + | + |
 | 8 | "List my conda environments" | e2e-test not in list | + | + |
-| Post | [Cleanup](./setup/AUTH_SETUP.md#post-conditions--cleanup) | State restored | + | + |
+| Post | [Cleanup](./setup/AUTH_SETUP.md#cleanup-interactive-login) | State restored | + | + |
 
 ## Release Notes
 

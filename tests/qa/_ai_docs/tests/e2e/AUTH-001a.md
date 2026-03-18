@@ -8,7 +8,7 @@ Verify anonymous user gets explicit 403 error (not 404 or silent fallback) when 
 |------|--------|----------|:---:|:---:|
 | Pre | [Logged Out + Private Channels](./setup/AUTH_SETUP.md#prerequisites-logged-out--private-channels-auth-001a) | Auth state configured | | + |
 | 1 | "Create environment anon-test with Python 3.11" | HTTP 403 Forbidden | | + |
-| Post | [Cleanup](./setup/AUTH_SETUP.md#post-conditions--cleanup) | State restored | | + |
+| Post | [Cleanup](./setup/AUTH_SETUP.md#cleanup-interactive-login) | State restored | | + |
 
 ## Expected Error
 

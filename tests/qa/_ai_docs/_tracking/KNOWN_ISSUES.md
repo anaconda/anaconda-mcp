@@ -568,9 +568,33 @@ Then reload Cursor.
 **Workarounds**:
 1. Quit Claude Desktop → `anaconda login` → restart Claude Desktop
 2. Login before starting Claude Desktop
-3. Use API key instead: `export ANACONDA_AUTH_API_KEY="your-key"`
+3. ~~Use API key instead~~ — **blocked by KI-027** (API key auth doesn't work for MCP channel access)
 
 **Proposed resolution (feature request)**: Make mcp-compose upstream port configurable, or change default to avoid conflict with anaconda-auth.
+
+---
+
+### KI-027: API Key Authentication Does Not Work for MCP Channel Access
+**Status**: Open — Jira TBD
+**Severity**: Medium
+**Component**: anaconda-auth / anaconda-mcp
+**Detailed docs**: `tests/qa/_ai_docs/bug_details/api_key_auth/`
+
+**Description**: API key authentication via `ANACONDA_AUTH_API_KEY` environment variable or `~/.anaconda/config.toml` does not grant access to private conda channels when using anaconda-mcp. The `anaconda-auth` plugin requires a repo token installed via `anaconda token install`.
+
+**User scenario**: User sets API key → configures `.condarc` with private channels → asks Claude to create environment → fails with "Token not found for defaults. Please install token with `anaconda token install`."
+
+**Root cause**: The `anaconda-auth` plugin distinguishes between:
+- **API key**: Authenticates identity (works for `anaconda whoami`)
+- **Repo token**: Grants channel access (required for conda operations)
+
+The API key alone is insufficient for conda channel access.
+
+**Additional issue**: Even if API key auth worked, `ANACONDA_AUTH_API_KEY` set in Claude Desktop config is NOT passed to `environments-mcp-server` subprocess.
+
+**Workaround**: Use interactive login instead (quit Claude Desktop first due to KI-026 port conflict).
+
+**Related**: [KI-026](#ki-026-cannot-run-anaconda-login-while-claude-desktop-with-anaconda-mcp-is-running-port-8000-conflict) — the port 8000 conflict that motivated API key auth as a workaround.
 
 ---
 

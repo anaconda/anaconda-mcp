@@ -64,9 +64,12 @@ anaconda login
 ### Option 2: Login before starting Claude Desktop
 Authenticate first, then start Claude Desktop.
 
-### Option 3: Use API key instead of interactive login
+### ~~Option 3: Use API key instead of interactive login~~ — BLOCKED
+
+> **Warning**: This workaround does NOT work due to [KI-027](../api_key_auth/KI-027-api-key-auth-not-working-mcp.md). API key authentication does not grant access to private conda channels — the `anaconda-auth` plugin requires a repo token installed via `anaconda token install`.
+
 ```bash
-# Set in environment
+# Does NOT work for MCP channel access:
 export ANACONDA_AUTH_API_KEY="your-api-key"
 
 # Or in config file ~/.anaconda/config.toml
@@ -100,6 +103,7 @@ api_key = "your-api-key"
 
 - Port 8000 is also used by many development servers (Django, FastAPI default, etc.)
 - This conflict may affect other tools that use port 8000
+- [KI-027](../api_key_auth/KI-027-api-key-auth-not-working-mcp.md) — API key auth doesn't work (blocks Option 3 workaround)
 
 ## Evidence
 

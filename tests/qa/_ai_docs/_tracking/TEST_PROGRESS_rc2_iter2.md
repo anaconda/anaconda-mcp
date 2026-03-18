@@ -21,14 +21,16 @@
 
 ## Tests Per Config Progress
 
-| QA | Config | SETUP-001 | CORE-001a | CORE-001 | AUTH-001a | AUTH-002 | GUARD-001 | CHAN-001 | REGRESS-002 |
-|----|--------|:---------:|:---------:|:--------:|:---------:|:--------:|:---------:|:--------:|:-----------:|
-| QA 2 | macOS, 3.13 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
-| QA 1 | macOS, 3.10 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | — | — | — |
-| QA 1 | macOS, 3.11 | — | ⬜ | ⬜ | — | ⬜ | ⬜ | — | — |
-| QA 2 | macOS, 3.12 | — | ⬜ | ⬜ | ⬜ | ⬜ | — | ⬜ | ⬜ |
+| QA | Config | SETUP-001 | CORE-001a | CORE-001 | CORE-001b | AUTH-001a | AUTH-002 | GUARD-001 | CHAN-001 | REGRESS-002 |
+|----|--------|:---------:|:---------:|:--------:|:---------:|:---------:|:--------:|:---------:|:--------:|:-----------:|
+| QA 2 | macOS, 3.13 | ⬜ | ⬜ | ⬜ | ⬜ (blocked) | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
+| QA 1 | macOS, 3.10 | ⬜ | ⬜ | ⬜ | — | ⬜ | ⬜ | — | — | — |
+| QA 1 | macOS, 3.11 | — | ⬜ | ⬜ | — | — | ⬜ | ⬜ | — | — |
+| QA 2 | macOS, 3.12 | — | ⬜ | ⬜ | — | ⬜ | ⬜ | — | ⬜ | ⬜ |
 
 **Legend**: ⬜ Not started · 🔶 In progress · ✅ Pass · ❌ Fail · — Not in scope
+
+> **Note**: CORE-001b is blocked by [KI-027](../bug_details/api_key_auth/KI-027-api-key-auth-not-working-mcp.md) — API key auth does not work for MCP channel access.
 
 ---
 

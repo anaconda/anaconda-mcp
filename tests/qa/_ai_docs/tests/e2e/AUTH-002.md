@@ -11,7 +11,7 @@ Verify authenticated user can access private channels via MCP.
 | 2 | "Create environment auth-test with Python 3.11" | Environment created | + | + |
 | 3 | "Install numpy in auth-test" | Package installed | + | + |
 | 4 | Terminal: `conda list -n auth-test --show-channel-urls \| grep numpy` | URL contains `repo.anaconda.cloud` | + | + |
-| Post | [Cleanup](./setup/AUTH_SETUP.md#post-conditions--cleanup) | State restored | + | + |
+| Post | [Cleanup](./setup/AUTH_SETUP.md#cleanup-interactive-login) | State restored | + | + |
 
 ## Verification
 

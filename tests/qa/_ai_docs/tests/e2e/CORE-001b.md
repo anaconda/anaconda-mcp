@@ -4,10 +4,11 @@
 
 E2E happy path covering all 6 conda tools with API key authentication (no interactive login).
 
+**Use case**: User cannot run `anaconda login` due to port 8000 conflict with running Claude Desktop (see [KI-026/DESK-1411](../../bug_details/port_conflict/KI-026-port-8000-conflict-anaconda-login.md)).
 
 | Step | Action | Expected | RC2 |
 |------|--------|----------|:---:|
-| Pre | [API Key Auth](#prerequisites-api-key-authentication) | Auth state configured via API key | |
+| Pre | [API Key Auth](./setup/AUTH_SETUP.md#prerequisites-api-key-authentication-core-001b-blocked) | Auth state configured via API key | |
 | 1 | "List my conda environments" | Environment list returned | |
 | 2 | "Create environment e2e-test with Python 3.11" | Environment created | |
 | 3 | "Search packages matching numpy" | numpy described (no tool call — no `conda_search_packages` tool) | |
@@ -16,54 +17,11 @@ E2E happy path covering all 6 conda tools with API key authentication (no intera
 | 6 | "Remove numpy from e2e-test" | Package removed | |
 | 7 | "Delete e2e-test environment" | Environment removed | |
 | 8 | "List my conda environments" | e2e-test not in list | |
-| Post | [Cleanup](#post-conditions--cleanup) | State restored | |
+| Post | [Cleanup](./setup/AUTH_SETUP.md#cleanup-api-key-auth) | State restored | |
 
-## Prerequisites: API Key Authentication
+## Prerequisites
 
-### Option A: Environment Variable
-
-Set `ANACONDA_AUTH_API_KEY` in Claude Desktop MCP config:
-
-```json
-{
-  "mcpServers": {
-    "anaconda-mcp": {
-      "command": "/path/to/python",
-      "args": ["-m", "anaconda_mcp", "serve", "--delay", "15"],
-      "env": {
-        "ANACONDA_AUTH_API_KEY": "your-api-key-here"
-      }
-    }
-  }
-}
-```
-
-### Option B: Config File
-
-Add API key to `~/.anaconda/config.toml`:
-
-```toml
-[plugin.auth]
-api_key = "your-api-key-here"
-```
-
-### How to Get API Key
-
-1. Login via web browser at https://anaconda.cloud
-2. Go to Account Settings → API Keys
-3. Generate new API key
-4. Copy and use in Option A or B above
-
-### Verify Authentication
-
-Before running test, verify auth is working:
-
-```bash
-# Should show your username without prompting for login
-anaconda whoami
-```
-
-If you see `AuthenticationMissingError`, the API key is not configured correctly.
+See [AUTH_SETUP.md — API Key Authentication](./setup/AUTH_SETUP.md#prerequisites-api-key-authentication-core-001b).
 
 ## Release Notes
 
@@ -91,12 +49,7 @@ Same as [CORE-001](./CORE-001.md#expected-channel-information-logged-in-user) �
 
 ## Post-Conditions / Cleanup
 
-1. Remove test environment if created:
-   ```bash
-   conda env remove -n e2e-test
-   ```
-
-2. (Optional) Remove API key from config if no longer needed
+See [AUTH_SETUP.md — Cleanup: API Key Auth](./setup/AUTH_SETUP.md#cleanup-api-key-auth).
 
 ## Comparison with Other CORE-001 Variants
 
@@ -111,3 +64,4 @@ Same as [CORE-001](./CORE-001.md#expected-channel-information-logged-in-user) �
 - [CORE-001](./CORE-001.md) — Same test with interactive login
 - [CORE-001a](./CORE-001a.md) — Same test logged out (public channels)
 - [KI-026/DESK-1411](../../bug_details/port_conflict/KI-026-port-8000-conflict-anaconda-login.md) — Port 8000 conflict issue
+- [KI-027](../../bug_details/api_key_auth/KI-027-api-key-auth-not-working-mcp.md) — API key auth doesn't work (blocks this test)

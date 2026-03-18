@@ -15,7 +15,7 @@ E2E happy path covering all 6 conda tools with anonymous user (public channels).
 | 6 | "Remove numpy from e2e-test" | Package removed | + | + |
 | 7 | "Delete e2e-test environment" | Environment removed | + | + |
 | 8 | "List my conda environments" | e2e-test not in list | + | + |
-| Post | [Cleanup](./setup/AUTH_SETUP.md#post-conditions--cleanup) | State restored | + | + |
+| Post | [Cleanup](./setup/AUTH_SETUP.md#cleanup-interactive-login) | State restored | + | + |
 
 ## Release Notes
 
