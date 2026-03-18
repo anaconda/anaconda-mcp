@@ -36,7 +36,9 @@ The `environments-mcp-server` has an `override_channels: list[str]` parameter on
 
 ## Part C: Env Var = "false"
 
-> **Known issue**: [DESK-1403](https://anaconda.atlassian.net/browse/DESK-1403) — string `"false"` is parsed as truthy.
+> **Known issue**: [DESK-1403](https://anaconda.atlassian.net/browse/DESK-1403) — any non-empty string (including `"false"`, `"0"`) is parsed as truthy.
+>
+> **Workaround**: Use `""` (empty string) or remove the env var entirely to disable the feature.
 
 | Step | Action | Expected | RC1 | RC2 |
 |------|--------|----------|:---:|:---:|
@@ -80,10 +82,11 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
 |------|---------|------------------------------|---------------|
 | A | (not set) | No | Normal resolution (mixed channels) |
 | B | `"true"` | Yes | conda-forge ONLY |
-| C | `"false"` | No | Normal resolution (mixed channels) |
+| C | `"false"` | No (but see DESK-1403) | Normal resolution (mixed channels) |
 
 ## Notes
 
 - Part A and C should behave identically (explicit false = default)
+- **DESK-1403 workaround**: To explicitly disable, use `""` (empty string) or remove the env var entirely
 - If agent puts `--channel` flags in packages array, that's a workaround — verify packages still come from default channels
 - **Other MCP hosts**: Examples use Claude Desktop config. For other hosts (Cursor, Claude Code, etc.), set `CONDA_MCP_SERVER_ALLOW_OVERRIDE_CHANNELS` via their environment variable configuration mechanism.
