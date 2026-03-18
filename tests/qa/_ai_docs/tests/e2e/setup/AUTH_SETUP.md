@@ -66,12 +66,13 @@ flowchart TB
 
 | Step | Command | Why |
 |------|---------|-----|
-| 1 | `anaconda logout` | Clears authentication session |
-| 2 | `anaconda token remove` | **May fail** with `CondaKeyError` — skip if fails |
-| 3 | `conda config --remove-key channel_settings` | Removes auth handler config |
-| 4 | `conda config --remove-key default_channels` | Restores default channel routing |
-| 5 | Restore `.condarc.backup` | Ensures exact original state |
-| 6 | Restart Claude Desktop | MCP server picks up restored config |
+| 1 | `anaconda logout` | Clears CLI authentication session |
+| 2 | Logout at https://auth.anaconda.com/ | **Critical**: Clears browser session; prevents auto-login when MCP server triggers OAuth |
+| 3 | `anaconda token remove` | **May fail** with `CondaKeyError` — skip if fails |
+| 4 | `conda config --remove-key channel_settings` | Removes auth handler config |
+| 5 | `conda config --remove-key default_channels` | Restores default channel routing |
+| 6 | Restore `.condarc.backup` | Ensures exact original state |
+| 7 | Restart Claude Desktop | MCP server picks up restored config |
 
 ---
 
@@ -137,25 +138,31 @@ After completing CORE-001 or AUTH-002, run [Cleanup: Interactive Login](#cleanup
 Used to test anonymous user denial on private channels.
 
 ```bash
-# Step 1: Logout (but keep channel config)
+# Step 1: Logout from CLI (but keep channel config)
 anaconda logout
 
-# Step 2: Verify logged out
+# Step 2: Logout from browser
+# Open https://auth.anaconda.com/ and sign out
+# WHY: When MCP server loads while user is logged out via CLI, an auth request
+# may be sent to the browser. If the browser session is still active, OAuth
+# redirect auto-logs the user back in — breaking the "logged out" test state.
+
+# Step 3: Verify logged out
 anaconda whoami
 # [EXPECTED] "AuthenticationMissingError" or "You are not logged in"
 
-# Step 3: Verify default_channels STILL points to repo.anaconda.cloud
+# Step 4: Verify default_channels STILL points to repo.anaconda.cloud
 conda config --show default_channels
 # [EXPECTED]
 #   - https://repo.anaconda.cloud/repo/main
 #   - https://repo.anaconda.cloud/repo/r
 #   - https://repo.anaconda.cloud/repo/msys2
 
-# Step 4: Verify channel_settings STILL has anaconda-auth handler
+# Step 5: Verify channel_settings STILL has anaconda-auth handler
 conda config --show channel_settings
 # [EXPECTED] Entry for 'https://repo.anaconda.cloud/*' → 'anaconda-auth'
 
-# Step 5: Restart Claude Desktop
+# Step 6: Restart Claude Desktop
 ```
 
 ### Expected Behavior
@@ -173,34 +180,38 @@ Anonymous user attempting to access private channels should get:
 Used to test normal anonymous user flow with public channels.
 
 ```bash
-# Step 1: Logout
+# Step 1: Logout from CLI
 anaconda logout
 
-# Step 2: Remove token configuration
+# Step 2: Logout from browser
+# Open https://auth.anaconda.com/ and sign out
+# WHY: Prevents auto-login via OAuth redirect when MCP server loads
+
+# Step 3: Remove token configuration
 # NOTE: May fail with "CondaKeyError: 'signing_metadata_url_base'" — skip if fails
 anaconda token remove 2>/dev/null || true
 
-# Step 3: Remove channel_settings
+# Step 4: Remove channel_settings
 conda config --remove-key channel_settings 2>/dev/null || true
 
-# Step 4: Remove default_channels (restores to public defaults)
+# Step 5: Remove default_channels (restores to public defaults)
 conda config --remove-key default_channels 2>/dev/null || true
 
-# Step 5: Verify logged out
+# Step 6: Verify logged out
 anaconda whoami
 # [EXPECTED] "AuthenticationMissingError" or "You are not logged in"
 
-# Step 6: Verify default_channels restored to public
+# Step 7: Verify default_channels restored to public
 conda config --show default_channels
 # [EXPECTED]
 #   - https://repo.anaconda.com/pkgs/main
 #   - https://repo.anaconda.com/pkgs/r
 
-# Step 7: Verify channel_settings removed
+# Step 8: Verify channel_settings removed
 conda config --show channel_settings
 # [EXPECTED] channel_settings: []
 
-# Step 8: Restart Claude Desktop
+# Step 9: Restart Claude Desktop
 ```
 
 ---
@@ -225,25 +236,29 @@ conda remove -n e2e-test --all -y 2>/dev/null || true
 conda remove -n auth-test --all -y 2>/dev/null || true
 conda remove -n anon-test --all -y 2>/dev/null || true
 
-# Step 2: Logout
+# Step 2: Logout from CLI
 anaconda logout 2>/dev/null || true
 
-# Step 3: Remove token configuration
+# Step 3: Logout from browser
+# Open https://auth.anaconda.com/ and sign out
+# WHY: Prevents auto-login via OAuth redirect when MCP server loads
+
+# Step 4: Remove token configuration
 anaconda token remove 2>/dev/null || true
 
-# Step 4: Restore original .condarc from backup
+# Step 5: Restore original .condarc from backup
 cp ~/.condarc.backup ~/.condarc
 rm ~/.condarc.backup
 echo "Restored original .condarc"
 
-# Step 5: Verify cleanup
+# Step 6: Verify cleanup
 anaconda whoami
 # [EXPECTED] "AuthenticationMissingError" or "You are not logged in"
 
 conda config --show default_channels
 # [EXPECTED] Original state (matches your backup)
 
-# Step 6: Restart Claude Desktop to pick up restored config
+# Step 7: Restart Claude Desktop to pick up restored config
 ```
 
 #### Without Backup
@@ -256,17 +271,21 @@ conda remove -n e2e-test --all -y 2>/dev/null || true
 conda remove -n auth-test --all -y 2>/dev/null || true
 conda remove -n anon-test --all -y 2>/dev/null || true
 
-# Step 2: Logout
+# Step 2: Logout from CLI
 anaconda logout 2>/dev/null || true
 
-# Step 3: Remove token configuration
+# Step 3: Logout from browser
+# Open https://auth.anaconda.com/ and sign out
+# WHY: Prevents auto-login via OAuth redirect when MCP server loads
+
+# Step 4: Remove token configuration
 anaconda token remove 2>/dev/null || true
 
-# Step 4: Remove auth-related keys from .condarc
+# Step 5: Remove auth-related keys from .condarc
 conda config --remove-key channel_settings 2>/dev/null || true
 conda config --remove-key default_channels 2>/dev/null || true
 
-# Step 5: Verify cleanup
+# Step 6: Verify cleanup
 anaconda whoami
 # [EXPECTED] "AuthenticationMissingError" or "You are not logged in"
 
@@ -276,7 +295,7 @@ conda config --show default_channels
 conda config --show channel_settings
 # [EXPECTED] channel_settings: []
 
-# Step 6: Restart Claude Desktop to pick up restored config
+# Step 7: Restart Claude Desktop to pick up restored config
 ```
 
 > **Note**: Without backup, any custom `.condarc` settings unrelated to auth (e.g., custom channels, proxy settings) will be preserved. Only `channel_settings` and `default_channels` are removed.
@@ -290,6 +309,7 @@ conda config --show channel_settings
 | `anaconda token config` doesn't set `channel_settings` | Bug in anaconda-auth CLI | Manual Step 5a in login prerequisites |
 | `anaconda token remove` fails with `CondaKeyError` | Bug in anaconda-auth CLI | Skip and use `conda config --remove-key` instead |
 | DESK-1401 | MCP subprocess doesn't pass credentials | Blocks AUTH-002; AUTH-001a passes (403 expected) |
+| Browser session causes auto-login | CLI logout alone is insufficient; MCP server triggers OAuth which auto-logs in if browser session is active | Logout at https://auth.anaconda.com/ in addition to `anaconda logout` |
 
 ---
 
@@ -306,6 +326,7 @@ conda config --show channel_settings
 ### Logged Out + Private Channels State
 ```
 [ ] anaconda whoami → AuthenticationMissingError
+[ ] Browser: https://auth.anaconda.com/ → signed out (no active session)
 [ ] default_channels → repo.anaconda.cloud URLs (still)
 [ ] channel_settings → anaconda-auth entry (still)
 ```
@@ -313,6 +334,7 @@ conda config --show channel_settings
 ### Logged Out + Public Channels State
 ```
 [ ] anaconda whoami → AuthenticationMissingError
+[ ] Browser: https://auth.anaconda.com/ → signed out (no active session)
 [ ] default_channels → repo.anaconda.com URLs
 [ ] channel_settings → empty
 [ ] Terminal: conda create -n test python=3.11 → succeeds (public channels)
@@ -321,5 +343,6 @@ conda config --show channel_settings
 ### Clean State (after cleanup)
 ```
 [ ] anaconda whoami → AuthenticationMissingError
+[ ] Browser: https://auth.anaconda.com/ → signed out (no active session)
 [ ] .condarc → matches original backup
 ```
