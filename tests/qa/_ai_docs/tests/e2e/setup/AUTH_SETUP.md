@@ -59,8 +59,58 @@ flowchart TB
 | 1 | `anaconda login` | Authenticates user with Anaconda servers |
 | 2 | `anaconda token install` | Installs conda token for channel access |
 | 3 | `anaconda token config` | Configures `default_channels` to point to `repo.anaconda.cloud` |
-| 4 | Manual `channel_settings` | **Bug**: `anaconda token config` often doesn't set this; required for `anaconda-auth` plugin to handle credentials |
-| 5 | Restart Claude Desktop | MCP server reads `.condarc` at startup; changes not picked up dynamically |
+| 4 | Verify `.condarc` | **Critical**: Check that `default_channels` and `channel_settings` are correct |
+| 5 | Manual `channel_settings` fix | **Bug**: `anaconda token config` often doesn't set this; required for `anaconda-auth` plugin to handle credentials |
+| 6 | Restart Claude Desktop | MCP server reads `.condarc` at startup; changes not picked up dynamically |
+
+### Expected `.condarc` After Login
+
+After completing login steps, your `~/.condarc` should contain these key sections:
+
+```yaml
+# Required: Points to private Anaconda channels
+default_channels:
+  - https://repo.anaconda.cloud/repo/main
+  - https://repo.anaconda.cloud/repo/r
+  - https://repo.anaconda.cloud/repo/msys2
+
+# Required: Tells conda to use anaconda-auth plugin for authentication
+channel_settings:
+  - channel: https://repo.anaconda.cloud/*
+    auth: anaconda-auth
+
+# Optional: Your channel priority (may vary)
+channels:
+  - defaults
+```
+
+**Verification commands:**
+
+```bash
+# Check default_channels
+conda config --show default_channels
+# [EXPECTED]
+#   - https://repo.anaconda.cloud/repo/main
+#   - https://repo.anaconda.cloud/repo/r
+#   - https://repo.anaconda.cloud/repo/msys2
+
+# Check channel_settings
+conda config --show channel_settings
+# [EXPECTED]
+#   - channel: https://repo.anaconda.cloud/*
+#     auth: anaconda-auth
+
+# View full .condarc
+cat ~/.condarc
+```
+
+**Common issues:**
+
+| Issue | Symptom | Fix |
+|-------|---------|-----|
+| `default_channels` still points to `repo.anaconda.com` | Packages come from public channels | Re-run `anaconda token config` |
+| `channel_settings` is empty | "Token not found" error | Add manually (see Step 5a in Prerequisites) |
+| `channel_settings` has wrong URL pattern | Auth not applied to requests | Ensure pattern is `https://repo.anaconda.cloud/*` |
 
 ### Cleanup Steps
 
@@ -79,6 +129,8 @@ flowchart TB
 ## Prerequisites: Logged In (CORE-001, AUTH-002)
 
 > **Reminder**: Ensure you have created a backup first. See [Before You Begin](#before-you-begin--backup-recommended).
+>
+> **Reference**: See [Expected `.condarc` After Login](#expected-condarc-after-login) for the target configuration.
 
 ### Setup
 
@@ -100,6 +152,7 @@ conda config --show default_channels
 #   - https://repo.anaconda.cloud/repo/main
 #   - https://repo.anaconda.cloud/repo/r
 #   - https://repo.anaconda.cloud/repo/msys2
+# [IF STILL repo.anaconda.com] Re-run `anaconda token config`
 
 # Step 5: Verify channel_settings
 conda config --show channel_settings
@@ -118,7 +171,11 @@ EOF
 # Verify channel_settings is now set
 conda config --show channel_settings
 
-# Step 6: Restart Claude Desktop to pick up .condarc changes
+# Step 6: View full .condarc to confirm configuration
+cat ~/.condarc
+# [EXPECTED] Should match the structure in "Expected .condarc After Login" section
+
+# Step 7: Restart Claude Desktop to pick up .condarc changes
 ```
 
 ### Gate Check
