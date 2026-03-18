@@ -211,3 +211,5 @@ __marimo__/
 **/*.mcpb
 .DS_Store
 .cursor/mcp.json
+
+!tests/qa/_ai_docs/**/*.log

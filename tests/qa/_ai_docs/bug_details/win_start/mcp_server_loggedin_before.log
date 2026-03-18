@@ -1,0 +1,49 @@
+2026-03-11 18:14:28 - anaconda_mcp.auth - INFO - Initializing telemetry
+Loading configuration from: C:\Users\JULIAI~1\AppData\Local\Temp\mcp_compose_h2frx_vg.toml
+2026-03-11 18:14:28 - mcp_compose.process_manager - INFO - Starting ProcessManager
+
+\U0001f680 MCP Compose: anaconda-mcp
+Conflict Resolution: prefix
+Log Level: INFO
+
+\u2139\ufe0f  No proxied servers configured. Running with built-in tools only.
+
+Connecting to 1 Streamable HTTP server(s)...
+
+    conda
+    URL: http://localhost:4041/mcp
+    Auto-starting: C:\Users\JuliaIliukhina\miniconda3\envs\anaconda-mcp-rc-py310\python.exe -m environments_mcp_server start --transport streamable-http --port 4041
+    Process started (PID: 11612)
+2026-03-11 18:14:32 - httpx - INFO - HTTP Request: POST http://localhost:4041/mcp "HTTP/1.1 200 OK"
+2026-03-11 18:14:32 - mcp.client.streamable_http - INFO - Received session ID: 3e079a9697f24317a1cc90933e45e8ba
+2026-03-11 18:14:32 - mcp.client.streamable_http - INFO - Negotiated protocol version: 2025-11-25
+2026-03-11 18:14:32 - httpx - INFO - HTTP Request: POST http://localhost:4041/mcp "HTTP/1.1 404 Not Found"
+2026-03-11 18:14:32 - httpx - INFO - HTTP Request: GET http://localhost:4041/mcp "HTTP/1.1 404 Not Found"
+2026-03-11 18:14:32 - mcp.client.streamable_http - INFO - GET stream disconnected, reconnecting in 1000ms...
+2026-03-11 18:14:32 - httpx - INFO - HTTP Request: POST http://localhost:4041/mcp "HTTP/1.1 404 Not Found"
+2026-03-11 18:14:32 - httpx - INFO - HTTP Request: DELETE http://localhost:4041/mcp "HTTP/1.1 404 Not Found"
+2026-03-11 18:14:32 - mcp.client.streamable_http - WARNING - Session termination failed: 404
+2026-03-11 18:14:33 - mcp_compose.cli - ERROR - Streamable HTTP server conda failed during tool registration: unhandled errors in a TaskGroup (1 sub-exception)
+    Status: \u274c Tool registration failed
+
+\u2713 All servers started successfully!
+
+======================================================================
+\U0001f4e1 MCP Server Mode: STDIO
+======================================================================
+\u2713 Unified MCP server is ready!
+  Total tools: 0
+
+
+Running in STDIO mode - awaiting JSON-RPC messages on stdin...
+2026-03-11T22:14:33.007Z [anaconda-mcp] [info] Message from server: {"jsonrpc":"2.0","id":0,"result":{"protocolVersion":"2025-11-25","capabilities":{"experimental":{},"prompts":{"listChanged":false},"resources":{"subscribe":false,"listChanged":false},"tools":{"listChanged":false}},"serverInfo":{"name":"anaconda-mcp","version":"1.26.0"}}} { metadata: undefined }
+2026-03-11T22:14:33.008Z [anaconda-mcp] [info] Message from client: {"method":"notifications/initialized","jsonrpc":"2.0"} { metadata: undefined }
+2026-03-11T22:14:33.011Z [anaconda-mcp] [info] Message from client: {"method":"tools/list","params":{},"jsonrpc":"2.0","id":1} { metadata: undefined }
+2026-03-11T22:14:33.012Z [anaconda-mcp] [info] Message from client: {"method":"prompts/list","params":{},"jsonrpc":"2.0","id":2} { metadata: undefined }
+2026-03-11T22:14:33.012Z [anaconda-mcp] [info] Message from client: {"method":"resources/list","params":{},"jsonrpc":"2.0","id":3} { metadata: undefined }
+2026-03-11 18:14:33 - mcp.server.lowlevel.server - INFO - Processing request of type ListToolsRequest
+2026-03-11 18:14:33 - mcp.server.lowlevel.server - INFO - Processing request of type ListPromptsRequest
+2026-03-11 18:14:33 - mcp.server.lowlevel.server - INFO - Processing request of type ListResourcesRequest
+2026-03-11T22:14:33.015Z [anaconda-mcp] [info] Message from server: {"jsonrpc":"2.0","id":1,"result":{"tools":[]}} { metadata: undefined }
+2026-03-11T22:14:33.016Z [anaconda-mcp] [info] Message from server: {"jsonrpc":"2.0","id":2,"result":{"prompts":[]}} { metadata: undefined }
+2026-03-11T22:14:33.017Z [anaconda-mcp] [info] Message from server: {"jsonrpc":"2.0","id":3,"result":{"resources":[]}} { metadata: undefined }

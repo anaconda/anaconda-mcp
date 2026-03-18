@@ -1,0 +1,20 @@
+use anaconda-mcp, list conda environments
+
+7:15 PM
+
+Used anaconda-mcp integration, used a tool
+Used anaconda-mcp integration, used a tool
+Here are the conda environments found on your system:
+
+Name	Path
+metal	~/.anaconda-desktop-alpha/micromamba/envs/metal
+tedtfeb23202	~/.anaconda-desktop-alpha/.../metal/envs/tedtfeb23202
+testfeb2321	~/.anaconda-desktop-alpha/.../metal/envs/testfeb2321
+connector-env	~/.anaconda-desktop-integration-test/micromamba/envs/connector-env
+connector-env	~/.anaconda-desktop-itest/micromamba/envs/connector-env
+miniconda3	~/.anaconda-desktop-itest/miniconda3
+metal	~/.anaconda-desktop/micromamba/envs/metal
+miniconda3	/opt/miniconda3
+base	/opt/miniconda3/envs/anaconda-mcp-dev
+anaconda-mcp-qa	/opt/miniconda3/envs/anaconda-mcp-qa
+You have 10 environments total. A few things worth noting: there are two environments named metal and two named connector-env at different paths, and the base environment is located at /opt/miniconda3/envs/anaconda-mcp-dev. Let me know if you'd like to do anything with any of these!

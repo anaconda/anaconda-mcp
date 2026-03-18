@@ -1,0 +1,149 @@
+2026-03-11T22:54:08.222Z [anaconda-mcp] [info] Initializing server... { metadata: undefined }
+2026-03-11T22:54:08.295Z [anaconda-mcp] [info] Using MCP server command: C:\Users\JuliaIliukhina\miniconda3\envs\anaconda-mcp-rc-py310\python.exe with args and path: {
+  metadata: {
+    args: [ '-m', 'anaconda_mcp', 'serve', '--delay', '5', [length]: 5 ],
+    paths: [
+      'C:\\Program Files\\nodejs',
+      'C:\\Program Files\\Git\\cmd',
+      'C:\\Program Files\\Git\\mingw64\\bin',
+      'C:\\Windows\\system32',
+      'C:\\Windows',
+      'C:\\Windows\\System32\\Wbem',
+      'C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\',
+      'C:\\Windows\\System32\\OpenSSH\\',
+      'C:\\Program Files\\Cloudflare\\Cloudflare WARP\\',
+      'C:\\Program Files\\nodejs\\',
+      'C:\\Program Files\\Amazon\\AWSCLIV2\\',
+      'C:\\Program Files\\Docker\\Docker\\resources\\bin',
+      'C:\\Users\\JuliaIliukhina\\miniconda3',
+      'C:\\Users\\JuliaIliukhina\\miniconda3\\Library\\mingw-w64\\bin',
+      'C:\\Users\\JuliaIliukhina\\miniconda3\\Library\\usr\\bin',
+      'C:\\Users\\JuliaIliukhina\\miniconda3\\Library\\bin',
+      'C:\\Users\\JuliaIliukhina\\miniconda3\\Scripts',
+      'C:\\Users\\JuliaIliukhina\\AppData\\Local\\Microsoft\\WindowsApps',
+      'C:\\Users\\JuliaIliukhina\\AppData\\Local\\Programs\\Microsoft VS Code\\bin',
+      'C:\\Users\\JuliaIliukhina\\AppData\\Roaming\\npm',
+      'C:\\Users\\JuliaIliukhina\\AppData\\Local\\Microsoft\\WinGet\\Packages\\jqlang.jq_Microsoft.Winget.Source_8wekyb3d8bbwe',
+      [length]: 21
+    ]
+  }
+} %o
+2026-03-11T22:54:08.311Z [anaconda-mcp] [info] Server started and connected successfully { metadata: undefined }
+2026-03-11T22:54:09.204Z [anaconda-mcp] [info] Message from client: {"method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{"extensions":{"io.modelcontextprotocol/ui":{"mimeTypes":["text/html;profile=mcp-app"]}}},"clientInfo":{"name":"claude-ai","version":"0.1.0"}},"jsonrpc":"2.0","id":0} { metadata: undefined }
+2026-03-11T22:54:09.207Z [anaconda-mcp] [info] Client transport closed { metadata: undefined }
+2026-03-11T22:54:09.208Z [anaconda-mcp] [info] Server transport closed (intentional shutdown) { metadata: undefined }
+2026-03-11T22:54:09.208Z [anaconda-mcp] [info] Client transport closed { metadata: undefined }
+2026-03-11T22:54:09.207Z [anaconda-mcp] [info] Shutting down server... { metadata: undefined }
+2026-03-11T22:54:09.209Z [anaconda-mcp] [info] Initializing server... { metadata: undefined }
+2026-03-11T22:54:09.255Z [anaconda-mcp] [info] Using MCP server command: C:\Users\JuliaIliukhina\miniconda3\envs\anaconda-mcp-rc-py310\python.exe with args and path: {
+  metadata: {
+    args: [ '-m', 'anaconda_mcp', 'serve', '--delay', '5', [length]: 5 ],
+    paths: [
+      'C:\\Program Files\\nodejs',
+      'C:\\Program Files\\Git\\cmd',
+      'C:\\Program Files\\Git\\mingw64\\bin',
+      'C:\\Windows\\system32',
+      'C:\\Windows',
+      'C:\\Windows\\System32\\Wbem',
+      'C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\',
+      'C:\\Windows\\System32\\OpenSSH\\',
+      'C:\\Program Files\\Cloudflare\\Cloudflare WARP\\',
+      'C:\\Program Files\\nodejs\\',
+      'C:\\Program Files\\Amazon\\AWSCLIV2\\',
+      'C:\\Program Files\\Docker\\Docker\\resources\\bin',
+      'C:\\Users\\JuliaIliukhina\\miniconda3',
+      'C:\\Users\\JuliaIliukhina\\miniconda3\\Library\\mingw-w64\\bin',
+      'C:\\Users\\JuliaIliukhina\\miniconda3\\Library\\usr\\bin',
+      'C:\\Users\\JuliaIliukhina\\miniconda3\\Library\\bin',
+      'C:\\Users\\JuliaIliukhina\\miniconda3\\Scripts',
+      'C:\\Users\\JuliaIliukhina\\AppData\\Local\\Microsoft\\WindowsApps',
+      'C:\\Users\\JuliaIliukhina\\AppData\\Local\\Programs\\Microsoft VS Code\\bin',
+      'C:\\Users\\JuliaIliukhina\\AppData\\Roaming\\npm',
+      'C:\\Users\\JuliaIliukhina\\AppData\\Local\\Microsoft\\WinGet\\Packages\\jqlang.jq_Microsoft.Winget.Source_8wekyb3d8bbwe',
+      [length]: 21
+    ]
+  }
+} %o
+2026-03-11T22:54:09.267Z [anaconda-mcp] [info] Server started and connected successfully { metadata: undefined }
+2026-03-11T22:54:09.726Z [anaconda-mcp] [info] Message from client: {"method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{"extensions":{"io.modelcontextprotocol/ui":{"mimeTypes":["text/html;profile=mcp-app"]}}},"clientInfo":{"name":"claude-ai","version":"0.1.0"}},"jsonrpc":"2.0","id":0} { metadata: undefined }
+2026-03-11T22:54:11.233Z [anaconda-mcp] [info] Server transport closed { metadata: undefined }
+2026-03-11T22:54:11.233Z [anaconda-mcp] [info] Client transport closed { metadata: undefined }
+2026-03-11 18:54:16 - anaconda_mcp.auth - INFO - Initializing telemetry
+Loading configuration from: C:\Users\JULIAI~1\AppData\Local\Temp\mcp_compose_2diq_th2.toml
+2026-03-11 18:54:17 - mcp_compose.process_manager - INFO - Starting ProcessManager
+
+\U0001f680 MCP Compose: anaconda-mcp
+Conflict Resolution: prefix
+Log Level: INFO
+
+\u2139\ufe0f  No proxied servers configured. Running with built-in tools only.
+
+Connecting to 1 Streamable HTTP server(s)...
+
+    conda
+    URL: http://localhost:4041/mcp
+    Auto-starting: C:\Users\JuliaIliukhina\miniconda3\envs\anaconda-mcp-rc-py310\python.exe -m environments_mcp_server start --transport streamable-http --port 4041
+    Process started (PID: 14076)
+2026-03-11 18:54:20 - httpx - INFO - HTTP Request: POST http://localhost:4041/mcp "HTTP/1.1 200 OK"
+2026-03-11 18:54:20 - mcp.client.streamable_http - INFO - Received session ID: 05feafb7ead84853bfa23b0a02e46d26
+2026-03-11 18:54:20 - mcp.client.streamable_http - INFO - Negotiated protocol version: 2025-11-25
+2026-03-11 18:54:21 - httpx - INFO - HTTP Request: GET http://localhost:4041/mcp "HTTP/1.1 200 OK"
+2026-03-11 18:54:21 - httpx - INFO - HTTP Request: POST http://localhost:4041/mcp "HTTP/1.1 202 Accepted"
+2026-03-11 18:54:21 - httpx - INFO - HTTP Request: POST http://localhost:4041/mcp "HTTP/1.1 200 OK"
+2026-03-11 18:54:21 - mcp_compose.cli - INFO - Discovered 6 tools from Streamable HTTP server conda
+2026-03-11 18:54:21 - httpx - INFO - HTTP Request: DELETE http://localhost:4041/mcp "HTTP/1.1 200 OK"
+2026-03-11 18:54:21 - mcp_compose.cli - INFO - Registering 6 tools from Streamable HTTP server conda
+2026-03-11 18:54:21 - mcp_compose.tool_proxy - INFO - \u2713 Fixed argument model for tool conda_create_environment
+2026-03-11 18:54:21 - mcp_compose.tool_proxy - INFO - \u2713 Fixed argument model for tool conda_remove_environment
+2026-03-11 18:54:21 - mcp_compose.tool_proxy - INFO - \u2713 Fixed argument model for tool conda_remove_packages
+2026-03-11 18:54:21 - mcp_compose.tool_proxy - INFO - \u2713 Fixed argument model for tool conda_install_packages
+2026-03-11 18:54:21 - mcp_compose.tool_proxy - INFO - \u2713 Fixed argument model for tool conda_list_environments
+2026-03-11 18:54:21 - mcp_compose.tool_proxy - INFO - \u2713 Fixed argument model for tool conda_list_environment_packages
+2026-03-11 18:54:21 - mcp_compose.cli - INFO - Successfully registered 6 tools from Streamable HTTP server conda
+    Tools: 6 registered
+    Status: \u2713 Connected
+
+\u2713 All servers started successfully!
+
+======================================================================
+\U0001f4e1 MCP Server Mode: STDIO
+======================================================================
+\u2713 Unified MCP server is ready!
+  Total tools: 6
+
+\U0001f527 Available Tools:
+    conda_create_environment(environment_name, prefix, packages, environment_root_path)
+    conda_install_packages(packages, prefix, environment)
+    conda_list_environment_packages(prefix, environment)
+    conda_list_environments()
+    conda_remove_environment(environment_name, prefix)
+    conda_remove_packages(environment, prefix, packages)
+
+Running in STDIO mode - awaiting JSON-RPC messages on stdin...
+2026-03-11T22:54:21.744Z [anaconda-mcp] [info] Message from server: {"jsonrpc":"2.0","id":0,"result":{"protocolVersion":"2025-11-25","capabilities":{"experimental":{},"prompts":{"listChanged":false},"resources":{"subscribe":false,"listChanged":false},"tools":{"listChanged":false}},"serverInfo":{"name":"anaconda-mcp","version":"1.26.0"}}} { metadata: undefined }
+2026-03-11T22:54:21.745Z [anaconda-mcp] [info] Message from client: {"method":"notifications/initialized","jsonrpc":"2.0"} { metadata: undefined }
+2026-03-11T22:54:21.748Z [anaconda-mcp] [info] Message from client: {"method":"tools/list","params":{},"jsonrpc":"2.0","id":1} { metadata: undefined }
+2026-03-11T22:54:21.749Z [anaconda-mcp] [info] Message from client: {"method":"prompts/list","params":{},"jsonrpc":"2.0","id":2} { metadata: undefined }
+2026-03-11T22:54:21.749Z [anaconda-mcp] [info] Message from client: {"method":"resources/list","params":{},"jsonrpc":"2.0","id":3} { metadata: undefined }
+2026-03-11 18:54:21 - mcp.server.lowlevel.server - INFO - Processing request of type ListToolsRequest
+2026-03-11T22:54:21.751Z [anaconda-mcp] [info] Message from server: {"jsonrpc":"2.0","id":1,"result":{"tools":[{"name":"conda_create_environment","description":"Creates a new conda environment based on the user's project requirements.\n\nWHEN TO USE:\n- User describes a project goal or task (e.g., \"I need to build a forec...[9418 chars truncated]...s installed in the environment","inputSchema":{"additionalProperties":false,"properties":{"prefix":{"anyOf":[{"type":"string"},{"type":"null"}],"default":null},"environment":{"anyOf":[{"type":"string"},{"type":"null"}],"default":null}},"type":"object"}}]}} { metadata: undefined }
+2026-03-11 18:54:21 - mcp.server.lowlevel.server - INFO - Processing request of type ListPromptsRequest
+2026-03-11 18:54:21 - mcp.server.lowlevel.server - INFO - Processing request of type ListResourcesRequest
+2026-03-11T22:54:21.754Z [anaconda-mcp] [info] Message from server: {"jsonrpc":"2.0","id":2,"result":{"prompts":[]}} { metadata: undefined }
+2026-03-11T22:54:21.755Z [anaconda-mcp] [info] Message from server: {"jsonrpc":"2.0","id":3,"result":{"resources":[]}} { metadata: undefined }
+2026-03-11T22:54:45.594Z [anaconda-mcp] [info] Message from client: {"method":"tools/call","params":{"name":"conda_list_environments","arguments":{}},"jsonrpc":"2.0","id":4} { metadata: undefined }
+2026-03-11 18:54:45 - mcp.server.lowlevel.server - INFO - Processing request of type CallToolRequest
+2026-03-11 18:54:45 - httpx - INFO - HTTP Request: POST http://localhost:4041/mcp "HTTP/1.1 200 OK"
+2026-03-11 18:54:45 - mcp.client.streamable_http - INFO - Received session ID: 1d327e7792a547309c33b5cbee64e668
+2026-03-11 18:54:45 - mcp.client.streamable_http - INFO - Negotiated protocol version: 2025-11-25
+2026-03-11 18:54:46 - httpx - INFO - HTTP Request: GET http://localhost:4041/mcp "HTTP/1.1 200 OK"
+2026-03-11 18:54:46 - httpx - INFO - HTTP Request: POST http://localhost:4041/mcp "HTTP/1.1 202 Accepted"
+2026-03-11 18:54:46 - httpx - INFO - HTTP Request: POST http://localhost:4041/mcp "HTTP/1.1 200 OK"
+2026-03-11 18:55:16 - mcp.client.streamable_http - INFO - GET stream disconnected, reconnecting in 1000ms...
+2026-03-11 18:55:47 - httpx - INFO - HTTP Request: GET http://localhost:4041/mcp "HTTP/1.1 200 OK"
+2026-03-11T22:58:45.609Z [anaconda-mcp] [info] Message from client: {"jsonrpc":"2.0","method":"notifications/cancelled","params":{"requestId":4,"reason":"McpError: MCP error -32001: Request timed out"}} { metadata: undefined }
+2026-03-11 18:58:45 - mcp.server.lowlevel.server - INFO - Request 4 cancelled - duplicate response suppressed
+2026-03-11T22:58:45.624Z [anaconda-mcp] [info] Message from server: {"jsonrpc":"2.0","id":4,"error":{"code":0,"message":"Request cancelled"}} { metadata: undefined }
+2026-03-11T22:59:24.016Z [anaconda-mcp] [info] Message from client: {"method":"tools/call","params":{"name":"conda_list_environments","arguments":{}},"jsonrpc":"2.0","id":5} { metadata: undefined }
+2026-03-11 18:59:24 - mcp.server.lowlevel.server - INFO - Processing request of type CallToolRequest
+2026-03-11T22:59:54.297Z [anaconda-mcp] [info] Message from server: {"jsonrpc":"2.0","id":5,"result":{"content":[{"type":"text","text":"Error executing tool conda_list_environments: unhandled errors in a TaskGroup (1 sub-exception)"}],"isError":true}} { metadata: undefined }

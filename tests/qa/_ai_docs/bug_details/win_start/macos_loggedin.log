@@ -1,0 +1,115 @@
+2026-03-11T23:15:05.729Z [anaconda-mcp] [info] Initializing server... { metadata: undefined }
+2026-03-11T23:15:05.741Z [anaconda-mcp] [info] Using MCP server command: /opt/miniconda3/envs/anaconda-mcp-dev/bin/python with args and path: {
+  metadata: {
+    args: [ '-m', 'anaconda_mcp', 'serve', '--delay', '5', [length]: 5 ],
+    paths: [
+      '/usr/local/bin',
+      '/opt/homebrew/bin',
+      '/usr/bin',
+      '/bin',
+      '/usr/sbin',
+      '/sbin',
+      [length]: 6
+    ]
+  }
+} %o
+2026-03-11T23:15:05.742Z [anaconda-mcp] [info] Server started and connected successfully { metadata: undefined }
+2026-03-11T23:15:05.842Z [anaconda-mcp] [info] Message from client: {"method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{"extensions":{"io.modelcontextprotocol/ui":{"mimeTypes":["text/html;profile=mcp-app"]}}},"clientInfo":{"name":"claude-ai","version":"0.1.0"}},"jsonrpc":"2.0","id":0} { metadata: undefined }
+2026-03-11T23:15:06.040Z [anaconda-mcp] [info] Client transport closed { metadata: undefined }
+2026-03-11T23:15:06.040Z [anaconda-mcp] [info] Server transport closed (intentional shutdown) { metadata: undefined }
+2026-03-11T23:15:06.040Z [anaconda-mcp] [info] Client transport closed { metadata: undefined }
+2026-03-11T23:15:06.040Z [anaconda-mcp] [info] Shutting down server... { metadata: undefined }
+2026-03-11T23:15:06.040Z [anaconda-mcp] [info] Initializing server... { metadata: undefined }
+2026-03-11T23:15:06.046Z [anaconda-mcp] [info] Using MCP server command: /opt/miniconda3/envs/anaconda-mcp-dev/bin/python with args and path: {
+  metadata: {
+    args: [ '-m', 'anaconda_mcp', 'serve', '--delay', '5', [length]: 5 ],
+    paths: [
+      '/usr/local/bin',
+      '/opt/homebrew/bin',
+      '/usr/bin',
+      '/bin',
+      '/usr/sbin',
+      '/sbin',
+      [length]: 6
+    ]
+  }
+} %o
+2026-03-11T23:15:06.046Z [anaconda-mcp] [info] Server started and connected successfully { metadata: undefined }
+2026-03-11T23:15:06.131Z [anaconda-mcp] [info] Message from client: {"method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{"extensions":{"io.modelcontextprotocol/ui":{"mimeTypes":["text/html;profile=mcp-app"]}}},"clientInfo":{"name":"claude-ai","version":"0.1.0"}},"jsonrpc":"2.0","id":0} { metadata: undefined }
+2026-03-11 19:15:08 - anaconda_mcp.cli - INFO - Received SIGTERM, shutting down...
+2026-03-11T23:15:08.129Z [anaconda-mcp] [info] Server transport closed { metadata: undefined }
+2026-03-11T23:15:08.129Z [anaconda-mcp] [info] Client transport closed { metadata: undefined }
+2026-03-11 19:15:11 - anaconda_mcp.auth - INFO - Initializing telemetry
+Loading configuration from: /tmp/mcp_compose_cyqlno56.toml
+2026-03-11 19:15:11 - mcp_compose.process_manager - INFO - Starting ProcessManager
+
+🚀 MCP Compose: anaconda-mcp
+Conflict Resolution: ConflictResolutionStrategy.PREFIX
+Log Level: INFO
+
+ℹ️  No proxied servers configured. Running with built-in tools only.
+
+Connecting to 1 Streamable HTTP server(s)...
+
+  • conda
+    URL: http://localhost:4041/mcp
+    Auto-starting: /opt/miniconda3/envs/anaconda-mcp-dev/bin/python -m environments_mcp_server start --transport streamable-http --port 4041
+    Process started (PID: 63999)
+2026-03-11 19:15:14 - httpx - INFO - HTTP Request: POST http://localhost:4041/mcp "HTTP/1.1 200 OK"
+2026-03-11 19:15:14 - mcp.client.streamable_http - INFO - Received session ID: 5d0ada0cb8ee4a0eae8bc8cb59a31e13
+2026-03-11 19:15:14 - mcp.client.streamable_http - INFO - Negotiated protocol version: 2025-11-25
+2026-03-11 19:15:14 - httpx - INFO - HTTP Request: POST http://localhost:4041/mcp "HTTP/1.1 202 Accepted"
+2026-03-11 19:15:14 - httpx - INFO - HTTP Request: GET http://localhost:4041/mcp "HTTP/1.1 200 OK"
+2026-03-11 19:15:14 - httpx - INFO - HTTP Request: POST http://localhost:4041/mcp "HTTP/1.1 200 OK"
+2026-03-11 19:15:14 - mcp_compose.cli - INFO - Discovered 6 tools from Streamable HTTP server conda
+2026-03-11 19:15:14 - httpx - INFO - HTTP Request: DELETE http://localhost:4041/mcp "HTTP/1.1 200 OK"
+2026-03-11 19:15:14 - mcp_compose.cli - INFO - Registering 6 tools from Streamable HTTP server conda
+2026-03-11 19:15:14 - mcp_compose.tool_proxy - INFO - ✓ Fixed argument model for tool conda_create_environment
+2026-03-11 19:15:14 - mcp_compose.tool_proxy - INFO - ✓ Fixed argument model for tool conda_remove_environment
+2026-03-11 19:15:14 - mcp_compose.tool_proxy - INFO - ✓ Fixed argument model for tool conda_remove_packages
+2026-03-11 19:15:14 - mcp_compose.tool_proxy - INFO - ✓ Fixed argument model for tool conda_install_packages
+2026-03-11 19:15:14 - mcp_compose.tool_proxy - INFO - ✓ Fixed argument model for tool conda_list_environments
+2026-03-11 19:15:14 - mcp_compose.tool_proxy - INFO - ✓ Fixed argument model for tool conda_list_environment_packages
+2026-03-11 19:15:14 - mcp_compose.cli - INFO - Successfully registered 6 tools from Streamable HTTP server conda
+    Tools: 6 registered
+    Status: ✓ Connected
+
+✓ All servers started successfully!
+
+======================================================================
+📡 MCP Server Mode: STDIO
+======================================================================
+✓ Unified MCP server is ready!
+  Total tools: 6
+
+🔧 Available Tools:
+  • conda_create_environment(environment_name, prefix, packages, environment_root_path)
+  • conda_install_packages(packages, prefix, environment)
+  • conda_list_environment_packages(prefix, environment)
+  • conda_list_environments()
+  • conda_remove_environment(environment_name, prefix)
+  • conda_remove_packages(environment, prefix, packages)
+
+Running in STDIO mode - awaiting JSON-RPC messages on stdin...
+2026-03-11T23:15:14.874Z [anaconda-mcp] [info] Message from server: {"jsonrpc":"2.0","id":0,"result":{"protocolVersion":"2025-11-25","capabilities":{"experimental":{},"prompts":{"listChanged":false},"resources":{"subscribe":false,"listChanged":false},"tools":{"listChanged":false}},"serverInfo":{"name":"anaconda-mcp","version":"1.26.0"}}} { metadata: undefined }
+2026-03-11T23:15:14.874Z [anaconda-mcp] [info] Message from client: {"method":"notifications/initialized","jsonrpc":"2.0"} { metadata: undefined }
+2026-03-11T23:15:14.876Z [anaconda-mcp] [info] Message from client: {"method":"tools/list","params":{},"jsonrpc":"2.0","id":1} { metadata: undefined }
+2026-03-11T23:15:14.876Z [anaconda-mcp] [info] Message from client: {"method":"prompts/list","params":{},"jsonrpc":"2.0","id":2} { metadata: undefined }
+2026-03-11T23:15:14.876Z [anaconda-mcp] [info] Message from client: {"method":"resources/list","params":{},"jsonrpc":"2.0","id":3} { metadata: undefined }
+2026-03-11 19:15:14 - mcp.server.lowlevel.server - INFO - Processing request of type ListToolsRequest
+2026-03-11 19:15:14 - mcp.server.lowlevel.server - INFO - Processing request of type ListPromptsRequest
+2026-03-11 19:15:14 - mcp.server.lowlevel.server - INFO - Processing request of type ListResourcesRequest
+2026-03-11T23:15:14.877Z [anaconda-mcp] [info] Message from server: {"jsonrpc":"2.0","id":1,"result":{"tools":[{"name":"conda_create_environment","description":"Creates a new conda environment based on the user's project requirements.\n\nWHEN TO USE:\n- User describes a project goal or task (e.g., \"I need to build a forec...[9418 chars truncated]...s installed in the environment","inputSchema":{"additionalProperties":false,"properties":{"prefix":{"anyOf":[{"type":"string"},{"type":"null"}],"default":null},"environment":{"anyOf":[{"type":"string"},{"type":"null"}],"default":null}},"type":"object"}}]}} { metadata: undefined }
+2026-03-11T23:15:14.877Z [anaconda-mcp] [info] Message from server: {"jsonrpc":"2.0","id":2,"result":{"prompts":[]}} { metadata: undefined }
+2026-03-11T23:15:14.877Z [anaconda-mcp] [info] Message from server: {"jsonrpc":"2.0","id":3,"result":{"resources":[]}} { metadata: undefined }
+2026-03-11T23:15:34.201Z [anaconda-mcp] [info] Message from client: {"method":"tools/call","params":{"name":"conda_list_environments","arguments":{}},"jsonrpc":"2.0","id":4} { metadata: undefined }
+2026-03-11 19:15:34 - mcp.server.lowlevel.server - INFO - Processing request of type CallToolRequest
+2026-03-11 19:15:34 - httpx - INFO - HTTP Request: POST http://localhost:4041/mcp "HTTP/1.1 200 OK"
+2026-03-11 19:15:34 - mcp.client.streamable_http - INFO - Received session ID: 448d6735820b4b5f9f69e007ba7adcd7
+2026-03-11 19:15:34 - mcp.client.streamable_http - INFO - Negotiated protocol version: 2025-11-25
+2026-03-11 19:15:34 - httpx - INFO - HTTP Request: GET http://localhost:4041/mcp "HTTP/1.1 200 OK"
+2026-03-11 19:15:34 - httpx - INFO - HTTP Request: POST http://localhost:4041/mcp "HTTP/1.1 202 Accepted"
+2026-03-11 19:15:34 - httpx - INFO - HTTP Request: POST http://localhost:4041/mcp "HTTP/1.1 200 OK"
+2026-03-11 19:15:34 - httpx - INFO - HTTP Request: POST http://localhost:4041/mcp "HTTP/1.1 200 OK"
+2026-03-11 19:15:34 - httpx - INFO - HTTP Request: DELETE http://localhost:4041/mcp "HTTP/1.1 200 OK"
+2026-03-11T23:15:34.886Z [anaconda-mcp] [info] Message from server: {"jsonrpc":"2.0","id":4,"result":{"content":[{"type":"text","text":"{\"is_error\":false,\"error_description\":\"\",\"tool_result\":{\"environments\":[{\"name\":\"metal\",\"path\":\"/Users/iiliukhina/.anaconda-desktop-alpha/micromamba/envs/metal\"},{\"name\":\"tedtfeb23202\",\"path\":\"/Users/iiliukhina/.anaconda-desktop-alpha/micromamba/envs/metal/envs/tedtfeb23202\"},{\"name\":\"testfeb2321\",\"path\":\"/Users/iiliukhina/.anaconda-desktop-alpha/micromamba/envs/metal/envs/testfeb2321\"},{\"name\":\"connector-env\",\"path\":\"/Users/iiliukhina/.anaconda-desktop-integration-test/micromamba/envs/connector-env\"},{\"name\":\"connector-env\",\"path\":\"/Users/iiliukhina/.anaconda-desktop-itest/micromamba/envs/connector-env\"},{\"name\":\"miniconda3\",\"path\":\"/Users/iiliukhina/.anaconda-desktop-itest/miniconda3\"},{\"name\":\"metal\",\"path\":\"/Users/iiliukhina/.anaconda-desktop/micromamba/envs/metal\"},{\"name\":\"miniconda3\",\"path\":\"/opt/miniconda3\"},{\"name\":\"base\",\"path\":\"/opt/miniconda3/envs/anaconda-mcp-dev\"},{\"name\":\"anaconda-mcp-qa\",\"path\":\"/opt/miniconda3/envs/anaconda-mcp-qa\"}]}}"}],"isError":false}} { metadata: undefined }
