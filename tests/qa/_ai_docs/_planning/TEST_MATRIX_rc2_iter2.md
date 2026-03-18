@@ -71,14 +71,12 @@ Together, 3.11 + 3.12 cover every test in the suite. AUTH-002 runs on all four c
 
 ### Tests Per Configuration
 
-| QA | Config | SETUP-001 | CORE-001a | CORE-001 | CORE-001b | AUTH-001a | AUTH-002 | GUARD-001 | CHAN-001 | REGRESS-002 | Total |
-|----|--------|:---------:|:---------:|:--------:|:---------:|:---------:|:--------:|:---------:|:--------:|:-----------:|:-----:|
-| QA 2 | macOS, 3.13 | + | + | + | blocked | + | + | + | + | + | **8** |
-| QA 1 | macOS, 3.10 | + | + | + | — | + | + | — | — | — | **5** |
-| QA 1 | macOS, 3.11 | — | + | + | — | — | + | + | — | — | **4** |
-| QA 2 | macOS, 3.12 | — | + | + | — | + | + | — | + | + | **6** |
-
-> **Note**: CORE-001b is blocked by [KI-027](../bug_details/api_key_auth/KI-027-api-key-auth-not-working-mcp.md) — API key auth does not work for MCP channel access.
+| QA | Config | SETUP-001 | CORE-001a | CORE-001 | AUTH-001a | AUTH-002 | GUARD-001 | CHAN-001 | REGRESS-002 | Total |
+|----|--------|:---------:|:---------:|:--------:|:---------:|:--------:|:---------:|:--------:|:-----------:|:-----:|
+| QA 2 | macOS, 3.13 | + | + | + | + | + | + | + | + | **8** |
+| QA 1 | macOS, 3.10 | + | + | + | + | + | — | — | — | **5** |
+| QA 1 | macOS, 3.11 | — | + | + | — | + | + | — | — | **4** |
+| QA 2 | macOS, 3.12 | — | + | + | + | + | — | + | + | **6** |
 
 **Pairwise coverage check** — 3.11 + 3.12 together:
 
@@ -87,7 +85,6 @@ Together, 3.11 + 3.12 cover every test in the suite. AUTH-002 runs on all four c
 | SETUP-001 | — | — | covered by 3.13 + 3.10 |
 | CORE-001a | + | + | ✓ |
 | CORE-001 | + | + | ✓ |
-| CORE-001b | — | — | **blocked by KI-027** (API key auth doesn't work) |
 | AUTH-001a | — | + | ✓ |
 | AUTH-002 | + | + | ✓ |
 | GUARD-001 | + | — | ✓ |
@@ -97,7 +94,6 @@ Together, 3.11 + 3.12 cover every test in the suite. AUTH-002 runs on all four c
 **Rationale per test**:
 - **SETUP-001**: 3.13 (full) + 3.10 (sufficient) — installation disclaimer is version-independent; two configs sufficient
 - **CORE-001a / CORE-001**: all 4 configs — core flow is the baseline for every config
-- **CORE-001b**: 3.13 only — **BLOCKED by KI-027**; API key authentication does not work for MCP channel access; test cannot be executed until bug is fixed
 - **AUTH-001a**: 3.13, 3.10, 3.12 — anonymous private channel 403 behavior; confirmed working in Iteration 1, spot-check on 3 configs
 - **AUTH-002**: all 4 configs — connector 0.1.11 includes auth improvements; DESK-1401 may be resolved; must validate across all Python versions
 - **GUARD-001**: 3.13, 3.11 — guardrails are config-independent; two configs sufficient
@@ -113,7 +109,6 @@ Together, 3.11 + 3.12 cover every test in the suite. AUTH-002 runs on all four c
 | Windows | Medium | Deferred due to DESK-1405; re-evaluate for RC3 or GA |
 | HTTP transport | Low | No transport-specific bugs; STDIO is target |
 | SETUP-001 on 3.11, 3.12 | Low | Installation behavior is version-independent |
-| CORE-001b | N/A | **Blocked by KI-027** — API key auth doesn't work; cannot validate KI-026 workaround until fixed |
 | GUARD-001 on 3.10, 3.12 | Low | Guardrails are config-independent; covered on 3.13 + 3.11 |
 | CHAN-001 on 3.10, 3.11 | Low | `override_channels` is config-independent; covered on 3.13 + 3.12 |
 | REGRESS-002 on 3.10, 3.11 | Low | Fix already confirmed in Iteration 1; covered on 3.13 + 3.12 |

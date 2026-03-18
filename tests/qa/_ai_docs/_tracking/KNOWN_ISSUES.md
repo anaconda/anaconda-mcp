@@ -568,31 +568,46 @@ Then reload Cursor.
 **Workarounds**:
 1. Quit Claude Desktop → `anaconda login` → restart Claude Desktop
 2. Login before starting Claude Desktop
-3. ~~Use API key instead~~ — **blocked by KI-027** (API key auth doesn't work for MCP channel access)
+
+> **Note**: API key authentication is **not a viable alternative** — see [KI-027](#ki-027-conda_create_environment-fails-with-token-not-found-when-using-api-key-authentication-instead-of-interactive-login) (by design, cannot replace interactive login).
 
 **Proposed resolution (feature request)**: Make mcp-compose upstream port configurable, or change default to avoid conflict with anaconda-auth.
 
 ---
 
 ### KI-027: `conda_create_environment` fails with "Token not found" when using API key authentication instead of interactive login
-**Status**: Open — [DESK-1413](https://anaconda.atlassian.net/browse/DESK-1413)
-**Severity**: Medium
+**Status**: Closed: No Action / By Design — [DESK-1413](https://anaconda.atlassian.net/browse/DESK-1413)
+**Severity**: Lowest (not a bug)
 **Component**: anaconda-auth / anaconda-mcp
 **Detailed docs**: `tests/qa/_ai_docs/bug_details/api_key_auth/`
 
-**Description**: API key authentication via `ANACONDA_AUTH_API_KEY` environment variable or `~/.anaconda/config.toml` does not grant access to private conda channels when using anaconda-mcp. The `anaconda-auth` plugin requires a repo token installed via `anaconda token install`.
+**Description**: API key authentication via `ANACONDA_AUTH_API_KEY` environment variable or `~/.anaconda/config.toml` does not grant access to private conda channels when using anaconda-mcp. This is **by design** — API key authentication is architecturally incapable of replacing the interactive login flow for conda channel access.
 
 **User scenario**: User sets API key → configures `.condarc` with private channels → asks Claude to create environment → fails with "Token not found for defaults. Please install token with `anaconda token install`."
 
-**Root cause**: The `anaconda-auth` plugin distinguishes between:
-- **API key**: Authenticates identity (works for `anaconda whoami`)
-- **Repo token**: Grants channel access (required for conda operations)
+**Why this cannot work — by design (three independent failure points)**:
 
-The API key alone is insufficient for conda channel access.
+1. **`anaconda token install` requires OAuth browser session**: The API key cannot drive it. Even though `anaconda whoami` succeeds with an API key, `anaconda token install` requires an active OAuth browser session to fetch a repo token from the server.
 
-**Additional issue**: Even if API key auth worked, `ANACONDA_AUTH_API_KEY` set in Claude Desktop config is NOT passed to `environments-mcp-server` subprocess.
+2. **API key ≠ repo token**: The `anaconda-auth` plugin maintains a hard distinction:
+   - **API key**: Authenticates identity (works for `anaconda whoami`, API calls)
+   - **Repo token**: Grants conda channel access (required for conda operations against `repo.anaconda.cloud`)
 
-**Workaround**: Use interactive login instead (quit Claude Desktop first due to KI-026 port conflict).
+   The API key cannot substitute for the repo token in conda operations.
+
+3. **Environment variable not forwarded**: `ANACONDA_AUTH_API_KEY` set in Claude Desktop config is NOT passed to `environments-mcp-server` subprocess by `mcp-compose`.
+
+**Documentation reference**: The Anaconda docs recommend interactive login (`anaconda login` + `anaconda token install`) as the user-facing flow. API key configuration is scoped to "automated workflow environments" (CI/CD, Docker) where `anaconda token install` was already run interactively first.
+
+**The only supported end-user flow**:
+```bash
+# 1. Quit Claude Desktop (frees port 8000 — see KI-026)
+# 2. Interactive login
+anaconda login
+anaconda token install
+anaconda token config
+# 3. Restart Claude Desktop
+```
 
 **Related**: [KI-026](#ki-026-cannot-run-anaconda-login-while-claude-desktop-with-anaconda-mcp-is-running-port-8000-conflict) — the port 8000 conflict that motivated API key auth as a workaround.
 

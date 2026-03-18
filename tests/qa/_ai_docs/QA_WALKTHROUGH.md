@@ -33,11 +33,9 @@ flowchart TD
 |-------|-------|---------|
 | Backup .condarc | [AUTH_SETUP.md#backup](./tests/e2e/setup/AUTH_SETUP.md#before-you-begin--backup-recommended) | All auth tests |
 | Logged In | [AUTH_SETUP.md#logged-in](./tests/e2e/setup/AUTH_SETUP.md#prerequisites-logged-in-core-001-auth-002) | CORE-001, AUTH-002 |
-| API Key Auth | [AUTH_SETUP.md#api-key](./tests/e2e/setup/AUTH_SETUP.md#prerequisites-api-key-authentication-core-001b) | CORE-001b |
 | Logged Out + Public | [AUTH_SETUP.md#logged-out-public](./tests/e2e/setup/AUTH_SETUP.md#prerequisites-logged-out--public-channels-core-001a) | CORE-001a |
 | Logged Out + Private | [AUTH_SETUP.md#logged-out-private](./tests/e2e/setup/AUTH_SETUP.md#prerequisites-logged-out--private-channels-auth-001a) | AUTH-001a |
 | Cleanup (Interactive) | [AUTH_SETUP.md#cleanup](./tests/e2e/setup/AUTH_SETUP.md#cleanup-interactive-login) | After CORE-001, AUTH-002, AUTH-001a |
-| Cleanup (API Key) | [AUTH_SETUP.md#cleanup](./tests/e2e/setup/AUTH_SETUP.md#cleanup-api-key-auth) | After CORE-001b |
 
 ## 3. Test Catalog
 
@@ -46,7 +44,6 @@ flowchart TD
 | [SETUP-001](./tests/e2e/SETUP-001.md) | Installation disclaimer verification | | + |
 | [CORE-001](./tests/e2e/CORE-001.md) | Full tools flow — logged in | + | + |
 | [CORE-001a](./tests/e2e/CORE-001a.md) | Full tools flow — logged out (public channels) | + | + |
-| [CORE-001b](./tests/e2e/CORE-001b.md) | Full tools flow — API key authentication (**blocked by KI-027**) | | + |
 | [AUTH-001](./tests/e2e/AUTH-001.md) | Anonymous mode (public channels) | + | + |
 | [AUTH-001a](./tests/e2e/AUTH-001a.md) | Anonymous + private channels → 403 | | + |
 | [AUTH-002](./tests/e2e/AUTH-002.md) | Authenticated mode | + | + |

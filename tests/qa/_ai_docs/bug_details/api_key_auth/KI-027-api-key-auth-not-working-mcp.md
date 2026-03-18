@@ -6,17 +6,19 @@
 
 User generates API key at anaconda.cloud, configures it in `~/.anaconda/config.toml`, sets up `.condarc` with private channels (`repo.anaconda.cloud`), and asks Claude Desktop to create an environment. Operation fails with "Token not found for defaults. Please install token with `anaconda token install`."
 
-API key authentication is not a viable alternative to interactive login for MCP channel access.
+**Resolution**: This is **by design**, not a bug. API key authentication is architecturally incapable of replacing the interactive login flow for conda channel access.
 
 ## Status
 
 | Field | Value |
 |-------|-------|
-| Severity | Medium |
+| Status | **Closed: No Action / By Design** |
+| Severity | Lowest (not a bug) |
 | Component | anaconda-auth / anaconda-mcp |
-| Type | Bug / Feature Gap |
+| Type | By Design |
 | Affects | Users trying to use API key auth as alternative to interactive login |
 | Discovered | 2026-03-17, during CORE-001b testing |
+| Resolved | 2026-03-18 |
 | Client | Claude Desktop |
 | Transport | STDIO |
 
@@ -109,22 +111,33 @@ Details: ('conda', 'Token not found for defaults. Please install token with `ana
 
 ---
 
-## Root Cause Analysis
+## Why API Key Authentication Cannot Work — By Design
 
-### Issue 1: API Key vs Repo Token
+There are **three independent failure points**, any one of which alone would block the API key path from working.
 
-The `anaconda-auth` plugin distinguishes between two types of credentials:
+### Failure 1: `anaconda token install` requires OAuth browser session
 
-| Credential | Purpose | How obtained |
-|------------|---------|--------------|
-| API key | Authenticates identity | Generated at anaconda.cloud |
-| Repo token | Grants channel access | `anaconda token install` |
+This is the earliest and most fundamental break in the chain. The user flow assumes:
+- Set API key in `~/.anaconda/config.toml` or via `ANACONDA_AUTH_API_KEY`
+- `anaconda whoami` reports a valid user ✅
+- Therefore "I am logged in" and can run `anaconda token install`
 
-When conda accesses `repo.anaconda.cloud`, the `anaconda-auth` plugin looks for a **repo token**, not the API key. The API key alone is insufficient for channel access.
+But `anaconda whoami` and `anaconda token install` have **different authentication requirements**. The API key satisfies identity verification (`whoami`), but `anaconda token install` requires an active **OAuth browser session** to fetch a repo token from the server. The API key alone cannot initiate or complete that OAuth exchange.
 
-### Issue 2: Environment Variable Not Passed to Subprocess
+### Failure 2: API key ≠ repo token
 
-Even if API key auth were to work via env var, there's a secondary issue:
+The `anaconda-auth` plugin maintains a hard distinction between two credential types:
+
+| Credential | Purpose | How obtained | Works for |
+|------------|---------|--------------|-----------|
+| **API key** | Authenticates identity | Generated at anaconda.cloud UI | `anaconda whoami`, API calls |
+| **Repo token** | Grants conda channel access | `anaconda token install` (OAuth required) | conda operations against `repo.anaconda.cloud` |
+
+When conda accesses `repo.anaconda.cloud`, the `anaconda-auth` plugin specifically looks for a **repo token**. The API key is not checked and cannot substitute.
+
+### Failure 3: Environment variable not forwarded (MCP-specific)
+
+Even setting aside failures 1 and 2, `mcp-compose` does not pass environment variables from the parent `anaconda-mcp` process to the spawned `environments-mcp-server` subprocess:
 
 ```
 Claude Desktop
@@ -133,37 +146,28 @@ Claude Desktop
                               └── calls → conda → anaconda-auth (can't find API key)
 ```
 
-The `mcp-compose` framework does not pass environment variables from the parent process to spawned downstream MCP servers.
+---
+
+## Documentation Reference
+
+The Anaconda docs recommend interactive login as the user-facing flow:
+
+1. **[Tokens — primary user onboarding page](https://docs.anaconda.com/psm-cloud/tokens/)**: Explicitly states "If you are issuing a token for the first time or need to issue a new token, use the anaconda-auth CLI method" — the interactive browser flow.
+
+2. **[anaconda-auth command reference](https://www.anaconda.com/docs/anaconda-platform/cloud/admin/anaconda-auth-reference)**: The only page where `ANACONDA_AUTH_API_KEY` appears. It is filed under **Admin guides**, and scoped to "automated workflow environments" (CI/CD, Docker) — with the prerequisite that `anaconda token install` was already run interactively first.
 
 ---
 
-## Workaround
-
-**API key authentication is NOT a viable alternative to interactive login for MCP channel access.**
-
-Use interactive login instead:
+## The Only Supported Flow
 
 ```bash
-# Quit Claude Desktop (to free port 8000 — see KI-026)
-# Then:
+# 1. Quit Claude Desktop (frees port 8000 — see KI-026)
+# 2. Interactive login
 anaconda login
 anaconda token install
 anaconda token config
-# Restart Claude Desktop
+# 3. Restart Claude Desktop
 ```
-
----
-
-## Proposed Resolution
-
-### Option A: anaconda-auth should use API key for channel access
-The `anaconda-auth` conda plugin should be able to use the API key (from env var or config file) to authenticate channel requests, not just identity requests.
-
-### Option B: `anaconda token install` should work with API key auth
-If the API key is set, `anaconda token install` should be able to fetch the repo token without requiring interactive login first.
-
-### Option C: mcp-compose should pass environment variables to subprocesses
-At minimum, `ANACONDA_AUTH_API_KEY` (and other auth-related env vars) should be passed from the parent process to spawned downstream MCP servers.
 
 ---
 
@@ -183,5 +187,4 @@ At minimum, `ANACONDA_AUTH_API_KEY` (and other auth-related env vars) should be 
 ## Related
 
 - [KI-026/DESK-1411](../port_conflict/KI-026-port-8000-conflict-anaconda-login.md) — Port 8000 conflict that motivated API key auth workaround
-- [DESK-1401](https://anaconda.atlassian.net/browse/DESK-1401) — MCP subprocess doesn't pass credentials
-- [CORE-001b](../../tests/e2e/CORE-001b.md) — Test case blocked by this issue
+- [DESK-1401](https://anaconda.atlassian.net/browse/DESK-1401) — MCP subprocess doesn't pass credentials (separate issue, now fixed)

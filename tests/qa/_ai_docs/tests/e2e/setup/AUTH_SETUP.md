@@ -27,9 +27,6 @@ This backup is used by the cleanup procedure to restore your exact original stat
 | Logged in | CORE-001, AUTH-002 | `repo.anaconda.cloud` (private) | [Cleanup: Interactive Login](#cleanup-interactive-login) |
 | Logged out + private channels | AUTH-001a | `repo.anaconda.cloud` (expect 403) | [Cleanup: Interactive Login](#cleanup-interactive-login) |
 | Logged out + public channels | CORE-001a | `repo.anaconda.com` (public) | N/A (already logged out) |
-| API key auth | CORE-001b | `repo.anaconda.cloud` (private) | [Cleanup: API Key Auth](#cleanup-api-key-auth) |
-
-> **Warning**: API key authentication is currently **blocked by KI-027** — see [API Key Auth (Blocked)](#prerequisites-api-key-authentication-core-001b-blocked) section below.
 
 ---
 
@@ -208,105 +205,9 @@ conda config --show channel_settings
 
 ---
 
-## Prerequisites: API Key Authentication (CORE-001b) — BLOCKED
-
-> **Status**: BLOCKED by [KI-027](../../../bug_details/api_key_auth/KI-027-api-key-auth-not-working-mcp.md)
->
-> API key authentication does not work for MCP channel access. The `anaconda-auth` plugin requires a repo token installed via `anaconda token install`, which requires interactive login first. The API key alone is insufficient.
-
-**Use case**: User cannot run `anaconda login` due to port 8000 conflict with running Claude Desktop (see [KI-026/DESK-1411](../../../bug_details/port_conflict/KI-026-port-8000-conflict-anaconda-login.md)).
-
-**Current workaround**: Quit Claude Desktop, run `anaconda login` + `anaconda token install` + `anaconda token config`, then restart Claude Desktop.
-
-### Configuration (for reference — currently non-functional)
-
-#### Option A: Environment Variable
-
-Set `ANACONDA_AUTH_API_KEY` in Claude Desktop MCP config:
-
-```json
-{
-  "mcpServers": {
-    "anaconda-mcp": {
-      "command": "/path/to/python",
-      "args": ["-m", "anaconda_mcp", "serve", "--delay", "15"],
-      "env": {
-        "ANACONDA_AUTH_API_KEY": "your-api-key-here"
-      }
-    }
-  }
-}
-```
-
-**Note**: Even if API key auth worked, this env var is NOT passed to `environments-mcp-server` subprocess — see KI-027 for details.
-
-#### Option B: Config File
-
-Add API key to `~/.anaconda/config.toml`:
-
-```toml
-[plugin.auth]
-api_key = "your-api-key-here"
-```
-
-#### Required: .condarc Channel Configuration
-
-Same as interactive login — see [Prerequisites: Logged In](#prerequisites-logged-in-core-001-auth-002).
-
-#### How to Get API Key
-
-1. Login via web browser at https://anaconda.cloud
-2. Go to Account Settings → API Keys
-3. Generate new API key
-
-### Why It Doesn't Work
-
-| What works | What doesn't work |
-|------------|-------------------|
-| `anaconda whoami` shows username | `conda create` fails with "Token not found" |
-
-The `anaconda-auth` plugin distinguishes between:
-- **API key**: Authenticates identity (works for `anaconda whoami`)
-- **Repo token**: Grants channel access (required for conda operations, obtained via `anaconda token install`)
-
----
-
 ## Post-Conditions / Cleanup
 
 Run after completing auth-related tests to restore original state. Choose the cleanup procedure that matches your auth method.
-
----
-
-### Cleanup: API Key Auth
-
-Use after CORE-001b or when switching from API key to interactive login.
-
-```bash
-# Step 1: Remove any test environments
-conda remove -n e2e-test --all -y 2>/dev/null || true
-
-# Step 2: Remove API key from Claude Desktop config
-# Edit your claude_desktop_config.json and remove the ANACONDA_AUTH_API_KEY from env section
-# Or remove the entire env block if it only contained the API key
-
-# Step 3: Remove API key from config file (if used Option B)
-# Edit ~/.anaconda/config.toml and remove the [plugin.auth] section:
-#   [plugin.auth]
-#   api_key = "..."
-
-# Step 4: Verify cleanup
-anaconda whoami
-# [EXPECTED] "AuthenticationMissingError" or "You are not logged in"
-
-# Step 5: Restart Claude Desktop to pick up config changes
-```
-
-**Quick reference — what to remove:**
-
-| If you used | Remove |
-|-------------|--------|
-| Option A (env var) | `ANACONDA_AUTH_API_KEY` from `claude_desktop_config.json` |
-| Option B (config file) | `[plugin.auth]` section from `~/.anaconda/config.toml` |
 
 ---
 
@@ -393,15 +294,6 @@ conda config --show channel_settings
 ---
 
 ## State Verification Checklist
-
-### API Key Auth State
-```
-[ ] ANACONDA_AUTH_API_KEY set (env var or config file)
-[ ] default_channels → repo.anaconda.cloud URLs
-[ ] channel_settings → anaconda-auth entry
-[ ] anaconda whoami → shows username (no login prompt)
-[ ] Terminal: conda create -n test python=3.11 → succeeds with private channels
-```
 
 ### Logged In State
 ```
