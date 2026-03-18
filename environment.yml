@@ -2,7 +2,7 @@ name: anaconda-mcp
 dependencies:
   - python>=3.10,<=3.14
   - click>=8.1,<9.0
-  - anaconda-auth>=0.8.6
+  - anaconda-auth >=0.13.0,<0.15.0
   - environments-mcp-server
   - anaconda-opentelemetry
   - mcp-compose
