@@ -574,8 +574,8 @@ Then reload Cursor.
 
 ---
 
-### KI-027: API Key Authentication Does Not Work for MCP Channel Access
-**Status**: Open — Jira TBD
+### KI-027: `conda_create_environment` fails with "Token not found" when using API key authentication instead of interactive login
+**Status**: Open — [DESK-1413](https://anaconda.atlassian.net/browse/DESK-1413)
 **Severity**: Medium
 **Component**: anaconda-auth / anaconda-mcp
 **Detailed docs**: `tests/qa/_ai_docs/bug_details/api_key_auth/`
