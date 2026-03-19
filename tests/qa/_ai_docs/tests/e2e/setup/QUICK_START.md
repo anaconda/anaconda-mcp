@@ -23,30 +23,19 @@ conda create --name anaconda-mcp-rc2-pyXY \
   --channel 'https://conda.anaconda.org/t/an-19ec59a6-f3b4-4d62-a686-a882d9c1f209/anaconda-connector/' \
   python=X.Y \
   anaconda-mcp=1.0.0.rc.2 \
-  environments-mcp-server=1.0.0.rc.2
+  environments-mcp-server=1.0.0.rc.2 \
+  anaconda-connector-core=0.1.11 \
+  anaconda-connector-conda=0.1.11 \
+  anaconda-connector-utilities=0.1.11
 
 conda activate anaconda-mcp-rc2-pyXY
 
-# Verify (anaconda-connector is a transitive dep — confirm it resolved)
+# Verify
 anaconda-mcp --help
 conda list | grep -E "anaconda-mcp|environments-mcp|anaconda-connector|python"
 ```
 
-> **To pin specific `anaconda-connector` versions** for reproducibility (e.g. `0.1.11`):
-> ```bash
-> conda create --name anaconda-mcp-rc2-pyXY \
->   -c datalayer \
->   -c anaconda-cloud/label/dev \
->   -c defaults \
->   -c conda-forge \
->   --channel 'https://conda.anaconda.org/t/an-19ec59a6-f3b4-4d62-a686-a882d9c1f209/anaconda-connector/' \
->   python=X.Y \
->   anaconda-mcp=1.0.0.rc.2 \
->   environments-mcp-server=1.0.0.rc.2 \
->   anaconda-connector-core=0.1.11 \
->   anaconda-connector-conda=0.1.11 \
->   anaconda-connector-utilities=0.1.11
-> ```
+> For alternative installation options (transitive dependencies, version pinning) see [PINNING_CONNECTOR_VERSIONS.md](../../../tech_details/PINNING_CONNECTOR_VERSIONS.md).
 
 ---
 
