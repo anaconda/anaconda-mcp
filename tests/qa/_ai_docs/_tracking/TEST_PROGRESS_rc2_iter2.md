@@ -38,7 +38,7 @@
 |----------|---------|
 | **Fixed this iteration** | DESK-1401 (403 on private channels) — resolved with connector 0.1.11 |
 | **Bugs with workarounds** | DESK-1411 (port 8000 conflict) — quit Claude Desktop before `anaconda login` |
-| | DESK-1408 (package install error) — bigger delay in settings |
+| | ~~DESK-1408~~ — **Closed**: Claude Desktop update fixed the launch/kill loop |
 | | DESK-1402 — just first call of toll is with error, and it works well after that, user just have +1 tool call, not a blocker|
 | | DESK-1403 (string "false" truthy) — use `""` or remove env var |
 | **Bugs avoided** | DESK-1409 (proxy hang after ~17 calls) — used shorter test flows, avoided batch operations, **bug is consistently reproducible in Claude Desktop** |

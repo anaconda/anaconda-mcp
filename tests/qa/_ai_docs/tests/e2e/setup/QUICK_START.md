@@ -41,8 +41,6 @@ conda list | grep -E "anaconda-mcp|environments-mcp|anaconda-connector|python"
 
 ## Configure Claude Desktop
 
-> **[KI-023] Claude Desktop 1.1.6679 (macOS) — MCP server fails to receive tool calls**: After the Claude Desktop auto-update on 2026-03-13, the server enters a launch/kill loop and never dispatches `tools/call`. **Workaround**: add `"--delay", "15"` to the `args` in your config (see [KI-023](../../../_tracking/KNOWN_ISSUES.md#ki-023-claude-desktop-116679--mcp-server-launchkill-loop-toolscall-never-dispatched)).
-
 ### STDIO Transport (default)
 
 ```bash
@@ -54,8 +52,6 @@ Config created:
 ```json
 {"command": "/path/to/python", "args": ["-m", "anaconda_mcp", "serve"]}
 ```
-
-> **If using Claude Desktop 1.1.6679**: manually edit the config to add `"--delay", "15"` — see [KI-023](../../../_tracking/KNOWN_ISSUES.md#ki-023-claude-desktop-116679--mcp-server-launchkill-loop-toolscall-never-dispatched) for full config snippet.
 
 ### HTTP Transport
 

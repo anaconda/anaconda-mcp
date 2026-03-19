@@ -180,44 +180,16 @@ Retry with identical parameters succeeds immediately after "Loading tools" appea
 ---
 
 ### KI-023: Claude Desktop 1.1.6679 — MCP Server Launch/Kill Loop, `tools/call` Never Dispatched
-**Status**: Open — [DESK-1408](https://anaconda.atlassian.net/browse/DESK-1408)
+**Status**: Closed — [DESK-1408](https://anaconda.atlassian.net/browse/DESK-1408) (resolved by Claude Desktop update)
 **Severity**: High
 **Component**: Claude Desktop (client-side regression)
 **Platform**: macOS
 **Observed**: 2026-03-13 (after Claude Desktop auto-updated to v1.1.6679)
+**Resolved**: 2026-03-19 (Claude Desktop update fixed the issue)
 
-**Description**: After Claude Desktop updated to v1.1.6679 on macOS, the anaconda-mcp server enters a launch/kill loop on startup. The server completes a healthy handshake and registers all 6 tools, but no `tools/call` ever arrives. All MCP operations silently fail — the client never dispatches any tool calls.
+**Description**: After Claude Desktop updated to v1.1.6679 on macOS, the anaconda-mcp server entered a launch/kill loop on startup. The server completed a healthy handshake and registered all 6 tools, but no `tools/call` ever arrived.
 
-The same config works without issue in Cursor (STDIO) and in lower Claude Desktop versions.
-
-**Root cause (hypothesis)**: A timing/race condition introduced in Claude Desktop v1.1.6679. Claude Desktop appears to request the MCP server connection twice in rapid succession during startup — the second request kills the first before the server stabilizes. The `mcp-compose` internal HTTP server on port 4041 takes ~3 seconds to initialize before stdio is ready; the default `--delay 5` no longer provides sufficient margin.
-
-This is consistent with known Anthropic issues:
-- [#22299](https://github.com/anthropics/claude-code/issues/22299) — server handshake completes but `tools/call` never arrives, same `UtilityProcess Check: Extension not found` warning
-- [#31864](https://github.com/anthropics/claude-code/issues/31864) — identical launch/kill loop with same warning
-
-**Evidence** (from `~/Library/Logs/Claude/main.log`):
-```
-15:10:41 Launching MCP Server: anaconda-mcp
-15:10:41 Shutting down MCP Server: anaconda-mcp  ← killed immediately
-15:10:41 Launching MCP Server: anaconda-mcp
-15:10:41 Shutting down MCP Server: anaconda-mcp  ← killed again
-[warn] UtilityProcess Check: Extension anaconda-mcp not found in installed extensions
-```
-
-**Workaround**: Add `--delay 15` to the server startup args in `~/Library/Application Support/Claude/claude_desktop_config.json`:
-```json
-"anaconda-mcp": {
-  "command": "/opt/miniconda3/envs/anaconda-mcp-rc2-py312/bin/python",
-  "args": ["-m", "anaconda_mcp", "serve", "--delay", "15"],
-  "env": {
-    "ANACONDA_MCP_PYTHON_EXECUTABLE": "/opt/miniconda3/envs/anaconda-mcp-rc2-py312/bin/python",
-    "MCP_COMPOSE_CONFIG_DIR": "/opt/miniconda3/envs/anaconda-mcp-rc2-py312/lib/python3.12/site-packages/anaconda_mcp"
-  }
-}
-```
-
-**Affected versions**: `anaconda-mcp=1.0.0.rc.2`, `environments-mcp-server=1.0.0.rc.2`, `mcp SDK=1.26.0`, `fastmcp=3.0.2`, `mcp_compose=0.1.11`
+**Resolution**: Claude Desktop was updated and the bug is no longer reproducible. No `--delay 15` workaround is needed.
 
 ---
 

@@ -43,7 +43,7 @@ Tests passed using shorter flows, but real productive work (project setup, batch
 ## Minor Bugs (workarounds available)
 
 - [DESK-1411](https://anaconda.atlassian.net/browse/DESK-1411) — port 8000 conflict → quit Claude Desktop before `anaconda login`
-- [DESK-1408](https://anaconda.atlassian.net/browse/DESK-1408) — package install error → use bigger delay
+- ~~[DESK-1408](https://anaconda.atlassian.net/browse/DESK-1408)~~ — **Closed**: Claude Desktop update fixed the launch/kill loop
 - [DESK-1402](https://anaconda.atlassian.net/browse/DESK-1402) — first tool call errors → retry works
 - [DESK-1403](https://anaconda.atlassian.net/browse/DESK-1403) — string "false" truthy → use `""` or remove env var
 

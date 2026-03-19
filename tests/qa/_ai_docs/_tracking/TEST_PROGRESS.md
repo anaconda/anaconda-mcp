@@ -34,7 +34,7 @@ Pinned connector packages (`anaconda-connector-*=0.1.11`). Goal: validate connec
 | [DESK-1401](https://anaconda.atlassian.net/browse/DESK-1401) | `conda_create_environment` returns 403 despite valid authentication | Major | RC2 Iter1 |
 | [DESK-1402](https://anaconda.atlassian.net/browse/DESK-1402) | Tool "not loaded yet" on first call to `conda_install_packages` | Medium | RC2 Iter1 |
 | [DESK-1403](https://anaconda.atlassian.net/browse/DESK-1403) | `CONDA_MCP_SERVER_ALLOW_OVERRIDE_CHANNELS=false` parsed as truthy | Low | RC2 Iter1 |
-| [DESK-1408](https://anaconda.atlassian.net/browse/DESK-1408) | Claude Desktop 1.1.6679 — MCP server launch/kill loop (workaround: `--delay 15`) | High | RC2 Iter1+ |
+| [DESK-1408](https://anaconda.atlassian.net/browse/DESK-1408) | ~~Claude Desktop 1.1.6679 — MCP server launch/kill loop~~ | ~~High~~ | **Closed** (Claude Desktop update fixed it) |
 | [DESK-1341](https://anaconda.atlassian.net/browse/DESK-1341) | Incorrect error message when installing nonexistent package | Minor | RC1+ |
 | [DESK-1356](https://anaconda.atlassian.net/browse/DESK-1356) | HTTP setup wizard suggests wrong server command | Minor | RC1+ |
 | [DESK-1359](https://anaconda.atlassian.net/browse/DESK-1359) | Stale process port conflicts produce no actionable diagnostic | Medium | RC1+ |

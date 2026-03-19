@@ -14,7 +14,7 @@ QA testing identified four items not covered in the current documentation that m
 | # | Item | Severity | Related JIRA |
 |---|------|----------|--------------|
 | 1 | Boolean env var parsing behavior | Medium | [DESK-1403](https://anaconda.atlassian.net/browse/DESK-1403) |
-| 2 | Claude Desktop startup timing issue | High | [DESK-1408](https://anaconda.atlassian.net/browse/DESK-1408) |
+| 2 | ~~Claude Desktop startup timing issue~~ | ~~High~~ | [DESK-1408](https://anaconda.atlassian.net/browse/DESK-1408) — **Closed** (Claude Desktop update fixed it) |
 | 3 | Port default inconsistency (CLI 8000 vs config 2391) | Medium | — |
 | 4 | Port 8000 conflict with `anaconda login` (due to #3) | Medium | [DESK-1411](https://anaconda.atlassian.net/browse/DESK-1411) |
 | 5 | Private/internal channel access setup not documented | High | [DESK-1401](https://anaconda.atlassian.net/browse/DESK-1401) |
@@ -48,50 +48,24 @@ Omit the environment variable entirely to keep the feature disabled (default beh
 
 ---
 
-## 2. Claude Desktop Startup Timing Issue
+## ~~2. Claude Desktop Startup Timing Issue~~ — RESOLVED
 
-**Affects**: Claude Desktop v1.1.6679+ on macOS
+> **Status**: Closed (2026-03-19) — Claude Desktop was updated and the bug is no longer reproducible. No `--delay 15` workaround is needed.
 
-### What We Know
+~~**Affects**: Claude Desktop v1.1.6679+ on macOS~~
 
-After Claude Desktop updated to v1.1.6679, a timing/race condition causes the MCP server to enter a launch/kill loop. The server completes handshake and registers all 6 tools, but Claude Desktop kills and restarts it before the internal HTTP server (port 4041) stabilizes (~3 seconds initialization time).
+<details>
+<summary>Historical details (no longer applicable)</summary>
 
-**Observed in logs** (`~/Library/Logs/Claude/main.log`):
-```
-15:10:41 Launching MCP Server: anaconda-mcp
-15:10:41 Shutting down MCP Server: anaconda-mcp  ← killed immediately
-15:10:41 Launching MCP Server: anaconda-mcp
-15:10:41 Shutting down MCP Server: anaconda-mcp  ← killed again
-[warn] UtilityProcess Check: Extension anaconda-mcp not found in installed extensions
-```
+After Claude Desktop updated to v1.1.6679, a timing/race condition caused the MCP server to enter a launch/kill loop. The server completed handshake and registered all 6 tools, but Claude Desktop killed and restarted it before the internal HTTP server (port 4041) stabilized.
 
-This matches known Anthropic issues:
+This matched known Anthropic issues:
 - [#22299](https://github.com/anthropics/claude-code/issues/22299)
 - [#31864](https://github.com/anthropics/claude-code/issues/31864)
 
-### User Impact
+**Former workaround** (no longer needed): Add `--delay 15` to the server startup args.
 
-- MCP server appears connected but tool calls are never dispatched
-- All MCP operations silently fail
-- User sees tools listed but they don't respond
-
-### How to Fix
-
-Add `--delay 15` to the server startup args in Claude Desktop config:
-
-```json
-{
-  "mcpServers": {
-    "anaconda-mcp": {
-      "command": "/path/to/python",
-      "args": ["-m", "anaconda_mcp", "serve", "--delay", "15"],
-      "env": {
-        "ANACONDA_MCP_PYTHON_EXECUTABLE": "/path/to/python"
-      }
-    }
-  }
-}
-```
+</details>
 
 ---
 
@@ -230,7 +204,7 @@ Add a section documenting private channel access setup, including:
 | Issue ID | JIRA | Description |
 |----------|------|-------------|
 | KI-022 | [DESK-1403](https://anaconda.atlassian.net/browse/DESK-1403) | Boolean env var parsing |
-| KI-023 | [DESK-1408](https://anaconda.atlassian.net/browse/DESK-1408) | Claude Desktop launch/kill loop |
+| ~~KI-023~~ | [DESK-1408](https://anaconda.atlassian.net/browse/DESK-1408) | ~~Claude Desktop launch/kill loop~~ — **Closed** |
 | KI-026 | [DESK-1411](https://anaconda.atlassian.net/browse/DESK-1411) | Port 8000 conflict with `anaconda login` |
 | — | — | CLI vs config port default inconsistency (root cause of KI-026) |
 | KI-020 | [DESK-1401](https://anaconda.atlassian.net/browse/DESK-1401) | MCP returns 403 despite valid auth (credentials not passed to subprocess) |
