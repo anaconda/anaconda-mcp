@@ -70,7 +70,7 @@
 | QA 2 | macOS, 3.13 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | **8** |
 | QA 1 | macOS, 3.10 | — | + | + | — | — | — | — | — | **2** |
 | QA 1 | macOS, 3.11 | — | + | + | — | — | — | — | — | **2** |
-| QA 2 | macOS, 3.12 | — | + | + | — | — | — | — | — | **2** |
+| QA 2 | macOS, 3.12 | — | ✅ | ✅ | — | — | — | — | — | **2** |
 
 **Rationale**: Python 3.13 full suite completed. Remaining configs validate core CRUD flows only — version is about to publish, extended testing deferred to subsequent versions.
 

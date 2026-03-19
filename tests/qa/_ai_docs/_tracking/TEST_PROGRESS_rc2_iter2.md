@@ -28,7 +28,7 @@
 | QA 2 | macOS | Claude Desktop | 3.13 | STDIO | Full suite | ✅ Completed | 8/8 passed |
 | QA 1 | macOS | Claude Desktop | 3.10 | STDIO | Core only | ⬜ Not started | — |
 | QA 1 | macOS | Claude Desktop | 3.11 | STDIO | Core only | ⬜ Not started | — |
-| QA 2 | macOS | Claude Desktop | 3.12 | STDIO | Core only | ⬜ Not started | — |
+| QA 2 | macOS | Claude Desktop | 3.12 | STDIO | Core only | ✅ Completed | 2/2 passed |
 
 ### QA 2 · macOS · Python 3.13 — Completion Notes
 
@@ -55,7 +55,7 @@
 | QA 2 | macOS, 3.13 | ✅ | ✅ |
 | QA 1 | macOS, 3.10 | ⬜ | ⬜ |
 | QA 1 | macOS, 3.11 | ⬜ | ⬜ |
-| QA 2 | macOS, 3.12 | ⬜ | ⬜ |
+| QA 2 | macOS, 3.12 | ✅ | ✅ |
 
 **Legend**: ⬜ Not started · 🔶 In progress · ✅ Pass · ❌ Fail
 
