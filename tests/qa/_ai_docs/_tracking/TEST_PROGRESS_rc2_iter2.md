@@ -1,23 +1,41 @@
 # Test Progress — RC2, Iteration 2 (Connector 0.1.11)
 
-> <- [Testing Overview](./TEST_PROGRESS.md) · Matrix: [TEST_MATRIX_rc2_iter2.md](../_planning/TEST_MATRIX_rc2_iter2.md) · All bugs: [DESK-1119](https://anaconda.atlassian.net/browse/DESK-1119)
+> ← [Testing Overview](./TEST_PROGRESS.md) · Matrix: [TEST_MATRIX_rc2_iter2.md](../_planning/TEST_MATRIX_rc2_iter2.md)
+>
+> **Tracking**: [DESK-1421](https://anaconda.atlassian.net/browse/DESK-1421) (this sprint) · [DESK-1119](https://anaconda.atlassian.net/browse/DESK-1119) (all bugs)
 
 **Versions**: `anaconda-mcp=1.0.0.rc.2` · `environments-mcp-server=1.0.0.rc.2` · `anaconda-connector-core=0.1.11` · `anaconda-connector-conda=0.1.11` · `anaconda-connector-utilities=0.1.11`
 
 **Status**: 🔶 In progress
 
-**Date**: 2026-03-17
+**Date**: 2026-03-18
 
 ---
 
 ## E2E Progress
 
-| QA | OS | Client | Python | Transport | Strategy | Status | Result | Notes |
-|----|----|--------|--------|-----------|----------|--------|--------|-------|
-| QA 2 | macOS | Claude Desktop | 3.13 | STDIO | Full suite | 🔶 In progress | — | 3 passed / 5 unexecuted |
-| QA 1 | macOS | Claude Desktop | 3.10 | STDIO | Sufficient | ⬜ Not started | — | |
-| QA 1 | macOS | Claude Desktop | 3.11 | STDIO | Pairwise A | ⬜ Not started | — | |
-| QA 2 | macOS | Claude Desktop | 3.12 | STDIO | Pairwise B | ⬜ Not started | — | |
+| QA | OS | Client | Python | Transport | Strategy | Status | Result |
+|----|----|--------|--------|-----------|----------|--------|--------|
+| QA 2 | macOS | Claude Desktop | 3.13 | STDIO | Full suite | ✅ Completed | 8/8 passed |
+| QA 1 | macOS | Claude Desktop | 3.10 | STDIO | Sufficient | ⬜ Not started | — |
+| QA 1 | macOS | Claude Desktop | 3.11 | STDIO | Pairwise A | ⬜ Not started | — |
+| QA 2 | macOS | Claude Desktop | 3.12 | STDIO | Pairwise B | ⬜ Not started | — |
+
+### QA 2 · macOS · Python 3.13 — Completion Notes
+
+**All 8 tests passed** by using workarounds and shorter flows to avoid known bugs.
+
+| Category | Details |
+|----------|---------|
+| **Fixed this iteration** | DESK-1401 (403 on private channels) — resolved with connector 0.1.11 |
+| **Bugs with workarounds** | DESK-1411 (port 8000 conflict) — quit Claude Desktop before `anaconda login` |
+| | DESK-1408 (package install error) — bigger delay in settings |
+| | DESK-1402 — just first call of toll is with error, and it works well after that, user just have +1 tool call, not a blocker|
+| | DESK-1403 (string "false" truthy) — use `""` or remove env var |
+| **Bugs avoided** | DESK-1409 (proxy hang after ~17 calls) — used shorter test flows, avoided batch operations, **bug is consistently reproducible in Claude Desktop** |
+| **Closed by design** | DESK-1413 (API key auth) — not a bug; interactive login is the only supported flow |
+
+**Key takeaway**: Tests pass when using recommended flows and workarounds. Extended workflows (batch deletions, many sequential installs) may hit DESK-1409.
 
 ---
 
@@ -25,7 +43,7 @@
 
 | QA | Config | SETUP-001 | CORE-001a | CORE-001 | AUTH-001a | AUTH-002 | GUARD-001 | CHAN-001 | REGRESS-002 |
 |----|--------|:---------:|:---------:|:--------:|:---------:|:--------:|:---------:|:--------:|:-----------:|
-| QA 2 | macOS, 3.13 | ✅ | ✅ | ✅ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
+| QA 2 | macOS, 3.13 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | QA 1 | macOS, 3.10 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | — | — | — |
 | QA 1 | macOS, 3.11 | — | ⬜ | ⬜ | — | ⬜ | ⬜ | — | — |
 | QA 2 | macOS, 3.12 | — | ⬜ | ⬜ | ⬜ | ⬜ | — | ⬜ | ⬜ |
