@@ -12,14 +12,23 @@
 
 ---
 
+## Goals
+
+1. **Core flow validation** across all 4 Python versions (CORE-001, CORE-001a)
+2. **Bug retesting**: each QA retests their own opened bugs
+   - QA 1: retest bugs filed by QA 1
+   - QA 2: retest bugs filed by QA 2
+
+---
+
 ## E2E Progress
 
 | QA | OS | Client | Python | Transport | Strategy | Status | Result |
 |----|----|--------|--------|-----------|----------|--------|--------|
 | QA 2 | macOS | Claude Desktop | 3.13 | STDIO | Full suite | ✅ Completed | 8/8 passed |
-| QA 1 | macOS | Claude Desktop | 3.10 | STDIO | Sufficient | ⬜ Not started | — |
-| QA 1 | macOS | Claude Desktop | 3.11 | STDIO | Pairwise A | ⬜ Not started | — |
-| QA 2 | macOS | Claude Desktop | 3.12 | STDIO | Pairwise B | ⬜ Not started | — |
+| QA 1 | macOS | Claude Desktop | 3.10 | STDIO | Core only | ⬜ Not started | — |
+| QA 1 | macOS | Claude Desktop | 3.11 | STDIO | Core only | ⬜ Not started | — |
+| QA 2 | macOS | Claude Desktop | 3.12 | STDIO | Core only | ⬜ Not started | — |
 
 ### QA 2 · macOS · Python 3.13 — Completion Notes
 
@@ -41,14 +50,25 @@
 
 ## Tests Per Config Progress
 
-| QA | Config | SETUP-001 | CORE-001a | CORE-001 | AUTH-001a | AUTH-002 | GUARD-001 | CHAN-001 | REGRESS-002 |
-|----|--------|:---------:|:---------:|:--------:|:---------:|:--------:|:---------:|:--------:|:-----------:|
-| QA 2 | macOS, 3.13 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| QA 1 | macOS, 3.10 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | — | — | — |
-| QA 1 | macOS, 3.11 | — | ⬜ | ⬜ | — | ⬜ | ⬜ | — | — |
-| QA 2 | macOS, 3.12 | — | ⬜ | ⬜ | ⬜ | ⬜ | — | ⬜ | ⬜ |
+| QA | Config | CORE-001a | CORE-001 |
+|----|--------|:---------:|:--------:|
+| QA 2 | macOS, 3.13 | ✅ | ✅ |
+| QA 1 | macOS, 3.10 | ⬜ | ⬜ |
+| QA 1 | macOS, 3.11 | ⬜ | ⬜ |
+| QA 2 | macOS, 3.12 | ⬜ | ⬜ |
 
-**Legend**: ⬜ Not started · 🔶 In progress · ✅ Pass · ❌ Fail · — Not in scope
+**Legend**: ⬜ Not started · 🔶 In progress · ✅ Pass · ❌ Fail
+
+---
+
+## Bug Retesting Progress
+
+Each QA retests their own opened bugs.
+
+| QA | Bug ID | Title | Status |
+|----|--------|-------|--------|
+| QA 1 | — | *(list QA 1 opened bugs)* | — |
+| QA 2 | — | *(list QA 2 opened bugs)* | — |
 
 ---
 
