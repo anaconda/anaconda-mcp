@@ -19,7 +19,7 @@ set -uo pipefail
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
-ITERATIONS=${1:-20}
+ITERATIONS=${1:-50}
 PORT=${2:-5041}
 TIMEOUT_SECS=${TIMEOUT_SECS:-60}
 TEST_ENV=${TEST_ENV:-"guard-api-test"}
