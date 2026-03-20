@@ -10,22 +10,33 @@ on:
 
 jobs:
   conda-build:
-    name: Build conda package
-    runs-on: [self-hosted-amd64-medium-privileged-on-demand]
+    name: Build conda package (${{ matrix.config.os }}, py${{ matrix.python-version }})
+    runs-on: ${{ matrix.config.runner }}
 
     defaults:
       run:
         shell: bash -el {0}
 
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+        config:
+          - os: linux
+            runner: [self-hosted-amd64-medium-privileged-on-demand]
+          - os: macos
+            runner: macos-latest
+
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # required so GIT_DESCRIBE_TAG is resolved correctly
+          fetch-depth: 0
 
       - name: Setup Miniconda
         uses: conda-incubator/setup-miniconda@v3
         with:
           auto-activate-base: true
+          python-version: ${{ matrix.python-version }}
           use-mamba: true
           conda-solver: libmamba
 
@@ -40,6 +51,12 @@ jobs:
           conda config --add channels https://conda.anaconda.org/t/${{ secrets.ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN }}/anaconda-cloud/label/dev
           conda config --add channels https://conda.anaconda.org/t/${{ secrets.ANACONDA_CONNECTOR_TOKEN }}/anaconda-connector
 
+      - name: Write conda build config
+        run: |
+          printf 'python:\n  - "${{ matrix.python-version }}"\n' > conda-build/conda_build_config.yaml
+          echo "=== conda_build_config.yaml contents ==="
+          cat conda-build/conda_build_config.yaml
+
       - name: Build conda package
         run: |
           mkdir -p build/conda
@@ -49,6 +66,7 @@ jobs:
             -c https://conda.anaconda.org/t/${{ secrets.ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN }}/anaconda-cloud \
             -c https://conda.anaconda.org/t/${{ secrets.ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN }}/anaconda-cloud/label/dev \
             -c https://conda.anaconda.org/t/${{ secrets.ANACONDA_CONNECTOR_TOKEN }}/anaconda-connector \
+            -m conda-build/conda_build_config.yaml \
             --output-folder build/conda \
             conda-build
 
@@ -58,7 +76,7 @@ jobs:
       - name: Upload conda artifact
         uses: actions/upload-artifact@v4
         with:
-          name: conda-package
+          name: conda-package-${{ matrix.config.os }}-py${{ matrix.python-version }}
           path: build/conda/
 
   publish:
@@ -71,11 +89,12 @@ jobs:
         shell: bash -el {0}
 
     steps:
-      - name: Download conda artifact
+      - name: Download all conda artifacts
         uses: actions/download-artifact@v4
         with:
-          name: conda-package
+          pattern: conda-package-*
           path: build/conda/
+          merge-multiple: true
 
       - name: Setup Miniconda
         uses: conda-incubator/setup-miniconda@v3
@@ -119,11 +138,12 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Download conda artifact
+      - name: Download all conda artifacts
         uses: actions/download-artifact@v4
         with:
-          name: conda-package
+          pattern: conda-package-*
           path: build/conda/
+          merge-multiple: true
 
       - name: Determine if pre-release
         id: prerelease
