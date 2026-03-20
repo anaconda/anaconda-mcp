@@ -104,15 +104,7 @@ Full retesting details: [DESK-1423](https://anaconda.atlassian.net/browse/DESK-1
 | [DESK-1365](https://anaconda.atlassian.net/browse/DESK-1365) | Invalid argument error on multiple conda tools | QA 1 |
 | [DESK-1344](https://anaconda.atlassian.net/browse/DESK-1344) | [Windows] `anaconda-mcp` command not recognized | QA 1 |
 
-### ❓ Need Clarification (3)
-
-| Bug ID | Summary | Reporter | Question |
-|--------|---------|----------|----------|
-| [DESK-1416](https://anaconda.atlassian.net/browse/DESK-1416) | `conda list channel` shows repo.anaconda.com | QA 1 | May duplicate DESK-1358 — see Vlad's explanation |
-| [DESK-1424](https://anaconda.atlassian.net/browse/DESK-1424) | Environment not deleted — prohibited action | QA 1 | Need steps to reproduce, which guardrail blocks |
-| [DESK-1427](https://anaconda.atlassian.net/browse/DESK-1427) | `conda_install_packages` not available | QA 1 | Consistent or cold-start only? Need logs |
-
-### N/A — Not Bugs (5)
+### N/A — Not Bugs (8)
 
 | Bug ID | Summary | Reporter | Reason |
 |--------|---------|----------|--------|
@@ -121,6 +113,9 @@ Full retesting details: [DESK-1423](https://anaconda.atlassian.net/browse/DESK-1
 | [DESK-1394](https://anaconda.atlassian.net/browse/DESK-1394) | 403 Auth Interceptor | QA 2 | Feature request |
 | [DESK-1393](https://anaconda.atlassian.net/browse/DESK-1393) | Auth Toolset | QA 2 | Feature request |
 | [DESK-1392](https://anaconda.atlassian.net/browse/DESK-1392) | Expose `channels` parameter | QA 2 | Feature request |
+| [DESK-1416](https://anaconda.atlassian.net/browse/DESK-1416) | `conda list channel` shows repo.anaconda.com | QA 1 | No longer reproduced |
+| [DESK-1424](https://anaconda.atlassian.net/browse/DESK-1424) | Environment not deleted — prohibited action | QA 1 | No longer reproduced |
+| [DESK-1427](https://anaconda.atlassian.net/browse/DESK-1427) | `conda_install_packages` not available | QA 1 | No longer reproduced |
 
 ---
 
