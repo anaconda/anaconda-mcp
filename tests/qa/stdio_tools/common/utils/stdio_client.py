@@ -88,10 +88,10 @@ def _recv(proc: subprocess.Popen, *, timeout: float = TOOL_TIMEOUT) -> dict:
 # STDIO config writer
 # ---------------------------------------------------------------------------
 
-def _write_stdio_config(downstream_port: int, conda_env: str) -> Path:
+def _write_stdio_config(conda_env: str) -> Path:
     """
-    Write a mcp-compose TOML config that enables STDIO upstream transport and
-    auto-starts environments_mcp_server on `downstream_port`.
+    Write a mcp-compose TOML config that enables STDIO transport for both
+    upstream (test → mcp-compose) and downstream (mcp-compose → environments_mcp_server).
 
     Returns the resolved absolute path to the temporary config file.
     The caller is responsible for cleanup (or it is cleaned up when the OS
@@ -103,6 +103,8 @@ def _write_stdio_config(downstream_port: int, conda_env: str) -> Path:
         text=True,
     ).stdout.strip() or "python"
 
+    # Use STDIO downstream to avoid HTTP connection exhaustion (DESK-1409).
+    # The mcp-compose STDIO proxy fix handles proper request/response ID matching.
     config_text = f"""\
 [composer]
 name = "anaconda-mcp"
@@ -114,18 +116,11 @@ stdio_enabled = true
 streamable_http_enabled = false
 sse_enabled = false
 
-[[servers.proxied.streamable-http]]
+[[servers.proxied.stdio]]
 name = "conda"
-url = "http://localhost:{downstream_port}/mcp"
-timeout = 30
-keep_alive = true
-reconnect_on_failure = true
-max_reconnect_attempts = 10
-health_check_enabled = false
-mode = "proxy"
-auto_start = true
-command = ["{python_path}", "-m", "environments_mcp_server", "start", "--transport", "streamable-http", "--port", "{downstream_port}"]
-startup_delay = 5
+command = ["{python_path}", "-m", "environments_mcp_server", "start", "--transport", "stdio"]
+restart_policy = "on-failure"
+max_restarts = 3
 
 [tool_manager]
 conflict_resolution = "prefix"

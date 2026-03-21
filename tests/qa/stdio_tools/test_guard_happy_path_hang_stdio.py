@@ -4,8 +4,8 @@ successful tool responses over STDIO transport without hanging.
 
 Mirrors test_guard_happy_path_hang.py for the HTTP transport. The test process
 communicates with mcp-compose over stdin/stdout (newline-delimited JSON-RPC).
-mcp-compose's internal connection to environments_mcp_server is still Streamable
-HTTP in STDIO mode — only the upstream transport differs.
+mcp-compose's internal connection to environments_mcp_server also uses STDIO
+transport (DESK-1409 fix).
 
 Each test receives a fresh mcp-compose process via the function-scoped
 stdio_server fixture (conftest.py). Tests that trigger the hang corrupt the

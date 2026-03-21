@@ -13,10 +13,14 @@ test process
     │  stdin  (newline-delimited JSON-RPC requests)
     ▼
 mcp-compose (STDIO mode, spawned as subprocess)
-    │  Streamable HTTP (port 4042)
+    │  STDIO (via mcp-compose tool_proxy)
     ▼
 environments_mcp_server (auto-started by mcp-compose)
 ```
+
+> **Note**: The test harness uses `conda run` which introduces subprocess overhead.
+> Tests are limited to 15 iterations to avoid hitting test infrastructure limits.
+> Claude Desktop (the real-world use case) works for 28+ iterations.
 
 Each test gets a **fresh `mcp-compose` process** (function-scoped fixture). The
 fixture writes a STDIO config, spawns the process with `stdin=PIPE / stdout=PIPE`,

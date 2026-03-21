@@ -17,7 +17,6 @@ import signal
 import subprocess
 
 import pytest
-from common.constants.config import DOWNSTREAM_PORT
 from common.constants.test_data import ENV_NAME
 from common.utils.stdio_client import _recv, _send, _write_stdio_config
 
@@ -78,13 +77,17 @@ def stdio_server(request: pytest.FixtureRequest):
     yield → SIGTERM + cleanup.
     """
     conda_env = request.config.getoption("--server-conda-env")
-    config_path = _write_stdio_config(DOWNSTREAM_PORT, conda_env)
+    config_path = _write_stdio_config(conda_env)
     logger.info(
-        "Starting mcp-compose STDIO server (env=%s, downstream_port=%d, config=%s)",
+        "Starting mcp-compose STDIO server (env=%s, config=%s)",
         conda_env,
-        DOWNSTREAM_PORT,
         config_path,
     )
+
+    # Set PYTHONUNBUFFERED to ensure output is flushed promptly through the
+    # nested process chain (test → anaconda-mcp → mcp-compose → environments_mcp_server)
+    env = os.environ.copy()
+    env["PYTHONUNBUFFERED"] = "1"
 
     proc = subprocess.Popen(
         [
@@ -102,6 +105,7 @@ def stdio_server(request: pytest.FixtureRequest):
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         start_new_session=True,
+        env=env,
     )
 
     try:
