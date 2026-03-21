@@ -1,13 +1,13 @@
 # MCP Compose Configuration Template
-# 
+#
 # ✅ This is the PRIMARY configuration file
-# ✅ Edit this file to customize your configuration  
+# ✅ Edit this file to customize your configuration
 # ✅ Use {{PYTHON_EXECUTABLE}} for dynamic Python path injection
-# 
+#
 # The {{PYTHON_EXECUTABLE}} placeholder will be replaced at runtime with:
 # 1. ANACONDA_MCP_PYTHON_EXECUTABLE environment variable (if set), or
 # 2. sys.executable (the Python interpreter running anaconda-mcp)
-# 
+#
 # This file demonstrates all available configuration options
 
 # ============================================================================
@@ -43,20 +43,13 @@ domain = "anaconda.com"
 # ============================================================================
 
 # ============================================================================
-# Proxied Streamable HTTP MCP Servers
+# Proxied STDIO MCP Servers
 # ============================================================================
-[[servers.proxied.streamable-http]]
+[[servers.proxied.stdio]]
 name = "conda"
-url = "http://localhost:4041/mcp"
-timeout = 30
-keep_alive = true
-reconnect_on_failure = true
-max_reconnect_attempts = 10
-health_check_enabled = false
-mode = "proxy"
-auto_start = true
-command = ["{{PYTHON_EXECUTABLE}}", "-m", "environments_mcp_server", "start", "--transport", "streamable-http", "--port", "4041"]
-startup_delay = 3
+command = ["{{PYTHON_EXECUTABLE}}", "-m", "environments_mcp_server", "start", "--transport", "stdio"]
+restart_policy = "on-failure"
+max_restarts = 3
 
 
 # ============================================================================
