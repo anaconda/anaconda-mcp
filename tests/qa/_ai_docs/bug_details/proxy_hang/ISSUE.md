@@ -85,10 +85,11 @@ HTTP/2 multiplexes requests over a single TCP connection, avoiding the connectio
 
 ## Test Results After Fix
 
-- **50/50 iterations pass** (vs failing at 21)
+- **50/50 iterations pass** (vs failing at 21) - only when HTTP/2 actually negotiates
 - Response times: ~0.03s (vs ~0.85s with HTTP/1.1) - 28x faster
 
 ## Related
 
 - PR #28 fixed a similar issue with the deprecated `streamablehttp_client` (5-min SSE timeout)
 - This is a separate issue that emerged after PR #28
+- DESK-1409: Original bug report for proxy hang issue

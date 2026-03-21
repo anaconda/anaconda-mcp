@@ -50,7 +50,29 @@ async with httpx.AsyncClient(
 
 ## Changed Files
 
-- `mcp_compose/http_client.py` - Added `http2=True` and explicit connection limits (8 lines)
+- `mcp_compose/http_client.py` - Added HTTP/2 support and explicit connection limits
+
+## New Dependency
+
+HTTP/2 requires the `h2` package:
+
+```bash
+pip install httpx[http2]
+```
+
+The code gracefully falls back to HTTP/1.1 if `h2` is not installed, but **HTTP/2 is required for the fix to work**. Consider adding `httpx[http2]` to mcp-compose's dependencies.
+
+## Important: HTTP/2 Limitation
+
+**uvicorn does NOT support HTTP/2 over plain HTTP**. The fix only works when:
+1. Using HTTPS (TLS/SSL) - HTTP/2 negotiates via ALPN
+2. Using hypercorn instead of uvicorn - supports HTTP/2 over plain HTTP (h2c)
+
+For local development over plain HTTP with uvicorn, the fix won't take effect and the bug persists.
+
+### Workaround
+
+Use downstream MCP servers directly with STDIO transport instead of through mcp-compose HTTP proxy.
 
 ## Testing
 

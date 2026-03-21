@@ -4,7 +4,12 @@
 
 **File**: `mcp_compose/http_client.py`
 
-**Change**: Added 8 lines to enable HTTP/2 and set explicit connection limits
+**Change**: Added HTTP/2 support (with fallback) and explicit connection limits
+
+**Dependency**: Requires `h2` package for HTTP/2:
+```bash
+pip install httpx[http2]
+```
 
 ```diff
      @asynccontextmanager
@@ -42,13 +47,44 @@ After ~20 cycles, connection resources are exhausted and uvicorn stops accepting
 - **No connection cycling**: Reuses connection instead of create/destroy
 - **Better cleanup**: Stream-based model handles resource cleanup gracefully
 
-## Results
+## Results (Unit Test)
 
 | Metric | Before | After |
 |--------|--------|-------|
 | Max iterations | 20 (hangs at 21) | 50+ |
 | Response time | ~0.85s | ~0.03s |
 | Connection pattern | New connection per call | Multiplexed |
+
+## E2E Verification (DESK-1409)
+
+| Test | Config | Result |
+|------|--------|--------|
+| Through mcp-compose | Claude Desktop → anaconda-mcp → mcp-compose → environments-mcp | FAIL at iteration 15 |
+| Direct STDIO | Claude Desktop → environments-mcp (STDIO) | PASS 30+ operations |
+
+**Conclusion**: Bug is confirmed to be in mcp-compose's HTTP proxy layer.
+
+## HTTP/2 Limitation
+
+The fix requires HTTP/2 to actually negotiate, which needs either:
+- **HTTPS** (TLS/SSL)
+- **hypercorn** instead of uvicorn (supports h2c)
+
+uvicorn does NOT support HTTP/2 over plain HTTP, so the fix doesn't work in typical local dev.
+
+## Workaround
+
+Use environments-mcp-server directly with STDIO transport (bypasses mcp-compose):
+```json
+{
+  "mcpServers": {
+    "environments-mcp-server": {
+      "command": "conda",
+      "args": ["run", "-n", "your-env", "python", "-m", "environments_mcp_server", "start", "--transport", "stdio"]
+    }
+  }
+}
+```
 
 ## Files
 

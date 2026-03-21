@@ -113,3 +113,82 @@ python -m anaconda_mcp serve --delay 5
 ```
 
 See [WINDOWS_SETUP.md](./tests/e2e/setup/WINDOWS_SETUP.md) for detailed Windows instructions.
+
+---
+
+## Option C: Install Local mcp-compose for E2E Testing
+
+**Use when**: Testing local mcp-compose changes (e.g., bug fixes, new features) with the full stack.
+
+### Step 1: Create Conda Environment with All Dependencies
+
+```bash
+conda create --name anaconda-mcp-rc2-py313 \
+  -c datalayer \
+  -c anaconda-cloud/label/dev \
+  -c defaults \
+  -c conda-forge \
+  --channel 'https://conda.anaconda.org/t/an-19ec59a6-f3b4-4d62-a686-a882d9c1f209/anaconda-connector/' \
+  python=3.13 \
+  anaconda-mcp=1.0.0.rc.2 \
+  environments-mcp-server=1.0.0.rc.2 \
+  anaconda-connector-core=0.1.11 \
+  anaconda-connector-conda=0.1.11 \
+  anaconda-connector-utilities=0.1.11
+```
+
+### Step 2: Install Local mcp-compose
+
+#### Editable Install (Recommended for Development)
+
+```bash
+conda activate anaconda-mcp-rc2-py313
+pip install -e /path/to/mcp-compose
+```
+
+The `-e` (editable) flag uses your local source files directly. Changes to the source are immediately reflected without reinstalling.
+
+#### Regular Install from Local Source
+
+```bash
+conda activate anaconda-mcp-rc2-py313
+pip install /path/to/mcp-compose
+```
+
+This installs a copy. You need to reinstall after each change.
+
+#### PYTHONPATH Override (No Install)
+
+```bash
+conda activate anaconda-mcp-rc2-py313
+PYTHONPATH=/path/to/mcp-compose python -m mcp_compose ...
+```
+
+Temporarily overrides the installed version. Useful for quick tests.
+
+### Verify Installation
+
+Check which mcp-compose is being used:
+
+```bash
+python -c "from mcp_compose.http_client import streamable_http_client_compat; import inspect; print(inspect.getfile(streamable_http_client_compat))"
+```
+
+**Expected output for editable install:**
+```
+/path/to/mcp-compose/mcp_compose/http_client.py
+```
+
+**Expected output for conda install:**
+```
+/opt/miniconda3/envs/anaconda-mcp-rc2-py313/lib/python3.13/site-packages/mcp_compose/http_client.py
+```
+
+### Reverting to Conda Version
+
+To go back to the conda-installed version:
+
+```bash
+pip uninstall mcp-compose
+conda install -c datalayer mcp-compose
+```
