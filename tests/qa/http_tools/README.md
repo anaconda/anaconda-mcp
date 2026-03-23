@@ -6,7 +6,7 @@ direct API calls via httpx, no LLM client in the loop. Deterministic and repeata
 **Stack under test:**
 
 ```
-test process (httpx)  ──HTTP──▶  mcp-compose :8888  ──HTTP──▶  environments_mcp_server :4041
+test process (httpx)  ──HTTP──▶  mcp-compose :9888  ──HTTP──▶  environments_mcp_server :5041
 ```
 
 ---
@@ -61,7 +61,7 @@ Homebrew/system pytest that shadows the conda env's installation.
 ```bash
 # Terminal 1: start the server
 conda activate anaconda-mcp-rc-py313
-./tests/qa/_ai_docs/scripts/start-http-server.sh 8888
+./tests/qa/_ai_docs/scripts/start-http-server.sh
 
 # Terminal 2: run the tests
 conda activate anaconda-mcp-qa
@@ -77,7 +77,7 @@ python -m pytest tests/qa/http_tools/ -v
 ```powershell
 # Terminal 1: start the server
 conda activate anaconda-mcp-rc-py311
-.\tests\qa\_ai_docs\scripts\start-http-server.ps1 8888
+.\tests\qa\_ai_docs\scripts\start-http-server.ps1
 
 # Terminal 2: run the tests
 conda activate anaconda-mcp-qa
@@ -89,7 +89,7 @@ python -m pytest tests/qa/http_tools/ -v
 ```cmd
 REM Terminal 1: start the server
 conda activate anaconda-mcp-rc-py311
-tests\qa\_ai_docs\scripts\start-http-server.cmd 8888
+tests\qa\_ai_docs\scripts\start-http-server.cmd
 
 REM Terminal 2: run the tests
 conda activate anaconda-mcp-qa
@@ -152,16 +152,16 @@ sequenceDiagram
     participant pytest
     participant conftest as conftest.py<br/>(mcp_server fixture)
     participant script as start-http-server.sh
-    participant proxy as anaconda-mcp serve<br/>(port 8888)
-    participant backend as environments_mcp_server<br/>(port 4041)
+    participant proxy as anaconda-mcp serve<br/>(port 9888)
+    participant backend as environments_mcp_server<br/>(port 5041)
 
     pytest->>conftest: session starts
-    conftest->>script: conda run -n <server-conda-env> bash start-http-server.sh 8888
+    conftest->>script: conda run -n <server-conda-env> bash start-http-server.sh
     script->>script: write /tmp/http-config.toml
     script->>proxy: anaconda-mcp serve --config /tmp/http-config.toml
     proxy->>backend: spawn subprocess (auto_start=true in config)
-    backend-->>proxy: ready on port 4041
-    proxy-->>conftest: ready on port 8888
+    backend-->>proxy: ready on port 5041
+    proxy-->>conftest: ready on port 9888
     note over conftest: polls every 2 s, up to 60 s
     conftest-->>pytest: server ready — run tests
     pytest->>pytest: run all tests
