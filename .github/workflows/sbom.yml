@@ -22,6 +22,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Check required secrets
         run: |
@@ -54,8 +56,22 @@ jobs:
           conda config --add channels https://conda.anaconda.org/t/${{ secrets.ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN }}/anaconda-cloud/label/dev
           conda config --add channels https://conda.anaconda.org/t/${{ secrets.ANACONDA_CONNECTOR_TOKEN }}/anaconda-connector
 
+      - name: Set recipe version variables
+        run: |
+          if [[ "${GITHUB_EVENT_NAME}" == "release" && -n "${{ github.event.release.tag_name }}" ]]; then
+            TAG="${{ github.event.release.tag_name }}"
+          elif [[ "${GITHUB_REF_TYPE}" == "tag" && -n "${GITHUB_REF_NAME}" ]]; then
+            TAG="${GITHUB_REF_NAME}"
+          else
+            TAG="v0.0.0"
+          fi
+
+          echo "Using GIT_DESCRIBE_TAG=${TAG}"
+          echo "GIT_DESCRIBE_TAG=${TAG}" >> "$GITHUB_ENV"
+
       - name: Build conda package
         run: |
+          echo "Building with GIT_DESCRIBE_TAG=${GIT_DESCRIBE_TAG}"
           mkdir -p build/conda
           conda build \
             -c conda-forge \
