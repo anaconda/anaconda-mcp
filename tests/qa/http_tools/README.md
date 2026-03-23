@@ -60,7 +60,9 @@ Homebrew/system pytest that shadows the conda env's installation.
 
 ```bash
 # Terminal 1: start the server
-conda activate anaconda-mcp-rc-py313
+# Replace <server-env> with the conda env where anaconda-mcp is installed
+# (e.g. anaconda-mcp-rc-py313, anaconda-mcp-rc2-mcpc-py313-1, etc.)
+conda activate <server-env>
 ./tests/qa/_ai_docs/scripts/start-http-server.sh
 
 # Terminal 2: run the tests
