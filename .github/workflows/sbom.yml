@@ -1,0 +1,99 @@
+name: Generate SBOM
+
+on:
+  push:
+    branches:
+      - "**"
+    tags:
+      - "v*"
+  release:
+    types: [published]
+  workflow_dispatch:
+
+jobs:
+  conda-sbom-generator:
+    name: Conda SBOM Generator
+    runs-on: [self-hosted-amd64-medium-privileged-on-demand]
+
+    defaults:
+      run:
+        shell: bash -el {0}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check required secrets
+        run: |
+          if [ -z "${{ secrets.ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN }}" ]; then
+            echo "::error::The ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN secret is not set."
+            exit 1
+          fi
+          if [ -z "${{ secrets.ANACONDA_CONNECTOR_TOKEN }}" ]; then
+            echo "::error::The ANACONDA_CONNECTOR_TOKEN secret is not set."
+            exit 1
+          fi
+
+      - name: Setup Miniconda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          auto-activate-base: true
+          python-version: "3.11"
+          use-mamba: true
+          conda-solver: libmamba
+
+      - name: Install conda-build tooling
+        run: |
+          conda install -y conda-build conda-index
+
+      - name: Configure private conda channels
+        run: |
+          conda config --add channels conda-forge
+          conda config --add channels datalayer
+          conda config --add channels https://conda.anaconda.org/t/${{ secrets.ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN }}/anaconda-cloud
+          conda config --add channels https://conda.anaconda.org/t/${{ secrets.ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN }}/anaconda-cloud/label/dev
+          conda config --add channels https://conda.anaconda.org/t/${{ secrets.ANACONDA_CONNECTOR_TOKEN }}/anaconda-connector
+
+      - name: Build conda package
+        run: |
+          mkdir -p build/conda
+          conda build \
+            -c conda-forge \
+            -c datalayer \
+            -c https://conda.anaconda.org/t/${{ secrets.ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN }}/anaconda-cloud \
+            -c https://conda.anaconda.org/t/${{ secrets.ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN }}/anaconda-cloud/label/dev \
+            -c https://conda.anaconda.org/t/${{ secrets.ANACONDA_CONNECTOR_TOKEN }}/anaconda-connector \
+            --output-folder build/conda \
+            conda-build
+
+      - name: Create environment from built package
+        run: |
+          PACKAGE_PATH=$(find build/conda -type f \( -name "*.conda" -o -name "*.tar.bz2" \) | head -n 1)
+          if [ -z "$PACKAGE_PATH" ]; then
+            echo "::error::No built conda package found in build/conda"
+            exit 1
+          fi
+
+          echo "Using package: $PACKAGE_PATH"
+          conda create -y -n sbom-anaconda-mcp "$PACKAGE_PATH"
+
+      - name: Export dependency inventory (SBOM inputs)
+        run: |
+          mkdir -p sbom
+          source "$(conda info --base)/etc/profile.d/conda.sh"
+          conda activate sbom-anaconda-mcp
+
+          conda list --json > sbom/conda-packages.json
+          conda list --explicit > sbom/conda-packages-explicit.txt
+          conda env export --no-builds > sbom/environment.yml
+
+          echo "Generated SBOM files:"
+          ls -lh sbom/
+
+      - name: Upload SBOM artifact
+        if: ${{ github.event_name != 'push' || startsWith(github.ref, 'refs/tags/') }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: conda-sbom-${{ github.ref_name || github.sha }}
+          path: sbom/
+          retention-days: 30
