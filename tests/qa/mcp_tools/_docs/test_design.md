@@ -2,11 +2,12 @@
 
 **Audience:** QA engineers and developers running or extending the unified MCP tool suite.
 
-**Scope:** Functional MCP tool calls over each transport profile + hang / stress regressions (marked `hang_stress`).
-See test modules under `tests/qa/mcp_tools/` for the full list; see [`reporting.md`](reporting.md) for HTML report and log locations.
+**Covers:** stack wiring, transport matrix, configuration options, how profile selection works, and test design rationale.
+Install commands and env setup live in [`README.md`](../README.md). Logs and HTML report: [`reporting.md`](reporting.md).
 
-**This doc covers:** what we test, how the stack is wired, which knobs exist at each layer, and why the transport matrix matters.
-Install commands and env setup live in [`README.md`](../README.md).
+**In scope:** functional MCP tool calls over each transport profile + hang / stress regressions (`hang_stress` mark).
+
+**Out of scope:** LLM behaviour, end-to-end user workflows through Claude Desktop UI, installation and packaging.
 
 ---
 
@@ -154,6 +155,16 @@ flowchart TD
 
 ### 5.0 Design rationale
 
+**Why test at the MCP protocol level?**
+
+| Reason | Detail |
+|--------|--------|
+| **Deterministic** | No LLM variability — same input always produces the same output |
+| **Fast feedback** | Seconds per test vs minutes for E2E flows through a desktop UI |
+| **CI-friendly** | Runs in GitHub Actions without a GUI or LLM API calls |
+| **Regression-focused** | Catches known issues (KI-002, KI-003, KI-010, KI-011) reliably and repeatably |
+| **Transport-agnostic logic** | Same assertions run for every profile — only the adapter changes |
+
 **Why deterministic single-call tests for tool behaviour?**
 Each tool has a defined contract: given a specific input, it must return a specific shape of response (`is_error`, `tool_result`, message). A single call is enough to verify that contract. Deterministic inputs (known env name, known package, nonexistent prefix) make failures unambiguous — either the tool returned what it promised or it didn't. No retries, no timing, no accumulated state. This also makes it straightforward to distinguish where a failure originates: if the same test fails on `http-http` and `stdio-stdio` alike, the problem is in `environments_mcp_server` (the tool implementation or `anaconda-connector`); if it fails on one profile only, the fault is in the transport layer — mcp-compose or the outer transport framing.
 
@@ -207,3 +218,30 @@ flowchart LR
 | `hang_stress` | Repeats tool calls N times to surface proxy-state bugs (KI-011). Safe to skip for a quick smoke run; must pass before release. | `--skip-hang-stress` / `MCP_QA_SKIP_HANG_STRESS=1` / `-m "not hang_stress"` |
 
 For per-test detail (which KI each test guards, reproduction notes), read the module docstring directly — e.g. `test_guard_proxy_error_hang.py`.
+
+---
+
+## 6. CI integration
+
+### Matrix
+
+Run the suite across all profiles and Python versions as independent matrix cells:
+
+```yaml
+strategy:
+  matrix:
+    os: [ubuntu-latest, macos-latest, windows-latest]
+    python-version: ["3.10", "3.11", "3.12", "3.13"]
+    mcp-profile: [http-http, stdio-http, stdio-stdio]
+```
+
+Each cell spawns one mcp-compose process with the profile's generated TOML, runs the same tool tests through the matching adapter, then tears down. Hang-stress tests use a **function-scoped** fresh process per test (STDIO profiles only).
+
+### Platform notes
+
+| Aspect | Linux / macOS | Windows |
+|--------|---------------|---------|
+| Process cleanup | `SIGTERM` | process handle / `taskkill` |
+| Path separators | `/` | `\` — use `pathlib` in test helpers |
+| STDIO line endings | `\n` | `\r\n` possible — handled by JSON-RPC framing |
+| Conda run | `conda run -n env` | same; may need `--no-capture-output` |

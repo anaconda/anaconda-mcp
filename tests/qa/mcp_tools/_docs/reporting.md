@@ -1,6 +1,6 @@
 # Reporting and logs — `mcp_tools`
 
-Details moved from the main [`README.md`](../README.md) so the entry doc stays short. Pair with [`test_design.md`](test_design.md) for architecture and options.
+Pair with [`test_design.md`](test_design.md) for architecture and options.
 
 ---
 
@@ -35,3 +35,7 @@ On **failed** setup or call, `conftest.py` may append **zero or more** extras (e
 ### 3. STDIO-only — “hang” = bounded wait
 
 KI-011 / hang regressions show up as **`TimeoutError: _recv: no response within …s`** (no full JSON-RPC line within **`TOOL_TIMEOUT`**) plus the test’s **`Failed: …`** message — that **is** the suite’s definition of a hang for STDIO, not an unbounded pytest wait. On failure, open **`mcp-stdio-*-stderr.log (tail)`** if present — anaconda-mcp / mcp-compose diagnostics on stderr are there; stdout remains the JSON-RPC stream only.
+
+### 4. Scope of log capture
+
+The harness captures **one log stream per fixture** (combined stdout+stderr for HTTP; stderr only for STDIO). There are **no separate pytest-managed log files per downstream subprocess** — if an issue is deep inside `environments_mcp_server` or `anaconda-connector` only, you may need to run the stack manually and inspect those process streams directly.
