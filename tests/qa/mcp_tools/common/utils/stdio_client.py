@@ -28,6 +28,8 @@ _NEXT_ID = 1
 
 def _send(proc: subprocess.Popen, msg: dict) -> None:
     """Write one JSON-RPC message to the subprocess stdin."""
+    if proc.stdin is None:
+        raise RuntimeError("subprocess stdin is closed")
     line = json.dumps(msg).encode() + b"\n"
     proc.stdin.write(line)
     proc.stdin.flush()
@@ -44,6 +46,8 @@ def _recv(proc: subprocess.Popen, *, timeout: float = TOOL_TIMEOUT) -> dict:
 
     def _read() -> None:
         try:
+            if proc.stdout is None:
+                raise RuntimeError("subprocess stdout is closed")
             result[0] = proc.stdout.readline()
         except Exception as e:
             exc[0] = e
@@ -62,7 +66,10 @@ def _recv(proc: subprocess.Popen, *, timeout: float = TOOL_TIMEOUT) -> dict:
     if not result[0]:
         raise EOFError("mcp-compose stdout closed unexpectedly")
 
-    return json.loads(result[0])
+    decoded = json.loads(result[0])
+    if not isinstance(decoded, dict):
+        raise ValueError(f"expected JSON object from mcp-compose, got {type(decoded)}")
+    return decoded
 
 
 def _write_profile_config(

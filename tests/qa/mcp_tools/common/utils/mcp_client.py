@@ -108,7 +108,10 @@ def _parse_mcp_response(response: httpx.Response, elapsed_s: float) -> dict:
         content_type,
         len(text),
     )
-    return response.json()
+    body = response.json()
+    if not isinstance(body, dict):
+        raise TypeError(f"expected JSON object from MCP HTTP response, got {type(body)}")
+    return body
 
 
 def _call_tool_blocking(
@@ -254,7 +257,7 @@ def _initialize_session(server_url: str, client_name: str = "api-tools-test") ->
     except Exception:
         pass
 
-    return sid
+    return sid if isinstance(sid, str) else None
 
 
 def _parse_tool_json_text(text: str) -> dict | None:

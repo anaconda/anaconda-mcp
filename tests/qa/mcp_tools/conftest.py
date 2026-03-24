@@ -14,7 +14,9 @@ import signal
 import subprocess
 import tempfile
 import time
+from collections.abc import Generator
 from pathlib import Path
+from typing import Any
 
 import httpx
 import pytest
@@ -206,7 +208,7 @@ def _append_html_log_tail(
 
 
 @pytest.hookimpl(hookwrapper=True, trylast=True)
-def pytest_runtest_makereport(item: pytest.Item, call: pytest.CallInfo) -> None:
+def pytest_runtest_makereport(item: pytest.Item, call: pytest.CallInfo) -> Generator[None, Any, None]:
     """Append MCP server log tails to pytest-html for failed setup/call."""
     outcome = yield
     rep = outcome.get_result()
@@ -255,7 +257,7 @@ def compose_profile(request: pytest.FixtureRequest):
 
 @pytest.fixture(scope="session")
 def server_url(request: pytest.FixtureRequest) -> str:
-    return request.config.getoption("--server-url")
+    return str(request.config.getoption("--server-url"))
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -575,17 +577,17 @@ def call_no_hang_unified(request: pytest.FixtureRequest, compose_profile):
     if compose_profile.client == ClientEdge.HTTP:
         sid = request.getfixturevalue("fresh_session_id")
 
-        def _fn(tool_name: str, arguments: dict, fail_msg: str):
+        def http_call_no_hang(tool_name: str, arguments: dict, fail_msg: str):
             return _http_no_hang(tool_name, arguments, sid, fail_msg)
 
-        return _fn
+        return http_call_no_hang
 
     proc = request.getfixturevalue("stdio_server")
 
-    def _fn(tool_name: str, arguments: dict, fail_msg: str):
+    def stdio_call_no_hang(tool_name: str, arguments: dict, fail_msg: str):
         return _call_no_hang_stdio(proc, tool_name, arguments, fail_msg)
 
-    return _fn
+    return stdio_call_no_hang
 
 
 @pytest.fixture(scope="module")

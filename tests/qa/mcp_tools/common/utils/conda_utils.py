@@ -23,4 +23,4 @@ def _conda_env_prefix(env_name: str) -> str:
     # Match using os.sep to handle both Windows (\) and Unix (/) paths
     matches = [p for p in info["envs"] if p.endswith(f"{os.sep}{env_name}")]
     assert matches, f"Conda environment '{env_name}' not found"
-    return matches[0]
+    return str(matches[0])
