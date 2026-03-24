@@ -6,7 +6,7 @@
 See test modules under `tests/qa/mcp_tools/` for the full list; see [`reporting.md`](reporting.md) for HTML report and log locations.
 
 **This doc covers:** what we test, how the stack is wired, which knobs exist at each layer, and why the transport matrix matters.
-Install commands and env setup live in [`README.md`](../README.md) and [`_ai_docs/tech_details/`](../../../_ai_docs/tech_details/).
+Install commands and env setup live in [`README.md`](../README.md).
 
 ---
 
@@ -101,20 +101,20 @@ Implementation: [`conftest.py`](../conftest.py) (`pytest_addoption`).
 | Any profile — env var style, no env activation needed | `MCP_PROFILE=stdio-stdio MCP_SERVER_CONDA_ENV=anaconda-mcp-server MCP_QA_SKIP_HANG_STRESS=1 conda run -n anaconda-mcp-qa pytest tests/qa/mcp_tools -o addopts=` |
 | `http-http` — auto-start via env vars | `MCP_PROFILE=http-http MCP_QA_START_SERVER=1 MCP_SERVER_CONDA_ENV=anaconda-mcp-server conda run -n anaconda-mcp-qa pytest tests/qa/mcp_tools -o addopts=` |
 
-### 3.2 `anaconda-mcp` + `mcp-compose` (versions and config)
+### 3.2 `anaconda-mcp` + `mcp-compose`
 
-| Knob | What varies |
-|------|-------------|
-| **`anaconda-mcp` version** | Release or editable checkout in the server env. |
-| **`mcp-compose` version** | Transitive dep; override with `pip install` (fork / git) for transport fixes — see [`README.md`](../README.md). |
-| **`[transport]` in generated TOML** | Enables **①** outer STDIO vs streamable HTTP. |
-| **Proxied server blocks** | `streamable-http` vs `stdio` blocks set **②** toward `environments_mcp_server`. |
-| **Ports / `command`** | Downstream port and `python -m environments_mcp_server start --transport …`. |
+| Version | How to change |
+|---------|---------------|
+| **`anaconda-mcp`** | Install a release or editable checkout (`pip install -e …`) in the server env. |
+| **`mcp-compose`** | Transitive dep of `anaconda-mcp`; override with `pip install` (fork / git) to test transport fixes — see [`README.md`](../README.md). |
 
-### 3.3 `environments-mcp` (`EMS`) + `anaconda-connector` (versions)
+Transport (① outer) and downstream connection (② upstream, ports) are set by `--mcp-profile` and the port flags in §3.1. The conftest generates the mcp-compose TOML automatically — no manual editing needed.
 
-| Knob | What varies |
-|------|-------------|
-| **`environments-mcp` version** | Release or editable in the **same** env as `anaconda-mcp`. |
-| **EMS process transport** | Follows **②** (streamable-http with port, or stdio). |
-| **`anaconda-connector-conda` version** | Conda/pip pin; must import as `anaconda_connector_conda` or tools fail to register. |
+### 3.3 `environments-mcp` + `anaconda-connector`
+
+| Version | How to change |
+|---------|---------------|
+| **`environments-mcp`** | Install a release or editable checkout in the **same** env as `anaconda-mcp`. |
+| **`anaconda-connector-conda`** | Conda/pip pin; must be importable as `anaconda_connector_conda` — missing import causes tools to fail to register. |
+
+Transport for `environments_mcp_server` (② upstream) is driven by `--mcp-profile`; it is not configured separately.
