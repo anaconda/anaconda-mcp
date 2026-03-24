@@ -102,10 +102,11 @@ def pytest_addoption(parser: pytest.Parser) -> None:
     parser.addoption(
         "--start-server",
         action="store_true",
-        default=False,
+        default=os.environ.get("MCP_QA_START_SERVER", "0") == "1",
         help=(
             "Auto-start MCP server for http-http via start-http-server.sh. "
-            "Requires --server-conda-env with anaconda-mcp installed."
+            "Requires --server-conda-env with anaconda-mcp installed. "
+            "Env: MCP_QA_START_SERVER=1."
         ),
     )
     parser.addoption(
