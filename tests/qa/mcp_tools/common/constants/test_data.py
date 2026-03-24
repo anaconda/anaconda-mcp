@@ -4,8 +4,8 @@ Reusable test data constants for the http_tools suite.
 
 from __future__ import annotations
 
-import os
 import tempfile
+from pathlib import Path
 
 # Ephemeral conda environment created and destroyed per test module.
 ENV_NAME = "guard-api-test"
@@ -23,7 +23,7 @@ EXISTING_PKG = "pyyaml"
 # Used to trigger "environment not found" error responses from tools that
 # accept a prefix argument, without creating or removing any real environment.
 # Uses tempfile.gettempdir() for cross-platform compatibility (Windows vs Unix).
-NONEXISTENT_ENV_PREFIX = os.path.join(tempfile.gettempdir(), "nonexistent-conda-env-xyz123")
+NONEXISTENT_ENV_PREFIX = str(Path(tempfile.gettempdir()) / "nonexistent-conda-env-xyz123")
 
 # Failure message template for KI-011 hang-regression tests.
 # Placeholders: {timeout} seconds, {iteration} current pass, {total} total passes.
