@@ -186,15 +186,14 @@ flowchart LR
 | **Marks** | `regression`, `slow` | `hang_stress`, `regression`, `slow` |
 | **Skip with** | — | `--skip-hang-stress` / `MCP_QA_SKIP_HANG_STRESS=1` |
 
-**Why iterations?** KI-011 in production required ~47 minutes of LLM use to trigger — the bug is proxy state accumulated across calls, invisible to a single-call test. `WARM_ITERATIONS=20` with a small `ITERATION_DELAY` between calls replicates enough state to surface the regression in minutes.
+**Why iterations?** [KI-011](../../../_ai_docs/_tracking/KNOWN_ISSUES.md#ki-011-mcp-compose-proxy-hangs-and-corrupts-session-on-tool-error) ([DESK-1409](https://anaconda.atlassian.net/browse/DESK-1409), [DESK-1355](https://anaconda.atlassian.net/browse/DESK-1355)) — in production, the proxy hang required ~47 minutes of LLM use to trigger. The root cause is mcp-compose proxy state accumulated across calls, invisible to a single-call test. `WARM_ITERATIONS=20` with a small `ITERATION_DELAY` between calls replicates enough accumulated state to surface the regression in minutes.
 
-### 5.3 Test modules
+### 5.3 Marks and how to use them
 
-| Module | Marks | What it guards |
-|--------|-------|----------------|
-| `test_env_name_resolution.py` | `regression` | KI-002: `list_environments` reports correct name; KI-003: `remove_environment` by name resolves correct prefix |
-| `test_install_existing_package.py` | `slow` | Happy path: `install_packages` succeeds by name and by prefix, returns non-empty message |
-| `test_guard_install_nonexistent_pkg.py` | `regression`, `slow` | KI-010: `install_packages` returns package-resolution error — not "environment not found" — for a nonexistent package |
-| `test_create_environment_root_path.py` | `regression` | `create_environment` handles root-path edge cases correctly |
-| `test_guard_proxy_error_hang.py` | `hang_stress`, `regression`, `slow` | KI-011 error path: proxy forwards error responses without hanging across N iterations (HANG-001, 002, 003) |
-| `test_guard_happy_path_hang.py` | `hang_stress`, `regression`, `slow` | KI-011 happy path: proxy forwards success responses without hanging across N iterations (HANG-004, 005, 006) |
+| Mark | Meaning | How to select / skip |
+|------|---------|----------------------|
+| `regression` | Guards a known bug or confirmed defect. Always run before a release. | `-m regression` |
+| `slow` | Takes longer than a trivial assertion (conda operations, server startup). | `-m "not slow"` to exclude |
+| `hang_stress` | Repeats tool calls N times to surface proxy-state bugs (KI-011). Safe to skip for a quick smoke run; must pass before release. | `--skip-hang-stress` / `MCP_QA_SKIP_HANG_STRESS=1` / `-m "not hang_stress"` |
+
+For per-test detail (which KI each test guards, reproduction notes), read the module docstring directly — e.g. `test_guard_proxy_error_hang.py`.
