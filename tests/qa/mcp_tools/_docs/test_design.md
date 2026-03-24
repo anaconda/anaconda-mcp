@@ -152,6 +152,16 @@ flowchart TD
 
 ## 5. What we test and how
 
+### 5.0 Design rationale
+
+**Why deterministic single-call tests for tool behaviour?**
+Each tool has a defined contract: given a specific input, it must return a specific shape of response (`is_error`, `tool_result`, message). A single call is enough to verify that contract. Deterministic inputs (known env name, known package, nonexistent prefix) make failures unambiguous — either the tool returned what it promised or it didn't. No retries, no timing, no accumulated state. This also makes it straightforward to distinguish where a failure originates: if the same test fails on `http-http` and `stdio-stdio` alike, the problem is in `environments_mcp_server` (the tool implementation or `anaconda-connector`); if it fails on one profile only, the fault is in the transport layer — mcp-compose or the outer transport framing.
+
+**Why support variability on each layer?**
+Tool behaviour must be correct regardless of *how* the call travels to `environments_mcp_server`. A bug can live in any hop — the outer transport (HTTP vs STDIO framing), the mcp-compose proxy (session handling, response forwarding), the upstream connection (streamable HTTP pooling vs STDIO pipes), or the tool implementation itself. By running the same test logic across the full transport matrix and against independently-versioned packages, we isolate *where* a regression lives rather than only knowing *that* something broke.
+
+---
+
 ### 5.1 Tools and scenarios
 
 | Tool | Happy path | Error path | Hang stress |
