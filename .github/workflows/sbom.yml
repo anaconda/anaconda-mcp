@@ -91,7 +91,17 @@ jobs:
           fi
 
           echo "Using package: $PACKAGE_PATH"
-          conda create -y -n sbom-anaconda-mcp "$PACKAGE_PATH"
+          # Install from a local channel so conda resolves and installs transitive run dependencies.
+          conda index build/conda
+          conda create -y -n sbom-anaconda-mcp \
+            --override-channels \
+            -c "file://${{ github.workspace }}/build/conda" \
+            -c conda-forge \
+            -c datalayer \
+            -c https://conda.anaconda.org/t/${{ secrets.ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN }}/anaconda-cloud \
+            -c https://conda.anaconda.org/t/${{ secrets.ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN }}/anaconda-cloud/label/dev \
+            -c https://conda.anaconda.org/t/${{ secrets.ANACONDA_CONNECTOR_TOKEN }}/anaconda-connector \
+            anaconda-mcp
 
       - name: Export dependency inventory (SBOM inputs)
         run: |
