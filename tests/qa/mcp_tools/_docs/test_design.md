@@ -1,0 +1,144 @@
+# Test design — `mcp_tools`
+
+**Audience:** QA engineers and developers running or extending the unified MCP tool suite.
+
+**Purpose:** Describe *what* we exercise, *which knobs* exist at each layer, and *why* the matrix matters—without duplicating step-by-step install commands (those stay in the main [`README.md`](../README.md) and [`tests/qa/_ai_docs/tech_details/`](../../../_ai_docs/tech_details/)).
+
+---
+
+## 1. What links to what (products and transports)
+
+Four **versioned** products build the runtime (each install picks concrete versions). They are normally installed into **one conda environment** with a single **Python** interpreter (supported range is typically **3.10–3.13**—match what each package declares).
+
+| Product | Relationship | Options at this layer |
+|---------|--------------|------------------------|
+| **`anaconda-mcp`** | MCP server the **end user** runs (`anaconda-mcp serve …`). Presents the composed tool surface to any MCP client. | **Package version.** **Outer MCP transport:** **streamable HTTP** or **STDIO** (how the client talks to this server—configured via mcp-compose / `serve`). |
+| **`mcp-compose`** | Library **inside** the `anaconda-mcp` process: composes transports and **proxies** to downstream MCP servers. | **Package version** (often pulled as a dependency of `anaconda-mcp`; can be **overridden**—e.g. fork for stdio fixes). **Upstream link to `environments-mcp`:** **streamable HTTP** or **STDIO** (independent choice from the outer transport). |
+| **`environments-mcp`** (`environments_mcp_server`) | Downstream MCP server that **implements** conda-oriented tools. Reached by mcp-compose over the **upstream** transport you configure. | **Package version.** How EMS is **started** (HTTP with port vs STDIO) follows that upstream choice. |
+| **`anaconda-connector`** (`anaconda_connector_conda`) | **Downstream of `environments-mcp`** in the sense of **call stack / dependencies**: EMS uses it for conda operations (not an MCP transport hop). | **Package / conda build version** (channels, pins). |
+
+**Two independent MCP transport choices** (what this suite’s `--mcp-profile` maps to):
+
+1. **Client ↔ `anaconda-mcp` (outer):** HTTP or STDIO.
+2. **`mcp-compose` ↔ `environments_mcp_server` (upstream):** streamable HTTP or STDIO.
+
+**Third link (not MCP wire protocol):** **`environments-mcp` → `anaconda-connector`** — Python API to conda; no HTTP/STDIO toggle at this boundary.
+
+The QA suite does **not** exhaust every version cross-product. It **does** cover the **transport matrix** above because proxy and framing bugs showed up per hop—see §3.
+
+---
+
+## 2. End-user architecture (diagram)
+
+```mermaid
+flowchart LR
+  subgraph clients["MCP clients"]
+    CL["IDE / CLI / tests / HTTP client"]
+  end
+
+  subgraph amp["anaconda-mcp process"]
+    direction TB
+    AM["anaconda-mcp"]
+    MC["mcp-compose"]
+    AM --> MC
+  end
+
+  subgraph ems["environments-mcp process"]
+    direction TB
+    EM["environments_mcp_server"]
+    AC["anaconda-connector"]
+    EM --> AC
+  end
+
+  CL <-->|"① outer MCP<br/>HTTP or STDIO"| AM
+  MC <-->|"② upstream MCP<br/>streamable HTTP or STDIO"| EM
+```
+
+- **①** is how the **user’s MCP client** attaches to **anaconda-mcp**.
+- **②** is how **mcp-compose** reaches **`environments_mcp_server`** (separate OS process in typical configs; same conda env for imports).
+- **anaconda-connector** sits **under** environments-mcp for conda work, not as an alternative to ① or ②.
+
+**Mermaid:** use `<br/>` for line breaks in labels (not `\n`).
+
+### Single conda environment + Python
+
+| Concern | Detail |
+|---------|--------|
+| **Where products live** | **`anaconda-mcp`**, **`mcp-compose`** (dependency), **`environments-mcp`**, and **`anaconda-connector`** are installed into the **same** conda env you pass to `conda run -n …` (or activate) when running the server. |
+| **Python** | Choose an interpreter in the **3.10–3.13** range that all of those packages support for your pin set. |
+| **Versions** | Each product is pinned independently (conda/pip/editable): bump **`anaconda-mcp`** without necessarily bumping **`environments-mcp`**, override **`mcp-compose`**, etc.—but they must work together at runtime. |
+
+---
+
+## 3. Two-hop transport matrix (`--mcp-profile`)
+
+Canonical TOML is generated from [`tests/qa/shared/mcp_compose_profiles.py`](../../shared/mcp_compose_profiles.py). Each profile fixes **① outer** and **② upstream**:
+
+```text
+(MCP client) --①--> (anaconda-mcp / mcp-compose) --②--> (environments_mcp_server)
+```
+
+| Profile | ① Client → anaconda-mcp | ② mcp-compose → environments-mcp | Why we care |
+|---------|---------------------------|-------------------------------------|-------------|
+| `http-http` | Streamable HTTP | Streamable HTTP | Common remote / “browser-like” path; matches `start-http-server.sh` style |
+| `stdio-http` | STDIO | Streamable HTTP | IDE-style outer STDIO with HTTP upstream—exercises both proxy styles |
+| `stdio-stdio` | STDIO | STDIO | All-stdio; less upstream HTTP churn (e.g. hang / stress regressions) |
+
+**Not covered by default:** `http-stdio` (HTTP outer, STDIO upstream) is valid for mcp-compose but omitted until needed—see `mcp_compose_profiles.py`.
+
+---
+
+## 4. Options at each layer
+
+### 4.1 Test harness (pytest CLI / env)
+
+| Option / variable | Purpose |
+|-------------------|--------|
+| `--mcp-profile` / `MCP_PROFILE` | Selects the ① + ② matrix row (§3) |
+| `--server-url` / `MCP_SERVER_URL` | MCP URL when **① is HTTP** (`http-http`) |
+| `--compose-port` / `MCP_COMPOSE_PORT` | Port in generated **http-http** composer config |
+| `--downstream-port` / `MCP_DOWNSTREAM_PORT` | Port for **streamable-http** upstream to EMS where applicable |
+| `--server-conda-env` / `MCP_SERVER_CONDA_ENV` | Conda env that contains **all** server products (§2) |
+| `--start-server` | Auto-start HTTP server via `start-http-server.sh` (`http-http` only) |
+| `--skip-hang-stress` / `MCP_QA_SKIP_HANG_STRESS` / `-m "not hang_stress"` | Skip long hang-regression tests |
+| `--transport` | Legacy report label; prefer `--mcp-profile` |
+
+Implementation: [`conftest.py`](../conftest.py) (`pytest_addoption`).
+
+### 4.2 `anaconda-mcp` + `mcp-compose` (config and versions)
+
+| Knob | What varies |
+|------|-------------|
+| **`anaconda-mcp` version** | Release or editable checkout in the server env. |
+| **`mcp-compose` version** | Transitive dependency; **override** with `pip install` (fork / git) for transport fixes—see main [`README.md`](../README.md). |
+| **Generated mcp-compose TOML** | Tests write a **temp** file from `mcp_compose_profiles`; they do **not** select transport by editing the packaged [`src/anaconda_mcp/mcp_compose.toml`](../../../../src/anaconda_mcp/mcp_compose.toml). |
+| **`[transport]`** | Enables **①** outer STDIO vs streamable HTTP. |
+| **Proxied server blocks** | **`streamable-http`** vs **`stdio`** blocks configure **②** toward EMS. |
+| **Ports / `command`** | Downstream port and `python -m environments_mcp_server start --transport …`. |
+
+### 4.3 `environments-mcp` + `anaconda-connector`
+
+| Knob | What varies |
+|------|-------------|
+| **`environments-mcp` version** | Release or editable in the **same** env as `anaconda-mcp`. |
+| **EMS process transport** | Matches **②** (streamable-http with port, or stdio). |
+| **`anaconda-connector` / `anaconda-connector-conda` version** | Conda/pip pin; must import as `anaconda_connector_conda` or tool registration can fail. |
+
+---
+
+## 5. What the suite asserts (summary)
+
+- **Functional:** MCP tool calls over the selected profile (list envs, resolve, etc.—see test modules under `tests/qa/mcp_tools/`).
+- **Regression / stress:** Hang-related tests (`hang_stress`) exercise repeated calls through mcp-compose; STDIO timeouts define “hang” for those tests—see [`reporting.md`](reporting.md) for where stderr tails appear in HTML reports.
+
+---
+
+## 6. Related documents
+
+| Document | Content |
+|----------|---------|
+| [`README.md`](../README.md) | Quick start, envs, commands |
+| [`reporting.md`](reporting.md) | pytest-html, log extras, stderr capture |
+| [`tests/qa/_ai_docs/tests/automation/TESTS_API_TOOLS.md`](../../../_ai_docs/tests/automation/TESTS_API_TOOLS.md) | Automation / CI notes |
+| [`tests/qa/_ai_docs/tech_details/LOCAL-DEV-SETUP.md`](../../../_ai_docs/tech_details/LOCAL-DEV-SETUP.md) | Editable installs, troubleshooting |
+| [`tests/qa/_ai_docs/tech_details/INSTALL_OPTIONS.md`](../../../_ai_docs/tech_details/INSTALL_OPTIONS.md) | Alternative install stacks |
