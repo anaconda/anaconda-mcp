@@ -50,6 +50,14 @@ on:
           - 'http-http'
           - 'stdio-http'
           - 'stdio-stdio'
+      skip_hang_stress:
+        description: 'Skip hang_stress tests (slow, designed for dedicated stress runs)'
+        required: false
+        default: 'true'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
       runner:
         description: 'Runner to use'
         required: false
@@ -78,14 +86,15 @@ jobs:
         shell: bash
 
     outputs:
-      runner:           ${{ steps.params.outputs.runner }}
-      python-version:   ${{ steps.params.outputs.python-version }}
-      mcp-profile:      ${{ steps.params.outputs.mcp-profile }}
-      anaconda-mcp-ref: ${{ steps.params.outputs.anaconda-mcp-ref }}
-      env-mcp-ref:      ${{ steps.params.outputs.env-mcp-ref }}
-      connector-ver:    ${{ steps.params.outputs.connector-ver }}
-      compose-repo:     ${{ steps.params.outputs.compose-repo }}
-      compose-ref:      ${{ steps.params.outputs.compose-ref }}
+      runner:             ${{ steps.params.outputs.runner }}
+      python-version:     ${{ steps.params.outputs.python-version }}
+      mcp-profile:        ${{ steps.params.outputs.mcp-profile }}
+      skip-hang-stress:   ${{ steps.params.outputs.skip-hang-stress }}
+      anaconda-mcp-ref:   ${{ steps.params.outputs.anaconda-mcp-ref }}
+      env-mcp-ref:        ${{ steps.params.outputs.env-mcp-ref }}
+      connector-ver:      ${{ steps.params.outputs.connector-ver }}
+      compose-repo:       ${{ steps.params.outputs.compose-repo }}
+      compose-ref:        ${{ steps.params.outputs.compose-ref }}
 
     steps:
       - name: Resolve parameters
@@ -94,6 +103,7 @@ jobs:
           RUNNER="${{ inputs.runner              || 'macos-latest' }}"
           PYTHON_VERSION="${{ inputs.python_version        || '3.13' }}"
           MCP_PROFILE="${{ inputs.mcp_profile              || 'stdio-stdio' }}"
+          SKIP_HANG_STRESS="${{ inputs.skip_hang_stress    || 'true' }}"
           ANACONDA_MCP_REF="${{ inputs.anaconda_mcp_ref    || '' }}"
           ENV_MCP_REF="${{ inputs.environments_mcp_ref     || 'main' }}"
           CONNECTOR_VER="${{ inputs.anaconda_connector_ver || '' }}"
@@ -104,6 +114,7 @@ jobs:
             echo "runner=$RUNNER"
             echo "python-version=$PYTHON_VERSION"
             echo "mcp-profile=$MCP_PROFILE"
+            echo "skip-hang-stress=$SKIP_HANG_STRESS"
             echo "anaconda-mcp-ref=$ANACONDA_MCP_REF"
             echo "env-mcp-ref=$ENV_MCP_REF"
             echo "connector-ver=$CONNECTOR_VER"
@@ -115,6 +126,7 @@ jobs:
           printf "%-22s %s\n" "runner:"           "$RUNNER"
           printf "%-22s %s\n" "python:"           "$PYTHON_VERSION"
           printf "%-22s %s\n" "mcp-profile:"      "$MCP_PROFILE"
+          printf "%-22s %s\n" "skip-hang-stress:" "$SKIP_HANG_STRESS"
           printf "%-22s %s\n" "environments-mcp:" "$ENV_MCP_REF"
           printf "%-22s %s\n" "connector ver:"    "${CONNECTOR_VER:-<transitive dep>}"
           printf "%-22s %s\n" "mcp-compose repo:" "$COMPOSE_REPO"
@@ -131,16 +143,17 @@ jobs:
         shell: bash -el {0}
 
     env:
-      RUNNER:           ${{ needs.setup.outputs.runner }}
-      PYTHON_VERSION:   ${{ needs.setup.outputs.python-version }}
-      MCP_PROFILE:      ${{ needs.setup.outputs.mcp-profile }}
-      ANACONDA_MCP_REF: ${{ needs.setup.outputs.anaconda-mcp-ref }}
-      ENV_MCP_REF:      ${{ needs.setup.outputs.env-mcp-ref }}
-      CONNECTOR_VER:    ${{ needs.setup.outputs.connector-ver }}
-      COMPOSE_REPO:     ${{ needs.setup.outputs.compose-repo }}
-      COMPOSE_REF:      ${{ needs.setup.outputs.compose-ref }}
-      SERVER_ENV:       anaconda-mcp-server
-      QA_ENV:           anaconda-mcp-qa
+      RUNNER:             ${{ needs.setup.outputs.runner }}
+      PYTHON_VERSION:     ${{ needs.setup.outputs.python-version }}
+      MCP_PROFILE:        ${{ needs.setup.outputs.mcp-profile }}
+      SKIP_HANG_STRESS:   ${{ needs.setup.outputs.skip-hang-stress }}
+      ANACONDA_MCP_REF:   ${{ needs.setup.outputs.anaconda-mcp-ref }}
+      ENV_MCP_REF:        ${{ needs.setup.outputs.env-mcp-ref }}
+      CONNECTOR_VER:      ${{ needs.setup.outputs.connector-ver }}
+      COMPOSE_REPO:       ${{ needs.setup.outputs.compose-repo }}
+      COMPOSE_REF:        ${{ needs.setup.outputs.compose-ref }}
+      SERVER_ENV:         anaconda-mcp-server
+      QA_ENV:             anaconda-mcp-qa
 
     steps:
       # ── Checkout ──────────────────────────────────────────────────────────────
@@ -236,11 +249,9 @@ jobs:
         env:
           MCP_SERVER_CONDA_ENV: ${{ env.SERVER_ENV }}  # read by conftest.py
         run: |
-          # Pass --start-server only for http-http (conftest manages the process)
           EXTRA_ARGS=""
-          if [[ "$MCP_PROFILE" == "http-http" ]]; then
-            EXTRA_ARGS="--start-server"
-          fi
+          [[ "$MCP_PROFILE"     == "http-http" ]] && EXTRA_ARGS="$EXTRA_ARGS --start-server"
+          [[ "$SKIP_HANG_STRESS" == "true"      ]] && EXTRA_ARGS="$EXTRA_ARGS --skip-hang-stress"
 
           conda run -n "$QA_ENV" --no-capture-output python -m pytest \
             tests/qa/mcp_tools \
