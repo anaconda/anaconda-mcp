@@ -3,15 +3,8 @@ name: QA — MCP tool tests
 # QA-owned: tests the full anaconda-mcp + environments-mcp + mcp-compose stack
 # across runners, Python versions, and transport profiles.
 #
-# Inputs (workflow_dispatch only):
-#   anaconda_mcp_ref       — branch or tag of THIS repo to test
-#   environments_mcp_ref   — branch or tag of environments-mcp (installed from source)
-#   anaconda_connector_ver — conda package version (e.g. 0.1.11); empty = transitive dep
-#   mcp_compose_repo       — full GitHub HTTPS URL (fork or canonical)
-#   mcp_compose_ref        — branch or tag; empty = use what anaconda-mcp pins
-#   python_version         — 3.10 | 3.11 | 3.12 | 3.13
-#   mcp_profile            — http-http | stdio-http | stdio-stdio
-#   runner                 — one of the five supported runners
+# All defaults live in the `setup` job. The `test` job reads every value from
+# needs.setup.outputs.*, so name/runs-on/steps all share the same resolved values.
 
 on:
   workflow_dispatch:
@@ -74,52 +67,83 @@ on:
       - desk-1328-tool-tests
 
 jobs:
-  mcp-tool-tests:
-    name: "[${{ inputs.runner || 'self-hosted-default' }}] py${{ inputs.python_version || '3.13' }} / ${{ inputs.mcp_profile || 'stdio-stdio' }}"
+  # ── Resolve parameters ────────────────────────────────────────────────────────
+  # Single source of truth for all defaults. Runs on a cheap Ubuntu runner.
+  # The test job reads every value from needs.setup.outputs.* so name/runs-on
+  # and all steps share exactly the same resolved values — no scattered ||.
+  setup:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
 
-    runs-on: ${{ inputs.runner || 'self-hosted-default' }}
+    outputs:
+      runner:           ${{ steps.params.outputs.runner }}
+      python-version:   ${{ steps.params.outputs.python-version }}
+      mcp-profile:      ${{ steps.params.outputs.mcp-profile }}
+      anaconda-mcp-ref: ${{ steps.params.outputs.anaconda-mcp-ref }}
+      env-mcp-ref:      ${{ steps.params.outputs.env-mcp-ref }}
+      connector-ver:    ${{ steps.params.outputs.connector-ver }}
+      compose-repo:     ${{ steps.params.outputs.compose-repo }}
+      compose-ref:      ${{ steps.params.outputs.compose-ref }}
+
+    steps:
+      - name: Resolve parameters
+        id: params
+        run: |
+          RUNNER="${{ inputs.runner              || 'macos-latest' }}"
+          PYTHON_VERSION="${{ inputs.python_version        || '3.13' }}"
+          MCP_PROFILE="${{ inputs.mcp_profile              || 'stdio-stdio' }}"
+          ANACONDA_MCP_REF="${{ inputs.anaconda_mcp_ref    || '' }}"
+          ENV_MCP_REF="${{ inputs.environments_mcp_ref     || 'main' }}"
+          CONNECTOR_VER="${{ inputs.anaconda_connector_ver || '' }}"
+          COMPOSE_REPO="${{ inputs.mcp_compose_repo        || 'https://github.com/j-iliukhina-anaconda/mcp-compose' }}"
+          COMPOSE_REF="${{ inputs.mcp_compose_ref          || 'stdio-proxy-fixes' }}"
+
+          {
+            echo "runner=$RUNNER"
+            echo "python-version=$PYTHON_VERSION"
+            echo "mcp-profile=$MCP_PROFILE"
+            echo "anaconda-mcp-ref=$ANACONDA_MCP_REF"
+            echo "env-mcp-ref=$ENV_MCP_REF"
+            echo "connector-ver=$CONNECTOR_VER"
+            echo "compose-repo=$COMPOSE_REPO"
+            echo "compose-ref=$COMPOSE_REF"
+          } >> "$GITHUB_OUTPUT"
+
+          echo "=== Resolved parameters ==="
+          printf "%-22s %s\n" "runner:"           "$RUNNER"
+          printf "%-22s %s\n" "python:"           "$PYTHON_VERSION"
+          printf "%-22s %s\n" "mcp-profile:"      "$MCP_PROFILE"
+          printf "%-22s %s\n" "environments-mcp:" "$ENV_MCP_REF"
+          printf "%-22s %s\n" "connector ver:"    "${CONNECTOR_VER:-<transitive dep>}"
+          printf "%-22s %s\n" "mcp-compose repo:" "$COMPOSE_REPO"
+          printf "%-22s %s\n" "mcp-compose ref:"  "${COMPOSE_REF:-<pinned by anaconda-mcp>}"
+
+  # ── Tests ─────────────────────────────────────────────────────────────────────
+  test:
+    needs: setup
+    name: "[${{ needs.setup.outputs.runner }}] py${{ needs.setup.outputs.python-version }} / ${{ needs.setup.outputs.mcp-profile }}"
+    runs-on: ${{ needs.setup.outputs.runner }}
 
     defaults:
       run:
         shell: bash -el {0}
 
+    env:
+      RUNNER:           ${{ needs.setup.outputs.runner }}
+      PYTHON_VERSION:   ${{ needs.setup.outputs.python-version }}
+      MCP_PROFILE:      ${{ needs.setup.outputs.mcp-profile }}
+      ANACONDA_MCP_REF: ${{ needs.setup.outputs.anaconda-mcp-ref }}
+      ENV_MCP_REF:      ${{ needs.setup.outputs.env-mcp-ref }}
+      CONNECTOR_VER:    ${{ needs.setup.outputs.connector-ver }}
+      COMPOSE_REPO:     ${{ needs.setup.outputs.compose-repo }}
+      COMPOSE_REF:      ${{ needs.setup.outputs.compose-ref }}
+      SERVER_ENV:       anaconda-mcp-server
+      QA_ENV:           anaconda-mcp-qa
+
     steps:
-      # ── Resolve parameters ───────────────────────────────────────────────────
-      # Single source of truth for all defaults. Subsequent steps use ${{ env.VAR }}.
-      # Note: `name` and `runs-on` above are evaluated before steps and cannot
-      # reference env, so they carry their own || fallbacks (GH Actions limitation).
-      - name: Resolve parameters
-        run: |
-          PYTHON_VERSION="${{ inputs.python_version        || '3.13' }}"
-          MCP_PROFILE="${{ inputs.mcp_profile              || 'stdio-stdio' }}"
-          ENV_MCP_REF="${{ inputs.environments_mcp_ref     || 'main' }}"
-          CONNECTOR_VER="${{ inputs.anaconda_connector_ver || '' }}"
-          COMPOSE_REPO="${{ inputs.mcp_compose_repo        || 'https://github.com/j-iliukhina-anaconda/mcp-compose' }}"
-          COMPOSE_REF="${{ inputs.mcp_compose_ref          || 'stdio-proxy-fixes' }}"
-          SERVER_ENV="anaconda-mcp-server"
-          QA_ENV="anaconda-mcp-qa"
-
-          {
-            echo "PYTHON_VERSION=$PYTHON_VERSION"
-            echo "MCP_PROFILE=$MCP_PROFILE"
-            echo "ENV_MCP_REF=$ENV_MCP_REF"
-            echo "CONNECTOR_VER=$CONNECTOR_VER"
-            echo "COMPOSE_REPO=$COMPOSE_REPO"
-            echo "COMPOSE_REF=$COMPOSE_REF"
-            echo "SERVER_ENV=$SERVER_ENV"
-            echo "QA_ENV=$QA_ENV"
-          } >> "$GITHUB_ENV"
-
-          echo "=== Resolved parameters ==="
-          printf "%-22s %s\n" "runner:"          "${{ inputs.runner || 'macos-latest' }}"
-          printf "%-22s %s\n" "python:"          "$PYTHON_VERSION"
-          printf "%-22s %s\n" "mcp-profile:"     "$MCP_PROFILE"
-          printf "%-22s %s\n" "environments-mcp:" "$ENV_MCP_REF"
-          printf "%-22s %s\n" "connector ver:"   "${CONNECTOR_VER:-<transitive dep>}"
-          printf "%-22s %s\n" "mcp-compose repo:" "$COMPOSE_REPO"
-          printf "%-22s %s\n" "mcp-compose ref:" "${COMPOSE_REF:-<pinned by anaconda-mcp>}"
-
-      # ── Checkout ────────────────────────────────────────────────────────────
+      # ── Checkout ──────────────────────────────────────────────────────────────
       # Always check out the triggered commit — this is the source of test code.
       - name: Checkout (test code)
         uses: actions/checkout@v4
@@ -127,28 +151,27 @@ jobs:
       # When anaconda_mcp_ref differs from the triggered commit, check out the
       # requested version separately so the server installs that specific build
       # while tests still run from the current branch.
-      - name: Checkout anaconda-mcp server version
-        if: ${{ inputs.anaconda_mcp_ref != '' }}
+      - name: Checkout anaconda-mcp server version (${{ needs.setup.outputs.anaconda-mcp-ref }})
+        if: ${{ env.ANACONDA_MCP_REF != '' }}
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.anaconda_mcp_ref }}
+          ref: ${{ env.ANACONDA_MCP_REF }}
           path: ./anaconda-mcp-server-src
 
-      # ── Conda setup ─────────────────────────────────────────────────────────
+      # ── Conda setup ───────────────────────────────────────────────────────────
       - name: Set up Miniconda
         uses: conda-incubator/setup-miniconda@835234971496cad1653abb28a638a281cf32541f  # v3.2.0
         with:
           auto-activate-base: true
           python-version: ${{ env.PYTHON_VERSION }}
 
-
-      # ── QA runner env ───────────────────────────────────────────────────────
+      # ── QA runner env ─────────────────────────────────────────────────────────
       - name: Create / update QA env (pytest + dependencies)
         run: |
           conda env create -n "$QA_ENV" -f tests/qa/environment.yml --yes \
           || conda env update -n "$QA_ENV" -f tests/qa/environment.yml --prune
 
-      # ── Server env ──────────────────────────────────────────────────────────
+      # ── Server env ────────────────────────────────────────────────────────────
       - name: Create server conda env
         run: conda create -n "$SERVER_ENV" "python=$PYTHON_VERSION" --yes
 
@@ -161,7 +184,7 @@ jobs:
           fi
           conda run -n "$SERVER_ENV" --no-capture-output pip install -e "$SRC"
 
-      - name: Checkout environments-mcp (${{ env.ENV_MCP_REF }})
+      - name: Checkout environments-mcp (${{ needs.setup.outputs.env-mcp-ref }})
         uses: actions/checkout@v4
         with:
           repository: anaconda/environments-mcp  # TODO: verify repo name
@@ -169,7 +192,7 @@ jobs:
           path: ./environments-mcp
           ref: ${{ env.ENV_MCP_REF }}
 
-      - name: Install environments-mcp (${{ env.ENV_MCP_REF }}) into server env
+      - name: Install environments-mcp (${{ needs.setup.outputs.env-mcp-ref }}) into server env
         run: conda run -n "$SERVER_ENV" --no-capture-output pip install -e ./environments-mcp
 
       - name: Install anaconda-connector
@@ -196,19 +219,19 @@ jobs:
         with:
           node-version: lts/*
 
-      - name: Override mcp-compose (${{ env.COMPOSE_REF }})
+      - name: Override mcp-compose (${{ needs.setup.outputs.compose-ref }})
         if: ${{ env.COMPOSE_REF != '' }}
         run: |
           conda run -n "$SERVER_ENV" --no-capture-output pip install \
             "git+${COMPOSE_REPO}.git@${COMPOSE_REF}"
 
-      # ── Verification ────────────────────────────────────────────────────────
+      # ── Verification ──────────────────────────────────────────────────────────
       - name: Show installed versions in server env
         run: |
           conda run -n "$SERVER_ENV" --no-capture-output conda list \
             | grep -E "^(python|anaconda-mcp|environments-mcp-server|anaconda-connector|mcp-compose) "
 
-      # ── Tests ───────────────────────────────────────────────────────────────
+      # ── Tests ─────────────────────────────────────────────────────────────────
       - name: Run MCP tool tests
         env:
           MCP_SERVER_CONDA_ENV: ${{ env.SERVER_ENV }}  # read by conftest.py
@@ -229,11 +252,11 @@ jobs:
             --html="tests/qa/mcp_tools/reports/report.html" \
             --self-contained-html
 
-      # ── Artifacts ───────────────────────────────────────────────────────────
+      # ── Artifacts ─────────────────────────────────────────────────────────────
       - name: Upload HTML report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: "qa-report-${{ inputs.runner || 'self-hosted-default' }}-py${{ env.PYTHON_VERSION }}-${{ env.MCP_PROFILE }}"
+          name: "qa-report-${{ env.RUNNER }}-py${{ env.PYTHON_VERSION }}-${{ env.MCP_PROFILE }}"
           path: tests/qa/mcp_tools/reports/report.html
           if-no-files-found: ignore
