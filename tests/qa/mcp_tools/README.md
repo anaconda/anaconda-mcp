@@ -139,10 +139,12 @@ With **`pytest-html`** installed (listed in **`tests/qa/environment.yml`**), eac
 
 ### Where to read logs
 
+**All-passing runs:** pytest-html still serializes each row with **`"extras": []`**. That is expected — the **`mcp-server.log (tail)`** attachment is **only added when a test’s setup or call fails**. If every test is green, you will **not** see a server log extra anywhere in the report (only **Captured log** / stdout / stderr for the test harness).
+
 | What | Where to look |
 |------|----------------|
-| **Test harness** (`logging` in tests, `conftest`, `mcp_client`, httpx, …) | Terminal / CI log: **Captured log setup**, **Captured log call**, **Captured log teardown** — pytest’s logging capture. Also embedded in the HTML row for that test when shown. |
-| **Server process** (anaconda-mcp / mcp-compose + whatever shares its stdout/stderr from **`start-http-server.sh`**) | Only when you use **`--start-server`** with **`http-http`**: on **failed** **setup** or **call**, the HTML report includes an extra **`mcp-server.log (tail)`** (last ~48k chars of the redirected server stdout/stderr). Open the report, expand the failed test, and find that extra. There is no separate per-subprocess file from pytest; one stream covers compose and typical child output. |
+| **Test harness** (`logging` in tests, `conftest`, `mcp_client`, httpx, …) | In the HTML report: click a test row to expand it — the big text block is the same **Captured log setup / call / teardown** (and stdout/stderr) pytest records. In the terminal, those sections appear in the traceback for failures. |
+| **Server process** (anaconda-mcp / mcp-compose + whatever shares stdout/stderr from **`start-http-server.sh`**) | **Only on failed setup or call**, and only with **`--start-server`** + **`http-http`**: an extra named **`mcp-server.log (tail)`** (~last 48k chars). In the table, check the **Links** column for that row, or the expanded details — it is **not** mixed into “Captured log”. One stream covers compose and typical child output; there is no separate pytest-managed file per subprocess. |
 
 If the server was **not** started by pytest (no **`--start-server`**), or you use a **STDIO** profile, there is **no** **`mcp-server.log (tail)`** attachment—inspect whatever process you started yourself.
 

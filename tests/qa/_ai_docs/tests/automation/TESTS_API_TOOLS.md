@@ -380,8 +380,9 @@ There are **not** separate pytest-managed log files per subprocess; for deep dow
 
 If **`pytest-html`** is installed:
 
-- On **failed** **setup** or **call** (not teardown-only failures in the same way—hook filters `rep.when` to `setup` and `call`), the hook **`pytest_runtest_makereport`** appends an extra named **`mcp-server.log (tail)`**.
-- Content: a short header plus the **last ~48,000 characters** of that temp file (see `_MCP_SERVER_LOG_TAIL_CHARS` in `conftest.py`).
+- On **failed** **setup** or **call** only — **passed tests never get this extra** (the serialized report shows `"extras": []` for green rows).
+- The hook filters `rep.when` to `setup` and `call` (not teardown-only).
+- Extra name: **`mcp-server.log (tail)`** — a short header plus the **last ~48,000 characters** of that temp file (see `_MCP_SERVER_LOG_TAIL_CHARS` in `conftest.py`).
 
 **When there is no attachment**
 
