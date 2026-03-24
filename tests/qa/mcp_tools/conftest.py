@@ -50,6 +50,10 @@ _DEFAULT_HTML_REPORT = _MCP_TOOLS_DIR / "reports" / "report.html"
 # When ``--start-server`` captures anaconda-mcp + mcp-compose stdout, failed tests
 # attach a tail of this file to the pytest-html report (see ``pytest_runtest_makereport``).
 _MCP_SERVER_LOG_PATH_KEY = pytest.StashKey[Path | None]()
+# STDIO profiles: stderr of ``conda run … anaconda-mcp serve`` is redirected to a temp file
+# (module-scoped ``stdio_mcp_module`` and function-scoped ``stdio_server``).
+_MCP_STDIO_MODULE_LOG_PATH_KEY = pytest.StashKey[Path | None]()
+_MCP_STDIO_HANG_LOG_PATH_KEY = pytest.StashKey[Path | None]()
 _MCP_SERVER_LOG_TAIL_CHARS = 48_000
 
 
@@ -163,9 +167,7 @@ def pytest_configure(config: pytest.Config) -> None:
 
 
 def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item]) -> None:
-    """
-    Optional skip of KI-011 ``hang_stress`` tests; STDIO xfail for HANG-003.
-    """
+    """Optional skip of KI-011 ``hang_stress`` tests via ``--skip-hang-stress`` / env."""
     skip_hang = bool(config.getoption("--skip-hang-stress"))
     if os.environ.get("MCP_QA_SKIP_HANG_STRESS", "").lower() in ("1", "true", "yes"):
         skip_hang = True
@@ -178,32 +180,14 @@ def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item
             if item.get_closest_marker("hang_stress"):
                 item.add_marker(pytest.mark.skip(reason=reason))
 
-    profile = config.getoption("--mcp-profile", default="http-http")
-    if profile == "http-http":
-        return
-    for item in items:
-        if "test_hang_003" in item.name and "proxy_error" in item.nodeid:
-            item.add_marker(
-                pytest.mark.xfail(
-                    strict=False,
-                    reason=(
-                        "STDIO client: ~3× WARM_ITERATIONS calls may exceed nested "
-                        "conda subprocess harness limits; see stdio_tools xfail note."
-                    ),
-                )
-            )
 
-
-@pytest.hookimpl(hookwrapper=True, trylast=True)
-def pytest_runtest_makereport(item: pytest.Item, call: pytest.CallInfo) -> None:
-    """Append auto-started MCP server log tail to pytest-html for failed setup/call."""
-    outcome = yield
-    rep = outcome.get_result()
-    if rep.when not in ("setup", "call") or not rep.failed:
-        return
-    if not item.config.pluginmanager.has_plugin("html"):
-        return
-    log_path = item.config.stash.get(_MCP_SERVER_LOG_PATH_KEY, None)
+def _append_html_log_tail(
+    rep,
+    *,
+    log_path: Path | None,
+    extra_name: str,
+    header: str,
+) -> None:
     if log_path is None or not log_path.is_file():
         return
     try:
@@ -214,15 +198,50 @@ def pytest_runtest_makereport(item: pytest.Item, call: pytest.CallInfo) -> None:
     try:
         import pytest_html
 
-        note = (
-            "Tail of anaconda-mcp / mcp-compose process log "
-            "(--start-server). Full file on disk until session teardown.\n\n"
-        )
-        extra = pytest_html.extras.text(note + tail, name="mcp-server.log (tail)")
+        extra = pytest_html.extras.text(header + tail, name=extra_name)
         existing = list(getattr(rep, "extras", None) or [])
         rep.extras = existing + [extra]
     except Exception:
         logger.debug("Could not attach MCP log to html report", exc_info=True)
+
+
+@pytest.hookimpl(hookwrapper=True, trylast=True)
+def pytest_runtest_makereport(item: pytest.Item, call: pytest.CallInfo) -> None:
+    """Append MCP server log tails to pytest-html for failed setup/call."""
+    outcome = yield
+    rep = outcome.get_result()
+    if rep.when not in ("setup", "call") or not rep.failed:
+        return
+    if not item.config.pluginmanager.has_plugin("html"):
+        return
+
+    stash = item.config.stash
+    _append_html_log_tail(
+        rep,
+        log_path=stash.get(_MCP_SERVER_LOG_PATH_KEY, None),
+        extra_name="mcp-server.log (tail)",
+        header=(
+            "Tail of anaconda-mcp / mcp-compose process log "
+            "(--start-server). Full file on disk until session teardown.\n\n"
+        ),
+    )
+    _append_html_log_tail(
+        rep,
+        log_path=stash.get(_MCP_STDIO_MODULE_LOG_PATH_KEY, None),
+        extra_name="mcp-stdio-module-stderr.log (tail)",
+        header=(
+            "Tail of STDERR from module-scoped STDIO MCP server "
+            "(conda run … anaconda-mcp serve). JSON-RPC stays on stdout.\n\n"
+        ),
+    )
+    _append_html_log_tail(
+        rep,
+        log_path=stash.get(_MCP_STDIO_HANG_LOG_PATH_KEY, None),
+        extra_name="mcp-stdio-hang-stderr.log (tail)",
+        header=(
+            "Tail of STDERR from function-scoped STDIO server (hang_stress / stdio_server).\n\n"
+        ),
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -350,6 +369,14 @@ def stdio_mcp_module(request: pytest.FixtureRequest, compose_profile):
     env = os.environ.copy()
     env["PYTHONUNBUFFERED"] = "1"
 
+    stderr_log = tempfile.NamedTemporaryFile(
+        prefix="anaconda-mcp-stdio-module-",
+        suffix="-stderr.log",
+        delete=False,
+    )
+    stderr_path = Path(stderr_log.name)
+    request.config.stash[_MCP_STDIO_MODULE_LOG_PATH_KEY] = stderr_path
+
     proc = subprocess.Popen(
         [
             "conda",
@@ -364,7 +391,7 @@ def stdio_mcp_module(request: pytest.FixtureRequest, compose_profile):
         ],
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        stderr=stderr_log,
         start_new_session=True,
         env=env,
     )
@@ -391,6 +418,12 @@ def stdio_mcp_module(request: pytest.FixtureRequest, compose_profile):
         _send(proc, {"jsonrpc": "2.0", "method": "notifications/initialized", "params": {}})
     except Exception as exc:
         proc.kill()
+        try:
+            stderr_log.close()
+        except OSError:
+            pass
+        stderr_path.unlink(missing_ok=True)
+        request.config.stash[_MCP_STDIO_MODULE_LOG_PATH_KEY] = None
         config_path.unlink(missing_ok=True)
         pytest.fail(f"STDIO module server did not become ready: {exc}")
 
@@ -405,6 +438,12 @@ def stdio_mcp_module(request: pytest.FixtureRequest, compose_profile):
         proc.wait(timeout=10)
     except subprocess.TimeoutExpired:
         proc.kill()
+    try:
+        stderr_log.close()
+    except OSError:
+        pass
+    stderr_path.unlink(missing_ok=True)
+    request.config.stash[_MCP_STDIO_MODULE_LOG_PATH_KEY] = None
     config_path.unlink(missing_ok=True)
 
 
@@ -456,6 +495,14 @@ def stdio_server(request: pytest.FixtureRequest, compose_profile):
     env = os.environ.copy()
     env["PYTHONUNBUFFERED"] = "1"
 
+    stderr_log = tempfile.NamedTemporaryFile(
+        prefix="anaconda-mcp-stdio-hang-",
+        suffix="-stderr.log",
+        delete=False,
+    )
+    stderr_path = Path(stderr_log.name)
+    request.config.stash[_MCP_STDIO_HANG_LOG_PATH_KEY] = stderr_path
+
     proc = subprocess.Popen(
         [
             "conda",
@@ -470,7 +517,7 @@ def stdio_server(request: pytest.FixtureRequest, compose_profile):
         ],
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        stderr=stderr_log,
         start_new_session=True,
         env=env,
     )
@@ -493,6 +540,12 @@ def stdio_server(request: pytest.FixtureRequest, compose_profile):
         _send(proc, {"jsonrpc": "2.0", "method": "notifications/initialized", "params": {}})
     except Exception as exc:
         proc.kill()
+        try:
+            stderr_log.close()
+        except OSError:
+            pass
+        stderr_path.unlink(missing_ok=True)
+        request.config.stash[_MCP_STDIO_HANG_LOG_PATH_KEY] = None
         config_path.unlink(missing_ok=True)
         pytest.fail(f"STDIO hang server did not become ready: {exc}")
 
@@ -506,6 +559,12 @@ def stdio_server(request: pytest.FixtureRequest, compose_profile):
         proc.wait(timeout=10)
     except subprocess.TimeoutExpired:
         proc.kill()
+    try:
+        stderr_log.close()
+    except OSError:
+        pass
+    stderr_path.unlink(missing_ok=True)
+    request.config.stash[_MCP_STDIO_HANG_LOG_PATH_KEY] = None
     config_path.unlink(missing_ok=True)
 
 

@@ -63,6 +63,29 @@ conda install -c anaconda-cloud -c conda-forge -c defaults anaconda-connector-co
 conda deactivate   # optional before switching back to anaconda-mcp-qa
 ```
 
+#### Pinning **`mcp-compose`** (fork, branch, or exact version)
+
+`anaconda-mcp` declares a **version range** for **`mcp-compose`** in this repo’s **`pyproject.toml`** (currently **`>=0.1.11,<2.0.0`**). A plain **`pip install -e /path/to/anaconda-mcp`** therefore pulls **`mcp-compose`** from **PyPI** like any other dependency.
+
+To use a **different** build — for example a fork with **stdio proxy fixes** ([example PR](https://github.com/j-iliukhina-anaconda/mcp-compose/pull/1)) — install **`anaconda-mcp`** and **`environments-mcp`** as above, then **override** the library in the same env:
+
+```bash
+# Editable clone (stdio branch or any local checkout)
+pip install -e /path/to/mcp-compose
+
+# Or install a specific Git revision without a full clone (PEP 508)
+pip install "mcp-compose @ git+https://github.com/OWNER/mcp-compose.git@BRANCH_OR_TAG"
+```
+
+The second **`pip install`** replaces whatever **`mcp-compose`** was installed by **`anaconda-mcp`**. Verify what runs:
+
+```bash
+python -c "import mcp_compose; print(mcp_compose.__file__)"
+pip show mcp-compose
+```
+
+That gives you an independent knob: same **`anaconda-mcp`** and **`environments-mcp`** checkouts, different **`mcp-compose`** transport behavior (**`stdio-stdio`** is especially sensitive to proxy bugs). For more patterns (conda-packaged stack, **`PYTHONPATH`** override, revert), see **[`tests/qa/_ai_docs/tech_details/INSTALL_OPTIONS.md`](../_ai_docs/tech_details/INSTALL_OPTIONS.md)** (Option C).
+
 If step 3 is not needed on your machine, **`python -c "import anaconda_connector_conda"`** will already succeed after step 2 — skip or uninstall the extra package only if you know your **`environments-mcp`** install pulls it in.
 
 Without activating: `conda run -n anaconda-mcp-server pip install -e /path/to/anaconda-mcp` and the same for **`environments-mcp`**; run the **`conda install … anaconda-connector-conda`** line the same way with **`conda run -n anaconda-mcp-server`** if required.
@@ -139,14 +162,29 @@ With **`pytest-html`** installed (listed in **`tests/qa/environment.yml`**), eac
 
 ### Where to read logs
 
-**All-passing runs:** pytest-html still serializes each row with **`"extras": []`**. That is expected — the **`mcp-server.log (tail)`** attachment is **only added when a test’s setup or call fails**. If every test is green, you will **not** see a server log extra anywhere in the report (only **Captured log** / stdout / stderr for the test harness).
+**Green rows:** pytest-html still shows **`"extras": []`** for passing tests — **no** server-log attachment is ever added on success.
 
-| What | Where to look |
-|------|----------------|
-| **Test harness** (`logging` in tests, `conftest`, `mcp_client`, httpx, …) | In the HTML report: click a test row to expand it — the big text block is the same **Captured log setup / call / teardown** (and stdout/stderr) pytest records. In the terminal, those sections appear in the traceback for failures. |
-| **Server process** (anaconda-mcp / mcp-compose + whatever shares stdout/stderr from **`start-http-server.sh`**) | **Only on failed setup or call**, and only with **`--start-server`** + **`http-http`**: an extra named **`mcp-server.log (tail)`** (~last 48k chars). In the table, check the **Links** column for that row, or the expanded details — it is **not** mixed into “Captured log”. One stream covers compose and typical child output; there is no separate pytest-managed file per subprocess. |
+**1. pytest-html extras (named attachments)**
 
-If the server was **not** started by pytest (no **`--start-server`**), or you use a **STDIO** profile, there is **no** **`mcp-server.log (tail)`** attachment—inspect whatever process you started yourself.
+On **failed** setup or call, `conftest.py` may append **zero or more** extras (each is the last ~48k chars of a temp file — see `_MCP_SERVER_LOG_TAIL_CHARS`). **`pytest-html`** must be installed.
+
+| Profile | `--start-server` | Extras on failure (if that log was registered) |
+|---------|------------------|--------------------------------------------------|
+| **`http-http`** | **yes** | **`mcp-server.log (tail)`** — combined stdout+stderr from **`start-http-server.sh`**. |
+| **`http-http`** | **no** (external server) | *(none for HTTP autostart)* — use your own server logs. |
+| **`stdio-http`** / **`stdio-stdio`** | *(N/A for HTTP log)* | **`mcp-stdio-module-stderr.log (tail)`** when tests use the module-scoped STDIO server (`call_tool`). **`mcp-stdio-hang-stderr.log (tail)`** when a test uses **`stdio_server`** (`hang_stress` / `call_no_hang_unified`). MCP JSON-RPC stays on **stdout**; only **stderr** is captured to disk. **`--start-server`** does not apply to these paths. |
+
+**2. Every mode — same baseline in the report**
+
+| Section | Contents |
+|---------|----------|
+| **Captured log** (setup / call / teardown) | Test harness loggers: **`conftest`**, **`mcp_client`**, **`stdio_client`**, **`httpx`**, test modules, … |
+| **Captured stdout / stderr** | Subprocess output the **test process** inherits (e.g. **`conda`** noise during fixture teardown), not the MCP server log file unless redirected there by the test. |
+| **Traceback** | Failure location; for STDIO hang tests, often **`stdio_client._recv`** → **`TimeoutError`** then **`pytest.fail`**. |
+
+**3. STDIO-only — “hang” = bounded wait**
+
+KI-011 / hang regressions show up as **`TimeoutError: _recv: no response within …s`** (no full JSON-RPC line within **`TOOL_TIMEOUT`**) plus the test’s **`Failed: …`** message — that **is** the suite’s definition of a hang for STDIO, not an unbounded pytest wait. On failure, open **`mcp-stdio-*-stderr.log (tail)`** if present — anaconda-mcp / mcp-compose diagnostics on stderr are there; stdout remains the JSON-RPC stream only.
 
 Design detail: [`tests/qa/_ai_docs/tests/automation/TESTS_API_TOOLS.md`](../_ai_docs/tests/automation/TESTS_API_TOOLS.md) (**Server log collection**).
 

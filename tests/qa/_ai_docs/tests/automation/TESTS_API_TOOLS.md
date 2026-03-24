@@ -376,26 +376,31 @@ That script runs **`python -m anaconda_mcp serve`** with a generated HTTP config
 
 There are **not** separate pytest-managed log files per subprocess; for deep downstream-only issues you may still need to run the stack manually or add extra logging in those packages.
 
+For **`stdio-http`** / **`stdio-stdio`**, the harness redirects the MCP server’s **stderr** to a temp file (module-scoped and/or hang-scoped fixtures). **Stdout** is reserved for newline-delimited JSON-RPC; it is **not** captured as a log file.
+
 **When it is attached to the HTML report**
 
 If **`pytest-html`** is installed:
 
-- On **failed** **setup** or **call** only — **passed tests never get this extra** (the serialized report shows `"extras": []` for green rows).
+- On **failed** **setup** or **call** only — **passed tests never get these extras** (the serialized report shows `"extras": []` for green rows).
 - The hook filters `rep.when` to `setup` and `call` (not teardown-only).
-- Extra name: **`mcp-server.log (tail)`** — a short header plus the **last ~48,000 characters** of that temp file (see `_MCP_SERVER_LOG_TAIL_CHARS` in `conftest.py`).
+- Possible extras (each is a short header plus the **last ~48,000 characters** of the corresponding file — see `_MCP_SERVER_LOG_TAIL_CHARS` in `conftest.py`):
+  - **`mcp-server.log (tail)`** — **`http-http`** with **`--start-server`** (combined stdout+stderr of the auto-started process).
+  - **`mcp-stdio-module-stderr.log (tail)`** — **`stdio-http`** / **`stdio-stdio`** module-scoped STDIO server (`stdio_mcp_module`); **stderr** only (JSON-RPC uses **stdout**).
+  - **`mcp-stdio-hang-stderr.log (tail)`** — same profiles, function-scoped **`stdio_server`** (hang stress tests).
 
 **When there is no attachment**
 
-- **`--start-server` not used** (you point at an already-running server): no temp server log path is registered; failures have no **`mcp-server.log (tail)`** extra. Use your own terminal / service logs for the running server.
-- **Client edge is not HTTP** (`stdio-http`, `stdio-stdio`): the session autostart path above does not run; there is **no** automatic compose log file attachment from this hook today.
+- **`http-http`** without **`--start-server`**: no **`mcp-server.log (tail)`** — use your own terminal / service logs for the running server.
+- **STDIO tests** that never start those servers: no corresponding STDIO extra (e.g. wrong profile or skipped fixtures).
 
 **Where to look**
 
 | Artifact | Where |
 |----------|--------|
-| **pytest-html extra** | Open **`tests/qa/mcp_tools/reports/report.html`** (default; overridable with `pytest --html=…`). Expand a **failed** row; look for **`mcp-server.log (tail)`** under extras. |
+| **pytest-html extras** | Open **`tests/qa/mcp_tools/reports/report.html`** (default; overridable with `pytest --html=…`). Expand a **failed** row; check **Links** / extras for the names above. |
 | **Python `logging` from tests** | In the terminal report: **Captured log setup** / **Captured log call** (pytest’s logging capture). This is **not** the server process log; it is test harness loggers (`conftest`, `mcp_client`, etc.). |
-| **Temp file** | Exists only until session teardown after **`--start-server`**; it is **deleted** when the server fixture finishes. Do not rely on the path after the run ends—use the HTML extra on failure. |
+| **Temp file** | Deleted when the corresponding fixture finishes (HTTP session, STDIO module, or STDIO hang per test). **Do not** rely on the path after the run ends—use the HTML extra on failure. |
 
 Operator-oriented summary: [`tests/qa/mcp_tools/README.md`](../../../mcp_tools/README.md) (HTML report + `--start-server`).
 
