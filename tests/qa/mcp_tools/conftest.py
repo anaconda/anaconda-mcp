@@ -238,9 +238,7 @@ def pytest_runtest_makereport(item: pytest.Item, call: pytest.CallInfo) -> None:
         rep,
         log_path=stash.get(_MCP_STDIO_HANG_LOG_PATH_KEY, None),
         extra_name="mcp-stdio-hang-stderr.log (tail)",
-        header=(
-            "Tail of STDERR from function-scoped STDIO server (hang_stress / stdio_server).\n\n"
-        ),
+        header=("Tail of STDERR from function-scoped STDIO server (hang_stress / stdio_server).\n\n"),
     )
 
 
