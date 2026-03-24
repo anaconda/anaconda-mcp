@@ -33,6 +33,42 @@ from common.constants.config import BASE_URL, TOOL_TIMEOUT
 logger = logging.getLogger(__name__)
 
 
+def _sse_data_json_objects(text: str) -> list[dict]:
+    """Parse each non-empty ``data:`` line in an SSE body as JSON."""
+    out: list[dict] = []
+    for line in text.splitlines():
+        if not line.startswith("data:"):
+            continue
+        raw = line[len("data:") :].strip()
+        if not raw or raw == "[DONE]" or raw.startswith(":"):
+            continue
+        try:
+            obj = json.loads(raw)
+        except json.JSONDecodeError:
+            logger.debug("Skipping non-JSON SSE data line: %r", raw[:120])
+            continue
+        if isinstance(obj, dict):
+            out.append(obj)
+    return out
+
+
+def _pick_jsonrpc_for_tool_response(candidates: list[dict]) -> dict:
+    """
+    Streamable HTTP may send multiple SSE ``data:`` lines; the first parseable JSON
+    is not always the ``tools/call`` reply (e.g. session or keepalive). Prefer the
+    last object whose ``result`` looks like a CallTool payload.
+    """
+    if not candidates:
+        return {}
+    for obj in reversed(candidates):
+        res = obj.get("result")
+        if isinstance(res, dict) and (res.get("content") or res.get("structuredContent")):
+            return obj
+        if "error" in obj:
+            return obj
+    return candidates[-1]
+
+
 def _parse_mcp_response(response: httpx.Response, elapsed_s: float) -> dict:
     """
     Parse an MCP HTTP response that may be plain JSON or SSE-wrapped JSON.
@@ -40,7 +76,8 @@ def _parse_mcp_response(response: httpx.Response, elapsed_s: float) -> dict:
     Streamable HTTP servers return responses as SSE events even on POST:
         event: message\\r\\ndata: {"jsonrpc":"2.0",...}\\r\\n\\r\\n
 
-    Extract the JSON payload from the first `data:` line.
+    Extract the JSON-RPC payload from SSE ``data:`` lines (prefer the event that
+    carries the tool ``result`` / ``error``, not an earlier heartbeat).
 
     Logs the response type and elapsed time at INFO level — this is the key
     indicator of the KI-011 race condition: an unexpected SSE response on a
@@ -54,16 +91,20 @@ def _parse_mcp_response(response: httpx.Response, elapsed_s: float) -> dict:
     if "text/event-stream" in content_type or text.lstrip().startswith("event:"):
         logger.info(
             "response: SSE (%.2fs) content-type=%s body_bytes=%d",
-            elapsed_s, content_type, len(text),
+            elapsed_s,
+            content_type,
+            len(text),
         )
-        for line in text.splitlines():
-            if line.startswith("data:"):
-                return json.loads(line[len("data:"):].strip())
-        raise ValueError(f"No data: line found in SSE response: {text!r}")
+        candidates = _sse_data_json_objects(text)
+        if not candidates:
+            raise ValueError(f"No JSON data: lines in SSE response: {text!r}")
+        return _pick_jsonrpc_for_tool_response(candidates)
 
     logger.info(
         "response: JSON (%.2fs) content-type=%s body_bytes=%d",
-        elapsed_s, content_type, len(text),
+        elapsed_s,
+        content_type,
+        len(text),
     )
     return response.json()
 
@@ -79,8 +120,11 @@ def _call_tool(tool_name: str, arguments: dict, session_id: str | None) -> dict:
     """
     logger.info(
         "[CALL] tool=%s args=%s session_id=%s timeout=%ds url=%s",
-        tool_name, arguments, session_id[:8] + "..." if session_id else None,
-        TOOL_TIMEOUT, BASE_URL,
+        tool_name,
+        arguments,
+        session_id[:8] + "..." if session_id else None,
+        TOOL_TIMEOUT,
+        BASE_URL,
     )
 
     headers = {"Accept": "application/json, text/event-stream"}
@@ -109,8 +153,10 @@ def _call_tool(tool_name: str, arguments: dict, session_id: str | None) -> dict:
     elapsed_s = time.monotonic() - t0
     logger.info(
         "[RESPONSE] status=%d elapsed=%.2fs content-type=%s body_len=%d",
-        response.status_code, elapsed_s,
-        response.headers.get("content-type", "?"), len(response.text),
+        response.status_code,
+        elapsed_s,
+        response.headers.get("content-type", "?"),
+        len(response.text),
     )
     logger.debug("[RESPONSE] headers=%s", dict(response.headers))
     response.raise_for_status()
@@ -167,7 +213,9 @@ def _initialize_session(server_url: str, client_name: str = "api-tools-test") ->
     sid = response.headers.get("mcp-session-id")
     logger.info(
         "[INIT] initialize response: status=%d elapsed=%.2fs session_id=%s",
-        response.status_code, elapsed, sid[:8] + "..." if sid else None,
+        response.status_code,
+        elapsed,
+        sid[:8] + "..." if sid else None,
     )
     logger.debug("[INIT] response headers=%s", dict(response.headers))
 
@@ -193,10 +241,36 @@ def _tool_result(response_json: dict) -> dict:
 
     MCP tool results are returned as a list of content items; this helper
     finds the first text item whose content is a JSON object and returns it
-    as a dict. Returns an empty dict if no parseable result is found.
+    as a dict. Some servers also put the same JSON string under
+    ``result.structuredContent.result``. JSON-RPC ``error`` is mapped to an
+    ``is_error``-shaped dict for validators. Returns an empty dict if nothing
+    matches.
     """
-    content = response_json.get("result", {}).get("content", [])
-    text = next((c["text"] for c in content if c.get("type") == "text"), None)
+    if "error" in response_json:
+        err = response_json["error"]
+        msg = err.get("message", "") if isinstance(err, dict) else str(err)
+        return {
+            "is_error": True,
+            "error_description": msg,
+            "tool_result": {},
+        }
+
+    result = response_json.get("result") or {}
+    if not isinstance(result, dict):
+        return {}
+
+    content = result.get("content", [])
+    text = next(
+        (c["text"] for c in content if isinstance(c, dict) and c.get("type") == "text"),
+        None,
+    )
     if text and text.strip().startswith("{"):
         return json.loads(text)
+
+    sc = result.get("structuredContent")
+    if isinstance(sc, dict):
+        inner = sc.get("result")
+        if isinstance(inner, str) and inner.strip().startswith("{"):
+            return json.loads(inner)
+
     return {}

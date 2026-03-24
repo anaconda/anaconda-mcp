@@ -43,82 +43,151 @@ API Tool tests verify that MCP tools behave correctly when called directly via t
 
 ## Architecture
 
-### Transport Abstraction
+### Two-Axis Transport Model (Client × Upstream)
 
-Tests should be **transport-agnostic** where possible. The same logical test runs over:
-- **Streamable HTTP**: `POST /mcp` with JSON-RPC body
-- **STDIO**: Newline-delimited JSON-RPC over stdin/stdout
+MCP-compose sits **between** the test harness and the conda MCP server. Those two hops can use different transports:
+
+| Hop | Meaning | Typical `[transport]` / server section |
+|-----|---------|----------------------------------------|
+| **Client edge** | Test process ↔ mcp-compose | Streamable HTTP (`POST …/mcp`) or STDIO (newline JSON-RPC) |
+| **Upstream edge** | mcp-compose ↔ `environments_mcp_server` | `[[servers.proxied.streamable-http]]` or `[[servers.proxied.stdio]]` |
+
+**Named QA profiles** (same strings for CI labels and `--mcp-profile` style options):
+
+| Profile | Client edge | Upstream edge | Notes |
+|---------|-------------|----------------|-------|
+| **http-http** | HTTP | Streamable HTTP | Matches `tests/qa/_ai_docs/scripts/start-http-server.sh` |
+| **stdio-http** | STDIO | Streamable HTTP | Exercises STDIO MCP client path with HTTP-backed conda server |
+| **stdio-stdio** | STDIO | STDIO | Matches historical `stdio_tools/` regressions; avoids upstream HTTP pool issues (DESK-1409) |
+
+Optional fourth combination **http-stdio** (HTTP client, STDIO upstream) is valid for mcp-compose but not a default matrix cell unless product asks for it.
+
+Canonical TOML for each profile is generated in code so tests stay **deterministic**: `tests/qa/shared/mcp_compose_profiles.py` (`render_http_http_toml`, `render_stdio_http_toml`, `render_stdio_stdio_toml`, `render_for_profile`).
+
+### Packaged `mcp_compose.toml` vs generated config (stdio-stdio)
+
+The file **`src/anaconda_mcp/mcp_compose.toml`** is the **default** when users run `anaconda-mcp serve` **without** `--config`. **QA does not rely on that file** to pick transports for `pytest`: profiles build TOML from **`mcp_compose_profiles.py`**, write a temp file, and pass **`--config`** to `anaconda-mcp serve`.
+
+```mermaid
+flowchart TB
+  subgraph shipped["Shipped with the package"]
+    F["src/anaconda_mcp/mcp_compose.toml"]
+    F --> D1["Fallback defaults"]
+    D1 --> S1["anaconda-mcp serve\n(no --config flag)"]
+  end
+  subgraph qa_stdio["stdio-stdio in tests"]
+    G["tests/qa/shared/mcp_compose_profiles.py"]
+    G --> R["render_stdio_stdio_toml / render_for_profile"]
+    R --> T["Temporary .toml on disk"]
+    T --> S2["anaconda-mcp serve --config T\n(spawned via conda run)"]
+    P["pytest + mcp_tools"] -->|newline JSON-RPC on stdin/stdout| S2
+    S2 -->|"proxied stdio (servers.proxied.stdio)"| E["environments_mcp_server"]
+  end
+```
+
+**Takeaway:** editing `src/anaconda_mcp/mcp_compose.toml` does **not** change how **`--mcp-profile=stdio-stdio`** behaves; that profile is entirely driven by **generated** TOML + **`--config`**.
+
+### Transport Abstraction (Single Test Suite)
+
+Tests should be **transport-agnostic** at the **tool-contract** layer: the same assertions run for every profile that targets the same tool surface.
+
+Per profile, only the **adapter** changes:
+
+- **Client HTTP**: `POST` to `/mcp`, SSE-aware parsing (`common/utils/mcp_client.py` in `http_tools`).
+- **Client STDIO**: newline-delimited JSON-RPC over a subprocess (`stdio_client.py` in `stdio_tools`).
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                    Test Specification                    │
-│  (what behavior we verify, transport-independent)        │
+│              Test specification (deterministic)           │
+│  assert tool X with args A returns structured result Y   │
 └─────────────────────────────────────────────────────────┘
                             │
                             ▼
 ┌─────────────────────────────────────────────────────────┐
-│                   Transport Adapter                      │
-│  HTTPClient | STDIOClient (how we send/receive)          │
+│         MCPClient protocol (call_tool, session)         │
+│   HttpMcpClient(profile=http-http | …)                  │
+│   StdioMcpClient(profile=stdio-http | stdio-stdio)      │
 └─────────────────────────────────────────────────────────┘
                             │
                             ▼
 ┌─────────────────────────────────────────────────────────┐
-│                  Server Under Test                       │
-│  anaconda-mcp serve (HTTP or STDIO mode)                 │
+│                  mcp-compose (anaconda-mcp)              │
+│  [transport] + [[servers.proxied.*]] from profile       │
+└─────────────────────────────────────────────────────────┘
+                            │
+                            ▼
+┌─────────────────────────────────────────────────────────┐
+│            environments_mcp_server (conda tools)         │
 └─────────────────────────────────────────────────────────┘
 ```
 
 ### CI Matrix Support
 
-Tests support GitHub Actions matrix strategy with transport as a dimension:
+Tests support GitHub Actions with **profile** as a dimension (not just “http vs stdio” on a single hop):
 
 ```yaml
 strategy:
   matrix:
     os: [ubuntu-latest, macos-latest, windows-latest]
     python-version: ["3.10", "3.11", "3.12", "3.13"]
-    transport: [http, stdio]
+    mcp-profile: [http-http, stdio-http, stdio-stdio]
 ```
 
-**Execution model**: Each matrix cell runs on a separate runner, so there are no cross-cell conflicts. Within each cell:
+**Execution model**: Each matrix cell runs on a separate runner. Within each cell:
 
-1. Fixture starts ONE MCP server (transport and port configurable)
-2. Run ALL tests against that single server instance
-3. Fixture tears down server after all tests complete
+1. Fixture starts **one** mcp-compose process using the TOML for `mcp-profile` (see `tests/qa/shared/mcp_compose_profiles.py`).
+2. Run **the same** tool tests via the adapter that matches the profile’s **client edge** (HTTP vs STDIO).
+3. Tear down after the session (or per test for STDIO-heavy hang regressions that require a fresh process).
+
+**CLI options (target end state):**
+
+| Option | Purpose |
+|--------|---------|
+| `--mcp-profile` | `http-http` \| `stdio-http` \| `stdio-stdio` — selects both edges |
+| `--server-url` | MCP endpoint when client edge is HTTP (e.g. `http://localhost:9888/mcp`) |
+| `--compose-port` / `--downstream-port` | Ports for HTTP-http profile and streamable-http upstream |
 
 **Requirements:**
-- **Configurable transport**: Via `--transport` CLI option (http or stdio)
-- **Configurable port**: Via `--port` CLI option (for HTTP transport)
-- **Isolated conda env per cell**: Each Python version uses its own env
-- **Session-scoped server fixture**: Manages full server lifecycle
+
+- **Deterministic config**: Generated TOML from `mcp_compose_profiles`, not hand-edited copies in each test file.
+- **Isolated conda env per cell**: Each Python version uses its own env with `anaconda-mcp` installed.
+- **Fixture scope**: Session-scoped server for HTTP client edge; function-scoped `stdio_server` where a fresh process is required (KI-011 regressions).
 
 ### Server Lifecycle via Fixture
 
-The `mcp_server` fixture manages the full server lifecycle — no external scripts needed:
+The `mcp_server` fixture manages the full server lifecycle. The **profile** selects how the config is built and whether readiness is probed over HTTP or STDIO:
 
 ```python
 @pytest.fixture(scope="session")
-def mcp_server(request):
-    """Start server, wait for ready, yield, teardown."""
-    transport = request.config.getoption("--transport")
-    port = request.config.getoption("--port")
-
-    if transport == "http":
-        proc = subprocess.Popen(
-            ["anaconda-mcp", "serve", "--port", str(port)],
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-        )
-        _wait_for_ready(f"http://localhost:{port}/mcp")
-    else:  # stdio
-        proc = subprocess.Popen(
-            ["anaconda-mcp", "serve"],
-            stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-        )
-
+def mcp_server(request, tmp_path_factory):
+    """Start anaconda-mcp with TOML from mcp_compose_profiles, wait for ready, teardown."""
+    slug = request.config.getoption("--mcp-profile")  # http-http | stdio-http | stdio-stdio
+    profile = mcp_compose_profiles.PROFILES_BY_SLUG[slug]
+    compose_port = request.config.getoption("--compose-port")
+    downstream_port = request.config.getoption("--downstream-port")
+    cfg = tmp_path_factory.mktemp("mcp") / "compose.toml"
+    cfg.write_text(
+        mcp_compose_profiles.render_for_profile(
+            profile, compose_port=compose_port, downstream_port=downstream_port,
+            python_executable=sys.executable,
+        ),
+        encoding="utf-8",
+    )
+    proc = subprocess.Popen(
+        ["anaconda-mcp", "serve", "--config", str(cfg)],
+        stdin=subprocess.PIPE if profile.client == mcp_compose_profiles.ClientEdge.STDIO else None,
+        stdout=subprocess.PIPE if profile.client == mcp_compose_profiles.ClientEdge.STDIO else subprocess.DEVNULL,
+    )
+    if profile.client == mcp_compose_profiles.ClientEdge.HTTP:
+        _wait_for_ready(f"http://localhost:{compose_port}/mcp")
+    else:
+        _stdio_initialize_handshake(proc)
     yield proc
     proc.terminate()
     proc.wait(timeout=10)
 ```
+
+(Exact argument names and handshake helpers match the unified suite as it lands; today, `http_tools` may still use `start-http-server.sh` until this fixture replaces it.)
 
 **Benefits of fixture-only approach:**
 - **Platform-independent**: Python `subprocess` works on Linux, macOS, Windows
@@ -201,55 +270,92 @@ def test_error_response_does_not_hang(fresh_session_id):
 ## Current Implementation Status
 
 ### What Exists
-- `tests/qa/http_tools/`: HTTP transport tests with pytest fixtures
-- `tests/qa/stdio_tools/`: STDIO transport tests (parallel structure)
+- `tests/qa/mcp_tools/`: **Unified** MCP tool suite; `--mcp-profile` selects **http-http**, **stdio-http**, or **stdio-stdio** (see `README.md` there)
+- Legacy directories `tests/qa/http_tools/` and `tests/qa/stdio_tools/` contain only redirect READMEs; tests live under `mcp_tools/`
+- `tests/qa/shared/mcp_compose_profiles.py`: canonical TOML for all three profiles
 - Regression tests for KI-002, KI-003, KI-010, KI-011
 
 ### Known Issues in Test Design
-1. **Duplication**: `http_tools/common/` and `stdio_tools/common/` have overlapping code
-2. **Transport coupling**: Tests organized by transport, not by functionality
+1. **Resolved (suite merge)**: Single `mcp_tools/` tree with shared `common/` and profile-aware fixtures (`call_tool`, `call_no_hang_unified`).
+2. **Optional follow-ups**: Register `pytest.mark.timeout` in `pytest.ini` when using pytest-timeout; add CI matrix on `--mcp-profile`.
 
 ### Recommended Structure (Unified)
 
 ```
 tests/qa/
-├── conftest.py                 # Server fixture, transport selection
+├── shared/
+│   └── mcp_compose_profiles.py   # Deterministic TOML for http-http, stdio-http, stdio-stdio
+├── conftest.py                 # --mcp-profile, server lifecycle, mcp_client fixture
 ├── common/
 │   ├── clients/
-│   │   ├── base.py             # MCPClient protocol (interface)
-│   │   ├── http_client.py      # HTTP transport implementation
-│   │   └── stdio_client.py     # STDIO transport implementation
-│   ├── constants/              # Shared test data, tool names
-│   └── validators/             # Response validation helpers
-├── test_tools.py               # Tool tests (transport-agnostic)
+│   │   ├── base.py             # Protocol: initialize, call_tool, parse_tool_result
+│   │   ├── http_client.py      # Client edge: HTTP
+│   │   └── stdio_client.py     # Client edge: STDIO (upstream driven by profile TOML)
+│   ├── constants/              # Shared test data, tool names, timeouts
+│   └── validators/             # Response validation (works across client edges)
+├── test_tools.py               # Tool tests — only use MCPClient + validators
 └── test_regressions.py         # KI-xxx regression tests
 ```
 
 **Key changes:**
-- One test file, transport selected via `--transport` option
-- `mcp_client` fixture returns HTTPClient or STDIOClient based on transport
-- Tests use `mcp_client.call_tool()` — don't know which transport
 
-CLI and Config tests live in separate directories (`tests/qa/cli/`, `tests/qa/config/`) — see their respective design docs.
+- **One** logical suite; **profile** selects both edges (`http-http`, `stdio-http`, `stdio-stdio`).
+- `mcp_client` fixture yields an implementation of `MCPClient` — tests call `call_tool(name, args)` and shared validators inspect results.
+- **Upstream** behavior is defined entirely by the generated compose file, not by duplicate suites (`http_tools/` vs `stdio_tools/` merge over time).
+
+**Current step (incremental):** `tests/qa/shared/mcp_compose_profiles.py` exists; `stdio_tools` stdio-stdio config is generated from `render_stdio_stdio_toml`. Next steps: add `stdio-http` spawn path in conftest, merge duplicate guard tests behind parametrized profile, and fold `http_tools` + `stdio_tools` into `tests/qa/mcp_tools/` when ready.
+
+CLI and Config tests stay in separate directories (`tests/qa/cli/`, `tests/qa/config/`) — see their respective design docs.
 
 ---
 
 ## Running Tests
 
+### What operators do (end-to-end)
+
+Two conda environments are required: one for **pytest** (`anaconda-mcp-qa` from `tests/qa/environment.yml`) and one for the **server under test** (`anaconda-mcp-server` by convention — any name, passed via `--server-conda-env`). See [`tests/qa/mcp_tools/README.md`](../../mcp_tools/README.md) for exact `conda create` / `pip install -e` commands.
+
+```mermaid
+flowchart TD
+  subgraph envs["1. Prepare conda environments"]
+    Q["anaconda-mcp-qa"]
+    Q --> Q1["conda env create -f tests/qa/environment.yml"]
+    S["anaconda-mcp-server\n(or MCP_SERVER_CONDA_ENV)"]
+    S --> S1["pip install -e /path/to/anaconda-mcp"]
+    S --> S2["pip install -e /path/to/environments-mcp"]
+  end
+  subgraph exec["2. Run tests from repo root"]
+    A["conda activate anaconda-mcp-qa"]
+    A --> B["pytest tests/qa/mcp_tools …"]
+    B --> C["--mcp-profile http-http | stdio-http | stdio-stdio"]
+    B --> D["--server-conda-env anaconda-mcp-server"]
+    B --> E["Optional: --start-server for http-http"]
+  end
+  envs --> exec
+```
+
 ### Local Development
 ```bash
-# HTTP transport
-pytest tests/qa/ --transport http --port 9888 -v
+# http-http (Streamable HTTP client → compose → HTTP upstream)
+pytest tests/qa/mcp_tools -q --mcp-profile=http-http \
+  --server-url http://localhost:9888/mcp --start-server \
+  --server-conda-env anaconda-mcp-server
 
-# STDIO transport
-pytest tests/qa/ --transport stdio -v
+# stdio-stdio (STDIO client → compose → STDIO upstream)
+pytest tests/qa/mcp_tools -q --mcp-profile=stdio-stdio \
+  --server-conda-env anaconda-mcp-server
+
+# stdio-http
+pytest tests/qa/mcp_tools -q --mcp-profile=stdio-http \
+  --server-conda-env anaconda-mcp-server
 ```
 
 ### CI Invocation
 ```bash
-pytest tests/qa/ \
-  --transport ${TRANSPORT} \
-  --port ${PORT} \
+export MCP_PROFILE=stdio-stdio   # or http-http, stdio-http
+pytest tests/qa/mcp_tools \
+  --mcp-profile "${MCP_PROFILE}" \
+  --server-url "http://localhost:${PORT}/mcp" \
   -v
 ```
 

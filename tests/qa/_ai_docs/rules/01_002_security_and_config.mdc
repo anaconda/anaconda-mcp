@@ -10,7 +10,7 @@
 |---|---|---|
 | `MCP_SERVER_URL` | `http://localhost:8888/mcp` | Full MCP endpoint URL |
 | `MCP_PORT` | `8888` | Legacy fallback port (used when `MCP_SERVER_URL` is absent) |
-| `MCP_SERVER_CONDA_ENV` | `anaconda-mcp-rc-py313` | Conda env used by `--start-server` |
+| `MCP_SERVER_CONDA_ENV` | `anaconda-mcp-server` | Conda env used by `--start-server` / stdio server spawn |
 
 ## Config Pattern in conftest.py
 ```python

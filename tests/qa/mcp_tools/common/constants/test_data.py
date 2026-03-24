@@ -34,3 +34,6 @@ KI011_HANG_FAIL_MSG = (
     "(missing 5th POST + DELETE). Matches the KI-011 hang pattern. "
     "Observed on 2026-03-05 with Streamable HTTP transport, Python 3.13."
 )
+
+# Alias for unified hang tests (historical stdio_tools name).
+HANG_FAIL_MSG = KI011_HANG_FAIL_MSG

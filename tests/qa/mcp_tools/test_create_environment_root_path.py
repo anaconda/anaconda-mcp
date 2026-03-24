@@ -13,10 +13,9 @@ from __future__ import annotations
 import logging
 
 import pytest
-
 from common.constants.mcp_tools import CreateEnvironmentArgs, Tools
 from common.constants.test_data import NONEXISTENT_ENV_PREFIX
-from common.utils.mcp_client import _call_tool, _tool_result
+from common.utils.mcp_client import _tool_result
 from common.utils.response_validators import (
     _validate_no_pydantic_validation_error,
 )
@@ -30,21 +29,20 @@ _ENV_NAME = "ki016-regression-test"
 class TestCreateEnvironmentWithRootPath:
     """KI-016: conda_create_environment with environment_root_path must never return a frozen_instance error."""
 
-    def test_ki016_no_frozen_instance_error(self, session_id, cleanup_conda_env):
+    def test_ki016_no_frozen_instance_error(self, call_tool, cleanup_conda_env):
         """No Pydantic frozen_instance error when environment_root_path is provided (KI-016)."""
         cleanup_conda_env(_ENV_NAME)
         logger.info(
             "KI-016: create_environment with environment_root_path='%s'",
             NONEXISTENT_ENV_PREFIX,
         )
-        response = _call_tool(
+        response = call_tool(
             Tools.CONDA_CREATE_ENVIRONMENT,
             {
                 CreateEnvironmentArgs.ENVIRONMENT_NAME: _ENV_NAME,
                 CreateEnvironmentArgs.PACKAGES: ["python=3.11"],
                 CreateEnvironmentArgs.ENVIRONMENT_ROOT_PATH: NONEXISTENT_ENV_PREFIX,
             },
-            session_id,
         )
         result = _tool_result(response)
         _validate_no_pydantic_validation_error(
@@ -54,7 +52,7 @@ class TestCreateEnvironmentWithRootPath:
         )
         logger.info("KI-016: result: %s", result)
 
-    def test_ki016_response_is_parseable_with_root_path(self, session_id, cleanup_conda_env):
+    def test_ki016_response_is_parseable_with_root_path(self, call_tool, cleanup_conda_env):
         """
         Response must be a parseable tool result, not a raw JSON-RPC error body (KI-016).
 
@@ -67,14 +65,13 @@ class TestCreateEnvironmentWithRootPath:
             "KI-016: create_environment with environment_root_path='%s'",
             NONEXISTENT_ENV_PREFIX,
         )
-        response = _call_tool(
+        response = call_tool(
             Tools.CONDA_CREATE_ENVIRONMENT,
             {
                 CreateEnvironmentArgs.ENVIRONMENT_NAME: _ENV_NAME,
                 CreateEnvironmentArgs.PACKAGES: ["python=3.11"],
                 CreateEnvironmentArgs.ENVIRONMENT_ROOT_PATH: NONEXISTENT_ENV_PREFIX,
             },
-            session_id,
         )
         result = _tool_result(response)
         logger.info("KI-016: result=%s", result)

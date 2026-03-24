@@ -1,5 +1,5 @@
 """
-Response validators for the http_tools suite.
+Response validators for the mcp_tools suite.
 
 Each validator checks one specific property of a tool result dict.
 Validators return nothing and raise AssertionError with context on failure.

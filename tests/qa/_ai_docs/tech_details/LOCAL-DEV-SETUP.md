@@ -9,9 +9,11 @@ This guide explains how to set up and test `anaconda-mcp` with a locally modifie
 The test architecture involves two conda environments:
 
 ```
-anaconda-mcp-qa          → runs pytest (test client)
-anaconda-mcp-rc-py313    → runs the MCP servers (anaconda-mcp + environments-mcp)
+anaconda-mcp-qa       → runs pytest (test client)
+anaconda-mcp-server   → runs the MCP servers (anaconda-mcp + environments-mcp)
 ```
+
+**Creating the server env** (`conda create`, `pip install -e` for both repos, verification commands, and how profiles relate to `mcp_compose.toml`) is documented in [`tests/qa/mcp_tools/README.md`](../../mcp_tools/README.md).
 
 To test local changes to `environments-mcp`, you need to install it in **editable mode** into the server environment.
 
@@ -22,13 +24,13 @@ To test local changes to `environments-mcp`, you need to install it in **editabl
 Check what's currently installed in the server environment:
 
 ```bash
-conda run -n anaconda-mcp-rc-py313 pip list | grep -E "(anaconda-mcp|environments-mcp)"
+conda run -n anaconda-mcp-server pip list | grep -E "(anaconda-mcp|environments-mcp)"
 ```
 
 **Example output (before local install):**
 ```
 anaconda-mcp              0.1.dev99+...  /Users/iiliukhina/projects/anaconda-mcp
-environments-mcp-server   1.0.0rc1       ← from PyPI, NOT local
+environments-mcp-server   1.0.0rc1       ← from conda (or similar), NOT local
 ```
 
 **Example output (after local install):**
@@ -46,13 +48,13 @@ The path at the end indicates whether it's a local editable install.
 ### Install environments-mcp from local source
 
 ```bash
-conda run -n anaconda-mcp-rc-py313 pip install -e /Users/iiliukhina/projects/environments-mcp
+conda run -n anaconda-mcp-server pip install -e /Users/iiliukhina/projects/environments-mcp
 ```
 
 ### Install anaconda-mcp from local source (if needed)
 
 ```bash
-conda run -n anaconda-mcp-rc-py313 pip install -e /Users/iiliukhina/projects/anaconda-mcp
+conda run -n anaconda-mcp-server pip install -e /Users/iiliukhina/projects/anaconda-mcp
 ```
 
 ### What `-e` (editable) does
@@ -80,7 +82,7 @@ With editable install:
 ### Method 1: Check pip list
 
 ```bash
-conda run -n anaconda-mcp-rc-py313 pip list | grep environments-mcp
+conda run -n anaconda-mcp-server pip list | grep environments-mcp
 ```
 
 Should show local path:
@@ -91,7 +93,7 @@ environments-mcp-server   0.1.dev...  /Users/iiliukhina/projects/environments-mc
 ### Method 2: Inspect source at runtime
 
 ```bash
-conda run -n anaconda-mcp-rc-py313 python -c "
+conda run -n anaconda-mcp-server python -c "
 from environments_mcp_server.tools.environments import install_packages
 import inspect
 source = inspect.getsource(install_packages.install_packages)
@@ -113,14 +115,14 @@ else:
 conda activate anaconda-mcp-qa
 python -m pytest tests/qa/http_tools/ -v \
   --start-server \
-  --server-conda-env anaconda-mcp-rc-py313
+  --server-conda-env anaconda-mcp-server
 ```
 
 ### Option B: Manual server start
 
 **Terminal 1 — Start server:**
 ```bash
-conda activate anaconda-mcp-rc-py313
+conda activate anaconda-mcp-server
 ./tests/qa/_ai_docs/scripts/start-http-server.sh 8888
 ```
 
@@ -137,7 +139,7 @@ python -m pytest tests/qa/http_tools/ -v
 ### Reinstall from PyPI (discard local changes)
 
 ```bash
-conda run -n anaconda-mcp-rc-py313 pip install --force-reinstall environments-mcp-server
+conda run -n anaconda-mcp-server pip install --force-reinstall environments-mcp-server
 ```
 
 ### Clear Python bytecode cache
@@ -178,10 +180,10 @@ lsof -ti:4041 | xargs kill -9 2>/dev/null
 **Fix:**
 ```bash
 # Uninstall first
-conda run -n anaconda-mcp-rc-py313 pip uninstall environments-mcp-server -y
+conda run -n anaconda-mcp-server pip uninstall environments-mcp-server -y
 
 # Reinstall from local
-conda run -n anaconda-mcp-rc-py313 pip install -e /Users/iiliukhina/projects/environments-mcp
+conda run -n anaconda-mcp-server pip install -e /Users/iiliukhina/projects/environments-mcp
 ```
 
 ### Issue: Import errors after editable install
@@ -191,7 +193,7 @@ conda run -n anaconda-mcp-rc-py313 pip install -e /Users/iiliukhina/projects/env
 **Fix:**
 ```bash
 # Install with dev dependencies
-conda run -n anaconda-mcp-rc-py313 pip install -e "/Users/iiliukhina/projects/environments-mcp[dev]"
+conda run -n anaconda-mcp-server pip install -e "/Users/iiliukhina/projects/environments-mcp[dev]"
 ```
 
 ---
@@ -201,31 +203,31 @@ conda run -n anaconda-mcp-rc-py313 pip install -e "/Users/iiliukhina/projects/en
 ```bash
 # === SETUP ===
 # Install both local packages
-conda run -n anaconda-mcp-rc-py313 pip install -e /Users/iiliukhina/projects/anaconda-mcp
-conda run -n anaconda-mcp-rc-py313 pip install -e /Users/iiliukhina/projects/environments-mcp
+conda run -n anaconda-mcp-server pip install -e /Users/iiliukhina/projects/anaconda-mcp
+conda run -n anaconda-mcp-server pip install -e /Users/iiliukhina/projects/environments-mcp
 
 # Verify installation
-conda run -n anaconda-mcp-rc-py313 pip list | grep -E "(anaconda-mcp|environments-mcp)"
+conda run -n anaconda-mcp-server pip list | grep -E "(anaconda-mcp|environments-mcp)"
 
 # === TESTING ===
 # Run HTTP transport tests
 conda run -n anaconda-mcp-qa python -m pytest tests/qa/http_tools/ -v \
-  --start-server --server-conda-env anaconda-mcp-rc-py313
+  --start-server --server-conda-env anaconda-mcp-server
 
 # Run STDIO transport tests
 conda run -n anaconda-mcp-qa python -m pytest tests/qa/stdio_tools/ -v \
-  --server-conda-env anaconda-mcp-rc-py313
+  --server-conda-env anaconda-mcp-server
 
 # Run specific test
 conda run -n anaconda-mcp-qa python -m pytest tests/qa/http_tools/test_guard_proxy_error_hang.py \
-  -v -k "test_hang_002" --start-server --server-conda-env anaconda-mcp-rc-py313
+  -v -k "test_hang_002" --start-server --server-conda-env anaconda-mcp-server
 
 # === CLEANUP ===
 # Kill servers
 pkill -9 -f "anaconda-mcp"; pkill -9 -f "environments_mcp"
 
 # Reset to PyPI version
-conda run -n anaconda-mcp-rc-py313 pip install --force-reinstall environments-mcp-server
+conda run -n anaconda-mcp-server pip install --force-reinstall environments-mcp-server
 ```
 
 ---
@@ -247,6 +249,6 @@ For full Windows setup including Claude Desktop config workarounds, see [WINDOWS
 
 ## Related Documentation
 
-- [HTTP Transport Tests README](../http_tools/README.md)
-- [STDIO Transport Tests README](../stdio_tools/README.md)
+- [Unified MCP tool tests README](../../mcp_tools/README.md)
+- [HTTP / STDIO redirect READMEs](../http_tools/README.md) (point to `mcp_tools/`)
 - [Known Issues](../_tracking/KNOWN_ISSUES.md)

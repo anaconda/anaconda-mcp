@@ -3,7 +3,7 @@ Regression tests: GUARD-ENV-OPS-API (KI-002, KI-003)
 
 KI-002 — list_environments reports wrong name
     conda_list_environments() returns name="base" for an environment whose
-    actual name differs (e.g. anaconda-mcp-rc-py313 shown as "base").
+    actual name differs (e.g. server conda env shown as "base").
 
 KI-003 — remove_environment by name resolves wrong prefix
     conda_remove_environment(environment_name="<name>") builds an incorrect
@@ -20,11 +20,10 @@ import logging
 import subprocess
 
 import pytest
-
 from common.constants.mcp_tools import RemoveEnvironmentArgs, ToolResultFields, Tools
 from common.constants.test_data import REMOVABLE_ENV_NAME
 from common.utils.conda_utils import _conda_env_prefix
-from common.utils.mcp_client import _call_tool, _tool_result
+from common.utils.mcp_client import _tool_result
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +37,7 @@ def removable_env():
     MCP; teardown cleans up with the conda CLI in case the MCP call fails.
     """
     import time as _time
+
     t0 = _time.monotonic()
     logger.info("[FIXTURE] removable_env: creating conda env '%s'...", REMOVABLE_ENV_NAME)
     result = subprocess.run(
@@ -69,13 +69,13 @@ class TestEnvironmentNameResolution:
     prefixes — not misclassify environments or resolve wrong paths.
     """
 
-    def test_ki002_list_environments_reports_correct_name(self, conda_env, session_id):
+    def test_ki002_list_environments_reports_correct_name(self, conda_env, call_tool, session_id):
         """
         KI-002: conda_list_environments must return the correct name for each
         environment — not "base" for a non-base environment.
 
-        Observed: the tool returns name="base" for anaconda-mcp-rc-py313
-        (path=/opt/miniconda3/envs/anaconda-mcp-rc-py313). The bug affects
+        Observed: the tool returns name="base" for the server's own conda env
+        (e.g. path=/opt/miniconda3/envs/anaconda-mcp-server). The bug affects
         any environment whose conda context resolves incorrectly.
 
         This test creates a known environment (conda_env fixture →
@@ -83,21 +83,21 @@ class TestEnvironmentNameResolution:
         prefix, and asserts the reported name matches the actual env name.
         """
         import time as _time
+
         t0 = _time.monotonic()
         logger.info(
             "[KI-002] START: listing environments, expecting name=%r at prefix %r session_id=%s",
             conda_env["name"],
             conda_env["prefix"],
-            session_id[:8] + "..." if session_id else None,
+            (session_id[:8] + "...") if session_id else "stdio",
         )
         logger.info("[KI-002] t=%.2fs: calling _call_tool...", _time.monotonic() - t0)
-        response = _call_tool(Tools.CONDA_LIST_ENVIRONMENTS, {}, session_id)
+        response = call_tool(Tools.CONDA_LIST_ENVIRONMENTS, {})
         logger.info("[KI-002] t=%.2fs: _call_tool returned", _time.monotonic() - t0)
         result = _tool_result(response)
 
         assert not result.get(ToolResultFields.IS_ERROR), (
-            f"conda_list_environments returned an error: "
-            f"{result.get(ToolResultFields.ERROR_DESCRIPTION)!r}"
+            f"conda_list_environments returned an error: " f"{result.get(ToolResultFields.ERROR_DESCRIPTION)!r}"
         )
 
         environments = result.get("tool_result", {}).get("environments", [])
@@ -116,7 +116,7 @@ class TestEnvironmentNameResolution:
             "The environment is misclassified."
         )
 
-    def test_ki003_remove_environment_by_name(self, removable_env, session_id):
+    def test_ki003_remove_environment_by_name(self, removable_env, call_tool, session_id):
         """
         KI-003: conda_remove_environment(environment_name=<name>) must find
         and remove an existing environment — not fail with 'environment not
@@ -128,18 +128,18 @@ class TestEnvironmentNameResolution:
         The environment can only be removed by passing prefix directly.
         """
         import time as _time
+
         t0 = _time.monotonic()
         logger.info(
             "[KI-003] START: removing env %r by name (prefix: %r) session_id=%s",
             removable_env["name"],
             removable_env["prefix"],
-            session_id[:8] + "..." if session_id else None,
+            (session_id[:8] + "...") if session_id else "stdio",
         )
         logger.info("[KI-003] t=%.2fs: calling _call_tool...", _time.monotonic() - t0)
-        response = _call_tool(
+        response = call_tool(
             Tools.CONDA_REMOVE_ENVIRONMENT,
             {RemoveEnvironmentArgs.ENVIRONMENT_NAME: removable_env["name"]},
-            session_id,
         )
         logger.info(
             "[KI-003] t=%.2fs: _call_tool returned, parsing result...",

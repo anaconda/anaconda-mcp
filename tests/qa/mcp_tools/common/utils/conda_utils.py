@@ -19,9 +19,7 @@ def _conda_env_prefix(env_name: str) -> str:
 
     Works on both Windows (backslash) and Unix (forward slash) paths.
     """
-    info = json.loads(
-        subprocess.check_output(["conda", "info", "--json"], text=True)
-    )
+    info = json.loads(subprocess.check_output(["conda", "info", "--json"], text=True))
     # Match using os.sep to handle both Windows (\) and Unix (/) paths
     matches = [p for p in info["envs"] if p.endswith(f"{os.sep}{env_name}")]
     assert matches, f"Conda environment '{env_name}' not found"
