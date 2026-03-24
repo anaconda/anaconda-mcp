@@ -88,12 +88,6 @@ def pytest_addoption(parser: pytest.Parser) -> None:
         help="environments_mcp_server streamable-http port (default: 5041).",
     )
     parser.addoption(
-        "--transport",
-        default="http",
-        choices=["http", "stdio"],
-        help="Legacy label for HTML reports; prefer --mcp-profile.",
-    )
-    parser.addoption(
         "--python-version",
         default=None,
         metavar="VERSION",
@@ -629,7 +623,6 @@ def pytest_sessionstart(session: pytest.Session) -> None:
 
     metadata["MCP profile"] = config.getoption("--mcp-profile")
     metadata["Server URL"] = config.getoption("--server-url")
-    metadata["Transport"] = config.getoption("--transport").upper()
     metadata["Server conda env"] = config.getoption("--server-conda-env")
 
     py_ver = config.getoption("--python-version")
