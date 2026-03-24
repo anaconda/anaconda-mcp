@@ -69,23 +69,17 @@ jobs:
           echo "Using GIT_DESCRIBE_TAG=${TAG}"
           echo "GIT_DESCRIBE_TAG=${TAG}" >> "$GITHUB_ENV"
 
-      - name: Write conda build config
-        run: |
-          printf 'python:\n  - "3.11"\n' > conda-build/conda_build_config.yaml
-          echo "=== conda_build_config.yaml contents ==="
-          cat conda-build/conda_build_config.yaml
-
       - name: Build conda package
         run: |
           echo "Building with GIT_DESCRIBE_TAG=${GIT_DESCRIBE_TAG}"
           mkdir -p build/conda
           conda build \
+            -c defaults \
             -c conda-forge \
             -c datalayer \
             -c https://conda.anaconda.org/t/${{ secrets.ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN }}/anaconda-cloud \
             -c https://conda.anaconda.org/t/${{ secrets.ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN }}/anaconda-cloud/label/dev \
             -c https://conda.anaconda.org/t/${{ secrets.ANACONDA_CONNECTOR_TOKEN }}/anaconda-connector \
-            -m conda-build/conda_build_config.yaml \
             --output-folder build/conda \
             conda-build
 
@@ -103,12 +97,12 @@ jobs:
           conda create -y -n sbom-anaconda-mcp \
             --override-channels \
             -c "file://${{ github.workspace }}/build/conda" \
+            -c defaults \
             -c conda-forge \
             -c datalayer \
             -c https://conda.anaconda.org/t/${{ secrets.ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN }}/anaconda-cloud \
             -c https://conda.anaconda.org/t/${{ secrets.ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN }}/anaconda-cloud/label/dev \
             -c https://conda.anaconda.org/t/${{ secrets.ANACONDA_CONNECTOR_TOKEN }}/anaconda-connector \
-            python=3.11 \
             anaconda-mcp
 
       - name: Export dependency inventory (SBOM inputs)
