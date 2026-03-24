@@ -44,6 +44,14 @@ _SSE_HEADERS = {"Accept": "application/json, text/event-stream"}
 
 _SCRIPT_PATH = (Path(__file__).resolve().parent.parent / "_ai_docs" / "scripts" / "start-http-server.sh").resolve()
 
+_MCP_TOOLS_DIR = Path(__file__).resolve().parent
+_DEFAULT_HTML_REPORT = _MCP_TOOLS_DIR / "reports" / "report.html"
+
+# When ``--start-server`` captures anaconda-mcp + mcp-compose stdout, failed tests
+# attach a tail of this file to the pytest-html report (see ``pytest_runtest_makereport``).
+_MCP_SERVER_LOG_PATH_KEY = pytest.StashKey[Path | None]()
+_MCP_SERVER_LOG_TAIL_CHARS = 48_000
+
 
 def pytest_addoption(parser: pytest.Parser) -> None:
     parser.addoption(
@@ -100,9 +108,35 @@ def pytest_addoption(parser: pytest.Parser) -> None:
         metavar="ENV",
         help="Conda env with anaconda-mcp (stdio profiles and --start-server).",
     )
+    parser.addoption(
+        "--skip-hang-stress",
+        action="store_true",
+        default=False,
+        help=(
+            "Skip tests marked hang_stress (KI-011 warm-iteration loops). "
+            "Use for a shorter run or when mcp-compose is flaky after a prior hang. "
+            "Env MCP_QA_SKIP_HANG_STRESS=1 is equivalent."
+        ),
+    )
 
 
+@pytest.hookimpl(tryfirst=True)
 def pytest_configure(config: pytest.Config) -> None:
+    """
+    Default pytest-html output under ``tests/qa/mcp_tools/reports/report.html``
+    (self-contained), cwd-independent. Omit with ``pytest --html=...`` or
+    uninstall pytest-html.
+    """
+    if config.pluginmanager.has_plugin("html"):
+        try:
+            if not config.getoption("htmlpath"):
+                _DEFAULT_HTML_REPORT.parent.mkdir(parents=True, exist_ok=True)
+                config.option.htmlpath = str(_DEFAULT_HTML_REPORT)
+                if not config.getoption("self_contained_html"):
+                    config.option.self_contained_html = True
+        except (ValueError, AttributeError):
+            pass
+
     try:
         url = config.getoption("--server-url")
         if url:
@@ -130,8 +164,20 @@ def pytest_configure(config: pytest.Config) -> None:
 
 def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item]) -> None:
     """
-    HANG-003 on STDIO client profiles: historical xfail (high iteration count vs harness).
+    Optional skip of KI-011 ``hang_stress`` tests; STDIO xfail for HANG-003.
     """
+    skip_hang = bool(config.getoption("--skip-hang-stress"))
+    if os.environ.get("MCP_QA_SKIP_HANG_STRESS", "").lower() in ("1", "true", "yes"):
+        skip_hang = True
+    if skip_hang:
+        reason = (
+            "Skipped: --skip-hang-stress or MCP_QA_SKIP_HANG_STRESS "
+            "(omits KI-011 warm-iteration stress; use when mcp-compose is unstable)"
+        )
+        for item in items:
+            if item.get_closest_marker("hang_stress"):
+                item.add_marker(pytest.mark.skip(reason=reason))
+
     profile = config.getoption("--mcp-profile", default="http-http")
     if profile == "http-http":
         return
@@ -146,6 +192,37 @@ def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item
                     ),
                 )
             )
+
+
+@pytest.hookimpl(hookwrapper=True, trylast=True)
+def pytest_runtest_makereport(item: pytest.Item, call: pytest.CallInfo) -> None:
+    """Append auto-started MCP server log tail to pytest-html for failed setup/call."""
+    outcome = yield
+    rep = outcome.get_result()
+    if rep.when not in ("setup", "call") or not rep.failed:
+        return
+    if not item.config.pluginmanager.has_plugin("html"):
+        return
+    log_path = item.config.stash.get(_MCP_SERVER_LOG_PATH_KEY, None)
+    if log_path is None or not log_path.is_file():
+        return
+    try:
+        raw = log_path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return
+    tail = raw[-_MCP_SERVER_LOG_TAIL_CHARS:] if len(raw) > _MCP_SERVER_LOG_TAIL_CHARS else raw
+    try:
+        import pytest_html
+
+        note = (
+            "Tail of anaconda-mcp / mcp-compose process log "
+            "(--start-server). Full file on disk until session teardown.\n\n"
+        )
+        extra = pytest_html.extras.text(note + tail, name="mcp-server.log (tail)")
+        existing = list(getattr(rep, "extras", None) or [])
+        rep.extras = existing + [extra]
+    except Exception:
+        logger.debug("Could not attach MCP log to html report", exc_info=True)
 
 
 # ---------------------------------------------------------------------------
@@ -189,6 +266,7 @@ def mcp_server(request: pytest.FixtureRequest, server_url: str):
 
         log_file = tempfile.NamedTemporaryFile(mode="w", suffix="-anaconda-mcp.log", delete=False)
         log_path = Path(log_file.name)
+        request.config.stash[_MCP_SERVER_LOG_PATH_KEY] = log_path
 
         logger.info("Starting MCP server (conda env: %s, port: %s)", conda_env, port)
         server_proc = subprocess.Popen(

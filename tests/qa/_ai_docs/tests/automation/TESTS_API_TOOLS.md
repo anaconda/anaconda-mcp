@@ -313,7 +313,7 @@ CLI and Config tests stay in separate directories (`tests/qa/cli/`, `tests/qa/co
 
 ### What operators do (end-to-end)
 
-Two conda environments are required: one for **pytest** (`anaconda-mcp-qa` from `tests/qa/environment.yml`) and one for the **server under test** (`anaconda-mcp-server` by convention — any name, passed via `--server-conda-env`). See [`tests/qa/mcp_tools/README.md`](../../mcp_tools/README.md) for exact `conda create` / `pip install -e` commands.
+Two conda environments are required: one for **pytest** (`anaconda-mcp-qa` from `tests/qa/environment.yml`) and one for the **server under test** (`anaconda-mcp-server` by convention — any name, passed via `--server-conda-env`). See [`tests/qa/mcp_tools/README.md`](../../../mcp_tools/README.md) for exact `conda create` / `pip install -e` commands.
 
 ```mermaid
 flowchart TD
@@ -361,27 +361,42 @@ pytest tests/qa/mcp_tools \
 
 The fixture handles server startup, readiness check, and teardown automatically.
 
-### Server Log Collection
+### Server log collection (mcp-compose + downstream)
 
-The fixture captures server logs for debugging test failures:
+**What gets captured**
 
-```python
-@pytest.fixture(scope="session")
-def mcp_server(request, tmp_path_factory):
-    log_dir = tmp_path_factory.mktemp("logs")
-    log_file = log_dir / "mcp-server.log"
+For **`http-http`** with **`--start-server`** only, `tests/qa/mcp_tools/conftest.py` redirects **all stdout and stderr** of the auto-started process to a **single temp file** (suffix `*-anaconda-mcp.log`). The command is:
 
-    proc = subprocess.Popen(
-        ["anaconda-mcp", "serve", "--port", str(port)],
-        stdout=log_file.open("w"),
-        stderr=subprocess.STDOUT,
-        env={**os.environ, "ANACONDA_MCP_LOG_LEVEL": "DEBUG"},
-    )
-    yield proc
-    # Log file available for inspection on failure
-```
+`conda run -n <server-env> bash tests/qa/_ai_docs/scripts/start-http-server.sh <port>`
 
-Logs are attached to pytest HTML report on test failure.
+That script runs **`python -m anaconda_mcp serve`** with a generated HTTP config. One process stream therefore includes:
+
+- **anaconda-mcp** (mcp-compose): transport, proxy, tool registration, compose-level errors
+- **Child processes** started by compose (e.g. **`environments_mcp_server`** for the conda MCP upstream), insofar as they write to the same stdout/stderr tree the parent inherits
+
+There are **not** separate pytest-managed log files per subprocess; for deep downstream-only issues you may still need to run the stack manually or add extra logging in those packages.
+
+**When it is attached to the HTML report**
+
+If **`pytest-html`** is installed:
+
+- On **failed** **setup** or **call** (not teardown-only failures in the same way—hook filters `rep.when` to `setup` and `call`), the hook **`pytest_runtest_makereport`** appends an extra named **`mcp-server.log (tail)`**.
+- Content: a short header plus the **last ~48,000 characters** of that temp file (see `_MCP_SERVER_LOG_TAIL_CHARS` in `conftest.py`).
+
+**When there is no attachment**
+
+- **`--start-server` not used** (you point at an already-running server): no temp server log path is registered; failures have no **`mcp-server.log (tail)`** extra. Use your own terminal / service logs for the running server.
+- **Client edge is not HTTP** (`stdio-http`, `stdio-stdio`): the session autostart path above does not run; there is **no** automatic compose log file attachment from this hook today.
+
+**Where to look**
+
+| Artifact | Where |
+|----------|--------|
+| **pytest-html extra** | Open **`tests/qa/mcp_tools/reports/report.html`** (default; overridable with `pytest --html=…`). Expand a **failed** row; look for **`mcp-server.log (tail)`** under extras. |
+| **Python `logging` from tests** | In the terminal report: **Captured log setup** / **Captured log call** (pytest’s logging capture). This is **not** the server process log; it is test harness loggers (`conftest`, `mcp_client`, etc.). |
+| **Temp file** | Exists only until session teardown after **`--start-server`**; it is **deleted** when the server fixture finishes. Do not rely on the path after the run ends—use the HTML extra on failure. |
+
+Operator-oriented summary: [`tests/qa/mcp_tools/README.md`](../../../mcp_tools/README.md) (HTML report + `--start-server`).
 
 ---
 

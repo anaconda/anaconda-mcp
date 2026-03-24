@@ -96,7 +96,7 @@ health_check_enabled = false
 mode = "proxy"
 auto_start = true
 command = ["{python_executable}", "-m", "environments_mcp_server", "start", "--transport", "streamable-http", "--port", "{downstream_port}"]
-startup_delay = 5
+startup_delay = 15
 
 [tool_manager]
 conflict_resolution = "prefix"
@@ -143,7 +143,7 @@ health_check_enabled = false
 mode = "proxy"
 auto_start = true
 command = ["{python_executable}", "-m", "environments_mcp_server", "start", "--transport", "streamable-http", "--port", "{downstream_port}"]
-startup_delay = 5
+startup_delay = 15
 
 [tool_manager]
 conflict_resolution = "prefix"

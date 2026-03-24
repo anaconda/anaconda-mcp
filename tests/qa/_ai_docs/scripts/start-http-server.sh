@@ -39,7 +39,8 @@ health_check_enabled = false
 mode = "proxy"
 auto_start = true
 command = ["$PYTHON_PATH", "-m", "environments_mcp_server", "start", "--transport", "streamable-http", "--port", "$DOWNSTREAM_PORT"]
-startup_delay = 5
+# Give downstream time to bind and complete MCP setup before compose registers tools.
+startup_delay = 15
 
 [tool_manager]
 conflict_resolution = "prefix"

@@ -24,7 +24,7 @@ from __future__ import annotations
 import logging
 
 import pytest
-from common.constants.config import TOOL_TIMEOUT
+from common.constants.config import TOOL_CALL_WALL_SECONDS
 from common.constants.mcp_tools import InstallPackagesArgs, Tools
 from common.constants.test_data import NONEXISTENT_PKG
 from common.utils.mcp_client import _tool_result
@@ -53,11 +53,11 @@ class TestInstallNonexistentPackage:
         ERR-003a: calling by environment name must report a package-resolution
         failure — not 'environment not found' — when the environment exists.
 
-        Source:  install_packages.py catches conda.exceptions.ResolvePackageNotFound
-                 and returns error_description = "Could not resolve the packages".
-                 The bug causes EnvironmentLocationNotFound to be raised instead,
-                 returning "The environment was not found." before ever reaching
-                 the solver.
+        Source:  install_packages.py may normalize ResolvePackageNotFound to
+                 "Could not resolve the packages", or conda may return channel
+                 text (e.g. "not available from current channels"). The KI-010 bug
+                 causes EnvironmentLocationNotFound to be raised instead, returning
+                 "The environment was not found." before the solver.
 
         Reproduced: 2026-03-05, macOS, Streamable HTTP, Python 3.13, Cursor client.
         """
@@ -85,14 +85,14 @@ class TestInstallNonexistentPackage:
 
         _validate_is_error(result, f"nonexistent package '{NONEXISTENT_PKG}'")
 
-    @pytest.mark.timeout(TOOL_TIMEOUT)
+    @pytest.mark.timeout(TOOL_CALL_WALL_SECONDS + 15)
     def test_err_003b_by_prefix_does_not_hang(self, conda_env, call_tool):
         """
-        ERR-003b: calling by prefix must return within TOOL_TIMEOUT seconds.
+        ERR-003b: calling by prefix must return within the tools/call wall clock.
 
-        The timeout marker is the regression guard — if the server hangs, pytest
-        kills the test and reports TIMEOUT instead of waiting until the SSE
-        session expires (~5 min).
+        ``pytest-timeout`` must exceed ``TOOL_CALL_WALL_SECONDS`` because ``_call_tool``
+        can block the main thread on ``ThreadPoolExecutor.result`` while the worker
+        reads the SSE body (up to that wall budget).
 
         Reproduced: 2026-03-05, macOS, Streamable HTTP, Python 3.13, Cursor client.
         """

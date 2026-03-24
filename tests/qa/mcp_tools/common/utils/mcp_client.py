@@ -9,18 +9,20 @@ directly to ensure consistent timeout handling and SSE parsing.
 
 Timeout implementation note
 ---------------------------
-Uses httpx.Timeout directly, matching how real MCP clients (Cursor, Claude
-Desktop) handle timeouts. No SIGALRM or threading wrappers — just direct
-httpx calls with timeout configuration.
+``httpx.Timeout(read=…)`` limits idle time between bytes. Streamable HTTP/SSE
+**keepalives** can reset that timer, so a missing tool result may never trigger
+``ReadTimeout`` (multi-minute hangs).
 
-Note: SIGALRM and threading wrappers were removed after investigation showed
-they caused test failures at iteration ~16 by interfering with httpx internals.
-Direct httpx calls pass 50+ iterations reliably. See
-tests/qa/_ai_docs/investigation_ki013_delays/LANDSCAPE_AND_PATHS.md for details.
+Each ``tools/call`` is therefore bounded by a **wall-clock** cap: the blocking
+``httpx.post`` runs in a one-shot ``ThreadPoolExecutor`` worker and the main
+thread uses ``Future.result(timeout=…)``. After a wall timeout we raise
+``httpx.ReadTimeout`` so hang tests fail fast; the worker may still finish in
+the background.
 """
 
 from __future__ import annotations
 
+import concurrent.futures
 import json
 import logging
 import time
@@ -28,7 +30,7 @@ import time
 import httpx
 import pytest
 
-from common.constants.config import BASE_URL, TOOL_TIMEOUT
+from common.constants.config import BASE_URL, TOOL_CALL_WALL_SECONDS, TOOL_TIMEOUT
 
 logger = logging.getLogger(__name__)
 
@@ -109,24 +111,12 @@ def _parse_mcp_response(response: httpx.Response, elapsed_s: float) -> dict:
     return response.json()
 
 
-def _call_tool(tool_name: str, arguments: dict, session_id: str | None) -> dict:
-    """
-    Call an MCP tool and return the parsed JSON-RPC response.
-
-    Raises httpx.ReadTimeout if no complete response is received within
-    TOOL_TIMEOUT seconds — callers that test for hangs should catch this.
-
-    Raises httpx.HTTPStatusError on non-2xx responses.
-    """
-    logger.info(
-        "[CALL] tool=%s args=%s session_id=%s timeout=%ds url=%s",
-        tool_name,
-        arguments,
-        session_id[:8] + "..." if session_id else None,
-        TOOL_TIMEOUT,
-        BASE_URL,
-    )
-
+def _call_tool_blocking(
+    tool_name: str,
+    arguments: dict,
+    session_id: str | None,
+) -> dict:
+    """Perform synchronous ``tools/call`` (runs in a worker thread when wrapped)."""
     headers = {"Accept": "application/json, text/event-stream"}
     if session_id:
         headers["Mcp-Session-Id"] = session_id
@@ -142,7 +132,6 @@ def _call_tool(tool_name: str, arguments: dict, session_id: str | None) -> dict:
     t0 = time.monotonic()
     logger.debug("[TIMING] request started at t=0")
 
-    # Direct httpx call — matches real client behavior (Cursor, Claude Desktop)
     response = httpx.post(
         BASE_URL,
         json=request_body,
@@ -161,6 +150,39 @@ def _call_tool(tool_name: str, arguments: dict, session_id: str | None) -> dict:
     logger.debug("[RESPONSE] headers=%s", dict(response.headers))
     response.raise_for_status()
     return _parse_mcp_response(response, elapsed_s)
+
+
+def _call_tool(tool_name: str, arguments: dict, session_id: str | None) -> dict:
+    """
+    Call an MCP tool and return the parsed JSON-RPC response.
+
+    Raises ``httpx.ReadTimeout`` on per-read timeouts **or** if the full call
+    exceeds ``TOOL_CALL_WALL_SECONDS`` wall time (SSE keepalive case).
+
+    Raises httpx.HTTPStatusError on non-2xx responses.
+    """
+    logger.info(
+        "[CALL] tool=%s args=%s session_id=%s read_timeout=%ds wall=%ds url=%s",
+        tool_name,
+        arguments,
+        session_id[:8] + "..." if session_id else None,
+        TOOL_TIMEOUT,
+        TOOL_CALL_WALL_SECONDS,
+        BASE_URL,
+    )
+
+    pool = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+    try:
+        fut = pool.submit(_call_tool_blocking, tool_name, arguments, session_id)
+        try:
+            return fut.result(timeout=TOOL_CALL_WALL_SECONDS)
+        except concurrent.futures.TimeoutError as exc:
+            raise httpx.ReadTimeout(
+                f"MCP tools/call exceeded {TOOL_CALL_WALL_SECONDS}s wall clock "
+                "(possible SSE keepalive stall without tool result)"
+            ) from exc
+    finally:
+        pool.shutdown(wait=False)
 
 
 def _call_no_hang(
@@ -235,16 +257,31 @@ def _initialize_session(server_url: str, client_name: str = "api-tools-test") ->
     return sid
 
 
+def _parse_tool_json_text(text: str) -> dict | None:
+    """If ``text`` is a JSON object, return it as a dict (conda tool JSON-RPC body)."""
+    stripped = text.strip()
+    if not stripped.startswith("{"):
+        return None
+    try:
+        parsed = json.loads(stripped)
+    except json.JSONDecodeError:
+        return None
+    if isinstance(parsed, dict):
+        return parsed
+    return None
+
+
 def _tool_result(response_json: dict) -> dict:
     """
     Extract and JSON-parse the tool result payload from a tools/call response.
 
-    MCP tool results are returned as a list of content items; this helper
-    finds the first text item whose content is a JSON object and returns it
-    as a dict. Some servers also put the same JSON string under
-    ``result.structuredContent.result``. JSON-RPC ``error`` is mapped to an
-    ``is_error``-shaped dict for validators. Returns an empty dict if nothing
-    matches.
+    MCP tool results are usually JSON in ``content[].text``. Some stacks return
+    **plain text** (e.g. ``Unknown tool: …``) with ``isError: true`` on the
+    CallTool ``result`` — that must become an ``is_error``-shaped dict (KI-016).
+    ``structuredContent.result`` may be a stringified JSON object or a dict.
+
+    JSON-RPC ``error`` is mapped to an ``is_error``-shaped dict for validators.
+    Returns an empty dict only if nothing can be interpreted.
     """
     if "error" in response_json:
         err = response_json["error"]
@@ -259,18 +296,55 @@ def _tool_result(response_json: dict) -> dict:
     if not isinstance(result, dict):
         return {}
 
+    top_is_error = result.get("isError")
+    if top_is_error is None:
+        top_is_error = result.get("is_error")
+
+    sc = result.get("structuredContent")
+    if isinstance(sc, dict):
+        inner = sc.get("result")
+        if isinstance(inner, dict):
+            return inner
+        if isinstance(inner, str):
+            parsed = _parse_tool_json_text(inner)
+            if parsed is not None:
+                return parsed
+
     content = result.get("content", [])
     text = next(
         (c["text"] for c in content if isinstance(c, dict) and c.get("type") == "text"),
         None,
     )
-    if text and text.strip().startswith("{"):
-        return json.loads(text)
+    if text is not None and str(text).strip():
+        parsed = _parse_tool_json_text(str(text))
+        if parsed is not None:
+            return parsed
 
-    sc = result.get("structuredContent")
-    if isinstance(sc, dict):
-        inner = sc.get("result")
-        if isinstance(inner, str) and inner.strip().startswith("{"):
-            return json.loads(inner)
+        msg = str(text).strip()
+        if top_is_error is True:
+            return {
+                "is_error": True,
+                "error_description": msg,
+                "tool_result": {},
+            }
+        if top_is_error is False:
+            return {
+                "is_error": False,
+                "error_description": "",
+                "tool_result": {"message": msg},
+            }
+        # isError omitted — treat obvious proxy/server errors as errors
+        lower = msg.lower()
+        if lower.startswith("unknown tool:") or "validation error" in lower:
+            return {
+                "is_error": True,
+                "error_description": msg,
+                "tool_result": {},
+            }
+        return {
+            "is_error": False,
+            "error_description": "",
+            "tool_result": {"message": msg},
+        }
 
     return {}

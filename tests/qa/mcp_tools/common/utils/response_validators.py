@@ -98,6 +98,26 @@ def _validate_install_has_message(result: dict, context: str = "") -> None:
         raise AssertionError(" — ".join(parts))
 
 
+def _looks_like_conda_package_resolution_error(error_desc_lower: str) -> bool:
+    """
+    True if the text clearly indicates the solver could not satisfy the package
+    spec (not only install_packages.py's ResolvePackageNotFound wrapper string).
+
+    Conda may surface e.g. ``PackagesNotFoundError`` / channel text such as
+    "The following packages are not available from current channels" instead of
+    the normalized "Could not resolve the packages" message.
+    """
+    if "could not resolve the packages" in error_desc_lower:
+        return True
+    if "not available from current channels" in error_desc_lower:
+        return True
+    if "packages are not available" in error_desc_lower:
+        return True
+    if "no packages found" in error_desc_lower:
+        return True
+    return False
+
+
 def _validate_package_resolution_error(result: dict, env_name: str) -> None:
     """
     Assert that the tool result describes a package-resolution failure,
@@ -106,19 +126,24 @@ def _validate_package_resolution_error(result: dict, env_name: str) -> None:
     ERR-003a: EnvironmentLocationNotFound was raised before the solver was
     reached, causing the response to misreport the environment as missing
     instead of the package.
+
+    Accepts either install_packages.py's ResolvePackageNotFound message or other
+    conda solver/channel wording that still proves resolution failed (not env
+    lookup).
     """
-    error_desc = result.get(ToolResultFields.ERROR_DESCRIPTION, "").lower()
+    raw = result.get(ToolResultFields.ERROR_DESCRIPTION, "")
+    error_desc = raw.lower()
 
     if "environment was not found" in error_desc:
         raise AssertionError(
             f"False 'environment not found' for existing env '{env_name}'. "
             f"Bug: EnvironmentLocationNotFound raised before package resolution. "
-            f"Full error_description: {result.get(ToolResultFields.ERROR_DESCRIPTION)!r}"
+            f"Full error_description: {raw!r}"
         )
 
-    if "could not resolve the packages" not in error_desc:
+    if not _looks_like_conda_package_resolution_error(error_desc):
         raise AssertionError(
-            f"Expected 'Could not resolve the packages' (install_packages.py → "
-            f"ResolvePackageNotFound), "
-            f"got: {result.get(ToolResultFields.ERROR_DESCRIPTION)!r}"
+            "Expected a package-resolution failure "
+            "(e.g. 'Could not resolve the packages' or conda 'not available from current channels'), "
+            f"got: {raw!r}"
         )

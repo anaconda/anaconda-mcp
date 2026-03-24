@@ -23,6 +23,10 @@ DOWNSTREAM_PORT: int = int(os.environ.get("MCP_DOWNSTREAM_PORT", "5041"))
 # timeout (~5 min), so 60 s is enough to catch a regression reliably.
 TOOL_TIMEOUT: int = 60
 
+# Wall-clock cap for the whole tools/call (POST + body read); see mcp_client.
+# pytest-timeout on a test must be >= this if the test uses _call_tool.
+TOOL_CALL_WALL_SECONDS: int = TOOL_TIMEOUT + 25
+
 # Number of back-to-back iterations used by KI-011 hang-regression tests to
 # accumulate the session state that triggered the production hang (~47 min of
 # use). Raising this value increases detection confidence at the cost of

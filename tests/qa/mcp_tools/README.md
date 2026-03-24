@@ -37,6 +37,7 @@ This env must contain **installable copies** of:
 
 1. **`anaconda-mcp`** — this repository (`anaconda-mcp`).
 2. **`environments-mcp-server`** — provides `python -m environments_mcp_server`, which mcp-compose starts for conda tools.
+3. **`anaconda-connector-conda`** (import name **`anaconda_connector_conda`**) — used by **`environments-mcp`** for conda operations. Editable **`pip install -e …/environments-mcp`** does not always pull this in; without it, `python -m environments_mcp_server` fails at import with **`ModuleNotFoundError: No module named 'anaconda_connector_conda'`** and mcp-compose reports **tool registration failed** / **Total tools: 0**.
 
 **Default (assumed here): both packages from local clones.** Pull **`anaconda-mcp`** and **`environments-mcp`** (separate repos), then install both in **editable** mode into **`anaconda-mcp-server`**. `environments-mcp-server` is **not** a dependency of **`anaconda-mcp`** in **`pyproject.toml`**, so you always install it explicitly alongside this repo.
 
@@ -55,10 +56,16 @@ pip install -e /path/to/environments-mcp
 # pip install -e .
 # pip install -e ../environments-mcp
 
+# 3) Conda connector stack (needed by environments-mcp; add if import fails — see list item 3 above)
+# conda-forge / anaconda-cloud usually carry the package; channel list may match your org’s environments-mcp docs
+conda install -c anaconda-cloud -c conda-forge -c defaults anaconda-connector-conda -y
+
 conda deactivate   # optional before switching back to anaconda-mcp-qa
 ```
 
-Without activating: `conda run -n anaconda-mcp-server pip install -e /path/to/anaconda-mcp` and the same for **`environments-mcp`**.
+If step 3 is not needed on your machine, **`python -c "import anaconda_connector_conda"`** will already succeed after step 2 — skip or uninstall the extra package only if you know your **`environments-mcp`** install pulls it in.
+
+Without activating: `conda run -n anaconda-mcp-server pip install -e /path/to/anaconda-mcp` and the same for **`environments-mcp`**; run the **`conda install … anaconda-connector-conda`** line the same way with **`conda run -n anaconda-mcp-server`** if required.
 
 **Alternatives (if you are not using local source):** install **`environments-mcp-server`** from conda (**not** on `defaults` alone — e.g. **`conda install -c anaconda-cloud environments-mcp-server`**) or match CI with **`conda install anaconda-mcp environments-mcp-server -y`** when your channels provide both. Public **PyPI** does not ship **`environments-mcp-server`** under that name; prefer conda channels or editable install.
 
@@ -68,11 +75,12 @@ Without activating: `conda run -n anaconda-mcp-server pip install -e /path/to/an
 conda activate anaconda-mcp-server
 python -c "import anaconda_mcp; print('anaconda-mcp OK')"
 python -c "import environments_mcp_server; print('environments_mcp_server OK')"
+python -c "import anaconda_connector_conda; print('anaconda-connector-conda OK')"
 pip list | grep -E "(anaconda-mcp|environments-mcp)"
 anaconda-mcp --help
 ```
 
-You should see **`anaconda-mcp`** and **`environments-mcp-server`** in `pip list`, with **local paths** if you used `pip install -e`.
+You should see **`anaconda-mcp`** and **`environments-mcp-server`** in `pip list`, with **local paths** if you used **`pip install -e`**, and **`import anaconda_connector_conda`** should succeed before you run **`start-http-server.sh`** or pytest with **`--start-server`**.
 
 **More detail** (editable installs, resetting to PyPI, troubleshooting): [`tests/qa/_ai_docs/tech_details/LOCAL-DEV-SETUP.md`](../_ai_docs/tech_details/LOCAL-DEV-SETUP.md).
 
@@ -112,6 +120,33 @@ Or without activating:
 ```bash
 conda run -n anaconda-mcp-qa pytest tests/qa/mcp_tools -o addopts= --mcp-profile=stdio-stdio ...
 ```
+
+### Quick suite (no KI-011 hang stress)
+
+Tests in **`test_guard_*_hang.py`** repeat tool calls many times to stress mcp-compose (KI-011). After a real hang, the proxy can stay unhealthy (~**60s per call** until restart). For a **shorter** run or a **cleaner** server, skip those tests:
+
+```bash
+pytest tests/qa/mcp_tools -o addopts= ... --skip-hang-stress
+# same: MCP_QA_SKIP_HANG_STRESS=1 pytest tests/qa/mcp_tools -o addopts= ...
+# or:    pytest tests/qa/mcp_tools -o addopts= -m "not hang_stress"
+```
+
+Hang regressions are marked **`hang_stress`** (and **`slow`** / **`regression`**).
+
+## HTML report
+
+With **`pytest-html`** installed (listed in **`tests/qa/environment.yml`**), each run writes a **self-contained** HTML report to **`tests/qa/mcp_tools/reports/report.html`**. The path is anchored to this suite’s `conftest.py`, so it is the same whether you invoke pytest from the repo root or from **`tests/qa/mcp_tools`**. Use **`pytest … --html /other/path/report.html`** to override.
+
+### Where to read logs
+
+| What | Where to look |
+|------|----------------|
+| **Test harness** (`logging` in tests, `conftest`, `mcp_client`, httpx, …) | Terminal / CI log: **Captured log setup**, **Captured log call**, **Captured log teardown** — pytest’s logging capture. Also embedded in the HTML row for that test when shown. |
+| **Server process** (anaconda-mcp / mcp-compose + whatever shares its stdout/stderr from **`start-http-server.sh`**) | Only when you use **`--start-server`** with **`http-http`**: on **failed** **setup** or **call**, the HTML report includes an extra **`mcp-server.log (tail)`** (last ~48k chars of the redirected server stdout/stderr). Open the report, expand the failed test, and find that extra. There is no separate per-subprocess file from pytest; one stream covers compose and typical child output. |
+
+If the server was **not** started by pytest (no **`--start-server`**), or you use a **STDIO** profile, there is **no** **`mcp-server.log (tail)`** attachment—inspect whatever process you started yourself.
+
+Design detail: [`tests/qa/_ai_docs/tests/automation/TESTS_API_TOOLS.md`](../_ai_docs/tests/automation/TESTS_API_TOOLS.md) (**Server log collection**).
 
 ## Fixtures
 

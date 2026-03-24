@@ -1,6 +1,9 @@
 """
 Regression tests: KI-011 (happy-path variant) — mcp-compose must forward successful
 tool responses without hanging (profile-selected via --mcp-profile).
+
+Marked ``hang_stress``: many repeated calls; omit from quick runs with
+``--skip-hang-stress`` or ``MCP_QA_SKIP_HANG_STRESS=1`` (see README).
 """
 
 from __future__ import annotations
@@ -23,6 +26,7 @@ logger = logging.getLogger(__name__)
 _BASE_TIMEOUT = int((TOOL_TIMEOUT + ITERATION_DELAY) * WARM_ITERATIONS) + 60
 
 
+@pytest.mark.hang_stress
 @pytest.mark.regression
 @pytest.mark.slow
 class TestHappyPathHang:

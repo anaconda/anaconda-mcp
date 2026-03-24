@@ -4,6 +4,10 @@ hanging (HTTP or STDIO client edge, per --mcp-profile).
 
 Uses call_no_hang_unified: HTTP uses fresh_session_id + httpx timeouts; STDIO uses
 a fresh subprocess per test (stdio_server).
+
+Marked ``hang_stress``: many repeated calls; omit with ``--skip-hang-stress`` or
+``MCP_QA_SKIP_HANG_STRESS=1``. After a hang, mcp-compose can stay unhealthy and
+each iteration may take ~TOOL_TIMEOUT seconds (see KNOWN_ISSUES KI-011).
 """
 
 from __future__ import annotations
@@ -28,6 +32,7 @@ logger = logging.getLogger(__name__)
 _BASE_TIMEOUT = int((TOOL_TIMEOUT + ITERATION_DELAY) * WARM_ITERATIONS) + 60
 
 
+@pytest.mark.hang_stress
 @pytest.mark.regression
 @pytest.mark.slow
 class TestProxyErrorHang:
