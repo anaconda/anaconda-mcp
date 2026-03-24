@@ -73,18 +73,30 @@ Canonical TOML is generated from [`tests/qa/shared/mcp_compose_profiles.py`](../
 
 ### 3.1 Test harness (pytest CLI / env)
 
-| Option / env var | Purpose |
-|------------------|---------|
-| `--mcp-profile` / `MCP_PROFILE` | Transport matrix row (§2) |
-| `--server-url` / `MCP_SERVER_URL` | MCP endpoint when **① is HTTP** (`http-http`) |
-| `--compose-port` / `MCP_COMPOSE_PORT` | Port in generated **http-http** composer config |
-| `--downstream-port` / `MCP_DOWNSTREAM_PORT` | EMS streamable-http port for **②** where applicable |
-| `--server-conda-env` / `MCP_SERVER_CONDA_ENV` | Conda env that holds all server products (§1) |
-| `--start-server` | Auto-start HTTP server via `start-http-server.sh` (`http-http` only) |
-| `--skip-hang-stress` / `MCP_QA_SKIP_HANG_STRESS` / `-m "not hang_stress"` | Skip long hang-regression tests |
-| `--transport` | Legacy report label — prefer `--mcp-profile` |
+CLI flags and their equivalent environment variables (env var takes effect when the flag is not passed):
+
+| CLI flag | Env var | Required? | Default | Purpose |
+|----------|---------|-----------|---------|---------|
+| `--mcp-profile` | `MCP_PROFILE` | No | `http-http` | Transport matrix row (§2): `http-http`, `stdio-http`, `stdio-stdio` |
+| `--server-url` | `MCP_SERVER_URL` | No | `http://localhost:9888/mcp` | MCP endpoint — used only when **① is HTTP** (`http-http`) |
+| `--compose-port` | `MCP_COMPOSE_PORT` | No | `9888` | Outer HTTP port embedded in generated `http-http` composer config |
+| `--downstream-port` | `MCP_DOWNSTREAM_PORT` | No | `5041` | EMS streamable-http port for **②** (ignored for `stdio-stdio`) |
+| `--server-conda-env` | `MCP_SERVER_CONDA_ENV` | **Yes for STDIO profiles and `--start-server`** | `anaconda-mcp-server` | Conda env that holds all server products (§1) |
+| `--start-server` | — | No | off | Auto-start HTTP server via `start-http-server.sh` (`http-http` only); requires `--server-conda-env` |
+| `--skip-hang-stress` | `MCP_QA_SKIP_HANG_STRESS=1` | No | off | Skip `hang_stress`-marked tests; also: `-m "not hang_stress"` |
+| `--transport` | — | No | `http` | **Deprecated** — legacy report label only; ignored for test behaviour; prefer `--mcp-profile` |
 
 Implementation: [`conftest.py`](../conftest.py) (`pytest_addoption`).
+
+**Examples:**
+
+| Scenario | Command |
+|----------|---------|
+| `http-http` — auto-start server, default URL / ports | `pytest tests/qa/mcp_tools -o addopts= --mcp-profile=http-http --start-server --server-conda-env anaconda-mcp-server` |
+| `http-http` — external server, custom URL | `pytest tests/qa/mcp_tools -o addopts= --mcp-profile=http-http --server-url http://localhost:9888/mcp` |
+| `stdio-stdio` — minimal (no URL needed) | `pytest tests/qa/mcp_tools -o addopts= --mcp-profile=stdio-stdio --server-conda-env anaconda-mcp-server` |
+| `stdio-stdio` — skip hang-stress for a faster run | `pytest tests/qa/mcp_tools -o addopts= --mcp-profile=stdio-stdio --server-conda-env anaconda-mcp-server --skip-hang-stress` |
+| Any profile — env var style, no env activation needed | `MCP_PROFILE=stdio-stdio MCP_SERVER_CONDA_ENV=anaconda-mcp-server MCP_QA_SKIP_HANG_STRESS=1 conda run -n anaconda-mcp-qa pytest tests/qa/mcp_tools -o addopts=` |
 
 ### 3.2 `anaconda-mcp` + `mcp-compose` (versions and config)
 
