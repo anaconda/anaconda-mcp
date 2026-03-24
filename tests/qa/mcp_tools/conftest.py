@@ -14,7 +14,8 @@ import signal
 import subprocess
 import tempfile
 import time
-from collections.abc import Generator
+from collections.abc import Generator, Iterator
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 
@@ -337,40 +338,38 @@ def session_id(mcp_server, server_url: str, compose_profile) -> str | None:
     return _initialize_session(server_url, client_name="api-tools-test")
 
 
-@pytest.fixture(scope="module")
-def stdio_mcp_module(request: pytest.FixtureRequest, compose_profile):
-    """
-    One mcp-compose process per module for STDIO client profiles (shared across tests in file).
-    """
-    if compose_profile.client != ClientEdge.STDIO:
-        # Must yield: this function contains ``yield`` below, so it is a generator;
-        # ``return`` without yielding breaks pytest (ValueError: did not yield a value).
-        yield None
-        return
-
-    conda_env = request.config.getoption("--server-conda-env")
-    downstream = request.config.getoption("--downstream-port")
-    compose_port = request.config.getoption("--compose-port")
-    slug = compose_profile.slug
-
+@contextmanager
+def _stdio_server_context(
+    *,
+    conda_env: str,
+    slug: str,
+    compose_port: int,
+    downstream_port: int,
+    log_prefix: str,
+    stash_key: pytest.StashKey,
+    client_name: str,
+    label: str,
+    config: pytest.Config,
+) -> Iterator[subprocess.Popen]:
+    """Spawn, initialise and yield a STDIO MCP server process; tear it down on exit."""
     config_path = _write_profile_config(
         slug,
         conda_env,
         compose_port=compose_port,
-        downstream_port=downstream,
+        downstream_port=downstream_port,
     )
-    logger.info("Starting module-scoped STDIO MCP (profile=%s, config=%s)", slug, config_path)
+    logger.info("Starting %s STDIO MCP (profile=%s, config=%s)", label, slug, config_path)
 
     env = os.environ.copy()
     env["PYTHONUNBUFFERED"] = "1"
 
     stderr_log = tempfile.NamedTemporaryFile(
-        prefix="anaconda-mcp-stdio-module-",
+        prefix=log_prefix,
         suffix="-stderr.log",
         delete=False,
     )
     stderr_path = Path(stderr_log.name)
-    request.config.stash[_MCP_STDIO_MODULE_LOG_PATH_KEY] = stderr_path
+    config.stash[stash_key] = stderr_path
 
     proc = subprocess.Popen(
         [
@@ -401,13 +400,14 @@ def stdio_mcp_module(request: pytest.FixtureRequest, compose_profile):
                 "params": {
                     "protocolVersion": "2024-11-05",
                     "capabilities": {},
-                    "clientInfo": {"name": "mcp-tools-module", "version": "1.0"},
+                    "clientInfo": {"name": client_name, "version": "1.0"},
                 },
             },
         )
         init_resp = _recv(proc, timeout=45)
         logger.info(
-            "STDIO module server ready — serverInfo: %s",
+            "%s STDIO server ready — serverInfo: %s",
+            label,
             init_resp.get("result", {}).get("serverInfo"),
         )
         _send(proc, {"jsonrpc": "2.0", "method": "notifications/initialized", "params": {}})
@@ -418,28 +418,54 @@ def stdio_mcp_module(request: pytest.FixtureRequest, compose_profile):
         except OSError:
             pass
         stderr_path.unlink(missing_ok=True)
-        request.config.stash[_MCP_STDIO_MODULE_LOG_PATH_KEY] = None
+        config.stash[stash_key] = None
         config_path.unlink(missing_ok=True)
-        pytest.fail(f"STDIO module server did not become ready: {exc}")
+        pytest.fail(f"STDIO {label} server did not become ready: {exc}")
 
-    yield proc
+    try:
+        yield proc
+    finally:
+        logger.info("Tearing down STDIO %s server (pid=%s)", label, proc.pid)
+        try:
+            os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
+        except (ProcessLookupError, PermissionError):
+            proc.kill()
+        try:
+            proc.wait(timeout=10)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+        try:
+            stderr_log.close()
+        except OSError:
+            pass
+        stderr_path.unlink(missing_ok=True)
+        config.stash[stash_key] = None
+        config_path.unlink(missing_ok=True)
 
-    logger.info("Tearing down STDIO module server (pid=%s)", proc.pid)
-    try:
-        os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
-    except (ProcessLookupError, PermissionError):
-        proc.kill()
-    try:
-        proc.wait(timeout=10)
-    except subprocess.TimeoutExpired:
-        proc.kill()
-    try:
-        stderr_log.close()
-    except OSError:
-        pass
-    stderr_path.unlink(missing_ok=True)
-    request.config.stash[_MCP_STDIO_MODULE_LOG_PATH_KEY] = None
-    config_path.unlink(missing_ok=True)
+
+@pytest.fixture(scope="module")
+def stdio_mcp_module(request: pytest.FixtureRequest, compose_profile):
+    """
+    One mcp-compose process per module for STDIO client profiles (shared across tests in file).
+    """
+    if compose_profile.client != ClientEdge.STDIO:
+        # Must yield: this function contains ``yield`` below, so it is a generator;
+        # ``return`` without yielding breaks pytest (ValueError: did not yield a value).
+        yield None
+        return
+
+    with _stdio_server_context(
+        conda_env=request.config.getoption("--server-conda-env"),
+        slug=compose_profile.slug,
+        compose_port=request.config.getoption("--compose-port"),
+        downstream_port=request.config.getoption("--downstream-port"),
+        log_prefix="anaconda-mcp-stdio-module-",
+        stash_key=_MCP_STDIO_MODULE_LOG_PATH_KEY,
+        client_name="mcp-tools-module",
+        label="module",
+        config=request.config,
+    ) as proc:
+        yield proc
 
 
 @pytest.fixture(scope="module")
@@ -476,91 +502,18 @@ def stdio_server(request: pytest.FixtureRequest, compose_profile):
     if compose_profile.client != ClientEdge.STDIO:
         pytest.skip("stdio_server applies only to stdio-http / stdio-stdio")
 
-    conda_env = request.config.getoption("--server-conda-env")
-    downstream = request.config.getoption("--downstream-port")
-    compose_port = request.config.getoption("--compose-port")
-    slug = compose_profile.slug
-
-    config_path = _write_profile_config(
-        slug,
-        conda_env,
-        compose_port=compose_port,
-        downstream_port=downstream,
-    )
-    env = os.environ.copy()
-    env["PYTHONUNBUFFERED"] = "1"
-
-    stderr_log = tempfile.NamedTemporaryFile(
-        prefix="anaconda-mcp-stdio-hang-",
-        suffix="-stderr.log",
-        delete=False,
-    )
-    stderr_path = Path(stderr_log.name)
-    request.config.stash[_MCP_STDIO_HANG_LOG_PATH_KEY] = stderr_path
-
-    proc = subprocess.Popen(
-        [
-            "conda",
-            "run",
-            "-n",
-            conda_env,
-            "--no-capture-output",
-            "anaconda-mcp",
-            "serve",
-            "--config",
-            str(config_path),
-        ],
-        stdin=subprocess.PIPE,
-        stdout=subprocess.PIPE,
-        stderr=stderr_log,
-        start_new_session=True,
-        env=env,
-    )
-
-    try:
-        _send(
-            proc,
-            {
-                "jsonrpc": "2.0",
-                "id": 0,
-                "method": "initialize",
-                "params": {
-                    "protocolVersion": "2024-11-05",
-                    "capabilities": {},
-                    "clientInfo": {"name": "mcp-tools-hang", "version": "1.0"},
-                },
-            },
-        )
-        _recv(proc, timeout=45)
-        _send(proc, {"jsonrpc": "2.0", "method": "notifications/initialized", "params": {}})
-    except Exception as exc:
-        proc.kill()
-        try:
-            stderr_log.close()
-        except OSError:
-            pass
-        stderr_path.unlink(missing_ok=True)
-        request.config.stash[_MCP_STDIO_HANG_LOG_PATH_KEY] = None
-        config_path.unlink(missing_ok=True)
-        pytest.fail(f"STDIO hang server did not become ready: {exc}")
-
-    yield proc
-
-    try:
-        os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
-    except (ProcessLookupError, PermissionError):
-        proc.kill()
-    try:
-        proc.wait(timeout=10)
-    except subprocess.TimeoutExpired:
-        proc.kill()
-    try:
-        stderr_log.close()
-    except OSError:
-        pass
-    stderr_path.unlink(missing_ok=True)
-    request.config.stash[_MCP_STDIO_HANG_LOG_PATH_KEY] = None
-    config_path.unlink(missing_ok=True)
+    with _stdio_server_context(
+        conda_env=request.config.getoption("--server-conda-env"),
+        slug=compose_profile.slug,
+        compose_port=request.config.getoption("--compose-port"),
+        downstream_port=request.config.getoption("--downstream-port"),
+        log_prefix="anaconda-mcp-stdio-hang-",
+        stash_key=_MCP_STDIO_HANG_LOG_PATH_KEY,
+        client_name="mcp-tools-hang",
+        label="hang",
+        config=request.config,
+    ) as proc:
+        yield proc
 
 
 @pytest.fixture
