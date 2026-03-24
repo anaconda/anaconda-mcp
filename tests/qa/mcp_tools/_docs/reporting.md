@@ -35,5 +35,3 @@ On **failed** setup or call, `conftest.py` may append **zero or more** extras (e
 ### 3. STDIO-only — “hang” = bounded wait
 
 KI-011 / hang regressions show up as **`TimeoutError: _recv: no response within …s`** (no full JSON-RPC line within **`TOOL_TIMEOUT`**) plus the test’s **`Failed: …`** message — that **is** the suite’s definition of a hang for STDIO, not an unbounded pytest wait. On failure, open **`mcp-stdio-*-stderr.log (tail)`** if present — anaconda-mcp / mcp-compose diagnostics on stderr are there; stdout remains the JSON-RPC stream only.
-
-Further automation context: [`tests/qa/_ai_docs/tests/automation/TESTS_API_TOOLS.md`](../../../_ai_docs/tests/automation/TESTS_API_TOOLS.md) (**Server log collection**).

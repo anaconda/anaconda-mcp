@@ -118,3 +118,83 @@ Transport (① outer) and downstream connection (② upstream, ports) are set by
 | **`anaconda-connector-conda`** | Conda/pip pin; must be importable as `anaconda_connector_conda` — missing import causes tools to fail to register. |
 
 Transport for `environments_mcp_server` (② upstream) is driven by `--mcp-profile`; it is not configured separately.
+
+---
+
+## 4. How `--mcp-profile` works under the hood
+
+Selecting a profile triggers a chain in `conftest.py` that hides all transport detail from the tests themselves:
+
+```mermaid
+flowchart TD
+  A["pytest --mcp-profile=slug"] --> B["conftest reads slug<br/>selects ComposeTransportProfile"]
+  B --> C["render_for_profile()<br/>generates mcp-compose TOML string"]
+  C --> D["write to NamedTemporaryFile<br/>(deleted at session teardown)"]
+  D --> E["conda run -n env anaconda-mcp serve --config tmp"]
+  E --> F{client edge?}
+  F -->|HTTP| G["httpx session<br/>initialize → get session_id"]
+  F -->|STDIO| H["proc.stdin / proc.stdout<br/>JSON-RPC over newline-delimited pipes<br/>initialize handshake"]
+  G --> I["call_tool fixture ready<br/>transport hidden from test"]
+  H --> I
+```
+
+- **TOML generation** is deterministic: same profile + ports → same config. Source: [`mcp_compose_profiles.py`](../../shared/mcp_compose_profiles.py).
+- **STDIO stderr** is redirected to a `NamedTemporaryFile`; on failure, `conftest` appends the tail to the pytest-html report — see [`reporting.md`](reporting.md).
+- **Fixture scopes:**
+
+| Fixture | Scope | Used by |
+|---------|-------|---------|
+| `mcp_server` / `stdio_mcp_module` | `module` | `call_tool` — shared across all tests in a file |
+| `stdio_server` | `function` | `call_no_hang_unified` — fresh process per hang-stress test |
+| `session_id` | `module` | HTTP only; `None` for STDIO |
+
+---
+
+## 5. What we test and how
+
+### 5.1 Tools and scenarios
+
+| Tool | Happy path | Error path | Hang stress |
+|------|:----------:|:----------:|:-----------:|
+| `conda_list_environments` | ✓ | | ✓ |
+| `conda_install_packages` | ✓ | ✓ | ✓ |
+| `conda_remove_environment` | | ✓ | ✓ |
+| `conda_create_environment` | ✓ | | |
+
+### 5.2 Two test types
+
+```mermaid
+flowchart LR
+  subgraph single["Single-call tests · call_tool"]
+    direction TB
+    S1["one tool call"] --> S2["assert response<br/>shape / values / error flag"]
+  end
+
+  subgraph stress["Hang-stress tests · call_no_hang_unified"]
+    direction TB
+    I1["loop WARM_ITERATIONS times"] -->|each| I2["tool call<br/>guarded by TOOL_TIMEOUT"]
+    I2 --> I3["assert: valid response<br/>no TimeoutError"]
+    I3 -->|next| I1
+  end
+```
+
+| | Single-call | Hang-stress |
+|-|-------------|-------------|
+| **Fixture** | `call_tool` (module-scoped server) | `call_no_hang_unified` (function-scoped fresh server for STDIO) |
+| **Iterations** | 1 | `WARM_ITERATIONS = 20` |
+| **Timeout guard** | `TOOL_CALL_WALL_SECONDS` (wall clock) | `TOOL_TIMEOUT = 60 s` per iteration |
+| **Marks** | `regression`, `slow` | `hang_stress`, `regression`, `slow` |
+| **Skip with** | — | `--skip-hang-stress` / `MCP_QA_SKIP_HANG_STRESS=1` |
+
+**Why iterations?** KI-011 in production required ~47 minutes of LLM use to trigger — the bug is proxy state accumulated across calls, invisible to a single-call test. `WARM_ITERATIONS=20` with a small `ITERATION_DELAY` between calls replicates enough state to surface the regression in minutes.
+
+### 5.3 Test modules
+
+| Module | Marks | What it guards |
+|--------|-------|----------------|
+| `test_env_name_resolution.py` | `regression` | KI-002: `list_environments` reports correct name; KI-003: `remove_environment` by name resolves correct prefix |
+| `test_install_existing_package.py` | `slow` | Happy path: `install_packages` succeeds by name and by prefix, returns non-empty message |
+| `test_guard_install_nonexistent_pkg.py` | `regression`, `slow` | KI-010: `install_packages` returns package-resolution error — not "environment not found" — for a nonexistent package |
+| `test_create_environment_root_path.py` | `regression` | `create_environment` handles root-path edge cases correctly |
+| `test_guard_proxy_error_hang.py` | `hang_stress`, `regression`, `slow` | KI-011 error path: proxy forwards error responses without hanging across N iterations (HANG-001, 002, 003) |
+| `test_guard_happy_path_hang.py` | `hang_stress`, `regression`, `slow` | KI-011 happy path: proxy forwards success responses without hanging across N iterations (HANG-004, 005, 006) |
