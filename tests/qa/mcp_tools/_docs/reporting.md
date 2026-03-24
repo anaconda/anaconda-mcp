@@ -1,6 +1,6 @@
 # Reporting and logs — `mcp_tools`
 
-Pair with [`test_design.md`](test_design.md) for architecture and options.
+Stack and transports: [`architecture.md`](architecture.md). CLI options: [`configuration.md`](configuration.md). Test design: [`test_design.md`](test_design.md).
 
 ---
 

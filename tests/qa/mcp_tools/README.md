@@ -1,6 +1,6 @@
 # mcp_tools — unified MCP tool tests
 
-One suite for all transport profiles. Deeper **design (layers, options, rationale)** and **reporting (HTML, logs)** live under [`_docs/`](_docs/index.md).
+One suite for all transport profiles. Architecture, configuration, test design, and reporting details live under [`_docs/`](_docs/index.md).
 
 ## Profiles
 
@@ -31,7 +31,7 @@ conda env update -f tests/qa/environment.yml --prune    # after environment.yml 
 conda activate anaconda-mcp-qa
 ```
 
-Use **`python -m pytest …`** so **`httpx`** / **`pytest`** match the active env (see `_docs/test_design.md` for stack context).
+Use **`python -m pytest …`** so **`httpx`** / **`pytest`** match the active env (see [`_docs/architecture.md`](_docs/architecture.md) for stack context).
 
 ### Server env — how we prepare it
 
@@ -64,7 +64,7 @@ anaconda-mcp --help
 
 ### Packaged `mcp_compose.toml` vs QA
 
-The file **`src/anaconda_mcp/mcp_compose.toml`** is a **packaged default** when users run `anaconda-mcp serve` without a custom config. **QA runs do not select transport by editing that file.** Tests generate TOML from **`tests/qa/shared/mcp_compose_profiles.py`**, write a temp file, and run `anaconda-mcp serve --config <file>`. See **`_docs/test_design.md`**.
+The file **`src/anaconda_mcp/mcp_compose.toml`** is a **packaged default** when users run `anaconda-mcp serve` without a custom config. **QA runs do not select transport by editing that file.** Tests generate TOML from **`tests/qa/shared/mcp_compose_profiles.py`**, write a temp file, and run `anaconda-mcp serve --config <file>`. See [`_docs/architecture.md`](_docs/architecture.md).
 
 ## Examples
 
@@ -93,7 +93,7 @@ pytest tests/qa/mcp_tools -o addopts= ... --skip-hang-stress
 
 ## HTML report and logs
 
-See [**`_docs/reporting.md`**](_docs/reporting.md) (default report path, pytest-html extras, stderr tails).
+See [`_docs/reporting.md`](_docs/reporting.md) — default path, pytest-html extras, stderr tails.
 
 ## Fixtures
 

@@ -2,7 +2,9 @@
 
 | Document | Description |
 |----------|-------------|
-| [`test_design.md`](test_design.md) | Stack layers, transport matrix, pytest and compose options, rationale |
+| [`architecture.md`](architecture.md) | Stack diagram, product versions, two-hop transport matrix |
+| [`configuration.md`](configuration.md) | CLI flags, env vars, run examples, CI matrix |
+| [`test_design.md`](test_design.md) | How `--mcp-profile` works, test rationale, test types, marks |
 | [`reporting.md`](reporting.md) | pytest-html location, log extras, stderr tails, hang semantics |
 
-The user-facing entry point remains [`../README.md`](../README.md).
+Entry point: [`../README.md`](../README.md).
