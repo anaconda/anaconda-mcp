@@ -20,17 +20,17 @@ on:
       anaconda_connector_ver:
         description: 'anaconda-connector conda package version (e.g. 0.1.11); empty = transitive dep'
         required: false
-        default: ''
+        default: '0.1.11'
       mcp_compose_repo:
         description: 'mcp-compose GitHub URL (fork or canonical)'
         required: false
         # https://github.com/datalayer/mcp-compose
         # https://github.com/j-iliukhina-anaconda/mcp-compose
-        default: 'https://github.com/j-iliukhina-anaconda/mcp-compose'
+        default: 'https://github.com/datalayer/mcp-compose'
       mcp_compose_ref:
         description: 'mcp-compose branch or tag (empty = use anaconda-mcp pinned version)'
         required: false
-        default: 'stdio-proxy-fixes'
+        default: 'main'
       python_version:
         description: 'Python version'
         required: false
@@ -53,7 +53,7 @@ on:
       skip_hang_stress:
         description: 'Skip hang_stress tests (slow, designed for dedicated stress runs)'
         required: false
-        default: 'true'
+        default: 'false'
         type: choice
         options:
           - 'true'
@@ -103,12 +103,12 @@ jobs:
           RUNNER="${{ inputs.runner              || 'macos-latest' }}"
           PYTHON_VERSION="${{ inputs.python_version        || '3.13' }}"
           MCP_PROFILE="${{ inputs.mcp_profile              || 'stdio-stdio' }}"
-          SKIP_HANG_STRESS="${{ inputs.skip_hang_stress    || 'true' }}"
+          SKIP_HANG_STRESS="${{ inputs.skip_hang_stress    || 'false' }}"
           ANACONDA_MCP_REF="${{ inputs.anaconda_mcp_ref    || '' }}"
           ENV_MCP_REF="${{ inputs.environments_mcp_ref     || 'main' }}"
-          CONNECTOR_VER="${{ inputs.anaconda_connector_ver || '' }}"
-          COMPOSE_REPO="${{ inputs.mcp_compose_repo        || 'https://github.com/j-iliukhina-anaconda/mcp-compose' }}"
-          COMPOSE_REF="${{ inputs.mcp_compose_ref          || 'stdio-proxy-fixes' }}"
+          CONNECTOR_VER="${{ inputs.anaconda_connector_ver || '0.1.11' }}"
+          COMPOSE_REPO="${{ inputs.mcp_compose_repo        || 'https://github.com/datalayer/mcp-compose' }}"
+          COMPOSE_REF="${{ inputs.mcp_compose_ref          || 'main' }}"
 
           {
             echo "runner=$RUNNER"
