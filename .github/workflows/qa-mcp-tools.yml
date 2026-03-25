@@ -72,7 +72,7 @@ on:
 
   push:
     branches:
-      - desk-1328-tool-tests
+      - desk-1328-qa-owned-tests
 
 jobs:
   # ── Resolve parameters ────────────────────────────────────────────────────────

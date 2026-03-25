@@ -71,7 +71,7 @@ def render_http_http_toml(
     """
     HTTP client → mcp-compose (streamable HTTP) → streamable HTTP → conda MCP.
 
-    Mirrors ``tests/qa/_ai_docs/scripts/start-http-server.sh`` (minus process management).
+    Mirrors ``start-http-server.sh`` (minus process management).
     """
     return f"""\
 [composer]

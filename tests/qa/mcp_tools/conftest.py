@@ -45,7 +45,7 @@ _INIT_BODY = {
 }
 _SSE_HEADERS = {"Accept": "application/json, text/event-stream"}
 
-_SCRIPT_PATH = (Path(__file__).resolve().parent.parent / "_ai_docs" / "scripts" / "start-http-server.sh").resolve()
+_SCRIPT_PATH = (Path(__file__).resolve().parent / "scripts" / "start-http-server.sh").resolve()
 
 _MCP_TOOLS_DIR = Path(__file__).resolve().parent
 _DEFAULT_HTML_REPORT = _MCP_TOOLS_DIR / "reports" / "report.html"
@@ -274,7 +274,7 @@ def mcp_server(request: pytest.FixtureRequest, server_url: str):
         if not _SCRIPT_PATH.exists():
             pytest.fail(
                 f"Server start script not found: {_SCRIPT_PATH}\n"
-                "Ensure tests/qa/_ai_docs/scripts/start-http-server.sh exists."
+                "Ensure tests/qa/mcp_tools/scripts/start-http-server.sh exists."
             )
         if not shutil.which("conda"):
             pytest.fail("conda not found in PATH; cannot auto-start the server.")
@@ -612,6 +612,6 @@ def _assert_server_reachable(url: str) -> None:
         logger.error("MCP server not reachable at %s", url)
         pytest.skip(
             f"MCP server not reachable at {url}.\n"
-            "Start: ./tests/qa/_ai_docs/scripts/start-http-server.sh\n"
+            f"Start: {_SCRIPT_PATH}\n"
             "Or: pytest ... --start-server"
         )
