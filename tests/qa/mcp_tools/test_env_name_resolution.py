@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import logging
 import subprocess
+import time
 
 import pytest
 from common.constants.mcp_tools import RemoveEnvironmentArgs, ToolResultFields, Tools
@@ -82,18 +83,15 @@ class TestEnvironmentNameResolution:
         guard-api-test), calls conda_list_environments, finds the entry by
         prefix, and asserts the reported name matches the actual env name.
         """
-        import time as _time
-
-        t0 = _time.monotonic()
+        t0 = time.monotonic()
         logger.info(
-            "[KI-002] START: listing environments, expecting name=%r at prefix %r session_id=%s",
+            "[KI-002] listing environments, expecting name=%r at prefix %r",
             conda_env["name"],
             conda_env["prefix"],
-            (session_id[:8] + "...") if session_id else "stdio",
         )
-        logger.info("[KI-002] t=%.2fs: calling _call_tool...", _time.monotonic() - t0)
+        logger.debug("[KI-002] t=%.2fs: calling call_tool...", time.monotonic() - t0)
         response = call_tool(Tools.CONDA_LIST_ENVIRONMENTS, {})
-        logger.info("[KI-002] t=%.2fs: _call_tool returned", _time.monotonic() - t0)
+        logger.debug("[KI-002] t=%.2fs: call_tool returned", time.monotonic() - t0)
         result = _tool_result(response)
 
         assert not result.get(ToolResultFields.IS_ERROR), (
@@ -127,28 +125,22 @@ class TestEnvironmentNameResolution:
         EnvironmentLocationNotFound is raised even though the env exists.
         The environment can only be removed by passing prefix directly.
         """
-        import time as _time
-
-        t0 = _time.monotonic()
+        t0 = time.monotonic()
         logger.info(
-            "[KI-003] START: removing env %r by name (prefix: %r) session_id=%s",
+            "[KI-003] removing env %r by name (prefix: %r)",
             removable_env["name"],
             removable_env["prefix"],
-            (session_id[:8] + "...") if session_id else "stdio",
         )
-        logger.info("[KI-003] t=%.2fs: calling _call_tool...", _time.monotonic() - t0)
+        logger.debug("[KI-003] t=%.2fs: calling call_tool...", time.monotonic() - t0)
         response = call_tool(
             Tools.CONDA_REMOVE_ENVIRONMENT,
             {RemoveEnvironmentArgs.ENVIRONMENT_NAME: removable_env["name"]},
         )
-        logger.info(
-            "[KI-003] t=%.2fs: _call_tool returned, parsing result...",
-            _time.monotonic() - t0,
-        )
+        logger.debug("[KI-003] t=%.2fs: call_tool returned", time.monotonic() - t0)
         result = _tool_result(response)
-        logger.info(
+        logger.debug(
             "[KI-003] t=%.2fs: DONE is_error=%s result=%s",
-            _time.monotonic() - t0,
+            time.monotonic() - t0,
             result.get(ToolResultFields.IS_ERROR),
             result,
         )
