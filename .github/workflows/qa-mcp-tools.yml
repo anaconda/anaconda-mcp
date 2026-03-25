@@ -224,26 +224,22 @@ jobs:
 
       # mcp-compose pyproject.toml has a build hook that compiles a UI bundle;
       # npm must be available before pip attempts to build the wheel from source.
-      - name: Set up Node.js (required to build mcp-compose from source)
-        if: ${{ env.COMPOSE_REF != '' }}
-        uses: actions/setup-node@v4
+      # Windows: Git Bash often does not see setup-node's node/npm; pip's build also
+      # resolves npm poorly vs npm.cmd — install nodejs into the conda env instead.
+      # No package-lock.json in this repo: cache: npm would not key a useful cache for
+      # the pip git checkout of mcp-compose; omit cache until a lockfile path exists.
+      - name: Install Node.js (mcp-compose UI build)
+        if: ${{ env.COMPOSE_REF != '' && runner.os != 'Windows' }}
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
-          node-version: lts/*
+          node-version: '24'
 
-      # Windows only: conda hook/activate drops setup-node's PATH; save Node's bin
-      # dir and prepend after activate so mcp-compose's npm UI build sees npm.
       - name: Override mcp-compose (${{ needs.setup.outputs.compose-ref }}) [Windows]
         if: ${{ env.COMPOSE_REF != '' && runner.os == 'Windows' }}
         run: |
-          NODE_BIN=""
-          if command -v node >/dev/null 2>&1; then
-            NODE_BIN="$(dirname "$(command -v node)")"
-          fi
           eval "$(conda shell.bash hook)"
           conda activate "$SERVER_ENV"
-          if [[ -n "$NODE_BIN" ]]; then
-            export PATH="$NODE_BIN:$PATH"
-          fi
+          conda install --yes -c conda-forge nodejs
           pip install "git+${COMPOSE_REPO}.git@${COMPOSE_REF}"
 
       - name: Override mcp-compose (${{ needs.setup.outputs.compose-ref }}) [Unix]
