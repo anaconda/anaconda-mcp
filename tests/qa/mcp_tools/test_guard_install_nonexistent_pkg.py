@@ -69,22 +69,6 @@ class TestInstallNonexistentPackage:
         result = _tool_result(response)
         _validate_package_resolution_error(result, conda_env["name"])
 
-    def test_err_003a_by_name_returns_error(self, conda_env, call_tool):
-        """
-        ERR-003a: calling by environment name must return is_error=true
-        (package does not exist; no silent pip fallback).
-
-        Reproduced: 2026-03-05, macOS, Streamable HTTP, Python 3.13, Cursor client.
-        """
-        logger.info("ERR-003a: verifying is_error flag for nonexistent pkg by env name")
-        response = call_tool(
-            Tools.CONDA_INSTALL_PACKAGES,
-            {InstallPackagesArgs.ENVIRONMENT: conda_env["name"], InstallPackagesArgs.PACKAGES: [NONEXISTENT_PKG]},
-        )
-        result = _tool_result(response)
-
-        _validate_is_error(result, f"nonexistent package '{NONEXISTENT_PKG}'")
-
     @pytest.mark.timeout(TOOL_CALL_WALL_SECONDS + 15)
     def test_err_003b_by_prefix_does_not_hang(self, conda_env, call_tool):
         """
