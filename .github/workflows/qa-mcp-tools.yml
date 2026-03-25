@@ -234,21 +234,23 @@ jobs:
         with:
           node-version: '24'
 
-      # PEP 517 build isolation uses a minimal PATH; npm from conda/setup-node is not
-      # visible to the isolated metadata build on Windows (and can be flaky elsewhere).
+      # Windows only: PEP 517 build isolation hides npm from conda nodejs; use
+      # --no-build-isolation so the build sees npm. That disables pip's automatic
+      # install of [build-system] requires — pre-install hatchling in the server env.
+      # Unix: default isolation + setup-node PATH; pip installs hatchling in the build venv.
       - name: Override mcp-compose (${{ needs.setup.outputs.compose-ref }}) [Windows]
         if: ${{ env.COMPOSE_REF != '' && runner.os == 'Windows' }}
         run: |
           eval "$(conda shell.bash hook)"
           conda activate "$SERVER_ENV"
           conda install --yes -c conda-forge nodejs
+          pip install hatchling
           pip install --no-build-isolation "git+${COMPOSE_REPO}.git@${COMPOSE_REF}"
 
       - name: Override mcp-compose (${{ needs.setup.outputs.compose-ref }}) [Unix]
         if: ${{ env.COMPOSE_REF != '' && runner.os != 'Windows' }}
         run: |
           conda run -n "$SERVER_ENV" --no-capture-output pip install \
-            --no-build-isolation \
             "git+${COMPOSE_REPO}.git@${COMPOSE_REF}"
 
       # ── Verification ──────────────────────────────────────────────────────────
