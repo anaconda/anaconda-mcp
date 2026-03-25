@@ -230,11 +230,14 @@ jobs:
         with:
           node-version: lts/*
 
+      # Use conda activate + pip (not conda run): conda run on Windows drops the
+      # job PATH, so npm from setup-node is missing and mcp-compose's UI build fails.
       - name: Override mcp-compose (${{ needs.setup.outputs.compose-ref }})
         if: ${{ env.COMPOSE_REF != '' }}
         run: |
-          conda run -n "$SERVER_ENV" --no-capture-output pip install \
-            "git+${COMPOSE_REPO}.git@${COMPOSE_REF}"
+          eval "$(conda shell.bash hook)"
+          conda activate "$SERVER_ENV"
+          pip install "git+${COMPOSE_REPO}.git@${COMPOSE_REF}"
 
       # ── Verification ──────────────────────────────────────────────────────────
       - name: Show installed versions in server env
