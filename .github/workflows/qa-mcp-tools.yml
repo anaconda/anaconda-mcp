@@ -71,10 +71,6 @@ on:
           - macos-15-intel
           - windows-latest
 
-  push:
-    branches:
-      - desk-1328-qa-owned-tests
-
 jobs:
   # ── Resolve parameters ────────────────────────────────────────────────────────
   # Single source of truth for all defaults. Runs on a cheap Ubuntu runner.
@@ -214,7 +210,8 @@ jobs:
           if [[ -n "$CONNECTOR_VER" ]]; then
             # Private channel is only needed here, when pinning a specific conda version
             conda config --add channels "https://conda.anaconda.org/t/${{ secrets.ANACONDA_CONNECTOR_TOKEN }}/anaconda-connector"
-            conda install -n "$SERVER_ENV" --yes \
+            # anaconda-connector 0.1.x requires attrs>=25.4; defaults often lacks it — conda-forge provides it
+            conda install -n "$SERVER_ENV" --yes -c conda-forge \
               "anaconda-connector-conda=$CONNECTOR_VER" \
               "anaconda-connector-core=$CONNECTOR_VER" \
               "anaconda-connector-utilities=$CONNECTOR_VER"
@@ -222,7 +219,7 @@ jobs:
             # Use transitive dep pulled by environments-mcp; verify import
             conda run -n "$SERVER_ENV" --no-capture-output \
               python -c "import anaconda_connector_conda" 2>/dev/null \
-            || conda install -n "$SERVER_ENV" --yes anaconda-connector-conda
+            || conda install -n "$SERVER_ENV" --yes -c conda-forge anaconda-connector-conda
           fi
 
       # mcp-compose pyproject.toml has a build hook that compiles a UI bundle;
