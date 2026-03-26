@@ -271,6 +271,28 @@ def _terminate_process_tree(proc: subprocess.Popen) -> None:
             pass
 
 
+def _unlink_best_effort(path: Path, *, missing_ok: bool = True) -> None:
+    """
+    Delete a filesystem path; retry if Windows still has the file open (WinError 32).
+
+    Subprocess stderr is a shared log file: after ``taskkill /T``, child handles can
+    linger briefly and ``Path.unlink`` raises ``PermissionError``.
+    """
+    for attempt in range(24):
+        try:
+            path.unlink(missing_ok=missing_ok)
+            return
+        except PermissionError:
+            pass
+        except OSError as exc:
+            if getattr(exc, "winerror", None) != 32:
+                raise
+        if attempt < 23:
+            time.sleep(0.1)
+    if path.exists():
+        logger.warning("Could not delete temp file (still in use): %s", path)
+
+
 # ---------------------------------------------------------------------------
 # Session / module fixtures
 # ---------------------------------------------------------------------------
@@ -461,9 +483,9 @@ def _stdio_server_context(
                 stderr_tail = stderr_path.read_text(encoding="utf-8", errors="replace")[-8000:]
         except OSError:
             pass
-        stderr_path.unlink(missing_ok=True)
+        _unlink_best_effort(stderr_path)
         config.stash[stash_key] = None
-        config_path.unlink(missing_ok=True)
+        _unlink_best_effort(config_path)
         msg = f"STDIO {label} server did not become ready: {exc}"
         if stderr_tail.strip():
             msg = f"{msg}\n--- stderr (tail) ---\n{stderr_tail.strip()}"
@@ -482,9 +504,9 @@ def _stdio_server_context(
             stderr_log.close()
         except OSError:
             pass
-        stderr_path.unlink(missing_ok=True)
+        _unlink_best_effort(stderr_path)
         config.stash[stash_key] = None
-        config_path.unlink(missing_ok=True)
+        _unlink_best_effort(config_path)
 
 
 @pytest.fixture(scope="module")
