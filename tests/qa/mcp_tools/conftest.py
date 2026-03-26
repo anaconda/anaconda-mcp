@@ -12,6 +12,7 @@ import os
 import shutil
 import signal
 import subprocess
+import sys
 import tempfile
 import time
 from collections.abc import Generator, Iterator
@@ -240,6 +241,36 @@ def pytest_runtest_makereport(item: pytest.Item, call: pytest.CallInfo) -> Gener
     )
 
 
+def _terminate_process_tree(proc: subprocess.Popen) -> None:
+    """
+    Stop ``proc`` and descendant processes.
+
+    Unix: SIGTERM to the session / process group created with ``start_new_session=True``.
+    Windows: ``os.killpg`` / ``getpgid`` are unavailable; use ``taskkill /T``.
+    """
+    if sys.platform == "win32":
+        try:
+            subprocess.run(
+                ["taskkill", "/PID", str(proc.pid), "/T", "/F"],
+                capture_output=True,
+                check=False,
+                timeout=30,
+            )
+        except (OSError, subprocess.TimeoutExpired):
+            try:
+                proc.kill()
+            except OSError:
+                pass
+        return
+    try:
+        os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
+    except (ProcessLookupError, PermissionError):
+        try:
+            proc.kill()
+        except OSError:
+            pass
+
+
 # ---------------------------------------------------------------------------
 # Session / module fixtures
 # ---------------------------------------------------------------------------
@@ -315,10 +346,7 @@ def mcp_server(request: pytest.FixtureRequest, server_url: str):
 
     if server_proc is not None:
         logger.info("Stopping MCP server (pid %s)", server_proc.pid)
-        try:
-            os.killpg(os.getpgid(server_proc.pid), signal.SIGTERM)
-        except (ProcessLookupError, PermissionError):
-            pass
+        _terminate_process_tree(server_proc)
         try:
             server_proc.wait(timeout=15)
         except subprocess.TimeoutExpired:
@@ -445,10 +473,7 @@ def _stdio_server_context(
         yield proc
     finally:
         logger.info("Tearing down STDIO %s server (pid=%s)", label, proc.pid)
-        try:
-            os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
-        except (ProcessLookupError, PermissionError):
-            proc.kill()
+        _terminate_process_tree(proc)
         try:
             proc.wait(timeout=10)
         except subprocess.TimeoutExpired:
