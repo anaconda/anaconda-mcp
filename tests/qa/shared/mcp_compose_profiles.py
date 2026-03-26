@@ -196,6 +196,11 @@ def render_for_profile(
     Dispatch by profile. ``compose_port`` / ``downstream_port`` are ignored for
     pure-STDIO upstream (stdio-stdio).
     """
+    # TOML double-quoted strings treat ``\`` as escape; Windows paths must not
+    # be embedded raw. Forward slashes are accepted by Windows for argv paths.
+    # Use str replace (not ``Path.as_posix()``) so paths stay correct when this
+    # module runs on POSIX but embeds a Windows ``sys.executable`` string.
+    python_executable = python_executable.replace("\\", "/")
     if profile == PROFILE_HTTP_HTTP:
         return render_http_http_toml(
             compose_port=compose_port,
