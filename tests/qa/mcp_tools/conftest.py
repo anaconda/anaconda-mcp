@@ -22,7 +22,7 @@ from typing import Any
 import httpx
 import pytest
 from common.constants.test_data import ENV_NAME
-from common.utils.conda_utils import _conda_env_prefix
+from common.utils.conda_utils import _conda_env_prefix, conda_executable
 from common.utils.mcp_client import _initialize_session
 from common.utils.stdio_client import (
     _recv,
@@ -276,7 +276,8 @@ def mcp_server(request: pytest.FixtureRequest, server_url: str):
                 f"Server start script not found: {_SCRIPT_PATH}\n"
                 "Ensure tests/qa/mcp_tools/scripts/start-http-server.sh exists."
             )
-        if not shutil.which("conda"):
+        ce = conda_executable()
+        if ce == "conda" and not shutil.which("conda.exe") and not shutil.which("conda"):
             pytest.fail("conda not found in PATH; cannot auto-start the server.")
 
         log_file = tempfile.NamedTemporaryFile(mode="w", suffix="-anaconda-mcp.log", delete=False)
@@ -285,7 +286,7 @@ def mcp_server(request: pytest.FixtureRequest, server_url: str):
 
         logger.info("Starting MCP server (conda env: %s, port: %s)", conda_env, port)
         server_proc = subprocess.Popen(
-            ["conda", "run", "-n", conda_env, "--no-capture-output", "bash", str(_SCRIPT_PATH), port],
+            [ce, "run", "-n", conda_env, "--no-capture-output", "bash", str(_SCRIPT_PATH), port],
             stdout=log_file,
             stderr=subprocess.STDOUT,
             start_new_session=True,
@@ -373,7 +374,7 @@ def _stdio_server_context(
 
     proc = subprocess.Popen(
         [
-            "conda",
+            conda_executable(),
             "run",
             "-n",
             conda_env,
@@ -540,9 +541,10 @@ def call_no_hang_unified(request: pytest.FixtureRequest, compose_profile):
 
 @pytest.fixture(scope="module")
 def conda_env():
+    ce = conda_executable()
     logger.info("Creating conda environment '%s'", ENV_NAME)
     subprocess.run(
-        ["conda", "create", "-n", ENV_NAME, "python=3.11", "-y"],
+        [ce, "create", "-n", ENV_NAME, "python=3.11", "-y"],
         check=True,
     )
     prefix = _conda_env_prefix(ENV_NAME)
@@ -550,7 +552,7 @@ def conda_env():
     yield {"name": ENV_NAME, "prefix": prefix}
     logger.info("Removing conda environment '%s'", ENV_NAME)
     subprocess.run(
-        ["conda", "remove", "-n", ENV_NAME, "--all", "-y"],
+        [ce, "remove", "-n", ENV_NAME, "--all", "-y"],
         check=False,
     )
 
@@ -559,10 +561,11 @@ def conda_env():
 def cleanup_conda_env():
     registered: list[str] = []
     yield registered.append
+    ce = conda_executable()
     for name in registered:
         logger.info("Removing conda environment '%s'", name)
         subprocess.run(
-            ["conda", "env", "remove", "-n", name, "-y"],
+            [ce, "env", "remove", "-n", name, "-y"],
             check=False,
             capture_output=True,
         )

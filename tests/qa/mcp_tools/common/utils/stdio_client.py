@@ -20,6 +20,7 @@ import mcp_compose_profiles as _profiles
 import pytest
 
 from common.constants.config import TOOL_TIMEOUT
+from common.utils.conda_utils import conda_executable
 
 logger = logging.getLogger(__name__)
 
@@ -85,14 +86,22 @@ def _write_profile_config(
     ``profile_slug`` must be ``stdio-http`` or ``stdio-stdio`` (STDIO client edge).
     """
     profile = _profiles.PROFILES_BY_SLUG[profile_slug]
-    python_path = (
-        subprocess.run(
-            ["conda", "run", "-n", conda_env, "which", "python"],
-            capture_output=True,
-            text=True,
-        ).stdout.strip()
-        or "python"
+    conda = conda_executable()
+    proc = subprocess.run(
+        [
+            conda,
+            "run",
+            "-n",
+            conda_env,
+            "python",
+            "-c",
+            "import sys; print(sys.executable)",
+        ],
+        capture_output=True,
+        text=True,
+        check=True,
     )
+    python_path = proc.stdout.strip() or "python"
 
     config_text = _profiles.render_for_profile(
         profile,
