@@ -224,32 +224,26 @@ jobs:
 
       # mcp-compose pyproject.toml has a build hook that compiles a UI bundle;
       # npm must be available before pip attempts to build the wheel from source.
-      # Windows: Git Bash often does not see setup-node's node/npm; pip's build also
-      # resolves npm poorly vs npm.cmd — install nodejs into the conda env instead.
-      # No package-lock.json in this repo: cache: npm would not key a useful cache for
-      # the pip git checkout of mcp-compose; omit cache until a lockfile path exists.
+      # conda-forge nodejs on win-64 often does not expose npm the way the hook expects;
+      # use setup-node on all OSes. No package-lock.json here — omit cache: npm.
       - name: Install Node.js (mcp-compose UI build)
-        if: ${{ env.COMPOSE_REF != '' && runner.os != 'Windows' }}
+        if: ${{ env.COMPOSE_REF != '' }}
         uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
           node-version: '24'
 
-      # Windows only: PEP 517 build isolation hides npm from conda nodejs; use
-      # --no-build-isolation so the build sees npm. That disables pip's automatic
-      # install of [build-system] requires — pre-install hatchling in the server env.
-      # Unix: default isolation + setup-node PATH; pip installs hatchling in the build venv.
-      # Run in PowerShell: Git Bash passes a Unix-style PATH; Python subprocesses then
-      # fail to resolve npm.cmd. Prepend the conda env Scripts + Library\bin, then use
-      # that env's python -m pip so the UI build hook sees a native Windows PATH.
+      # Windows: PEP 517 isolation hides npm; use --no-build-isolation + hatchling in env.
+      # Prepend setup-node's node dir (npm.cmd) then conda env Scripts so python -m pip
+      # subprocesses see a normal Windows PATH.
       - name: Override mcp-compose (${{ needs.setup.outputs.compose-ref }}) [Windows]
         if: ${{ env.COMPOSE_REF != '' && runner.os == 'Windows' }}
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          conda install -y -c conda-forge -n $env:SERVER_ENV nodejs
           $condaBase = (conda info --base).Trim()
           $condaEnv = Join-Path $condaBase "envs\$($env:SERVER_ENV)"
-          $env:Path = "$condaEnv\Scripts;$condaEnv\Library\bin;$env:Path"
+          $nodeDir = Split-Path -Parent (Get-Command node).Source
+          $env:Path = "$nodeDir;$condaEnv\Scripts;$condaEnv\Library\bin;$env:Path"
           & "$condaEnv\python.exe" -m pip install hatchling
           & "$condaEnv\python.exe" -m pip install --no-build-isolation "git+$($env:COMPOSE_REPO).git@$($env:COMPOSE_REF)"
 
