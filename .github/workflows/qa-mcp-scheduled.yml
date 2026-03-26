@@ -1,0 +1,117 @@
+# Scheduled MCP tool QA: reusable template on a pairwise matrix (runner × Python × transport),
+# then a markdown summary artifact + step summary. Pairwise coverage: every pair of those three
+# dimensions appears at least once (54 pairs → 24 jobs vs 72 for full Cartesian).
+# Linux: ubuntu-latest only; other labels match qa-mcp-parameterized.yml (self-hosted + macOS + Windows).
+
+name: QA — MCP tool tests (scheduled matrix)
+
+on:
+  schedule:
+    # Weekdays 05:00 UTC — adjust as needed.
+    - cron: '0 5 * * 1-5'
+  workflow_dispatch:
+
+jobs:
+  profile-matrix:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { runner: macos-latest, python_version: '3.10', mcp_profile: 'stdio-stdio' }
+          - { runner: macos-latest, python_version: '3.12', mcp_profile: 'http-http' }
+          - { runner: macos-latest, python_version: '3.13', mcp_profile: 'stdio-http' }
+          - { runner: macos-15-intel, python_version: '3.11', mcp_profile: 'stdio-stdio' }
+          - { runner: macos-15-intel, python_version: '3.12', mcp_profile: 'stdio-http' }
+          - { runner: macos-15-intel, python_version: '3.13', mcp_profile: 'http-http' }
+          - { runner: windows-latest, python_version: '3.10', mcp_profile: 'http-http' }
+          - { runner: windows-latest, python_version: '3.11', mcp_profile: 'stdio-http' }
+          - { runner: windows-latest, python_version: '3.12', mcp_profile: 'stdio-stdio' }
+          - { runner: ubuntu-latest, python_version: '3.10', mcp_profile: 'http-http' }
+          - { runner: ubuntu-latest, python_version: '3.11', mcp_profile: 'stdio-http' }
+          - { runner: ubuntu-latest, python_version: '3.12', mcp_profile: 'stdio-stdio' }
+          - { runner: macos-latest, python_version: '3.11', mcp_profile: 'http-http' }
+          - { runner: macos-15-intel, python_version: '3.10', mcp_profile: 'http-http' }
+          - { runner: windows-latest, python_version: '3.13', mcp_profile: 'http-http' }
+          - { runner: ubuntu-latest, python_version: '3.13', mcp_profile: 'http-http' }
+    uses: ./.github/workflows/qa-mcp-test-execution.yml
+    with:
+      runner: ${{ matrix.runner }}
+      python_version: ${{ matrix.python_version }}
+      mcp_profile: ${{ matrix.mcp_profile }}
+      skip_hang_stress: 'false'
+    secrets:
+      GH_PACKAGE_TOKEN: ${{ secrets.GH_PACKAGE_TOKEN }}
+      ANACONDA_CONNECTOR_TOKEN: ${{ secrets.ANACONDA_CONNECTOR_TOKEN }}
+
+  profile-matrix-summary:
+    name: Profile matrix summary
+    needs: profile-matrix
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download profile summaries
+        uses: actions/download-artifact@v4
+        with:
+          pattern: qa-mcp-profile-summary-*
+          merge-multiple: true
+          path: summaries
+
+      - name: Build summary table
+        run: |
+          python3 <<'PY'
+          import json
+          import glob
+          import os
+          from pathlib import Path
+
+          rows = []
+          for path in sorted(glob.glob("summaries/**/*.json", recursive=True)):
+              with open(path, encoding="utf-8") as f:
+                  rows.append(json.load(f))
+
+          def sort_key(r):
+              return (
+                  r.get("runner", ""),
+                  r.get("python_version", ""),
+                  r.get("mcp_profile", ""),
+              )
+
+          rows.sort(key=sort_key)
+
+          lines = [
+            "# MCP tool QA — profile matrix summary",
+            "",
+            f"Workflow run: `{os.environ.get('GITHUB_SERVER_URL', '')}/{os.environ.get('GITHUB_REPOSITORY', '')}/actions/runs/{os.environ.get('GITHUB_RUN_ID', '')}`",
+            "",
+            "| Runner | Python | MCP profile | Result | Pytest step |",
+            "| --- | --- | --- | --- | --- |",
+          ]
+
+          for r in rows:
+            lines.append(
+              "| {runner} | {py} | {prof} | `{res}` | `{step}` |".format(
+                runner=r.get("runner", ""),
+                py=r.get("python_version", ""),
+                prof=r.get("mcp_profile", ""),
+                res=r.get("result", ""),
+                step=r.get("pytest_step_outcome", ""),
+              )
+            )
+
+          if not rows:
+            lines.extend(["", "_No profile summary artifacts were produced (jobs may have been cancelled or failed before summaries were written)._"])
+
+          text = "\n".join(lines) + "\n"
+          Path("profile-matrix-summary.md").write_text(text, encoding="utf-8")
+
+          out = os.environ.get("GITHUB_STEP_SUMMARY")
+          if out:
+            with open(out, "a", encoding="utf-8") as gh:
+              gh.write(text)
+          PY
+
+      - name: Upload matrix summary
+        uses: actions/upload-artifact@v4
+        with:
+          name: qa-mcp-matrix-summary
+          path: profile-matrix-summary.md
