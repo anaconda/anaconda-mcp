@@ -232,9 +232,10 @@ jobs:
         with:
           node-version: '24'
 
-      # Windows: PEP 517 isolation hides npm; use --no-build-isolation + hatchling in env.
-      # Prepend setup-node's node dir (npm.cmd) then conda env Scripts so python -m pip
-      # subprocesses see a normal Windows PATH.
+      # Windows: hatch_build.py runs subprocess.run(["npm", ...]) without shell=True;
+      # CreateProcess often fails to resolve npm.cmd from PATH alone. Forwarders in the
+      # conda env Scripts/ fix that and stay visible if conda narrows PATH. PEP 517:
+      # --no-build-isolation + hatchling in env.
       - name: Override mcp-compose (${{ needs.setup.outputs.compose-ref }}) [Windows]
         if: ${{ env.COMPOSE_REF != '' && runner.os == 'Windows' }}
         shell: pwsh
@@ -242,8 +243,15 @@ jobs:
           $ErrorActionPreference = 'Stop'
           $condaBase = (conda info --base).Trim()
           $condaEnv = Join-Path $condaBase "envs\$($env:SERVER_ENV)"
+          $scripts = Join-Path $condaEnv 'Scripts'
+          $npmReal = (Get-Command npm).Source
           $nodeDir = Split-Path -Parent (Get-Command node).Source
-          $env:Path = "$nodeDir;$condaEnv\Scripts;$condaEnv\Library\bin;$env:Path"
+          Set-Content -LiteralPath (Join-Path $scripts 'npm.cmd') -Encoding ascii -Value "@echo off`r`ncall `"$npmReal`" %*"
+          $npx = Get-Command npx -ErrorAction SilentlyContinue
+          if ($npx) {
+            Set-Content -LiteralPath (Join-Path $scripts 'npx.cmd') -Encoding ascii -Value "@echo off`r`ncall `"$($npx.Source)`" %*"
+          }
+          $env:Path = "$scripts;$nodeDir;$condaEnv\Library\bin;$env:Path"
           & "$condaEnv\python.exe" -m pip install hatchling
           & "$condaEnv\python.exe" -m pip install --no-build-isolation "git+$($env:COMPOSE_REPO).git@$($env:COMPOSE_REF)"
 
