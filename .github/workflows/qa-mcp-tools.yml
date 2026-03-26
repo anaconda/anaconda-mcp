@@ -232,10 +232,10 @@ jobs:
         with:
           node-version: '24'
 
-      # Windows: hatch_build.py runs subprocess.run(["npm", ...]) without shell=True;
-      # CreateProcess often fails to resolve npm.cmd from PATH alone. Forwarders in the
-      # conda env Scripts/ fix that and stay visible if conda narrows PATH. PEP 517:
-      # --no-build-isolation + hatchling in env.
+      # Windows: hatch_build.py uses subprocess.run(["npm", ...]) without shell=True;
+      # Python often cannot spawn npm.cmd reliably. The hook skips npm entirely when
+      # ui/dist already exists — pre-build the UI here, then pip install from the clone.
+      # PEP 517: --no-build-isolation + hatchling in env.
       - name: Override mcp-compose (${{ needs.setup.outputs.compose-ref }}) [Windows]
         if: ${{ env.COMPOSE_REF != '' && runner.os == 'Windows' }}
         shell: pwsh
@@ -243,17 +243,25 @@ jobs:
           $ErrorActionPreference = 'Stop'
           $condaBase = (conda info --base).Trim()
           $condaEnv = Join-Path $condaBase "envs\$($env:SERVER_ENV)"
-          $scripts = Join-Path $condaEnv 'Scripts'
-          $npmReal = (Get-Command npm).Source
-          $nodeDir = Split-Path -Parent (Get-Command node).Source
-          Set-Content -LiteralPath (Join-Path $scripts 'npm.cmd') -Encoding ascii -Value "@echo off`r`ncall `"$npmReal`" %*"
-          $npx = Get-Command npx -ErrorAction SilentlyContinue
-          if ($npx) {
-            Set-Content -LiteralPath (Join-Path $scripts 'npx.cmd') -Encoding ascii -Value "@echo off`r`ncall `"$($npx.Source)`" %*"
+          $src = Join-Path $env:RUNNER_TEMP "mcp-compose-override"
+          if (Test-Path $src) { Remove-Item -Recurse -Force $src }
+          $repoUrl = $env:COMPOSE_REPO.TrimEnd('/')
+          if ($repoUrl -notmatch '\.git$') { $repoUrl = "$repoUrl.git" }
+          git clone $repoUrl $src
+          Push-Location $src
+          git checkout $env:COMPOSE_REF
+          if ($LASTEXITCODE -ne 0) {
+            git fetch origin $env:COMPOSE_REF
+            git checkout $env:COMPOSE_REF
           }
-          $env:Path = "$scripts;$nodeDir;$condaEnv\Library\bin;$env:Path"
+          if ($LASTEXITCODE -ne 0) { throw "git checkout $($env:COMPOSE_REF) failed" }
+          Pop-Location
+          Push-Location (Join-Path $src 'ui')
+          npm install
+          npm run build
+          Pop-Location
           & "$condaEnv\python.exe" -m pip install hatchling
-          & "$condaEnv\python.exe" -m pip install --no-build-isolation "git+$($env:COMPOSE_REPO).git@$($env:COMPOSE_REF)"
+          & "$condaEnv\python.exe" -m pip install --no-build-isolation $src
 
       - name: Override mcp-compose (${{ needs.setup.outputs.compose-ref }}) [Unix]
         if: ${{ env.COMPOSE_REF != '' && runner.os != 'Windows' }}
