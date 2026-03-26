@@ -372,6 +372,9 @@ def _stdio_server_context(
     stderr_path = Path(stderr_log.name)
     config.stash[stash_key] = stderr_path
 
+    # Use ``python -m anaconda_mcp.cli`` inside ``conda run``: on Windows, spawning the
+    # ``anaconda-mcp`` console script as a nested argv often exits immediately (WinError
+    # / PATH), leaving STDIO tests with EOF on stdout.
     proc = subprocess.Popen(
         [
             conda_executable(),
@@ -379,7 +382,9 @@ def _stdio_server_context(
             "-n",
             conda_env,
             "--no-capture-output",
-            "anaconda-mcp",
+            "python",
+            "-m",
+            "anaconda_mcp.cli",
             "serve",
             "--config",
             str(config_path),
@@ -414,14 +419,27 @@ def _stdio_server_context(
         _send(proc, {"jsonrpc": "2.0", "method": "notifications/initialized", "params": {}})
     except Exception as exc:
         proc.kill()
+        stderr_tail = ""
+        try:
+            stderr_log.flush()
+        except OSError:
+            pass
         try:
             stderr_log.close()
+        except OSError:
+            pass
+        try:
+            if stderr_path.exists():
+                stderr_tail = stderr_path.read_text(encoding="utf-8", errors="replace")[-8000:]
         except OSError:
             pass
         stderr_path.unlink(missing_ok=True)
         config.stash[stash_key] = None
         config_path.unlink(missing_ok=True)
-        pytest.fail(f"STDIO {label} server did not become ready: {exc}")
+        msg = f"STDIO {label} server did not become ready: {exc}"
+        if stderr_tail.strip():
+            msg = f"{msg}\n--- stderr (tail) ---\n{stderr_tail.strip()}"
+        pytest.fail(msg)
 
     try:
         yield proc
