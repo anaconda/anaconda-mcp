@@ -178,12 +178,26 @@ def _extract_ticket_id(text: str) -> str | None:
     return match.group(1) if match else None
 
 
-def _create_branch(ticket_id: str, summary: str = "") -> str:
-    """Create and checkout a git branch named after the ticket."""
+def _create_branch(ticket_id: str, summary: str = "") -> tuple[str, bool]:
+    """Create and checkout a git branch named after the ticket.
+
+    If the branch already exists, switches to it instead of failing.
+    Returns (branch_name, created) where created=False means it already existed.
+    """
     slug = re.sub(r"[^a-z0-9]+", "-", summary.lower())[:40].strip("-")
     branch = f"feature/{ticket_id.lower()}-{slug}" if slug else f"feature/{ticket_id.lower()}"
-    subprocess.run(["git", "checkout", "-b", branch], check=True)
-    return branch
+
+    result = subprocess.run(
+        ["git", "checkout", "-b", branch],
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode == 0:
+        return branch, True
+
+    # Branch already exists — switch to it
+    subprocess.run(["git", "checkout", branch], check=True)
+    return branch, False
 
 
 def _print_prompt_box(label: str, prompt: str) -> None:
@@ -289,8 +303,11 @@ def cmd_task(ticket_id: str, sesame_path: Path | None, no_branch: bool) -> None:
 
     # Create branch
     if not no_branch:
-        branch = _create_branch(ticket_id)
-        print(f"✅  Branch created: {branch}")
+        branch, created = _create_branch(ticket_id)
+        if created:
+            print(f"✅  Branch created: {branch}")
+        else:
+            print(f"✅  Branch already exists, switched to: {branch}")
 
     # Write a stub so the developer knows the file is expected
     if not TASK_CONTEXT_FILE.exists():

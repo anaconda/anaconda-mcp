@@ -206,7 +206,7 @@ def test_cmd_task_creates_branch_and_stub(tmp_path, monkeypatch, capsys):
     monkeypatch.chdir(tmp_path)
 
     with patch("subprocess.run") as mock_run:
-        mock_run.return_value = MagicMock(returncode=0)
+        mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
         cmd_task(ticket_id="PROJ-123", sesame_path=fake_sesame, no_branch=False)
 
     # Branch creation was attempted
@@ -232,6 +232,28 @@ def test_cmd_task_no_branch_skips_git(tmp_path, monkeypatch):
         cmd_task(ticket_id="PROJ-123", sesame_path=fake_sesame, no_branch=True)
 
     mock_run.assert_not_called()
+
+
+def test_cmd_task_switches_to_existing_branch(tmp_path, monkeypatch, capsys):
+    fake_sesame = tmp_path / "sesame"
+    fake_sesame.touch()
+    monkeypatch.chdir(tmp_path)
+
+    # First call returns 128 (branch exists), second call (checkout) returns 0
+    with patch("subprocess.run") as mock_run:
+        mock_run.side_effect = [
+            MagicMock(returncode=128, stdout="", stderr="branch already exists"),
+            MagicMock(returncode=0),
+        ]
+        cmd_task(ticket_id="PROJ-123", sesame_path=fake_sesame, no_branch=False)
+
+    captured = capsys.readouterr()
+    assert "already exists" in captured.out
+    assert "feature/proj-123" in captured.out
+
+    # Second call should be `git checkout <branch>` (no -b)
+    second_call_args = mock_run.call_args_list[1][0][0]
+    assert "-b" not in second_call_args
 
 
 def test_cmd_task_does_not_overwrite_existing_context(tmp_path, monkeypatch):
