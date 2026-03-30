@@ -44,7 +44,7 @@ SESAME_PATH ?=
 DEV_WORKFLOW := $(PYTHON) scripts/dev_workflow.py
 
 
-.PHONY: wheel install install-dev uninstall clean-artifacts clean-dist clean run help mypy mypy-install-types mypy-clean setup clean-setup setup-no-venv activate test test-pytest test-tox test-functional test-integration which-python conda-build conda-install docker-build docker-build-from-source docker-run _check-docker-token gh-install gh-auth sesame-install workflow-setup _workflow-setup-register workflow-setup-desktop workflow-setup-code task-start pr
+.PHONY: wheel install install-dev uninstall clean-artifacts clean-dist clean run help mypy mypy-install-types mypy-clean setup clean-setup setup-no-venv activate test test-pytest test-tox test-functional test-integration which-python conda-build conda-install docker-build docker-build-from-source docker-run _check-docker-token gh-install gh-auth sesame-install workflow-setup _workflow-setup-register workflow-setup-desktop workflow-setup-code task-start pr pr-create
 
 which-python: ## Show Python executable being used
 	@echo "PYTHON      = $(PYTHON)"
@@ -338,8 +338,11 @@ task-start: ## [internal] Generate task context prompt for Claude + create branc
 	fi
 	@$(DEV_WORKFLOW) task $(TICKET) $(if $(SESAME_PATH),--sesame-path $(SESAME_PATH),)
 
-pr: ## [internal] Generate PR description prompt for Claude + open draft PR
+pr: ## [internal] Write .pr-prompt.md and print one-liner for Claude (Sesame + Filesystem required)
 	@$(DEV_WORKFLOW) pr $(if $(SESAME_PATH),--sesame-path $(SESAME_PATH),) $(if $(TITLE),--title "$(TITLE)",)
+
+pr-create: ## [internal] Open the draft PR once Claude has written .pr-description.md
+	@$(DEV_WORKFLOW) pr-create $(if $(TITLE),--title "$(TITLE)",)
 
 help: ## List all options in the Makefile
 	@echo "Available targets:"
