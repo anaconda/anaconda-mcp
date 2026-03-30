@@ -38,8 +38,13 @@ MYPY_CACHE ?= .mypy_cache
 CONDA_BUILD_DIR := build/conda
 CONDA_RECIPE_DIR := conda-build
 
+# Dev workflow settings (internal tooling — not shipped in the conda package)
+# Override SESAME_PATH if Sesame is not installed at the default location.
+SESAME_PATH ?=
+DEV_WORKFLOW := $(PYTHON) scripts/dev_workflow.py
 
-.PHONY: wheel install install-dev uninstall clean-artifacts clean-dist clean run help mypy mypy-install-types mypy-clean setup clean-setup setup-no-venv activate test test-pytest test-tox test-functional test-integration which-python conda-build conda-install docker-build docker-build-from-source docker-run _check-docker-token
+
+.PHONY: wheel install install-dev uninstall clean-artifacts clean-dist clean run help mypy mypy-install-types mypy-clean setup clean-setup setup-no-venv activate test test-pytest test-tox test-functional test-integration which-python conda-build conda-install docker-build docker-build-from-source docker-run _check-docker-token gh-install gh-auth sesame-install workflow-setup _workflow-setup-register workflow-setup-desktop workflow-setup-code task-start pr
 
 which-python: ## Show Python executable being used
 	@echo "PYTHON      = $(PYTHON)"
@@ -289,6 +294,52 @@ claude-desktop-remove-config: ## Remove Anaconda MCP from Claude Desktop configu
 claude-desktop-path: ## Show Claude Desktop config file path
 	@echo "Claude Desktop config file path:"
 	$(PYTHON) -m anaconda_mcp.cli claude-desktop path
+
+# =============================================================================
+# Developer workflow (internal Anaconda tooling — NOT shipped in the conda pkg)
+# No API key required — uses your Claude Desktop or Claude Code Business subscription.
+# Requires: Sesame installed  |  gh CLI authenticated
+# Override sesame location with: make task-start TICKET=PROJ-123 SESAME_PATH=/path/to/sesame
+# =============================================================================
+
+gh-install: ## [internal] Install gh CLI via conda-forge into the current conda environment
+	@echo "Installing gh CLI from conda-forge..."
+	$(CONDA) install -c conda-forge gh -y
+	@echo "✅  gh installed. Run 'make gh-auth' to authenticate."
+
+gh-auth: ## [internal] Authenticate gh CLI with GitHub (opens browser)
+	@echo "Authenticating gh CLI with GitHub..."
+	@gh auth login
+
+sesame-install: ## [internal] Install or update Sesame on this machine (requires gh CLI authenticated)
+	@echo "Installing Sesame..."
+	@gh api repos/Anaconda-Sandbox/sesame/contents/install \
+		-H "Accept: application/vnd.github.raw+json" | bash
+	@echo "✅  Sesame installed. Default binary: ~/.local/share/sesame/venv/bin/sesame"
+
+workflow-setup: gh-install gh-auth sesame-install _workflow-setup-register ## [internal] Full onboarding: install gh, authenticate, install Sesame, register in Claude Desktop + Claude Code
+	@echo ""
+	@echo "✅  Onboarding complete! Restart Claude Desktop to apply changes."
+	@echo "    Then run: make task-start TICKET=<your-ticket>"
+
+_workflow-setup-register: ## [internal] Register Sesame in Claude Desktop + Claude Code (run once after cloning)
+	@$(DEV_WORKFLOW) setup $(if $(SESAME_PATH),--sesame-path $(SESAME_PATH),)
+
+workflow-setup-desktop: ## [internal] Register Sesame in Claude Desktop only
+	@$(DEV_WORKFLOW) setup --target claude-desktop $(if $(SESAME_PATH),--sesame-path $(SESAME_PATH),)
+
+workflow-setup-code: ## [internal] Register Sesame in Claude Code only
+	@$(DEV_WORKFLOW) setup --target claude-code $(if $(SESAME_PATH),--sesame-path $(SESAME_PATH),)
+
+
+task-start: ## [internal] Generate task context prompt for Claude + create branch (TICKET=PROJ-123)
+	@if [ -z "$(TICKET)" ]; then \
+		echo "❌  Usage: make task-start TICKET=PROJ-123"; exit 1; \
+	fi
+	@$(DEV_WORKFLOW) task $(TICKET) $(if $(SESAME_PATH),--sesame-path $(SESAME_PATH),)
+
+pr: ## [internal] Generate PR description prompt for Claude + open draft PR
+	@$(DEV_WORKFLOW) pr $(if $(SESAME_PATH),--sesame-path $(SESAME_PATH),) $(if $(TITLE),--title "$(TITLE)",)
 
 help: ## List all options in the Makefile
 	@echo "Available targets:"

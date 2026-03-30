@@ -6,6 +6,8 @@ dependencies:
   - environments-mcp-server
   - anaconda-opentelemetry
   - mcp-compose
+  # Internal tooling (not shipped)
+  - conda-forge::gh
   # Dev Deps
   - pytest>=7.0
   - pytest-asyncio>=0.21
