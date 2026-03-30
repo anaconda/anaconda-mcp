@@ -234,6 +234,28 @@ def test_cmd_task_no_branch_skips_git(tmp_path, monkeypatch):
     mock_run.assert_not_called()
 
 
+def test_cmd_task_exits_with_message_on_dirty_working_tree(tmp_path, monkeypatch, capsys):
+    fake_sesame = tmp_path / "sesame"
+    fake_sesame.touch()
+    monkeypatch.chdir(tmp_path)
+
+    dirty_status = "M  scripts/dev_workflow.py\nM  tests/test_dev_workflow.py\n"
+
+    with (
+        patch("subprocess.run") as mock_run,
+        pytest.raises(SystemExit) as exc_info,
+    ):
+        mock_run.return_value = MagicMock(returncode=0, stdout=dirty_status, stderr="")
+        cmd_task(ticket_id="PROJ-123", sesame_path=fake_sesame, no_branch=False)
+
+    assert exc_info.value.code == 1
+    captured = capsys.readouterr()
+    assert "uncommitted changes" in captured.err
+    assert "scripts/dev_workflow.py" in captured.err
+    assert "git stash" in captured.err
+    assert "--no-branch" in captured.err
+
+
 def test_cmd_task_switches_to_existing_branch(tmp_path, monkeypatch, capsys):
     fake_sesame = tmp_path / "sesame"
     fake_sesame.touch()

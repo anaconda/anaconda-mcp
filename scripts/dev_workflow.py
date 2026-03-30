@@ -178,14 +178,41 @@ def _extract_ticket_id(text: str) -> str | None:
     return match.group(1) if match else None
 
 
+def _get_uncommitted_files() -> list[str]:
+    """Return a list of uncommitted files in the working tree."""
+    result = subprocess.run(
+        ["git", "status", "--porcelain"],
+        capture_output=True,
+        text=True,
+    )
+    return [line[3:] for line in result.stdout.splitlines() if line.strip()]
+
+
 def _create_branch(ticket_id: str, summary: str = "") -> tuple[str, bool]:
     """Create and checkout a git branch named after the ticket.
 
     If the branch already exists, switches to it instead of failing.
+    Exits with a clear message if there are uncommitted changes that
+    would be overwritten — never touches the working tree silently.
     Returns (branch_name, created) where created=False means it already existed.
     """
     slug = re.sub(r"[^a-z0-9]+", "-", summary.lower())[:40].strip("-")
     branch = f"feature/{ticket_id.lower()}-{slug}" if slug else f"feature/{ticket_id.lower()}"
+
+    # Check for uncommitted changes before attempting any checkout
+    dirty_files = _get_uncommitted_files()
+    if dirty_files:
+        files_list = "\n".join(f"    {f}" for f in dirty_files)
+        print(
+            f"\n❌  Cannot switch to '{branch}' — you have uncommitted changes:\n"
+            f"{files_list}\n\n"
+            "    To move forward, choose one of:\n"
+            "      git add . && git commit -m 'wip: <description>'   # commit your work\n"
+            "      git stash                                          # stash temporarily\n"
+            "      make task-start TICKET=... --no-branch            # skip branch switching\n",
+            file=sys.stderr,
+        )
+        sys.exit(1)
 
     result = subprocess.run(
         ["git", "checkout", "-b", branch],
