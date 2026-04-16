@@ -2,13 +2,13 @@
 
 ## Use Cases
 
-The Docker deployment of Anaconda MCP is **primarily intended for development and testing purposes**. 
+The Docker deployment of Anaconda MCP is **primarily intended for development and testing purposes**.
 
 **Important**: All conda operations (environment creation, package installation, etc.) happen **inside the ephemeral container** and are **not persisted** to your host machine. When the container stops, all created environments and installed packages are lost. For persistent conda environments on your local machine, use the native installation method instead.
 
 This containerized approach is ideal for:
 - Testing anaconda-mcp functionality without affecting your system
-- Development environments where isolation is preferred  
+- Development environments where isolation is preferred
 - CI/CD pipelines and automated testing
 - Demonstrations and temporary usage
 
@@ -49,7 +49,7 @@ The image is based on `condaforge/miniforge3` and installs `anaconda-mcp` from t
 To build the image from local source code instead of conda channels:
 
 ```bash
-# Using Make with environment variable  
+# Using Make with environment variable
 DOCKER_FROM_SRC=true make docker-build
 
 # Or using the convenience target

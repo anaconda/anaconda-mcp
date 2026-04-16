@@ -1,13 +1,13 @@
 # MCP Compose Configuration Template
-# 
+#
 # ✅ This is the PRIMARY configuration file
-# ✅ Edit this file to customize your configuration  
+# ✅ Edit this file to customize your configuration
 # ✅ Use {{PYTHON_EXECUTABLE}} for dynamic Python path injection
-# 
+#
 # The {{PYTHON_EXECUTABLE}} placeholder will be replaced at runtime with:
 # 1. ANACONDA_MCP_PYTHON_EXECUTABLE environment variable (if set), or
 # 2. sys.executable (the Python interpreter running anaconda-mcp)
-# 
+#
 # This file demonstrates all available configuration options
 
 # ============================================================================

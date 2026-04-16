@@ -145,7 +145,7 @@ class TestHappyPathHang:
                 result.get(ToolResultFields.IS_ERROR),
             )
             assert not result.get(ToolResultFields.IS_ERROR), (
-                f"HANG-006 [{i}/{WARM_ITERATIONS}]: " f"conda_list_environments returned an error: {result}"
+                f"HANG-006 [{i}/{WARM_ITERATIONS}]: conda_list_environments returned an error: {result}"
             )
             if ITERATION_DELAY > 0 and i < WARM_ITERATIONS:
                 time.sleep(ITERATION_DELAY)

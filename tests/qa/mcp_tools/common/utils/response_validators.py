@@ -128,7 +128,7 @@ def _validate_package_resolution_error(result: dict, env_name: str) -> None:
     lookup).
     """
     assert result.get(ToolResultFields.IS_ERROR) is True, (
-        f"Expected is_error=true for nonexistent package in env '{env_name}', " f"got: {result!r}"
+        f"Expected is_error=true for nonexistent package in env '{env_name}', got: {result!r}"
     )
 
     raw = result.get(ToolResultFields.ERROR_DESCRIPTION, "")

@@ -34,22 +34,14 @@ def get_claude_desktop_config_path() -> Path:
         return Path.home() / ".config" / "Claude" / "claude_desktop_config.json"
     elif system == OSSystems.DARWIN:
         # macOS: ~/Library/Application Support/Claude/claude_desktop_config.json
-        return (
-            Path.home()
-            / "Library"
-            / "Application Support"
-            / "Claude"
-            / "claude_desktop_config.json"
-        )
+        return Path.home() / "Library" / "Application Support" / "Claude" / "claude_desktop_config.json"
     elif system == OSSystems.WINDOWS:
         # Windows: %APPDATA%\Claude\claude_desktop_config.json
         appdata = os.environ.get("APPDATA")
         if appdata:
             return Path(appdata) / "Claude" / "claude_desktop_config.json"
         else:
-            return (
-                Path.home() / "AppData" / "Roaming" / "Claude" / "claude_desktop_config.json"
-            )
+            return Path.home() / "AppData" / "Roaming" / "Claude" / "claude_desktop_config.json"
     else:
         raise RuntimeError(f"Unsupported operating system: {system}")
 
@@ -106,8 +98,9 @@ def load_config(config_path: Path) -> dict[str, Any]:
         return {}
 
     try:
-        with open(config_path, "r", encoding="utf-8") as f:
-            return json.load(f)
+        with open(config_path, encoding="utf-8") as f:
+            data: dict[str, Any] = json.load(f)
+            return data
     except (json.JSONDecodeError, OSError):
         # Return empty config if file is corrupted or cannot be read
         return {}
@@ -228,7 +221,7 @@ def configure_claude_desktop(
     if config_path is None:
         config_path = get_claude_desktop_config_path()
 
-    result = {
+    result: dict[str, Any] = {
         "config_path": config_path,
         "backup_path": None,
         "server_name": server_name,
@@ -252,8 +245,7 @@ def configure_claude_desktop(
     # Check if server already exists
     if server_name in config["mcpServers"] and not force:
         raise FileExistsError(
-            f"Server '{server_name}' already exists in Claude Desktop config. "
-            "Use --force to overwrite."
+            f"Server '{server_name}' already exists in Claude Desktop config. Use --force to overwrite."
         )
 
     if server_name in config["mcpServers"]:

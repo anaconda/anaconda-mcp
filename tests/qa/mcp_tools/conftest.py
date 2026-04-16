@@ -66,9 +66,7 @@ def pytest_addoption(parser: pytest.Parser) -> None:
         default=os.environ.get("MCP_PROFILE", "http-http"),
         choices=sorted(PROFILES_BY_SLUG.keys()),
         help=(
-            "Transport profile: client→compose and compose→conda. "
-            "Also reads MCP_PROFILE env var. "
-            "(default: http-http)"
+            "Transport profile: client→compose and compose→conda. Also reads MCP_PROFILE env var. (default: http-http)"
         ),
     )
     parser.addoption(
@@ -335,7 +333,8 @@ def mcp_server(request: pytest.FixtureRequest, server_url: str):
 def session_id(mcp_server, server_url: str, compose_profile) -> str | None:
     if compose_profile.client != ClientEdge.HTTP:
         return None
-    return _initialize_session(server_url, client_name="api-tools-test")
+    sid: str | None = _initialize_session(server_url, client_name="api-tools-test")
+    return sid
 
 
 @contextmanager
@@ -493,7 +492,8 @@ def call_tool(session_id, stdio_mcp_module, compose_profile):
 def fresh_session_id(mcp_server, server_url: str, compose_profile) -> str | None:
     if compose_profile.client != ClientEdge.HTTP:
         pytest.skip("fresh_session_id applies only to http-http (HTTP client edge)")
-    return _initialize_session(server_url, client_name="api-tools-hang-test")
+    sid: str | None = _initialize_session(server_url, client_name="api-tools-hang-test")
+    return sid
 
 
 @pytest.fixture
@@ -610,8 +610,4 @@ def _assert_server_reachable(url: str) -> None:
         logger.info("MCP server is reachable at %s", url)
     except httpx.ConnectError:
         logger.error("MCP server not reachable at %s", url)
-        pytest.skip(
-            f"MCP server not reachable at {url}.\n"
-            f"Start: {_SCRIPT_PATH}\n"
-            "Or: pytest ... --start-server"
-        )
+        pytest.skip(f"MCP server not reachable at {url}.\nStart: {_SCRIPT_PATH}\nOr: pytest ... --start-server")

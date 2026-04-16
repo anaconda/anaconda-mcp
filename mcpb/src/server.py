@@ -21,4 +21,5 @@ if __name__ == "__main__":
     sys.argv = [sys.argv[0], "serve"]
 
     from anaconda_mcp.cli import main
+
     main()

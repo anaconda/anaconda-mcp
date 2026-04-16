@@ -45,9 +45,7 @@ class TestGetClaudeDesktopConfigPath:
         with mock.patch("platform.system", return_value="Darwin"):
             with mock.patch.object(Path, "home", return_value=Path("/Users/testuser")):
                 path = get_claude_desktop_config_path()
-                assert path == Path(
-                    "/Users/testuser/Library/Application Support/Claude/claude_desktop_config.json"
-                )
+                assert path == Path("/Users/testuser/Library/Application Support/Claude/claude_desktop_config.json")
 
     def test_windows_path_with_appdata(self):
         """Test config path on Windows with APPDATA environment variable."""
@@ -59,7 +57,10 @@ class TestGetClaudeDesktopConfigPath:
                 assert "Claude" in path.parts
                 # Check the APPDATA prefix is used (normalize separators for comparison)
                 path_str = str(path).replace("\\", "/")
-                assert "C:/Users/testuser/AppData/Roaming" in path_str or "C:\\Users\\testuser\\AppData\\Roaming" in str(path)
+                assert (
+                    "C:/Users/testuser/AppData/Roaming" in path_str
+                    or "C:\\Users\\testuser\\AppData\\Roaming" in str(path)
+                )
 
     def test_windows_path_without_appdata(self):
         """Test config path on Windows without APPDATA environment variable."""
@@ -220,7 +221,7 @@ class TestBuildStdioConfig:
         config_dir = Path(config["env"]["MCP_COMPOSE_CONFIG_DIR"])
         assert config_dir.name == "anaconda_mcp"
         assert (config_dir / "__init__.py").exists()
-        
+
         # Check ANACONDA_MCP_PYTHON_EXECUTABLE is set to current Python
         python_exe = config["env"]["ANACONDA_MCP_PYTHON_EXECUTABLE"]
         assert python_exe == sys.executable

@@ -1,8 +1,9 @@
 """Tests for SIGTERM handling in the `serve` CLI command."""
+
+import logging
 import os
 import signal
 import time
-import logging
 from unittest.mock import patch
 
 import pytest
@@ -64,7 +65,9 @@ def invoke_serve(extra_args=None, env=None):
         return runner.invoke(cli, args, env=env, catch_exceptions=False)
 
 
-def test_sigterm_handler_is_registered(mock_path_exists, mock_render_config, mock_sleep, mock_start_login, mock_serve_command):
+def test_sigterm_handler_is_registered(
+    mock_path_exists, mock_render_config, mock_sleep, mock_start_login, mock_serve_command
+):
     """signal.signal(SIGTERM, ...) must be called as the very first thing in serve()."""
     registered_handlers = []
 
@@ -82,7 +85,9 @@ def test_sigterm_handler_is_registered(mock_path_exists, mock_render_config, moc
     assert sigterm_registrations, "signal.signal(SIGTERM, ...) was never called"
 
 
-def test_sigterm_handler_registered_before_sleep(mock_path_exists, mock_render_config, mock_start_login, mock_serve_command):
+def test_sigterm_handler_registered_before_sleep(
+    mock_path_exists, mock_render_config, mock_start_login, mock_serve_command
+):
     """The SIGTERM handler must be registered before time.sleep() is called."""
     call_order = []
 
@@ -200,13 +205,14 @@ def test_sigterm_handler_logs_shutdown_message(caplog):
         with pytest.raises(SystemExit):
             captured_handler(signal.SIGTERM, None)
 
-    assert any(
-        "SIGTERM" in record.message or "shutting down" in record.message.lower()
-        for record in caplog.records
-    ), f"Expected a SIGTERM log message, got: {[r.message for r in caplog.records]}"
+    assert any("SIGTERM" in record.message or "shutting down" in record.message.lower() for record in caplog.records), (
+        f"Expected a SIGTERM log message, got: {[r.message for r in caplog.records]}"
+    )
 
 
-def test_serve_normal_flow_completes_successfully(mock_path_exists, mock_render_config, mock_sleep, mock_start_login, mock_serve_command):
+def test_serve_normal_flow_completes_successfully(
+    mock_path_exists, mock_render_config, mock_sleep, mock_start_login, mock_serve_command
+):
     """Without a SIGTERM, serve should run to completion and exit 0."""
     runner = CliRunner()
     result = runner.invoke(cli, ["serve"], catch_exceptions=False)
@@ -215,7 +221,9 @@ def test_serve_normal_flow_completes_successfully(mock_path_exists, mock_render_
     mock_serve_command.assert_called_once()
 
 
-def test_serve_calls_start_login_after_sleep(mock_path_exists, mock_render_config, mock_start_login, mock_serve_command):
+def test_serve_calls_start_login_after_sleep(
+    mock_path_exists, mock_render_config, mock_start_login, mock_serve_command
+):
     """start_login must be called after the delay sleep, not before."""
     call_order = []
 
@@ -233,7 +241,9 @@ def test_serve_calls_start_login_after_sleep(mock_path_exists, mock_render_confi
     )
 
 
-def test_serve_exception_from_mcp_compose_exits_with_1(mock_path_exists, mock_render_config, mock_sleep, mock_start_login):
+def test_serve_exception_from_mcp_compose_exits_with_1(
+    mock_path_exists, mock_render_config, mock_sleep, mock_start_login
+):
     """If _serve() raises an exception, serve should catch it and exit with code 1."""
     runner = CliRunner()
     with patch("anaconda_mcp.cli._serve", side_effect=RuntimeError("mcp compose exploded")):

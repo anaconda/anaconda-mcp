@@ -95,7 +95,7 @@ class TestEnvironmentNameResolution:
         result = _tool_result(response)
 
         assert not result.get(ToolResultFields.IS_ERROR), (
-            f"conda_list_environments returned an error: " f"{result.get(ToolResultFields.ERROR_DESCRIPTION)!r}"
+            f"conda_list_environments returned an error: {result.get(ToolResultFields.ERROR_DESCRIPTION)!r}"
         )
 
         environments = result.get("tool_result", {}).get("environments", [])
@@ -105,8 +105,7 @@ class TestEnvironmentNameResolution:
         )
 
         assert match is not None, (
-            f"Environment at prefix {conda_env['prefix']!r} not found in list. "
-            f"Returned environments: {environments}"
+            f"Environment at prefix {conda_env['prefix']!r} not found in list. Returned environments: {environments}"
         )
         assert match.get("name") == conda_env["name"], (
             f"KI-002: environment at {conda_env['prefix']!r} reported "

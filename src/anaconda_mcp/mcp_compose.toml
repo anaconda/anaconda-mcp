@@ -1,9 +1,9 @@
 # MCP Compose Configuration
-# 
+#
 # ⚠️  WARNING: This file is a FALLBACK ONLY!
 # ⚠️  If mcp_compose.toml.template exists, it will be used instead.
 # ⚠️  To customize the configuration, edit mcp_compose.toml.template
-# 
+#
 # This file demonstrates all available configuration options
 
 # ============================================================================
