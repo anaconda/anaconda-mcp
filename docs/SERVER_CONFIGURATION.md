@@ -2,7 +2,7 @@
 
 ## TL;DR
 
-✅ **Edit**: `mcp_compose.toml.template`  
+✅ **Edit**: `mcp_compose.toml.template`
 ❌ **Don't Edit**: `mcp_compose.toml` (it's ignored if template exists)
 
 ---

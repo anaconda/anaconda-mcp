@@ -25,7 +25,8 @@ def get_auth_token() -> str | None:
         single source of truth for authentication state.
     """
     try:
-        return TokenInfo.load().api_key
+        token: str = TokenInfo.load().api_key
+        return token
     except TokenNotFoundError:
         return None
 

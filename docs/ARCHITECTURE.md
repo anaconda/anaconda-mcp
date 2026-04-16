@@ -86,7 +86,7 @@ graph TD
             Login[Login Flow<br/>Browser OAuth]
             Telemetry[Telemetry Init]
         end
-        
+
         subgraph "MCP Compose Layer"
             Transport[Transport Layer<br/>STDIO / HTTP]
             ToolMgr[Tool Manager]
@@ -94,12 +94,12 @@ graph TD
             API[REST API]
         end
     end
-    
+
     subgraph "Downstream Servers"
         ENV[Environments MCP<br/>:4041]
         JUP[Jupyter MCP<br/>:8889]
     end
-    
+
     Client --> Transport
     Browser --> API
     CLI --> Login
@@ -131,7 +131,7 @@ graph LR
         T4[install_packages]
         T5[remove_packages]
     end
-    
+
     subgraph "Composed Tools (prefix strategy)"
         CT1[conda_environments_create_environment]
         CT2[conda_environments_list_environments]
@@ -139,7 +139,7 @@ graph LR
         CT4[conda_environments_install_packages]
         CT5[conda_environments_remove_packages]
     end
-    
+
     T1 --> CT1
     T2 --> CT2
     T3 --> CT3
@@ -182,7 +182,7 @@ sequenceDiagram
 
     User->>Anaconda: anaconda-mcp serve
     Anaconda->>Keyring: Check for API token
-    
+
     alt Token exists in keyring
         Keyring-->>Anaconda: Token found
         Anaconda->>Anaconda: Use token from keyring (no pre-validation)
@@ -198,7 +198,7 @@ sequenceDiagram
         Keyring-->>Anaconda: Token available
         Anaconda->>Anaconda: Initialize telemetry
     end
-    
+
     Anaconda->>Composer: Initialize MCP Compose
     Composer->>ENV: Start/Connect to server
     ENV-->>Composer: Ready
@@ -247,22 +247,22 @@ sequenceDiagram
 
     User->>Anaconda: anaconda-mcp serve
     Anaconda->>Anaconda: start_login()
-    
+
     alt Token exists
         Anaconda->>Anaconda: Initialize telemetry
     else No token
         Anaconda->>Anaconda: Start browser login (background)
         Anaconda->>Anaconda: Watch for token (background)
     end
-    
+
     Anaconda->>Composer: serve(config)
     Composer->>Composer: Load mcp_compose.toml
-    
+
     loop For each server with auto_start=true
         Composer->>ENV: Start subprocess
         ENV-->>Composer: HTTP server ready on :4041
     end
-    
+
     Composer->>ENV: Connect via Streamable HTTP
     Composer->>ENV: Discover tools
     ENV-->>Composer: Tool list
