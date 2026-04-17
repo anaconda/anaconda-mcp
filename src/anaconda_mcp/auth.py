@@ -7,6 +7,8 @@ from anaconda_auth import login as anaconda_login
 from anaconda_auth.exceptions import TokenNotFoundError
 from anaconda_auth.token import TokenInfo
 
+from anaconda_mcp.telemetry import MetricData, MetricNames, SnakeEyes
+
 logger = logging.getLogger(__name__)
 
 _init_lock = threading.Lock()
@@ -71,6 +73,7 @@ def start_login(
             logger.info("Initializing telemetry")
             init_telemetry(api_key)
             _initialized = True
+            SnakeEyes().send(MetricData(event=MetricNames.LOGIN_COMPLETED.value, event_params={}), bearer_token=api_key)
 
     if api_key := get_auth_token():
         init_once(api_key)

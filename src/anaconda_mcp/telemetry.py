@@ -1,3 +1,4 @@
+import asyncio
 import enum
 import logging
 from typing import Any
@@ -5,7 +6,6 @@ from typing import Any
 import httpx
 from pydantic import BaseModel
 
-from anaconda_mcp.auth import get_auth_token
 from anaconda_mcp.config import settings
 
 logger = logging.getLogger(__name__)
@@ -13,8 +13,8 @@ logger = logging.getLogger(__name__)
 
 class MetricNames(enum.Enum):
     _EVENT_PREFIX = "anaconda_mcp"
-    EVENT_CREATE_PROJECT = f"{_EVENT_PREFIX}_start_server"
-    EVENT_DELETE_PROJECT = f"{_EVENT_PREFIX}_login_completed"
+    START_SERVER = f"{_EVENT_PREFIX}_start_server"
+    LOGIN_COMPLETED = f"{_EVENT_PREFIX}_login_completed"
 
 
 class MetricData(BaseModel):
@@ -47,7 +47,7 @@ class SnakeEyes:
             response.raise_for_status()
             return response
 
-    async def send(self, metric_data: MetricData) -> bool:
+    async def _send(self, metric_data: MetricData, bearer_token: str | None = None) -> bool:
         """
         Send metric data to Snake Eyes
         Args:
@@ -60,21 +60,30 @@ class SnakeEyes:
             logger.debug("Metrics are OFF. Metrics will not be sent.")
             return False
 
-        bearer_token = get_auth_token()
         logger.info(f"Sending metric: {metric_data}")
 
         try:
-            if bearer_token:
+            is_authenticated = bearer_token is not None
+            enriched_params = {
+                **metric_data.event_params,
+                "user_environment": metric_data.user_environment,
+                "is_authenticated": is_authenticated,
+            }
+            if is_authenticated:
+                payload = {
+                    **metric_data.model_dump(),
+                    "event_params": enriched_params,
+                }
                 response = await self._make_request(
                     "api/snake-eyes/record",
-                    metric_data.model_dump(),
+                    payload,
                     bearer_token,
                 )
             else:
                 payload = {
                     "service_id": metric_data.service_id,
                     "event": metric_data.event,
-                    "event_params": {**metric_data.event_params, "user_environment": metric_data.user_environment},
+                    "event_params": enriched_params,
                 }
                 response = await self._make_request("api/snake-eyes/note", payload)
 
@@ -90,3 +99,9 @@ class SnakeEyes:
         except Exception:
             logger.warning("Error while sending snake-eyes metrics")
             return False
+
+    def send(self, metric_data: MetricData, bearer_token: str | None = None) -> None:
+        try:
+            asyncio.run(self._send(metric_data, bearer_token))
+        except Exception:
+            logger.warning("Error while sending snake-eyes metrics")
