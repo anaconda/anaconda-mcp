@@ -28,19 +28,22 @@ class MetricData(BaseModel):
 class SnakeEyes:
     """Snake eyes client - Sends metrics/logs to Anaconda Snake Eyes"""
 
-    async def _make_request(self, metric_data: MetricData, bearer_token: str) -> httpx.Response:
+    async def _make_request(
+        self,
+        endpoint: str,
+        payload: dict[str, Any],
+        bearer_token: str | None = None,
+    ) -> httpx.Response:
+        headers: dict[str, str] = {"Accept": "application/json"}
+        if bearer_token:
+            headers["Authorization"] = f"Bearer {bearer_token}"
+
         async with httpx.AsyncClient(
             base_url=f"https://{settings.ANACONDA_DOMAIN}",
-            headers={
-                "Authorization": f"Bearer {bearer_token}",
-                "Accept": "application/json",
-            },
+            headers=headers,
             timeout=httpx.Timeout(3.0),
         ) as client:
-            response = await client.post(
-                "api/snake-eyes/record",
-                json=metric_data.model_dump(),
-            )
+            response = await client.post(endpoint, json=payload)
             response.raise_for_status()
             return response
 
@@ -53,18 +56,28 @@ class SnakeEyes:
         Returns:
             bool: Boolean indicating success (True) or failure (False).
         """
-        bearer_token = get_auth_token()
-        if not bearer_token:
-            logger.debug("No bearer token provided. Metrics will not be sent.")
-            return False
-
         if not settings.SEND_METRICS:
             logger.debug("Metrics are OFF. Metrics will not be sent.")
             return False
 
+        bearer_token = get_auth_token()
+        logger.info(f"Sending metric: {metric_data}")
+
         try:
-            logger.info(f"Sending metric: {metric_data}")
-            response = await self._make_request(metric_data, bearer_token)
+            if bearer_token:
+                response = await self._make_request(
+                    "api/snake-eyes/record",
+                    metric_data.model_dump(),
+                    bearer_token,
+                )
+            else:
+                payload = {
+                    "service_id": metric_data.service_id,
+                    "event": metric_data.event,
+                    "event_params": {**metric_data.event_params, "user_environment": metric_data.user_environment},
+                }
+                response = await self._make_request("api/snake-eyes/note", payload)
+
             if 199 < response.status_code < 300:
                 return True
             return False

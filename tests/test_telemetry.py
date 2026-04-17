@@ -28,14 +28,28 @@ async def test_snake_eyes_send_metric(mock_get_auth_token, mock_make_request):
     assert was_sent is True
 
 
-@pytest.mark.parametrize("mocked_token", [None])
-async def test_snake_eyes_send_metric_should_return_false_if_auth_token_is_none(
-    mocked_token, mock_get_auth_token, mock_make_request
-):
-    metric = MetricData(
-        event=MetricNames.EVENT_CREATE_PROJECT.value,
-        event_params={},
-    )
-    metric_sender = SnakeEyes()
-    was_sent = await metric_sender.send(metric)
-    assert was_sent is False
+async def test_snake_eyes_send_anonymous_metric_when_no_auth_token(mock_make_request):
+    with mock.patch("anaconda_mcp.telemetry.get_auth_token", return_value=None):
+        metric = MetricData(
+            event=MetricNames.EVENT_CREATE_PROJECT.value,
+            event_params={},
+        )
+        metric_sender = SnakeEyes()
+        was_sent = await metric_sender.send(metric)
+        assert was_sent is True
+        assert mock_make_request.call_count == 1
+        assert mock_make_request.call_args[0][0] == "api/snake-eyes/note"
+
+
+async def test_snake_eyes_send_metrics_off_suppresses_anonymous(mock_make_request):
+    with mock.patch("anaconda_mcp.telemetry.get_auth_token", return_value=None):
+        with mock.patch("anaconda_mcp.telemetry.settings") as mock_settings:
+            mock_settings.SEND_METRICS = False
+            metric = MetricData(
+                event=MetricNames.EVENT_CREATE_PROJECT.value,
+                event_params={},
+            )
+            metric_sender = SnakeEyes()
+            was_sent = await metric_sender.send(metric)
+            assert was_sent is False
+            assert mock_make_request.call_count == 0
