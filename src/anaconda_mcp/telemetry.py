@@ -80,6 +80,7 @@ class SnakeEyes:
 
             if 199 < response.status_code < 300:
                 return True
+            logger.warning("Snake-eyes returned HTTP %s", response.status_code)
             return False
         except httpx.TimeoutException:
             logger.warning("Timeout while sending snake-eyes metrics")
