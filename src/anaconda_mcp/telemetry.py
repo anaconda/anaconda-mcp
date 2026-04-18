@@ -1,6 +1,6 @@
-import asyncio
 import enum
 import logging
+import threading
 from typing import Any
 
 import httpx
@@ -28,7 +28,7 @@ class MetricData(BaseModel):
 class SnakeEyes:
     """Snake eyes client - Sends metrics/logs to Anaconda Snake Eyes"""
 
-    async def _make_request(
+    def _make_request(
         self,
         endpoint: str,
         payload: dict[str, Any],
@@ -38,24 +38,15 @@ class SnakeEyes:
         if bearer_token:
             headers["Authorization"] = f"Bearer {bearer_token}"
 
-        async with httpx.AsyncClient(
+        with httpx.Client(
             base_url=f"https://{settings.ANACONDA_DOMAIN}",
             headers=headers,
             timeout=httpx.Timeout(3.0),
         ) as client:
-            response = await client.post(endpoint, json=payload)
-            response.raise_for_status()
+            response = client.post(endpoint, json=payload)
             return response
 
-    async def _send(self, metric_data: MetricData, bearer_token: str | None = None) -> bool:
-        """
-        Send metric data to Snake Eyes
-        Args:
-            metric_data (Dict): JSON containing all the relevant data.
-
-        Returns:
-            bool: Boolean indicating success (True) or failure (False).
-        """
+    def _send(self, metric_data: MetricData, bearer_token: str | None = None) -> bool:
         if not settings.SEND_METRICS:
             logger.debug("Metrics are OFF. Metrics will not be sent.")
             return False
@@ -74,7 +65,7 @@ class SnakeEyes:
                     **metric_data.model_dump(),
                     "event_params": enriched_params,
                 }
-                response = await self._make_request(
+                response = self._make_request(
                     "api/snake-eyes/record",
                     payload,
                     bearer_token,
@@ -85,13 +76,13 @@ class SnakeEyes:
                     "event": metric_data.event,
                     "event_params": enriched_params,
                 }
-                response = await self._make_request("api/snake-eyes/note", payload)
+                response = self._make_request("api/snake-eyes/note", payload)
 
             if 199 < response.status_code < 300:
                 return True
             return False
         except httpx.TimeoutException:
-            logger.warning("Timeout while writing file snake-eyes metrics")
+            logger.warning("Timeout while sending snake-eyes metrics")
             return False
         except httpx.NetworkError:
             logger.warning("Network error while sending snake-eyes metrics")
@@ -101,7 +92,10 @@ class SnakeEyes:
             return False
 
     def send(self, metric_data: MetricData, bearer_token: str | None = None) -> None:
-        try:
-            asyncio.run(self._send(metric_data, bearer_token))
-        except Exception:
-            logger.warning("Error while sending snake-eyes metrics")
+        # TODO: Remove fire-and-forget thread once OpenTelemetry is integrated — its SDK handles async dispatch natively.
+        thread = threading.Thread(
+            target=self._send,
+            args=(metric_data, bearer_token),
+            daemon=True,
+        )
+        thread.start()
