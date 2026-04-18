@@ -25,6 +25,8 @@ def test_snake_eyes_send_metric(mock_make_request):
     )
     was_sent = SnakeEyes()._send(metric, bearer_token="fake-token")
     assert was_sent is True
+    assert mock_make_request.call_count == 1
+    assert mock_make_request.call_args[0][0] == "api/snake-eyes/record"
 
 
 def test_snake_eyes_send_anonymous_metric_when_no_auth_token(mock_make_request):
