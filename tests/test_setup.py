@@ -1083,3 +1083,180 @@ class TestClientsCommand:
         lines = [line for line in result.output.splitlines() if "cursor" in line]
         assert lines, "cursor row not found"
         assert "project" in lines[0]
+
+
+class TestSetupWizard:
+    @pytest.fixture
+    def tty_runner(self):
+        return CliRunner()
+
+    def _invoke_wizard(self, runner, tmp_path, selected_clients, scope="global", transport="stdio"):
+        cursor_config = tmp_path / "cursor_mcp.json"
+
+        def _fake_path(client, scope="global", project_dir=None):
+            return cursor_config
+
+        with mock.patch("anaconda_mcp.cli.sys") as mock_sys:
+            mock_sys.stdin.isatty.return_value = True
+            mock_sys.exit = __import__("sys").exit
+            with mock.patch("anaconda_mcp.cli.multiselect_checkbox", return_value=selected_clients):
+                with mock.patch("anaconda_mcp.cli.single_select", side_effect=[scope, transport]):
+                    with mock.patch("anaconda_mcp.client_config.get_client_config_path", side_effect=_fake_path):
+                        return runner.invoke(cli, ["setup", "--no-backup"])
+
+    def _tty(self):
+        mock_sys = mock.MagicMock()
+        mock_sys.stdin.isatty.return_value = True
+        mock_sys.exit = __import__("sys").exit
+        return mock.patch("anaconda_mcp.cli.sys", mock_sys)
+
+    def test_non_tty_without_client_raises_usage_error(self, tty_runner):
+        result = tty_runner.invoke(cli, ["setup"])
+        assert result.exit_code != 0
+        assert "Missing option" in result.output
+
+    def test_wizard_creates_config(self, tty_runner, tmp_path):
+        result = self._invoke_wizard(tty_runner, tmp_path, ["cursor"])
+        assert result.exit_code == 0
+
+    def test_wizard_abort_on_empty_selection(self, tty_runner, tmp_path):
+        with self._tty():
+            with mock.patch("anaconda_mcp.cli.multiselect_checkbox", return_value=[]):
+                with mock.patch("anaconda_mcp.cli.is_client_installed", return_value={"global": False}):
+                    result = tty_runner.invoke(cli, ["setup", "--no-backup"])
+        assert result.exit_code != 0
+
+    def test_wizard_keyboard_interrupt_aborts(self, tty_runner):
+        with self._tty():
+            with mock.patch("anaconda_mcp.cli.multiselect_checkbox", side_effect=KeyboardInterrupt):
+                with mock.patch("anaconda_mcp.cli.is_client_installed", return_value={"global": False}):
+                    result = tty_runner.invoke(cli, ["setup", "--no-backup"])
+        assert result.exit_code != 0
+
+    def test_wizard_prechecks_installed_clients(self, tty_runner, tmp_path):
+        cursor_config = tmp_path / "cursor_mcp.json"
+        captured = {}
+
+        def _fake_multiselect(header, choices, checked=()):
+            captured["checked"] = list(checked)
+            return list(checked)
+
+        def _fake_path(client, scope="global", project_dir=None):
+            return cursor_config
+
+        with self._tty():
+            with mock.patch("anaconda_mcp.cli.multiselect_checkbox", side_effect=_fake_multiselect):
+                with mock.patch("anaconda_mcp.cli.single_select", return_value="stdio"):
+                    with mock.patch(
+                        "anaconda_mcp.cli.is_client_installed",
+                        side_effect=lambda c, **kw: {"global": c == "cursor"},
+                    ):
+                        with mock.patch("anaconda_mcp.client_config.get_client_config_path", side_effect=_fake_path):
+                            tty_runner.invoke(cli, ["setup", "--no-backup"])
+
+        assert "cursor" in captured["checked"]
+
+    def test_wizard_scope_both_runs_global_and_project(self, tty_runner, tmp_path):
+        cursor_config = tmp_path / "cursor_mcp.json"
+
+        def _fake_path(client, scope="global", project_dir=None):
+            return cursor_config
+
+        with self._tty():
+            with mock.patch("anaconda_mcp.cli.multiselect_checkbox", return_value=["cursor"]):
+                with mock.patch("anaconda_mcp.cli.single_select", side_effect=["both", "stdio"]):
+                    with mock.patch(
+                        "anaconda_mcp.cli.is_client_installed", return_value={"global": False, "project": False}
+                    ):
+                        with mock.patch("anaconda_mcp.client_config.get_client_config_path", side_effect=_fake_path):
+                            result = tty_runner.invoke(cli, ["setup", "--no-backup", "--force"])
+        assert result.exit_code == 0
+
+
+class TestRemoveWizard:
+    @pytest.fixture
+    def tty_runner(self):
+        return CliRunner()
+
+    def _tty(self):
+        mock_sys = mock.MagicMock()
+        mock_sys.stdin.isatty.return_value = True
+        mock_sys.exit = __import__("sys").exit
+        return mock.patch("anaconda_mcp.cli.sys", mock_sys)
+
+    def test_non_tty_without_client_raises_usage_error(self, tty_runner):
+        result = tty_runner.invoke(cli, ["remove"])
+        assert result.exit_code != 0
+        assert "Missing option" in result.output
+
+    def test_wizard_nothing_installed_exits_cleanly(self, tty_runner):
+        with self._tty():
+            with mock.patch("anaconda_mcp.cli.is_client_installed", return_value={"global": False}):
+                result = tty_runner.invoke(cli, ["remove", "--no-backup"])
+        assert result.exit_code == 0
+        assert "Nothing to remove" in result.output
+
+    def test_wizard_shows_only_installed_clients(self, tty_runner, tmp_path):
+        cursor_config = tmp_path / "cursor_mcp.json"
+        captured = {}
+
+        def _fake_multiselect(header, choices, checked=()):
+            captured["choices"] = list(choices)
+            return list(choices)
+
+        def _fake_path(client, scope="global", project_dir=None):
+            return cursor_config
+
+        with self._tty():
+            with mock.patch("anaconda_mcp.cli.multiselect_checkbox", side_effect=_fake_multiselect):
+                with mock.patch(
+                    "anaconda_mcp.cli.is_client_installed",
+                    side_effect=lambda c, **kw: {"global": c == "cursor"},
+                ):
+                    with mock.patch("anaconda_mcp.client_config.get_client_config_path", side_effect=_fake_path):
+                        tty_runner.invoke(cli, ["remove", "--no-backup"])
+
+        assert captured["choices"] == ["cursor"]
+        assert "vscode" not in captured["choices"]
+
+    def test_wizard_all_installed_prechecked(self, tty_runner, tmp_path):
+        cursor_config = tmp_path / "cursor_mcp.json"
+        captured = {}
+
+        def _fake_multiselect(header, choices, checked=()):
+            captured["checked"] = list(checked)
+            return list(choices)
+
+        def _fake_path(client, scope="global", project_dir=None):
+            return cursor_config
+
+        with self._tty():
+            with mock.patch("anaconda_mcp.cli.multiselect_checkbox", side_effect=_fake_multiselect):
+                with mock.patch(
+                    "anaconda_mcp.cli.is_client_installed",
+                    side_effect=lambda c, **kw: {"global": c == "cursor"},
+                ):
+                    with mock.patch("anaconda_mcp.client_config.get_client_config_path", side_effect=_fake_path):
+                        tty_runner.invoke(cli, ["remove", "--no-backup"])
+
+        assert "cursor" in captured["checked"]
+
+    def test_wizard_keyboard_interrupt_aborts(self, tty_runner):
+        with self._tty():
+            with mock.patch(
+                "anaconda_mcp.cli.is_client_installed",
+                side_effect=lambda c, **kw: {"global": c == "cursor"},
+            ):
+                with mock.patch("anaconda_mcp.cli.multiselect_checkbox", side_effect=KeyboardInterrupt):
+                    result = tty_runner.invoke(cli, ["remove", "--no-backup"])
+        assert result.exit_code != 0
+
+    def test_wizard_abort_on_empty_selection(self, tty_runner):
+        with self._tty():
+            with mock.patch(
+                "anaconda_mcp.cli.is_client_installed",
+                side_effect=lambda c, **kw: {"global": c == "cursor"},
+            ):
+                with mock.patch("anaconda_mcp.cli.multiselect_checkbox", return_value=[]):
+                    result = tty_runner.invoke(cli, ["remove", "--no-backup"])
+        assert result.exit_code != 0
