@@ -1,7 +1,7 @@
 import json
 import sys
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from platformdirs import user_config_dir, user_data_dir
 
@@ -34,7 +34,7 @@ def get_client_config_path(client: str) -> Path:
         raise ValueError(f"Unsupported client: '{client}'. Must be one of {sorted(SUPPORTED_CLIENTS)}")
 
     if client == "claude-desktop":
-        return get_claude_desktop_config_path()
+        return Path(get_claude_desktop_config_path())
 
     if client == "cursor":
         return Path.home() / ".cursor" / "mcp.json"
@@ -43,10 +43,10 @@ def get_client_config_path(client: str) -> Path:
         return Path.home() / ".codeium" / "windsurf" / "mcp_config.json"
 
     if client == "vscode":
-        return Path(user_data_dir("Code", appauthor=False)) / "User" / "mcp.json"
+        return Path(str(user_data_dir("Code", appauthor=False))) / "User" / "mcp.json"
 
     if client == "opencode":
-        return Path(user_config_dir("opencode", appauthor=False)) / "opencode.json"
+        return Path(str(user_config_dir("opencode", appauthor=False))) / "opencode.json"
 
     raise ValueError(f"Unsupported client: '{client}'")
 
@@ -56,7 +56,7 @@ def build_client_stdio_config(client: str) -> dict[str, Any]:
         raise ValueError(f"Unsupported client: '{client}'")
 
     if client == "claude-desktop":
-        return _claude_build_stdio_config()
+        return dict(_claude_build_stdio_config())
 
     executable = sys.executable
 
@@ -96,7 +96,7 @@ def build_client_http_config(client: str, host: str = "localhost", port: int = 8
     if client == "opencode":
         return {"type": "remote", "url": url, "enabled": True}
 
-    return _claude_build_http_config(host, port)
+    return dict(_claude_build_http_config(host, port))
 
 
 def configure_client(
@@ -117,7 +117,7 @@ def configure_client(
         raise ValueError(f"Invalid transport: {transport}. Must be one of {valid_transports}")
 
     if client == "claude-desktop":
-        result = configure_claude_desktop(
+        claude_result: dict[str, Any] = configure_claude_desktop(
             config_path=config_path,
             server_name=server_name,
             transport=transport,
@@ -126,8 +126,8 @@ def configure_client(
             backup=backup,
             force=force,
         )
-        result["client"] = client
-        return result
+        claude_result["client"] = client
+        return claude_result
 
     if config_path is None:
         config_path = get_client_config_path(client)
@@ -171,4 +171,4 @@ def configure_client(
     result["old_config"] = old_config
     result["new_config"] = config
 
-    return result
+    return cast(dict[str, Any], result)
