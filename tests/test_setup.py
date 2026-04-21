@@ -7,6 +7,7 @@ import pytest
 from click.testing import CliRunner
 
 from anaconda_mcp.cli import cli
+from anaconda_mcp.client_config import SCOPE_GLOBAL
 
 
 def _strip_warning(output: str) -> str:
@@ -434,7 +435,7 @@ class TestSetupCommand:
             "windsurf": tmp_path / "windsurf.json",
         }
 
-        def _fake_path(client):
+        def _fake_path(client, scope=SCOPE_GLOBAL, project_dir=None):
             return paths[client]
 
         with mock.patch("anaconda_mcp.client_config.get_client_config_path", side_effect=_fake_path):
@@ -450,7 +451,7 @@ class TestSetupCommand:
             "windsurf": tmp_path / "windsurf.json",
         }
 
-        def _fake_path(client):
+        def _fake_path(client, scope=SCOPE_GLOBAL, project_dir=None):
             return paths[client]
 
         with mock.patch("anaconda_mcp.client_config.get_client_config_path", side_effect=_fake_path):
@@ -462,3 +463,210 @@ class TestSetupCommand:
         output = json.loads(result.output)
         assert "cursor" in output
         assert "windsurf" in output
+
+
+class TestGetClientProjectConfigPath:
+    def test_cursor_project_path(self, tmp_path):
+        from anaconda_mcp.client_config import get_client_project_config_path
+
+        assert get_client_project_config_path("cursor", tmp_path) == tmp_path / ".cursor" / "mcp.json"
+
+    def test_vscode_project_path(self, tmp_path):
+        from anaconda_mcp.client_config import get_client_project_config_path
+
+        assert get_client_project_config_path("vscode", tmp_path) == tmp_path / ".vscode" / "mcp.json"
+
+    def test_opencode_project_path(self, tmp_path):
+        from anaconda_mcp.client_config import get_client_project_config_path
+
+        assert get_client_project_config_path("opencode", tmp_path) == tmp_path / "opencode.json"
+
+    def test_claude_code_project_path(self, tmp_path):
+        from anaconda_mcp.client_config import get_client_project_config_path
+
+        assert get_client_project_config_path("claude-code", tmp_path) == tmp_path / ".mcp.json"
+
+    def test_windsurf_project_scope_raises(self):
+        from anaconda_mcp.client_config import get_client_project_config_path
+
+        with pytest.raises(ValueError, match="does not support project scope"):
+            get_client_project_config_path("windsurf", Path("/some/dir"))
+
+    def test_claude_desktop_project_scope_raises(self):
+        from anaconda_mcp.client_config import get_client_project_config_path
+
+        with pytest.raises(ValueError, match="does not support project scope"):
+            get_client_project_config_path("claude-desktop", Path("/some/dir"))
+
+    def test_get_config_path_global_scope_unchanged(self):
+        from anaconda_mcp.client_config import get_client_config_path
+
+        with mock.patch.object(Path, "home", return_value=Path("/home/u")):
+            assert get_client_config_path("cursor", scope="global") == Path("/home/u/.cursor/mcp.json")
+
+    def test_get_config_path_project_scope_cursor(self, tmp_path):
+        from anaconda_mcp.client_config import get_client_config_path
+
+        assert (
+            get_client_config_path("cursor", scope="project", project_dir=tmp_path) == tmp_path / ".cursor" / "mcp.json"
+        )
+
+    def test_get_config_path_project_scope_defaults_to_cwd(self):
+        from anaconda_mcp.client_config import get_client_config_path
+
+        with mock.patch.object(Path, "cwd", return_value=Path("/my/project")):
+            assert get_client_config_path("cursor", scope="project") == Path("/my/project/.cursor/mcp.json")
+
+    def test_get_config_path_project_scope_unsupported_raises(self):
+        from anaconda_mcp.client_config import get_client_config_path
+
+        with pytest.raises(ValueError, match="does not support project scope"):
+            get_client_config_path("windsurf", scope="project")
+
+    def test_supported_clients_has_scope_metadata(self):
+        from anaconda_mcp.client_config import SUPPORTED_CLIENTS
+
+        for client, meta in SUPPORTED_CLIENTS.items():
+            assert "supports_project_scope" in meta, f"{client} missing supports_project_scope"
+
+
+class TestConfigureClientScope:
+    def test_project_scope_cursor_writes_correct_path(self, tmp_path):
+        from anaconda_mcp.client_config import configure_client
+
+        configure_client("cursor", scope="project", project_dir=tmp_path, backup=False)
+        assert (tmp_path / ".cursor" / "mcp.json").exists()
+
+    def test_project_scope_vscode_writes_correct_path(self, tmp_path):
+        from anaconda_mcp.client_config import configure_client
+
+        configure_client("vscode", scope="project", project_dir=tmp_path, backup=False)
+        assert (tmp_path / ".vscode" / "mcp.json").exists()
+        config = json.loads((tmp_path / ".vscode" / "mcp.json").read_text())
+        assert "servers" in config
+
+    def test_project_scope_opencode_writes_correct_path(self, tmp_path):
+        from anaconda_mcp.client_config import configure_client
+
+        configure_client("opencode", scope="project", project_dir=tmp_path, backup=False)
+        assert (tmp_path / "opencode.json").exists()
+
+    def test_project_scope_claude_code_writes_correct_path(self, tmp_path):
+        from anaconda_mcp.client_config import configure_client
+
+        configure_client("claude-code", scope="project", project_dir=tmp_path, backup=False)
+        assert (tmp_path / ".mcp.json").exists()
+        config = json.loads((tmp_path / ".mcp.json").read_text())
+        assert "mcpServers" in config
+
+    def test_project_scope_windsurf_raises(self, tmp_path):
+        from anaconda_mcp.client_config import configure_client
+
+        with pytest.raises(ValueError, match="does not support project scope"):
+            configure_client("windsurf", scope="project", project_dir=tmp_path, backup=False)
+
+    def test_project_scope_claude_desktop_raises(self, tmp_path):
+        from anaconda_mcp.client_config import configure_client
+
+        with pytest.raises(ValueError, match="does not support project scope"):
+            configure_client("claude-desktop", scope="project", backup=False)
+
+    def test_result_includes_scope_key(self, tmp_path):
+        from anaconda_mcp.client_config import configure_client
+
+        result = configure_client("cursor", scope="project", project_dir=tmp_path, backup=False)
+        assert result["scope"] == "project"
+
+    def test_global_scope_result_includes_scope_key(self, tmp_path):
+        from anaconda_mcp.client_config import configure_client
+
+        result = configure_client("cursor", config_path=tmp_path / "mcp.json", scope="global", backup=False)
+        assert result["scope"] == "global"
+
+    def test_project_dir_defaults_to_cwd(self, tmp_path):
+        from anaconda_mcp.client_config import configure_client
+
+        with mock.patch.object(Path, "cwd", return_value=tmp_path):
+            configure_client("cursor", scope="project", backup=False)
+        assert (tmp_path / ".cursor" / "mcp.json").exists()
+
+
+class TestSetupScopeFlag:
+    def test_scope_global_is_default(self, runner, patch_cursor_path):
+        result = runner.invoke(cli, ["setup", "--client", "cursor", "--no-backup"])
+        assert result.exit_code == 0
+
+    def test_scope_project_cursor(self, runner, tmp_path):
+        with mock.patch.object(Path, "cwd", return_value=tmp_path):
+            result = runner.invoke(cli, ["setup", "--client", "cursor", "--scope", "project", "--no-backup"])
+        assert result.exit_code == 0
+        assert (tmp_path / ".cursor" / "mcp.json").exists()
+
+    def test_scope_project_with_project_dir(self, runner, tmp_path):
+        result = runner.invoke(
+            cli,
+            [
+                "setup",
+                "--client",
+                "cursor",
+                "--scope",
+                "project",
+                "--project-dir",
+                str(tmp_path),
+                "--no-backup",
+            ],
+        )
+        assert result.exit_code == 0
+        assert (tmp_path / ".cursor" / "mcp.json").exists()
+
+    def test_project_dir_without_scope_project_errors(self, runner, tmp_path):
+        result = runner.invoke(
+            cli,
+            [
+                "setup",
+                "--client",
+                "cursor",
+                "--project-dir",
+                str(tmp_path),
+                "--no-backup",
+            ],
+        )
+        assert result.exit_code != 0
+        assert "--project-dir" in result.output or "scope" in result.output.lower()
+
+    def test_scope_project_unsupported_client_errors(self, runner):
+        result = runner.invoke(cli, ["setup", "--client", "windsurf", "--scope", "project", "--no-backup"])
+        assert result.exit_code == 1
+        assert "does not support project scope" in result.output
+
+    def test_scope_project_json_output(self, runner, tmp_path):
+        result = runner.invoke(
+            cli,
+            [
+                "setup",
+                "--client",
+                "cursor",
+                "--scope",
+                "project",
+                "--project-dir",
+                str(tmp_path),
+                "--no-backup",
+                "--json",
+            ],
+        )
+        assert result.exit_code == 0
+        output = json.loads(result.output)
+        assert output["cursor"]["scope"] == "project"
+
+    def test_list_shows_scope_column(self, runner):
+        result = runner.invoke(cli, ["setup", "--list"])
+        assert result.exit_code == 0
+        assert "SCOPE" in result.output
+
+    def test_list_shows_project_scope_for_supported_clients(self, runner):
+        result = runner.invoke(cli, ["setup", "--list"])
+        assert "project" in result.output
+
+    def test_list_shows_global_only_for_unsupported_clients(self, runner):
+        result = runner.invoke(cli, ["setup", "--list"])
+        assert "global" in result.output

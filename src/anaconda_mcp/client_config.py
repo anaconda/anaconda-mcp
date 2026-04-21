@@ -20,19 +20,52 @@ from anaconda_mcp.claude_desktop import (
 )
 from anaconda_mcp.consts import TransportTypes
 
+SCOPE_GLOBAL = "global"
+SCOPE_PROJECT = "project"
+
 SUPPORTED_CLIENTS: dict[str, dict[str, Any]] = {
-    "claude-desktop": {"config_key": "mcpServers"},
-    "claude-code": {"config_key": "mcpServers"},
-    "cursor": {"config_key": "mcpServers"},
-    "windsurf": {"config_key": "mcpServers"},
-    "vscode": {"config_key": "servers"},
-    "opencode": {"config_key": "mcp"},
+    "claude-desktop": {"config_key": "mcpServers", "supports_project_scope": False},
+    "claude-code": {"config_key": "mcpServers", "supports_project_scope": True},
+    "cursor": {"config_key": "mcpServers", "supports_project_scope": True},
+    "windsurf": {"config_key": "mcpServers", "supports_project_scope": False},
+    "vscode": {"config_key": "servers", "supports_project_scope": True},
+    "opencode": {"config_key": "mcp", "supports_project_scope": True},
 }
 
 
-def get_client_config_path(client: str) -> Path:
+def get_client_project_config_path(client: str, project_dir: Path) -> Path:
     if client not in SUPPORTED_CLIENTS:
         raise ValueError(f"Unsupported client: '{client}'. Must be one of {sorted(SUPPORTED_CLIENTS)}")
+
+    if not SUPPORTED_CLIENTS[client]["supports_project_scope"]:
+        raise ValueError(f"'{client}' does not support project scope.")
+
+    if client == "cursor":
+        return project_dir / ".cursor" / "mcp.json"
+
+    if client == "vscode":
+        return project_dir / ".vscode" / "mcp.json"
+
+    if client == "opencode":
+        return project_dir / "opencode.json"
+
+    if client == "claude-code":
+        return project_dir / ".mcp.json"
+
+    raise ValueError(f"Unsupported client: '{client}'")
+
+
+def get_client_config_path(
+    client: str,
+    scope: str = SCOPE_GLOBAL,
+    project_dir: Path | None = None,
+) -> Path:
+    if client not in SUPPORTED_CLIENTS:
+        raise ValueError(f"Unsupported client: '{client}'. Must be one of {sorted(SUPPORTED_CLIENTS)}")
+
+    if scope == SCOPE_PROJECT:
+        resolved_dir = project_dir if project_dir is not None else Path.cwd()
+        return get_client_project_config_path(client, resolved_dir)
 
     if client == "claude-desktop":
         return Path(get_claude_desktop_config_path())
@@ -113,6 +146,8 @@ def build_client_http_config(client: str, host: str = "localhost", port: int = 8
 
 def configure_client(
     client: str,
+    scope: str = SCOPE_GLOBAL,
+    project_dir: Path | None = None,
     config_path: Path | None = None,
     server_name: str = "anaconda-mcp",
     transport: str = "stdio",
@@ -128,6 +163,9 @@ def configure_client(
     if transport not in valid_transports:
         raise ValueError(f"Invalid transport: {transport}. Must be one of {valid_transports}")
 
+    if scope == SCOPE_PROJECT and not SUPPORTED_CLIENTS[client]["supports_project_scope"]:
+        raise ValueError(f"'{client}' does not support project scope.")
+
     if client == "claude-desktop":
         claude_result: dict[str, Any] = configure_claude_desktop(
             config_path=config_path,
@@ -139,15 +177,17 @@ def configure_client(
             force=force,
         )
         claude_result["client"] = client
+        claude_result["scope"] = scope
         return claude_result
 
     if config_path is None:
-        config_path = get_client_config_path(client)
+        config_path = get_client_config_path(client, scope=scope, project_dir=project_dir)
 
     config_key = SUPPORTED_CLIENTS[client]["config_key"]
 
     result: dict[str, Any] = {
         "client": client,
+        "scope": scope,
         "config_path": config_path,
         "backup_path": None,
         "server_name": server_name,
