@@ -28,6 +28,7 @@ from anaconda_mcp.claude_desktop import (
     remove_claude_desktop_config,
     show_claude_desktop_config,
 )
+from anaconda_mcp.client_config import SUPPORTED_CLIENTS, configure_client
 from anaconda_mcp.utils import _render_config_template
 
 logger = logging.getLogger(__name__)
@@ -148,14 +149,101 @@ def discover(ctx, pyproject, output_format):
 
 
 # ============================================================================
+# Setup Command
+# ============================================================================
+
+
+@cli.command(help="Configure AI clients to use Anaconda MCP.")
+@click.option(
+    "--client",
+    "clients",
+    multiple=True,
+    type=click.Choice(sorted(SUPPORTED_CLIENTS)),
+    help="Client to configure (repeatable). Required unless --list is used.",
+)
+@click.option(
+    "-t",
+    "--transport",
+    type=click.Choice(["stdio", "streamable-http"]),
+    default="stdio",
+    show_default=True,
+    help="Transport type.",
+)
+@click.option("--host", default="localhost", show_default=True, help="Host for streamable-http transport.")
+@click.option("--port", default=8888, show_default=True, type=int, help="Port for streamable-http transport.")
+@click.option(
+    "-n",
+    "--name",
+    "server_name",
+    default="anaconda-mcp",
+    show_default=True,
+    help="Name for the MCP server entry.",
+)
+@click.option("--no-backup", is_flag=True, help="Don't create a backup of the existing config file.")
+@click.option("-f", "--force", is_flag=True, help="Overwrite existing server configuration if present.")
+@click.option("--json", "output_json", is_flag=True, help="Output result as JSON.")
+@click.option("--list", "list_clients", is_flag=True, help="List supported clients in a table and exit.")
+def setup(clients, transport, host, port, server_name, no_backup, force, output_json, list_clients):
+    if list_clients:
+        col_width = max(len(c) for c in SUPPORTED_CLIENTS) + 2
+        click.echo(f"{'CLIENT':<{col_width}}  TRANSPORTS")
+        click.echo("-" * (col_width + 20))
+        for client in sorted(SUPPORTED_CLIENTS):
+            click.echo(f"{client:<{col_width}}  stdio, streamable-http")
+        return
+
+    if not clients:
+        raise click.UsageError("Missing option '--client'. Specify at least one client or use --list.")
+
+    results = {}
+    exit_code = 0
+
+    for client in clients:
+        try:
+            result = configure_client(
+                client=client,
+                server_name=server_name,
+                transport=transport,
+                host=host,
+                port=port,
+                backup=not no_backup,
+                force=force,
+            )
+            results[client] = {
+                "config_path": str(result["config_path"]),
+                "backup_path": str(result["backup_path"]) if result["backup_path"] else None,
+                "server_name": result["server_name"],
+                "transport": transport,
+                "created": result["created"],
+                "updated": result["updated"],
+            }
+        except (FileExistsError, ValueError) as e:
+            click.echo(f"[Error] {client}: {e}", err=True)
+            exit_code = 1
+
+    if output_json:
+        click.echo(json.dumps(results, indent=2))
+    else:
+        for client, info in results.items():
+            action = "Created" if info["created"] else ("Updated" if info["updated"] else "Added")
+            click.echo(f"[OK] {action} {client} config: {info['config_path']}")
+            if info["backup_path"]:
+                click.echo(f"[Backup] {info['backup_path']}")
+
+    if exit_code != 0:
+        raise SystemExit(exit_code)
+
+
+# ============================================================================
 # Claude Desktop Configuration Commands
 # ============================================================================
 
 
 @cli.group(name="claude-desktop", help="Configure Claude Desktop integration.")
 def claude_desktop():
-    """Manage Claude Desktop configuration for Anaconda MCP."""
-    pass
+    click.echo(
+        "Warning: 'claude-desktop' commands are deprecated. Use 'anaconda-mcp setup --client claude-desktop' instead."
+    )
 
 
 @claude_desktop.command(name="setup-config", help="Add Anaconda MCP to Claude Desktop configuration.")

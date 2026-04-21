@@ -6,3 +6,4 @@ dependencies:
   - environments-mcp-server
   - anaconda-opentelemetry
   - mcp-compose
+  - platformdirs>=4.0.0,<5
