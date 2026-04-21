@@ -670,3 +670,260 @@ class TestSetupScopeFlag:
     def test_list_shows_global_only_for_unsupported_clients(self, runner):
         result = runner.invoke(cli, ["setup", "--list"])
         assert "global" in result.output
+
+
+class TestRemoveClient:
+    def test_remove_client_cursor_removes_server(self, tmp_path):
+        from anaconda_mcp.client_config import configure_client, remove_client
+
+        f = tmp_path / "mcp.json"
+        configure_client("cursor", config_path=f, transport="stdio", backup=False)
+        result = remove_client("cursor", config_path=f, backup=False)
+        assert result["removed"] is True
+        config = json.loads(f.read_text())
+        assert "anaconda-mcp" not in config["mcpServers"]
+
+    def test_remove_client_returns_result_dict(self, tmp_path):
+        from anaconda_mcp.client_config import configure_client, remove_client
+
+        f = tmp_path / "mcp.json"
+        configure_client("cursor", config_path=f, transport="stdio", backup=False)
+        result = remove_client("cursor", config_path=f, backup=False)
+        assert "client" in result
+        assert "scope" in result
+        assert "config_path" in result
+        assert "backup_path" in result
+        assert "server_name" in result
+        assert "removed" in result
+
+    def test_remove_client_preserves_other_entries(self, tmp_path):
+        from anaconda_mcp.client_config import remove_client
+
+        f = tmp_path / "mcp.json"
+        f.write_text('{"mcpServers": {"anaconda-mcp": {}, "other": {}}}')
+        remove_client("cursor", config_path=f, backup=False)
+        config = json.loads(f.read_text())
+        assert "other" in config["mcpServers"]
+        assert "anaconda-mcp" not in config["mcpServers"]
+
+    def test_remove_client_raises_if_config_not_found(self, tmp_path):
+        from anaconda_mcp.client_config import remove_client
+
+        with pytest.raises(FileNotFoundError):
+            remove_client("cursor", config_path=tmp_path / "nonexistent.json", backup=False)
+
+    def test_remove_client_raises_if_server_not_found(self, tmp_path):
+        from anaconda_mcp.client_config import remove_client
+
+        f = tmp_path / "mcp.json"
+        f.write_text('{"mcpServers": {}}')
+        with pytest.raises(KeyError, match="not found"):
+            remove_client("cursor", config_path=f, backup=False)
+
+    def test_remove_client_unknown_client_raises(self, tmp_path):
+        from anaconda_mcp.client_config import remove_client
+
+        with pytest.raises(ValueError, match="Unsupported client"):
+            remove_client("notarealclient", config_path=tmp_path / "mcp.json", backup=False)
+
+    def test_remove_client_creates_backup(self, tmp_path):
+        from anaconda_mcp.client_config import configure_client, remove_client
+
+        f = tmp_path / "mcp.json"
+        configure_client("cursor", config_path=f, transport="stdio", backup=False)
+        result = remove_client("cursor", config_path=f, backup=True)
+        assert result["backup_path"] is not None
+        assert Path(result["backup_path"]).exists()
+
+    def test_remove_client_no_backup(self, tmp_path):
+        from anaconda_mcp.client_config import configure_client, remove_client
+
+        f = tmp_path / "mcp.json"
+        configure_client("cursor", config_path=f, transport="stdio", backup=False)
+        result = remove_client("cursor", config_path=f, backup=False)
+        assert result["backup_path"] is None
+
+    def test_remove_client_vscode_uses_servers_key(self, tmp_path):
+        from anaconda_mcp.client_config import configure_client, remove_client
+
+        f = tmp_path / "mcp.json"
+        configure_client("vscode", config_path=f, transport="stdio", backup=False)
+        result = remove_client("vscode", config_path=f, backup=False)
+        assert result["removed"] is True
+        config = json.loads(f.read_text())
+        assert "anaconda-mcp" not in config["servers"]
+
+    def test_remove_client_opencode_uses_mcp_key(self, tmp_path):
+        from anaconda_mcp.client_config import configure_client, remove_client
+
+        f = tmp_path / "opencode.json"
+        configure_client("opencode", config_path=f, transport="stdio", backup=False)
+        result = remove_client("opencode", config_path=f, backup=False)
+        assert result["removed"] is True
+        config = json.loads(f.read_text())
+        assert "anaconda-mcp" not in config["mcp"]
+
+    def test_remove_client_delegates_to_claude_desktop(self, tmp_path):
+        from anaconda_mcp.client_config import configure_client, remove_client
+
+        f = tmp_path / "config.json"
+        configure_client("claude-desktop", config_path=f, transport="stdio", backup=False)
+        result = remove_client("claude-desktop", config_path=f, backup=False)
+        assert result["removed"] is True
+        config = json.loads(f.read_text())
+        assert "anaconda-mcp" not in config["mcpServers"]
+
+    def test_remove_client_project_scope_cursor(self, tmp_path):
+        from anaconda_mcp.client_config import configure_client, remove_client
+
+        configure_client("cursor", scope="project", project_dir=tmp_path, backup=False)
+        result = remove_client("cursor", scope="project", project_dir=tmp_path, backup=False)
+        assert result["removed"] is True
+        config_path = tmp_path / ".cursor" / "mcp.json"
+        config = json.loads(config_path.read_text())
+        assert "anaconda-mcp" not in config["mcpServers"]
+
+    def test_remove_client_project_scope_unsupported_raises(self, tmp_path):
+        from anaconda_mcp.client_config import remove_client
+
+        with pytest.raises(ValueError, match="does not support project scope"):
+            remove_client("windsurf", scope="project", project_dir=tmp_path, backup=False)
+
+    def test_remove_client_result_includes_scope_key(self, tmp_path):
+        from anaconda_mcp.client_config import configure_client, remove_client
+
+        f = tmp_path / "mcp.json"
+        configure_client("cursor", config_path=f, transport="stdio", backup=False)
+        result = remove_client("cursor", config_path=f, scope="global", backup=False)
+        assert result["scope"] == "global"
+
+
+class TestRemoveCommand:
+    def test_remove_without_client_fails(self, runner):
+        result = runner.invoke(cli, ["remove"])
+        assert result.exit_code != 0
+
+    def test_remove_single_client_success(self, runner, tmp_path):
+        from anaconda_mcp.client_config import configure_client
+
+        f = tmp_path / "mcp.json"
+        configure_client("cursor", config_path=f, transport="stdio", backup=False)
+
+        def _fake_path(client, scope=SCOPE_GLOBAL, project_dir=None):
+            return f
+
+        with mock.patch("anaconda_mcp.client_config.get_client_config_path", side_effect=_fake_path):
+            result = runner.invoke(cli, ["remove", "--client", "cursor", "--no-backup"])
+
+        assert result.exit_code == 0
+        config = json.loads(f.read_text())
+        assert "anaconda-mcp" not in config["mcpServers"]
+
+    def test_remove_single_client_success_message(self, runner, tmp_path):
+        from anaconda_mcp.client_config import configure_client
+
+        f = tmp_path / "mcp.json"
+        configure_client("cursor", config_path=f, transport="stdio", backup=False)
+
+        def _fake_path(client, scope=SCOPE_GLOBAL, project_dir=None):
+            return f
+
+        with mock.patch("anaconda_mcp.client_config.get_client_config_path", side_effect=_fake_path):
+            result = runner.invoke(cli, ["remove", "--client", "cursor", "--no-backup"])
+
+        assert result.exit_code == 0
+        assert "cursor" in result.output.lower()
+
+    def test_remove_multiple_clients(self, runner, tmp_path):
+        from anaconda_mcp.client_config import configure_client
+
+        cursor_f = tmp_path / "cursor.json"
+        vscode_f = tmp_path / "vscode.json"
+        configure_client("cursor", config_path=cursor_f, transport="stdio", backup=False)
+        configure_client("vscode", config_path=vscode_f, transport="stdio", backup=False)
+
+        paths = {"cursor": cursor_f, "vscode": vscode_f}
+
+        def _fake_path(client, scope=SCOPE_GLOBAL, project_dir=None):
+            return paths[client]
+
+        with mock.patch("anaconda_mcp.client_config.get_client_config_path", side_effect=_fake_path):
+            result = runner.invoke(cli, ["remove", "--client", "cursor", "--client", "vscode", "--no-backup"])
+
+        assert result.exit_code == 0
+        assert "anaconda-mcp" not in json.loads(cursor_f.read_text())["mcpServers"]
+        assert "anaconda-mcp" not in json.loads(vscode_f.read_text())["servers"]
+
+    def test_remove_config_not_found_exits_1(self, runner, tmp_path):
+        missing = tmp_path / "nonexistent.json"
+
+        def _fake_path(client, scope=SCOPE_GLOBAL, project_dir=None):
+            return missing
+
+        with mock.patch("anaconda_mcp.client_config.get_client_config_path", side_effect=_fake_path):
+            result = runner.invoke(cli, ["remove", "--client", "cursor", "--no-backup"])
+
+        assert result.exit_code == 1
+
+    def test_remove_server_not_found_exits_1(self, runner, tmp_path):
+        f = tmp_path / "mcp.json"
+        f.write_text('{"mcpServers": {}}')
+
+        def _fake_path(client, scope=SCOPE_GLOBAL, project_dir=None):
+            return f
+
+        with mock.patch("anaconda_mcp.client_config.get_client_config_path", side_effect=_fake_path):
+            result = runner.invoke(cli, ["remove", "--client", "cursor", "--no-backup"])
+
+        assert result.exit_code == 1
+
+    def test_remove_json_output(self, runner, tmp_path):
+        from anaconda_mcp.client_config import configure_client
+
+        f = tmp_path / "mcp.json"
+        configure_client("cursor", config_path=f, transport="stdio", backup=False)
+
+        def _fake_path(client, scope=SCOPE_GLOBAL, project_dir=None):
+            return f
+
+        with mock.patch("anaconda_mcp.client_config.get_client_config_path", side_effect=_fake_path):
+            result = runner.invoke(cli, ["remove", "--client", "cursor", "--no-backup", "--json"])
+
+        assert result.exit_code == 0
+        output = json.loads(result.output)
+        assert "cursor" in output
+        assert output["cursor"]["removed"] is True
+
+    def test_remove_unsupported_client(self, runner):
+        result = runner.invoke(cli, ["remove", "--client", "notarealclient"])
+        assert result.exit_code != 0
+
+    def test_remove_scope_project(self, runner, tmp_path):
+        from anaconda_mcp.client_config import configure_client
+
+        configure_client("cursor", scope="project", project_dir=tmp_path, backup=False)
+
+        with mock.patch.object(Path, "cwd", return_value=tmp_path):
+            result = runner.invoke(cli, ["remove", "--client", "cursor", "--scope", "project", "--no-backup"])
+
+        assert result.exit_code == 0
+        config = json.loads((tmp_path / ".cursor" / "mcp.json").read_text())
+        assert "anaconda-mcp" not in config["mcpServers"]
+
+    def test_remove_project_dir_without_scope_project_errors(self, runner, tmp_path):
+        result = runner.invoke(cli, ["remove", "--client", "cursor", "--project-dir", str(tmp_path), "--no-backup"])
+        assert result.exit_code != 0
+        assert "--project-dir" in result.output or "scope" in result.output.lower()
+
+    def test_remove_scope_project_unsupported_client_errors(self, runner):
+        result = runner.invoke(cli, ["remove", "--client", "windsurf", "--scope", "project", "--no-backup"])
+        assert result.exit_code == 1
+        assert "does not support project scope" in result.output
+
+    def test_remove_list_flag(self, runner):
+        result = runner.invoke(cli, ["remove", "--list"])
+        assert result.exit_code == 0
+        assert "CLIENT" in result.output
+        assert "TRANSPORTS" in result.output
+        for client in ["cursor", "claude-desktop", "claude-code", "windsurf", "vscode", "opencode"]:
+            assert client in result.output

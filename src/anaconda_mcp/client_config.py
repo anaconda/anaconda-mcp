@@ -10,6 +10,7 @@ from anaconda_mcp.claude_desktop import (
     configure_claude_desktop,
     get_claude_desktop_config_path,
     load_config,
+    remove_claude_desktop_config,
     save_config,
 )
 from anaconda_mcp.claude_desktop import (
@@ -222,5 +223,62 @@ def configure_client(
 
     result["old_config"] = old_config
     result["new_config"] = config
+
+    return cast(dict[str, Any], result)
+
+
+def remove_client(
+    client: str,
+    scope: str = SCOPE_GLOBAL,
+    project_dir: Path | None = None,
+    config_path: Path | None = None,
+    server_name: str = "anaconda-mcp",
+    backup: bool = True,
+) -> dict[str, Any]:
+    if client not in SUPPORTED_CLIENTS:
+        raise ValueError(f"Unsupported client: '{client}'. Must be one of {sorted(SUPPORTED_CLIENTS)}")
+
+    if scope == SCOPE_PROJECT and not SUPPORTED_CLIENTS[client]["supports_project_scope"]:
+        raise ValueError(f"'{client}' does not support project scope.")
+
+    if client == "claude-desktop":
+        claude_result: dict[str, Any] = remove_claude_desktop_config(
+            config_path=config_path,
+            server_name=server_name,
+            backup=backup,
+        )
+        claude_result["client"] = client
+        claude_result["scope"] = scope
+        return claude_result
+
+    if config_path is None:
+        config_path = get_client_config_path(client, scope=scope, project_dir=project_dir)
+
+    if not config_path.exists():
+        raise FileNotFoundError(f"Config file not found: {config_path}")
+
+    config_key = SUPPORTED_CLIENTS[client]["config_key"]
+
+    result: dict[str, Any] = {
+        "client": client,
+        "scope": scope,
+        "config_path": config_path,
+        "backup_path": None,
+        "server_name": server_name,
+        "removed": False,
+    }
+
+    if backup:
+        result["backup_path"] = backup_config_file(config_path)
+
+    config = load_config(config_path)
+
+    if config_key not in config or server_name not in config[config_key]:
+        raise KeyError(f"Server '{server_name}' not found in {client} config.")
+
+    del config[config_key][server_name]
+    result["removed"] = True
+
+    save_config(config_path, config)
 
     return cast(dict[str, Any], result)

@@ -28,7 +28,7 @@ from anaconda_mcp.claude_desktop import (
     remove_claude_desktop_config,
     show_claude_desktop_config,
 )
-from anaconda_mcp.client_config import SCOPE_GLOBAL, SCOPE_PROJECT, SUPPORTED_CLIENTS, configure_client
+from anaconda_mcp.client_config import SCOPE_GLOBAL, SCOPE_PROJECT, SUPPORTED_CLIENTS, configure_client, remove_client
 from anaconda_mcp.utils import _render_config_template
 
 logger = logging.getLogger(__name__)
@@ -257,8 +257,95 @@ def setup(clients, transport, host, port, server_name, scope, project_dir, no_ba
 
 
 # ============================================================================
-# Claude Desktop Configuration Commands
+# Remove Command
 # ============================================================================
+
+
+@cli.command(help="Remove Anaconda MCP from AI client configurations.")
+@click.option(
+    "--client",
+    "clients",
+    multiple=True,
+    type=click.Choice(sorted(SUPPORTED_CLIENTS)),
+    help="Client to remove from (repeatable). Required unless --list is used.",
+)
+@click.option(
+    "-n",
+    "--name",
+    "server_name",
+    default="anaconda-mcp",
+    show_default=True,
+    help="Name of the MCP server entry to remove.",
+)
+@click.option(
+    "--scope",
+    type=click.Choice([SCOPE_GLOBAL, SCOPE_PROJECT]),
+    default=SCOPE_GLOBAL,
+    show_default=True,
+    help="Remove from global or project config.",
+)
+@click.option(
+    "--project-dir",
+    type=click.Path(file_okay=False, path_type=Path),
+    default=None,
+    help="Project directory for --scope project (defaults to CWD).",
+)
+@click.option("--no-backup", is_flag=True, help="Don't create a backup of the existing config file.")
+@click.option("--json", "output_json", is_flag=True, help="Output result as JSON.")
+@click.option("--list", "list_clients", is_flag=True, help="List supported clients in a table and exit.")
+def remove(clients, server_name, scope, project_dir, no_backup, output_json, list_clients):
+    if project_dir is not None and scope != SCOPE_PROJECT:
+        raise click.UsageError("--project-dir requires --scope project.")
+
+    if list_clients:
+        col_width = max(len(c) for c in SUPPORTED_CLIENTS) + 2
+        trans_width = len("stdio, streamable-http") + 2
+        click.echo(f"{'CLIENT':<{col_width}}  {'TRANSPORTS':<{trans_width}}  SCOPE")
+        click.echo("-" * (col_width + trans_width + 12))
+        for client in sorted(SUPPORTED_CLIENTS):
+            supports_project = SUPPORTED_CLIENTS[client]["supports_project_scope"]
+            scope_str = "global, project" if supports_project else "global"
+            click.echo(f"{client:<{col_width}}  {'stdio, streamable-http':<{trans_width}}  {scope_str}")
+        return
+
+    if not clients:
+        raise click.UsageError("Missing option '--client'. Specify at least one client or use --list.")
+
+    results = {}
+    exit_code = 0
+
+    for client in clients:
+        try:
+            result = remove_client(
+                client=client,
+                scope=scope,
+                project_dir=project_dir,
+                server_name=server_name,
+                backup=not no_backup,
+            )
+            results[client] = {
+                "config_path": str(result["config_path"]),
+                "backup_path": str(result["backup_path"]) if result["backup_path"] else None,
+                "server_name": result["server_name"],
+                "scope": result["scope"],
+                "removed": result["removed"],
+            }
+        except (FileNotFoundError, KeyError, ValueError) as e:
+            click.echo(f"[Error] {client}: {e}", err=True)
+            exit_code = 1
+
+    if output_json:
+        click.echo(json.dumps(results, indent=2))
+    else:
+        for client, info in results.items():
+            click.echo(
+                f"[OK] Removed '{info['server_name']}' from {client} config ({info['scope']}): {info['config_path']}"
+            )
+            if info["backup_path"]:
+                click.echo(f"[Backup] {info['backup_path']}")
+
+    if exit_code != 0:
+        raise SystemExit(exit_code)
 
 
 @cli.group(name="claude-desktop", help="Configure Claude Desktop integration.")
