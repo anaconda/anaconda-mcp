@@ -419,15 +419,9 @@ class TestSetupCommand:
         assert result.exit_code != 0
         assert "notarealclient" in result.output or "invalid" in result.output.lower()
 
-    def test_setup_list_flag(self, runner):
+    def test_setup_list_flag_removed(self, runner):
         result = runner.invoke(cli, ["setup", "--list"])
-        assert result.exit_code == 0
-        assert "CLIENT" in result.output
-        assert "TRANSPORTS" in result.output
-        for client in ["cursor", "claude-desktop", "claude-code", "windsurf", "vscode", "opencode"]:
-            assert client in result.output
-        assert "stdio" in result.output
-        assert "streamable-http" in result.output
+        assert result.exit_code != 0
 
     def test_setup_multiple_clients(self, runner, tmp_path):
         paths = {
@@ -659,16 +653,16 @@ class TestSetupScopeFlag:
         assert output["cursor"]["scope"] == "project"
 
     def test_list_shows_scope_column(self, runner):
-        result = runner.invoke(cli, ["setup", "--list"])
+        result = runner.invoke(cli, ["clients"])
         assert result.exit_code == 0
         assert "SCOPE" in result.output
 
     def test_list_shows_project_scope_for_supported_clients(self, runner):
-        result = runner.invoke(cli, ["setup", "--list"])
+        result = runner.invoke(cli, ["clients"])
         assert "project" in result.output
 
     def test_list_shows_global_only_for_unsupported_clients(self, runner):
-        result = runner.invoke(cli, ["setup", "--list"])
+        result = runner.invoke(cli, ["clients"])
         assert "global" in result.output
 
 
@@ -920,10 +914,45 @@ class TestRemoveCommand:
         assert result.exit_code == 1
         assert "does not support project scope" in result.output
 
-    def test_remove_list_flag(self, runner):
+    def test_remove_list_flag_removed(self, runner):
         result = runner.invoke(cli, ["remove", "--list"])
+        assert result.exit_code != 0
+
+
+class TestClientsCommand:
+    def test_clients_exits_0(self, runner):
+        result = runner.invoke(cli, ["clients"])
         assert result.exit_code == 0
+
+    def test_clients_shows_client_header(self, runner):
+        result = runner.invoke(cli, ["clients"])
         assert "CLIENT" in result.output
+
+    def test_clients_shows_transports_header(self, runner):
+        result = runner.invoke(cli, ["clients"])
         assert "TRANSPORTS" in result.output
+
+    def test_clients_shows_scope_header(self, runner):
+        result = runner.invoke(cli, ["clients"])
+        assert "SCOPE" in result.output
+
+    def test_clients_lists_all_supported_clients(self, runner):
+        result = runner.invoke(cli, ["clients"])
         for client in ["cursor", "claude-desktop", "claude-code", "windsurf", "vscode", "opencode"]:
             assert client in result.output
+
+    def test_clients_shows_stdio_transport(self, runner):
+        result = runner.invoke(cli, ["clients"])
+        assert "stdio" in result.output
+
+    def test_clients_shows_streamable_http_transport(self, runner):
+        result = runner.invoke(cli, ["clients"])
+        assert "streamable-http" in result.output
+
+    def test_clients_shows_project_scope_for_supported(self, runner):
+        result = runner.invoke(cli, ["clients"])
+        assert "project" in result.output
+
+    def test_clients_shows_global_for_all(self, runner):
+        result = runner.invoke(cli, ["clients"])
+        assert "global" in result.output

@@ -149,6 +149,27 @@ def discover(ctx, pyproject, output_format):
 
 
 # ============================================================================
+# Clients Command
+# ============================================================================
+
+
+def _print_clients_table() -> None:
+    col_width = max(len(c) for c in SUPPORTED_CLIENTS) + 2
+    trans_width = len("stdio, streamable-http") + 2
+    click.echo(f"{'CLIENT':<{col_width}}  {'TRANSPORTS':<{trans_width}}  SCOPE")
+    click.echo("-" * (col_width + trans_width + 12))
+    for client in sorted(SUPPORTED_CLIENTS):
+        supports_project = SUPPORTED_CLIENTS[client]["supports_project_scope"]
+        scope_str = "global, project" if supports_project else "global"
+        click.echo(f"{client:<{col_width}}  {'stdio, streamable-http':<{trans_width}}  {scope_str}")
+
+
+@cli.command(help="List supported AI clients and their configuration options.")
+def clients():
+    _print_clients_table()
+
+
+# ============================================================================
 # Setup Command
 # ============================================================================
 
@@ -159,7 +180,7 @@ def discover(ctx, pyproject, output_format):
     "clients",
     multiple=True,
     type=click.Choice(sorted(SUPPORTED_CLIENTS)),
-    help="Client to configure (repeatable). Required unless --list is used.",
+    help="Client to configure (repeatable). Run 'anaconda-mcp clients' to see options.",
 )
 @click.option(
     "-t",
@@ -195,24 +216,12 @@ def discover(ctx, pyproject, output_format):
 @click.option("--no-backup", is_flag=True, help="Don't create a backup of the existing config file.")
 @click.option("-f", "--force", is_flag=True, help="Overwrite existing server configuration if present.")
 @click.option("--json", "output_json", is_flag=True, help="Output result as JSON.")
-@click.option("--list", "list_clients", is_flag=True, help="List supported clients in a table and exit.")
-def setup(clients, transport, host, port, server_name, scope, project_dir, no_backup, force, output_json, list_clients):
+def setup(clients, transport, host, port, server_name, scope, project_dir, no_backup, force, output_json):
     if project_dir is not None and scope != SCOPE_PROJECT:
         raise click.UsageError("--project-dir requires --scope project.")
 
-    if list_clients:
-        col_width = max(len(c) for c in SUPPORTED_CLIENTS) + 2
-        trans_width = len("stdio, streamable-http") + 2
-        click.echo(f"{'CLIENT':<{col_width}}  {'TRANSPORTS':<{trans_width}}  SCOPE")
-        click.echo("-" * (col_width + trans_width + 12))
-        for client in sorted(SUPPORTED_CLIENTS):
-            supports_project = SUPPORTED_CLIENTS[client]["supports_project_scope"]
-            scope_str = "global, project" if supports_project else "global"
-            click.echo(f"{client:<{col_width}}  {'stdio, streamable-http':<{trans_width}}  {scope_str}")
-        return
-
     if not clients:
-        raise click.UsageError("Missing option '--client'. Specify at least one client or use --list.")
+        raise click.UsageError("Missing option '--client'. Run 'anaconda-mcp clients' to see available clients.")
 
     results = {}
     exit_code = 0
@@ -292,24 +301,12 @@ def setup(clients, transport, host, port, server_name, scope, project_dir, no_ba
 )
 @click.option("--no-backup", is_flag=True, help="Don't create a backup of the existing config file.")
 @click.option("--json", "output_json", is_flag=True, help="Output result as JSON.")
-@click.option("--list", "list_clients", is_flag=True, help="List supported clients in a table and exit.")
-def remove(clients, server_name, scope, project_dir, no_backup, output_json, list_clients):
+def remove(clients, server_name, scope, project_dir, no_backup, output_json):
     if project_dir is not None and scope != SCOPE_PROJECT:
         raise click.UsageError("--project-dir requires --scope project.")
 
-    if list_clients:
-        col_width = max(len(c) for c in SUPPORTED_CLIENTS) + 2
-        trans_width = len("stdio, streamable-http") + 2
-        click.echo(f"{'CLIENT':<{col_width}}  {'TRANSPORTS':<{trans_width}}  SCOPE")
-        click.echo("-" * (col_width + trans_width + 12))
-        for client in sorted(SUPPORTED_CLIENTS):
-            supports_project = SUPPORTED_CLIENTS[client]["supports_project_scope"]
-            scope_str = "global, project" if supports_project else "global"
-            click.echo(f"{client:<{col_width}}  {'stdio, streamable-http':<{trans_width}}  {scope_str}")
-        return
-
     if not clients:
-        raise click.UsageError("Missing option '--client'. Specify at least one client or use --list.")
+        raise click.UsageError("Missing option '--client'. Run 'anaconda-mcp clients' to see available clients.")
 
     results = {}
     exit_code = 0
