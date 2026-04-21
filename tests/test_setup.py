@@ -17,7 +17,7 @@ class TestClientRegistry:
     def test_supported_clients_includes_expected_set(self):
         from anaconda_mcp.client_config import SUPPORTED_CLIENTS
 
-        for client in ["claude-desktop", "cursor", "windsurf", "vscode", "opencode"]:
+        for client in ["claude-desktop", "claude-code", "cursor", "windsurf", "vscode", "opencode"]:
             assert client in SUPPORTED_CLIENTS
 
     def test_get_config_path_unknown_client_raises(self):
@@ -108,6 +108,12 @@ class TestClientRegistry:
             with mock.patch.object(Path, "home", return_value=Path("/Users/u")):
                 assert get_client_config_path("claude-desktop") == get_claude_desktop_config_path()
 
+    def test_get_config_path_claude_code_all_platforms(self):
+        from anaconda_mcp.client_config import get_client_config_path
+
+        with mock.patch.object(Path, "home", return_value=Path("/home/u")):
+            assert get_client_config_path("claude-code") == Path("/home/u/.claude.json")
+
 
 class TestBuildClientConfig:
     def test_build_stdio_config_cursor_has_type_field(self):
@@ -195,6 +201,27 @@ class TestBuildClientConfig:
         from anaconda_mcp.client_config import build_client_http_config
 
         config = build_client_http_config("claude-desktop", host="localhost", port=8888)
+        assert config["url"] == "http://localhost:8888/mcp"
+        assert config["transport"] == "streamable-http"
+
+    def test_build_stdio_config_claude_code_has_type_field(self):
+        from anaconda_mcp.client_config import build_client_stdio_config
+
+        config = build_client_stdio_config("claude-code")
+        assert config["type"] == "stdio"
+        assert "command" in config
+        assert "args" in config
+
+    def test_build_stdio_config_claude_code_has_env(self):
+        from anaconda_mcp.client_config import build_client_stdio_config
+
+        config = build_client_stdio_config("claude-code")
+        assert "env" in config
+
+    def test_build_http_config_claude_code_standard_shape(self):
+        from anaconda_mcp.client_config import build_client_http_config
+
+        config = build_client_http_config("claude-code", host="localhost", port=8888)
         assert config["url"] == "http://localhost:8888/mcp"
         assert config["transport"] == "streamable-http"
 
@@ -309,6 +336,27 @@ class TestConfigureClient:
         with pytest.raises(ValueError, match="Unsupported client"):
             configure_client("notarealclient", config_path=tmp_path / "mcp.json", transport="stdio", backup=False)
 
+    def test_configure_client_claude_code_creates_mcp_servers_key(self, tmp_path):
+        from anaconda_mcp.client_config import configure_client
+
+        f = tmp_path / ".claude.json"
+        configure_client("claude-code", config_path=f, transport="stdio", backup=False)
+        config = json.loads(f.read_text())
+        assert "mcpServers" in config
+        assert "anaconda-mcp" in config["mcpServers"]
+        assert config["mcpServers"]["anaconda-mcp"]["type"] == "stdio"
+
+    def test_configure_client_claude_code_preserves_existing_keys(self, tmp_path):
+        from anaconda_mcp.client_config import configure_client
+
+        f = tmp_path / ".claude.json"
+        f.write_text('{"projects": {"/some/path": {}}, "mcpServers": {"other": {}}}')
+        configure_client("claude-code", config_path=f, transport="stdio", backup=False)
+        config = json.loads(f.read_text())
+        assert "projects" in config
+        assert "other" in config["mcpServers"]
+        assert "anaconda-mcp" in config["mcpServers"]
+
 
 @pytest.fixture
 def runner():
@@ -375,7 +423,7 @@ class TestSetupCommand:
         assert result.exit_code == 0
         assert "CLIENT" in result.output
         assert "TRANSPORTS" in result.output
-        for client in ["cursor", "claude-desktop", "windsurf", "vscode", "opencode"]:
+        for client in ["cursor", "claude-desktop", "claude-code", "windsurf", "vscode", "opencode"]:
             assert client in result.output
         assert "stdio" in result.output
         assert "streamable-http" in result.output

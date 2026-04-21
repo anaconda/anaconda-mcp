@@ -22,6 +22,7 @@ from anaconda_mcp.consts import TransportTypes
 
 SUPPORTED_CLIENTS: dict[str, dict[str, Any]] = {
     "claude-desktop": {"config_key": "mcpServers"},
+    "claude-code": {"config_key": "mcpServers"},
     "cursor": {"config_key": "mcpServers"},
     "windsurf": {"config_key": "mcpServers"},
     "vscode": {"config_key": "servers"},
@@ -35,6 +36,9 @@ def get_client_config_path(client: str) -> Path:
 
     if client == "claude-desktop":
         return Path(get_claude_desktop_config_path())
+
+    if client == "claude-code":
+        return Path.home() / ".claude.json"
 
     if client == "cursor":
         return Path.home() / ".cursor" / "mcp.json"
@@ -59,6 +63,14 @@ def build_client_stdio_config(client: str) -> dict[str, Any]:
         return dict(_claude_build_stdio_config())
 
     executable = sys.executable
+
+    if client == "claude-code":
+        return {
+            "type": "stdio",
+            "command": executable,
+            "args": ["-m", "anaconda_mcp", "serve"],
+            "env": {},
+        }
 
     if client == "opencode":
         return {
