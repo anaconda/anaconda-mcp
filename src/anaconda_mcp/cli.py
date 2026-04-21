@@ -374,7 +374,7 @@ def remove(clients, server_name, scope, project_dir, no_backup, output_json):
             selected = multiselect_checkbox(
                 "Select clients to remove",
                 choices=installed_clients,
-                checked=installed_clients,
+                checked=[],
             )
             if not selected:
                 raise click.Abort()

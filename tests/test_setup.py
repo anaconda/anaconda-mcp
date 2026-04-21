@@ -1219,7 +1219,7 @@ class TestRemoveWizard:
         assert captured["choices"] == ["cursor"]
         assert "vscode" not in captured["choices"]
 
-    def test_wizard_all_installed_prechecked(self, tty_runner, tmp_path):
+    def test_wizard_all_installed_unchecked_by_default(self, tty_runner, tmp_path):
         cursor_config = tmp_path / "cursor_mcp.json"
         captured = {}
 
@@ -1239,7 +1239,7 @@ class TestRemoveWizard:
                     with mock.patch("anaconda_mcp.client_config.get_client_config_path", side_effect=_fake_path):
                         tty_runner.invoke(cli, ["remove", "--no-backup"])
 
-        assert "cursor" in captured["checked"]
+        assert captured["checked"] == []
 
     def test_wizard_keyboard_interrupt_aborts(self, tty_runner):
         with self._tty():
