@@ -28,7 +28,14 @@ from anaconda_mcp.claude_desktop import (
     remove_claude_desktop_config,
     show_claude_desktop_config,
 )
-from anaconda_mcp.client_config import SCOPE_GLOBAL, SCOPE_PROJECT, SUPPORTED_CLIENTS, configure_client, remove_client
+from anaconda_mcp.client_config import (
+    SCOPE_GLOBAL,
+    SCOPE_PROJECT,
+    SUPPORTED_CLIENTS,
+    configure_client,
+    is_client_installed,
+    remove_client,
+)
 from anaconda_mcp.utils import _render_config_template
 
 logger = logging.getLogger(__name__)
@@ -153,20 +160,35 @@ def discover(ctx, pyproject, output_format):
 # ============================================================================
 
 
-def _print_clients_table() -> None:
+def _print_clients_table(project_dir: Path | None = None) -> None:
     col_width = max(len(c) for c in SUPPORTED_CLIENTS) + 2
     trans_width = len("stdio, streamable-http") + 2
-    click.echo(f"{'CLIENT':<{col_width}}  {'TRANSPORTS':<{trans_width}}  SCOPE")
-    click.echo("-" * (col_width + trans_width + 12))
+    click.echo(f"{'CLIENT':<{col_width}}  {'TRANSPORTS':<{trans_width}}  {'SCOPE':<18}  INSTALLED")
+    click.echo("-" * (col_width + trans_width + 34))
     for client in sorted(SUPPORTED_CLIENTS):
         supports_project = SUPPORTED_CLIENTS[client]["supports_project_scope"]
         scope_str = "global, project" if supports_project else "global"
-        click.echo(f"{client:<{col_width}}  {'stdio, streamable-http':<{trans_width}}  {scope_str}")
+        status = is_client_installed(client, project_dir=project_dir)
+        parts = []
+        if status["global"]:
+            parts.append("global")
+        if status.get("project"):
+            parts.append("project")
+        installed_str = ", ".join(parts) if parts else "—"
+        click.echo(
+            f"{client:<{col_width}}  {'stdio, streamable-http':<{trans_width}}  {scope_str:<18}  {installed_str}"
+        )
 
 
 @cli.command(help="List supported AI clients and their configuration options.")
-def clients():
-    _print_clients_table()
+@click.option(
+    "--project-dir",
+    type=click.Path(file_okay=False, path_type=Path),
+    default=None,
+    help="Project directory to check for project-scoped installs (defaults to CWD).",
+)
+def clients(project_dir):
+    _print_clients_table(project_dir=project_dir)
 
 
 # ============================================================================

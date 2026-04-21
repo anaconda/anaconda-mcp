@@ -1,4 +1,3 @@
-import json
 import sys
 from pathlib import Path
 from typing import Any, cast
@@ -201,7 +200,6 @@ def configure_client(
         result["backup_path"] = backup_config_file(config_path)
 
     config = load_config(config_path)
-    old_config = json.loads(json.dumps(config))
 
     if config_key not in config:
         config[config_key] = {}
@@ -221,10 +219,36 @@ def configure_client(
 
     save_config(config_path, config)
 
-    result["old_config"] = old_config
-    result["new_config"] = config
-
     return cast(dict[str, Any], result)
+
+
+def is_client_installed(
+    client: str,
+    server_name: str = "anaconda-mcp",
+    config_path: Path | None = None,
+    project_dir: Path | None = None,
+) -> dict[str, bool]:
+    if client not in SUPPORTED_CLIENTS:
+        raise ValueError(f"Unsupported client: '{client}'. Must be one of {sorted(SUPPORTED_CLIENTS)}")
+
+    config_key = SUPPORTED_CLIENTS[client]["config_key"]
+    supports_project = SUPPORTED_CLIENTS[client]["supports_project_scope"]
+
+    def _check(path: Path) -> bool:
+        if not path.exists():
+            return False
+        config = load_config(path)
+        return server_name in config.get(config_key, {})
+
+    global_path = config_path if config_path is not None else get_client_config_path(client, scope=SCOPE_GLOBAL)
+    result: dict[str, bool] = {"global": _check(global_path)}
+
+    if supports_project:
+        resolved_dir = project_dir if project_dir is not None else Path.cwd()
+        project_path = get_client_project_config_path(client, resolved_dir)
+        result["project"] = _check(project_path)
+
+    return result
 
 
 def remove_client(

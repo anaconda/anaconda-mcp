@@ -666,6 +666,87 @@ class TestSetupScopeFlag:
         assert "global" in result.output
 
 
+class TestIsClientInstalled:
+    def test_not_installed_when_config_missing(self, tmp_path):
+        from anaconda_mcp.client_config import is_client_installed
+
+        result = is_client_installed("cursor", config_path=tmp_path / "nonexistent.json")
+        assert result["global"] is False
+
+    def test_not_installed_when_server_absent(self, tmp_path):
+        from anaconda_mcp.client_config import is_client_installed
+
+        f = tmp_path / "mcp.json"
+        f.write_text('{"mcpServers": {"other-server": {}}}')
+        result = is_client_installed("cursor", config_path=f)
+        assert result["global"] is False
+
+    def test_installed_globally(self, tmp_path):
+        from anaconda_mcp.client_config import configure_client, is_client_installed
+
+        f = tmp_path / "mcp.json"
+        configure_client("cursor", config_path=f, transport="stdio", backup=False)
+        result = is_client_installed("cursor", config_path=f)
+        assert result["global"] is True
+
+    def test_not_installed_project_when_no_project_config(self, tmp_path):
+        from anaconda_mcp.client_config import is_client_installed
+
+        result = is_client_installed("cursor", project_dir=tmp_path)
+        assert result["project"] is False
+
+    def test_installed_project(self, tmp_path):
+        from anaconda_mcp.client_config import configure_client, is_client_installed
+
+        configure_client("cursor", scope="project", project_dir=tmp_path, backup=False)
+        result = is_client_installed("cursor", project_dir=tmp_path)
+        assert result["project"] is True
+
+    def test_global_key_absent_for_project_only_clients(self, tmp_path):
+        from anaconda_mcp.client_config import is_client_installed
+
+        result = is_client_installed("windsurf", project_dir=tmp_path)
+        assert "project" not in result
+
+    def test_project_key_absent_for_global_only_clients(self, tmp_path):
+        from anaconda_mcp.client_config import is_client_installed
+
+        result = is_client_installed("windsurf")
+        assert "project" not in result
+
+    def test_both_installed(self, tmp_path):
+        from anaconda_mcp.client_config import configure_client, is_client_installed
+
+        global_f = tmp_path / "global_mcp.json"
+        configure_client("cursor", config_path=global_f, transport="stdio", backup=False)
+        configure_client("cursor", scope="project", project_dir=tmp_path, backup=False)
+        result = is_client_installed("cursor", config_path=global_f, project_dir=tmp_path)
+        assert result["global"] is True
+        assert result["project"] is True
+
+    def test_vscode_uses_servers_key(self, tmp_path):
+        from anaconda_mcp.client_config import configure_client, is_client_installed
+
+        f = tmp_path / "mcp.json"
+        configure_client("vscode", config_path=f, transport="stdio", backup=False)
+        result = is_client_installed("vscode", config_path=f)
+        assert result["global"] is True
+
+    def test_opencode_uses_mcp_key(self, tmp_path):
+        from anaconda_mcp.client_config import configure_client, is_client_installed
+
+        f = tmp_path / "opencode.json"
+        configure_client("opencode", config_path=f, transport="stdio", backup=False)
+        result = is_client_installed("opencode", config_path=f)
+        assert result["global"] is True
+
+    def test_unknown_client_raises(self, tmp_path):
+        from anaconda_mcp.client_config import is_client_installed
+
+        with pytest.raises(ValueError, match="Unsupported client"):
+            is_client_installed("notarealclient")
+
+
 class TestRemoveClient:
     def test_remove_client_cursor_removes_server(self, tmp_path):
         from anaconda_mcp.client_config import configure_client, remove_client
@@ -956,3 +1037,49 @@ class TestClientsCommand:
     def test_clients_shows_global_for_all(self, runner):
         result = runner.invoke(cli, ["clients"])
         assert "global" in result.output
+
+    def test_clients_shows_installed_header(self, runner):
+        result = runner.invoke(cli, ["clients"])
+        assert "INSTALLED" in result.output
+
+    def test_clients_shows_dash_when_not_installed(self, runner, tmp_path):
+        with mock.patch("anaconda_mcp.client_config.get_client_config_path", return_value=tmp_path / "none.json"):
+            with mock.patch.object(Path, "cwd", return_value=tmp_path):
+                result = runner.invoke(cli, ["clients"])
+        assert "—" in result.output
+
+    def test_clients_shows_global_installed_when_configured(self, runner, tmp_path):
+        cursor_global = tmp_path / "cursor_mcp.json"
+
+        from anaconda_mcp.client_config import configure_client
+
+        configure_client("cursor", config_path=cursor_global, transport="stdio", backup=False)
+
+        original_get_path = __import__(
+            "anaconda_mcp.client_config", fromlist=["get_client_config_path"]
+        ).get_client_config_path
+
+        def _patched_path(client, scope="global", project_dir=None):
+            if client == "cursor" and scope == "global":
+                return cursor_global
+            return original_get_path(client, scope=scope, project_dir=project_dir)
+
+        with mock.patch("anaconda_mcp.client_config.get_client_config_path", side_effect=_patched_path):
+            with mock.patch.object(Path, "cwd", return_value=tmp_path):
+                result = runner.invoke(cli, ["clients"])
+
+        lines = [line for line in result.output.splitlines() if "cursor" in line]
+        assert lines, "cursor row not found"
+        assert "global" in lines[0]
+
+    def test_clients_shows_project_installed_when_configured(self, runner, tmp_path):
+        from anaconda_mcp.client_config import configure_client
+
+        configure_client("cursor", scope="project", project_dir=tmp_path, backup=False)
+
+        with mock.patch.object(Path, "cwd", return_value=tmp_path):
+            result = runner.invoke(cli, ["clients", "--project-dir", str(tmp_path)])
+
+        lines = [line for line in result.output.splitlines() if "cursor" in line]
+        assert lines, "cursor row not found"
+        assert "project" in lines[0]
