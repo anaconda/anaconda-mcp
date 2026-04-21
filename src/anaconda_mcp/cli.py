@@ -37,7 +37,7 @@ from anaconda_mcp.client_config import (
     remove_client,
 )
 from anaconda_mcp.utils import _render_config_template
-from anaconda_mcp.wizard import multiselect_checkbox, single_select
+from anaconda_mcp.wizard import setup_wizard_page
 
 logger = logging.getLogger(__name__)
 
@@ -247,33 +247,96 @@ def setup(clients, transport, host, port, server_name, scope, project_dir, no_ba
         if not sys.stdin.isatty():
             raise click.UsageError("Missing option '--client'. Run 'anaconda-mcp clients' to see available clients.")
         try:
-            installed_map = {c: is_client_installed(c, project_dir=project_dir) for c in SUPPORTED_CLIENTS}
-            already_installed = [c for c, s in installed_map.items() if s.get("global") or s.get("project")]
-            selected = multiselect_checkbox(
-                "Select clients to configure",
-                choices=sorted(SUPPORTED_CLIENTS),
-                checked=already_installed,
-            )
-            if not selected:
-                raise click.Abort()
+            all_clients = sorted(SUPPORTED_CLIENTS)
+            supports_project = [SUPPORTED_CLIENTS[c]["supports_project_scope"] for c in all_clients]
+            installed_map = {c: is_client_installed(c, project_dir=project_dir) for c in all_clients}
 
-            has_project_capable = any(SUPPORTED_CLIENTS[c]["supports_project_scope"] for c in selected)
-            if has_project_capable:
-                scope = single_select(
-                    "Scope",
-                    choices=[SCOPE_GLOBAL, SCOPE_PROJECT, "both"],
-                    default=SCOPE_GLOBAL,
-                )
+            initial: set[tuple[int, int]] = set()
+            for i, c in enumerate(all_clients):
+                if installed_map[c].get("global"):
+                    initial.add((i, 0))
+                if installed_map[c].get("project"):
+                    initial.add((i, 1))
 
-            transport = single_select(
-                "Transport",
-                choices=["stdio", "streamable-http"],
-                default="stdio",
-            )
+            page = setup_wizard_page(all_clients, supports_project, initial)
 
-            clients = tuple(selected)
+            col_for_scope = {"global": 0, "project": 1}
+            adds = [
+                (c, s) for c, s, checked in page if checked and (all_clients.index(c), col_for_scope[s]) not in initial
+            ]
+            removes = [
+                (c, s) for c, s, checked in page if not checked and (all_clients.index(c), col_for_scope[s]) in initial
+            ]
+
+            if not adds and not removes:
+                click.echo("No changes.")
+                return
+
         except KeyboardInterrupt as e:
             raise click.Abort() from e
+
+        results = {}
+        exit_code = 0
+
+        for client, run_scope in adds:
+            key = f"{client}:{run_scope}"
+            try:
+                result = configure_client(
+                    client=client,
+                    scope=run_scope,
+                    project_dir=project_dir,
+                    server_name=server_name,
+                    transport=transport,
+                    host=host,
+                    port=port,
+                    backup=not no_backup,
+                    force=force,
+                )
+                results[key] = {
+                    "config_path": str(result["config_path"]),
+                    "backup_path": str(result["backup_path"]) if result["backup_path"] else None,
+                    "server_name": result["server_name"],
+                    "transport": transport,
+                    "scope": result["scope"],
+                    "action": "configured",
+                }
+            except (FileExistsError, ValueError) as e:
+                click.echo(f"[Error] {key}: {e}", err=True)
+                exit_code = 1
+
+        for client, run_scope in removes:
+            key = f"{client}:{run_scope}"
+            try:
+                result = remove_client(
+                    client=client,
+                    scope=run_scope,
+                    project_dir=project_dir,
+                    server_name=server_name,
+                    backup=not no_backup,
+                )
+                results[key] = {
+                    "config_path": str(result["config_path"]),
+                    "backup_path": str(result["backup_path"]) if result["backup_path"] else None,
+                    "server_name": result["server_name"],
+                    "scope": result["scope"],
+                    "action": "removed",
+                }
+            except (FileNotFoundError, KeyError, ValueError) as e:
+                click.echo(f"[Error] {key}: {e}", err=True)
+                exit_code = 1
+
+        if output_json:
+            click.echo(json.dumps(results, indent=2))
+        else:
+            for key, info in results.items():
+                verb = "Removed" if info["action"] == "removed" else "Configured"
+                click.echo(f"[OK] {verb} {key} ({info['scope']}): {info['config_path']}")
+                if info["backup_path"]:
+                    click.echo(f"[Backup] {info['backup_path']}")
+
+        if exit_code != 0:
+            raise SystemExit(exit_code)
+        return
 
     results = {}
     exit_code = 0
@@ -362,26 +425,7 @@ def remove(clients, server_name, scope, project_dir, no_backup, output_json):
         raise click.UsageError("--project-dir requires --scope project.")
 
     if not clients:
-        if not sys.stdin.isatty():
-            raise click.UsageError("Missing option '--client'. Run 'anaconda-mcp clients' to see available clients.")
-        try:
-            installed_map = {c: is_client_installed(c, project_dir=project_dir) for c in SUPPORTED_CLIENTS}
-            installed_clients = sorted(c for c, s in installed_map.items() if s.get("global") or s.get("project"))
-            if not installed_clients:
-                click.echo("No clients have anaconda-mcp configured. Nothing to remove.")
-                return
-
-            selected = multiselect_checkbox(
-                "Select clients to remove",
-                choices=installed_clients,
-                checked=[],
-            )
-            if not selected:
-                raise click.Abort()
-
-            clients = tuple(selected)
-        except KeyboardInterrupt as e:
-            raise click.Abort() from e
+        raise click.UsageError("Missing option '--client'. Use 'anaconda-mcp setup' for the interactive wizard.")
 
     results = {}
     exit_code = 0
