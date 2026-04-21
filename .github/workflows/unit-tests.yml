@@ -47,7 +47,7 @@ jobs:
 
       - name: Install conda dependencies
         run: |
-          conda install -y anaconda-auth mcp-compose
+          conda install -y mcp-compose
 
       - name: Install package and test dependencies
         run: |
