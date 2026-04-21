@@ -208,3 +208,6 @@ __marimo__/
 
 **/*.mcpb
 .DS_Store
+
+# Spec-driven development
+.sisyphus/
