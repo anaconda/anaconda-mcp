@@ -1,11 +1,11 @@
 import enum
 import logging
+import threading
 from typing import Any
 
 import httpx
 from pydantic import BaseModel
 
-from anaconda_mcp.auth import get_auth_token
 from anaconda_mcp.config import settings
 
 logger = logging.getLogger(__name__)
@@ -13,8 +13,8 @@ logger = logging.getLogger(__name__)
 
 class MetricNames(enum.Enum):
     _EVENT_PREFIX = "anaconda_mcp"
-    EVENT_CREATE_PROJECT = f"{_EVENT_PREFIX}_start_server"
-    EVENT_DELETE_PROJECT = f"{_EVENT_PREFIX}_login_completed"
+    START_SERVER = f"{_EVENT_PREFIX}_start_server"
+    LOGIN_COMPLETED = f"{_EVENT_PREFIX}_login_completed"
 
 
 class MetricData(BaseModel):
@@ -28,48 +28,62 @@ class MetricData(BaseModel):
 class SnakeEyes:
     """Snake eyes client - Sends metrics/logs to Anaconda Snake Eyes"""
 
-    async def _make_request(self, metric_data: MetricData, bearer_token: str) -> httpx.Response:
-        async with httpx.AsyncClient(
+    def _make_request(
+        self,
+        endpoint: str,
+        payload: dict[str, Any],
+        bearer_token: str | None = None,
+    ) -> httpx.Response:
+        headers: dict[str, str] = {"Accept": "application/json"}
+        if bearer_token:
+            headers["Authorization"] = f"Bearer {bearer_token}"
+
+        with httpx.Client(
             base_url=f"https://{settings.ANACONDA_DOMAIN}",
-            headers={
-                "Authorization": f"Bearer {bearer_token}",
-                "Accept": "application/json",
-            },
+            headers=headers,
             timeout=httpx.Timeout(3.0),
         ) as client:
-            response = await client.post(
-                "api/snake-eyes/record",
-                json=metric_data.model_dump(),
-            )
-            response.raise_for_status()
+            response = client.post(endpoint, json=payload)
             return response
 
-    async def send(self, metric_data: MetricData) -> bool:
-        """
-        Send metric data to Snake Eyes
-        Args:
-            metric_data (Dict): JSON containing all the relevant data.
-
-        Returns:
-            bool: Boolean indicating success (True) or failure (False).
-        """
-        bearer_token = get_auth_token()
-        if not bearer_token:
-            logger.debug("No bearer token provided. Metrics will not be sent.")
-            return False
-
+    def _send(self, metric_data: MetricData, bearer_token: str | None = None) -> bool:
         if not settings.SEND_METRICS:
             logger.debug("Metrics are OFF. Metrics will not be sent.")
             return False
 
+        logger.info(f"Sending metric: {metric_data}")
+
         try:
-            logger.info(f"Sending metric: {metric_data}")
-            response = await self._make_request(metric_data, bearer_token)
+            is_authenticated = bearer_token is not None
+            enriched_params = {
+                **metric_data.event_params,
+                "user_environment": metric_data.user_environment,
+                "is_authenticated": is_authenticated,
+            }
+            if is_authenticated:
+                payload = {
+                    **metric_data.model_dump(),
+                    "event_params": enriched_params,
+                }
+                response = self._make_request(
+                    "api/snake-eyes/record",
+                    payload,
+                    bearer_token,
+                )
+            else:
+                payload = {
+                    "service_id": metric_data.service_id,
+                    "event": metric_data.event,
+                    "event_params": enriched_params,
+                }
+                response = self._make_request("api/snake-eyes/note", payload)
+
             if 199 < response.status_code < 300:
                 return True
+            logger.warning("Snake-eyes returned HTTP %s", response.status_code)
             return False
         except httpx.TimeoutException:
-            logger.warning("Timeout while writing file snake-eyes metrics")
+            logger.warning("Timeout while sending snake-eyes metrics")
             return False
         except httpx.NetworkError:
             logger.warning("Network error while sending snake-eyes metrics")
@@ -77,3 +91,12 @@ class SnakeEyes:
         except Exception:
             logger.warning("Error while sending snake-eyes metrics")
             return False
+
+    def send(self, metric_data: MetricData, bearer_token: str | None = None) -> None:
+        # TODO: Remove fire-and-forget thread once OpenTelemetry is integrated — its SDK handles async dispatch natively.
+        thread = threading.Thread(
+            target=self._send,
+            args=(metric_data, bearer_token),
+            daemon=True,
+        )
+        thread.start()
