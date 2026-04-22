@@ -476,7 +476,8 @@ def remove(clients, server_name, scope, project_dir, no_backup, output_json):
 @cli.group(name="claude-desktop", help="Configure Claude Desktop integration.")
 def claude_desktop():
     click.echo(
-        "Warning: 'claude-desktop' commands are deprecated. Use 'anaconda-mcp setup --client claude-desktop' instead."
+        "Warning: 'claude-desktop' commands are deprecated. Use 'anaconda-mcp setup --client claude-desktop' instead.",
+        err=True,
     )
 
 
