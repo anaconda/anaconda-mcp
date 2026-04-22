@@ -526,7 +526,8 @@ class TestCLICommands:
         )
 
         assert result.exit_code == 0
-        output = json.loads(result.output)
+        json_output = "\n".join(line for line in result.output.splitlines() if not line.startswith("Warning:"))
+        output = json.loads(json_output)
         assert output["exists"] is True
 
     def test_claude_path_shows_path(self, runner):
@@ -539,6 +540,52 @@ class TestCLICommands:
         else:
             # May fail on unsupported OS
             assert "Unsupported" in result.output
+
+    def test_claude_configure_emits_deprecation_warning(self, runner, tmp_path):
+        """Test 'anaconda-mcp claude-desktop setup-config' emits deprecation warning."""
+        config_file = tmp_path / "config.json"
+
+        result = runner.invoke(
+            cli,
+            ["claude-desktop", "setup-config", "--config", str(config_file), "--no-backup"],
+        )
+
+        assert result.exit_code == 0
+        assert "deprecated" in result.output.lower()
+        assert "anaconda-mcp setup --client claude-desktop" in result.output
+
+    def test_claude_remove_emits_deprecation_warning(self, runner, tmp_path):
+        """Test 'anaconda-mcp claude-desktop remove-config' emits deprecation warning."""
+        config_file = tmp_path / "config.json"
+        config_file.write_text('{"mcpServers": {"anaconda-mcp": {}}}')
+
+        result = runner.invoke(
+            cli,
+            ["claude-desktop", "remove-config", "--config", str(config_file), "--no-backup"],
+        )
+
+        assert result.exit_code == 0
+        assert "deprecated" in result.output.lower()
+
+    def test_claude_show_emits_deprecation_warning(self, runner, tmp_path):
+        """Test 'anaconda-mcp claude-desktop show' emits deprecation warning."""
+        config_file = tmp_path / "config.json"
+        config_file.write_text('{"mcpServers": {}}')
+
+        result = runner.invoke(
+            cli,
+            ["claude-desktop", "show", "--config", str(config_file)],
+        )
+
+        assert result.exit_code == 0
+        assert "deprecated" in result.output.lower()
+
+    def test_claude_path_emits_deprecation_warning(self, runner):
+        """Test 'anaconda-mcp claude-desktop path' emits deprecation warning."""
+        result = runner.invoke(cli, ["claude-desktop", "path"])
+
+        if result.exit_code == 0:
+            assert "deprecated" in result.output.lower()
 
 
 class TestOSSpecificPaths:

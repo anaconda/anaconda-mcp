@@ -28,8 +28,17 @@ from anaconda_mcp.claude_desktop import (
     remove_claude_desktop_config,
     show_claude_desktop_config,
 )
+from anaconda_mcp.client_config import (
+    SCOPE_GLOBAL,
+    SCOPE_PROJECT,
+    SUPPORTED_CLIENTS,
+    configure_client,
+    is_client_installed,
+    remove_client,
+)
 from anaconda_mcp.telemetry import MetricData, MetricNames, SnakeEyes
 from anaconda_mcp.utils import _render_config_template
+from anaconda_mcp.wizard import setup_wizard_page
 
 logger = logging.getLogger(__name__)
 
@@ -157,14 +166,319 @@ def discover(ctx, pyproject, output_format):
 
 
 # ============================================================================
-# Claude Desktop Configuration Commands
+# Clients Command
 # ============================================================================
+
+
+def _print_clients_table(project_dir: Path | None = None) -> None:
+    col_width = max(len(c) for c in SUPPORTED_CLIENTS) + 2
+    trans_width = len("stdio, streamable-http") + 2
+    click.echo(f"{'CLIENT':<{col_width}}  {'TRANSPORTS':<{trans_width}}  {'SCOPE':<18}  INSTALLED")
+    click.echo("-" * (col_width + trans_width + 34))
+    for client in sorted(SUPPORTED_CLIENTS):
+        supports_project = SUPPORTED_CLIENTS[client]["supports_project_scope"]
+        scope_str = "global, project" if supports_project else "global"
+        status = is_client_installed(client, project_dir=project_dir)
+        parts = []
+        if status["global"]:
+            parts.append("global")
+        if status.get("project"):
+            parts.append("project")
+        installed_str = ", ".join(parts) if parts else "—"
+        click.echo(
+            f"{client:<{col_width}}  {'stdio, streamable-http':<{trans_width}}  {scope_str:<18}  {installed_str}"
+        )
+
+
+@cli.command(help="List supported AI clients and their configuration options.")
+@click.option(
+    "--project-dir",
+    type=click.Path(file_okay=False, path_type=Path),
+    default=None,
+    help="Project directory to check for project-scoped installs (defaults to CWD).",
+)
+def clients(project_dir):
+    _print_clients_table(project_dir=project_dir)
+
+
+# ============================================================================
+# Setup Command
+# ============================================================================
+
+
+@cli.command(help="Configure AI clients to use Anaconda MCP.")
+@click.option(
+    "--client",
+    "clients",
+    multiple=True,
+    type=click.Choice(sorted(SUPPORTED_CLIENTS)),
+    help="Client to configure (repeatable). Run 'anaconda-mcp clients' to see options.",
+)
+@click.option(
+    "-t",
+    "--transport",
+    type=click.Choice(["stdio", "streamable-http"]),
+    default="stdio",
+    show_default=True,
+    help="Transport type.",
+)
+@click.option("--host", default="localhost", show_default=True, help="Host for streamable-http transport.")
+@click.option("--port", default=8888, show_default=True, type=int, help="Port for streamable-http transport.")
+@click.option(
+    "-n",
+    "--name",
+    "server_name",
+    default="anaconda-mcp",
+    show_default=True,
+    help="Name for the MCP server entry.",
+)
+@click.option(
+    "--scope",
+    type=click.Choice([SCOPE_GLOBAL, SCOPE_PROJECT]),
+    default=SCOPE_GLOBAL,
+    show_default=True,
+    help="Install globally or in the current project.",
+)
+@click.option(
+    "--project-dir",
+    type=click.Path(file_okay=False, path_type=Path),
+    default=None,
+    help="Project directory for --scope project (defaults to CWD).",
+)
+@click.option("--no-backup", is_flag=True, help="Don't create a backup of the existing config file.")
+@click.option("-f", "--force", is_flag=True, help="Overwrite existing server configuration if present.")
+@click.option("--json", "output_json", is_flag=True, help="Output result as JSON.")
+def setup(clients, transport, host, port, server_name, scope, project_dir, no_backup, force, output_json):
+    if project_dir is not None and scope != SCOPE_PROJECT:
+        raise click.UsageError("--project-dir requires --scope project.")
+
+    if not clients:
+        if not sys.stdin.isatty():
+            raise click.UsageError("Missing option '--client'. Run 'anaconda-mcp clients' to see available clients.")
+        try:
+            all_clients = sorted(SUPPORTED_CLIENTS)
+            supports_project = [SUPPORTED_CLIENTS[c]["supports_project_scope"] for c in all_clients]
+            installed_map = {c: is_client_installed(c, project_dir=project_dir) for c in all_clients}
+
+            initial: set[tuple[int, int]] = set()
+            for i, c in enumerate(all_clients):
+                if installed_map[c].get("global"):
+                    initial.add((i, 0))
+                if installed_map[c].get("project"):
+                    initial.add((i, 1))
+
+            page = setup_wizard_page(all_clients, supports_project, initial)
+
+            col_for_scope = {"global": 0, "project": 1}
+            adds = [
+                (c, s) for c, s, checked in page if checked and (all_clients.index(c), col_for_scope[s]) not in initial
+            ]
+            removes = [
+                (c, s) for c, s, checked in page if not checked and (all_clients.index(c), col_for_scope[s]) in initial
+            ]
+
+            if not adds and not removes:
+                click.echo("No changes.")
+                return
+
+        except KeyboardInterrupt as e:
+            raise click.Abort() from e
+
+        results = {}
+        exit_code = 0
+
+        for client, run_scope in adds:
+            key = f"{client}:{run_scope}"
+            try:
+                result = configure_client(
+                    client=client,
+                    scope=run_scope,
+                    project_dir=project_dir,
+                    server_name=server_name,
+                    transport=transport,
+                    host=host,
+                    port=port,
+                    backup=not no_backup,
+                    force=force,
+                )
+                results[key] = {
+                    "config_path": str(result["config_path"]),
+                    "backup_path": str(result["backup_path"]) if result["backup_path"] else None,
+                    "server_name": result["server_name"],
+                    "transport": transport,
+                    "scope": result["scope"],
+                    "action": "configured",
+                }
+            except (FileExistsError, ValueError) as e:
+                click.echo(f"[Error] {key}: {e}", err=True)
+                exit_code = 1
+
+        for client, run_scope in removes:
+            key = f"{client}:{run_scope}"
+            try:
+                result = remove_client(
+                    client=client,
+                    scope=run_scope,
+                    project_dir=project_dir,
+                    server_name=server_name,
+                    backup=not no_backup,
+                )
+                results[key] = {
+                    "config_path": str(result["config_path"]),
+                    "backup_path": str(result["backup_path"]) if result["backup_path"] else None,
+                    "server_name": result["server_name"],
+                    "scope": result["scope"],
+                    "action": "removed",
+                }
+            except (FileNotFoundError, KeyError, ValueError) as e:
+                click.echo(f"[Error] {key}: {e}", err=True)
+                exit_code = 1
+
+        if output_json:
+            click.echo(json.dumps(results, indent=2))
+        else:
+            for key, info in results.items():
+                verb = "Removed" if info["action"] == "removed" else "Configured"
+                click.echo(f"[OK] {verb} {key} ({info['scope']}): {info['config_path']}")
+                if info["backup_path"]:
+                    click.echo(f"[Backup] {info['backup_path']}")
+
+        if exit_code != 0:
+            raise SystemExit(exit_code)
+        return
+
+    results = {}
+    exit_code = 0
+
+    scopes_to_run = [SCOPE_GLOBAL, SCOPE_PROJECT] if scope == "both" else [scope]
+
+    for client in clients:
+        for run_scope in scopes_to_run:
+            key = f"{client}:{run_scope}" if scope == "both" else client
+            try:
+                result = configure_client(
+                    client=client,
+                    scope=run_scope,
+                    project_dir=project_dir,
+                    server_name=server_name,
+                    transport=transport,
+                    host=host,
+                    port=port,
+                    backup=not no_backup,
+                    force=force,
+                )
+                results[key] = {
+                    "config_path": str(result["config_path"]),
+                    "backup_path": str(result["backup_path"]) if result["backup_path"] else None,
+                    "server_name": result["server_name"],
+                    "transport": transport,
+                    "scope": result["scope"],
+                    "created": result["created"],
+                    "updated": result["updated"],
+                }
+            except (FileExistsError, ValueError) as e:
+                click.echo(f"[Error] {key}: {e}", err=True)
+                exit_code = 1
+
+    if output_json:
+        click.echo(json.dumps(results, indent=2))
+    else:
+        for client, info in results.items():
+            action = "Created" if info["created"] else ("Updated" if info["updated"] else "Added")
+            click.echo(f"[OK] {action} {client} config ({info['scope']}): {info['config_path']}")
+            if info["backup_path"]:
+                click.echo(f"[Backup] {info['backup_path']}")
+
+    if exit_code != 0:
+        raise SystemExit(exit_code)
+
+
+# ============================================================================
+# Remove Command
+# ============================================================================
+
+
+@cli.command(help="Remove Anaconda MCP from AI client configurations.")
+@click.option(
+    "--client",
+    "clients",
+    multiple=True,
+    type=click.Choice(sorted(SUPPORTED_CLIENTS)),
+    help="Client to remove from (repeatable). Required unless --list is used.",
+)
+@click.option(
+    "-n",
+    "--name",
+    "server_name",
+    default="anaconda-mcp",
+    show_default=True,
+    help="Name of the MCP server entry to remove.",
+)
+@click.option(
+    "--scope",
+    type=click.Choice([SCOPE_GLOBAL, SCOPE_PROJECT]),
+    default=SCOPE_GLOBAL,
+    show_default=True,
+    help="Remove from global or project config.",
+)
+@click.option(
+    "--project-dir",
+    type=click.Path(file_okay=False, path_type=Path),
+    default=None,
+    help="Project directory for --scope project (defaults to CWD).",
+)
+@click.option("--no-backup", is_flag=True, help="Don't create a backup of the existing config file.")
+@click.option("--json", "output_json", is_flag=True, help="Output result as JSON.")
+def remove(clients, server_name, scope, project_dir, no_backup, output_json):
+    if project_dir is not None and scope != SCOPE_PROJECT:
+        raise click.UsageError("--project-dir requires --scope project.")
+
+    if not clients:
+        raise click.UsageError("Missing option '--client'. Use 'anaconda-mcp setup' for the interactive wizard.")
+
+    results = {}
+    exit_code = 0
+
+    for client in clients:
+        try:
+            result = remove_client(
+                client=client,
+                scope=scope,
+                project_dir=project_dir,
+                server_name=server_name,
+                backup=not no_backup,
+            )
+            results[client] = {
+                "config_path": str(result["config_path"]),
+                "backup_path": str(result["backup_path"]) if result["backup_path"] else None,
+                "server_name": result["server_name"],
+                "scope": result["scope"],
+                "removed": result["removed"],
+            }
+        except (FileNotFoundError, KeyError, ValueError) as e:
+            click.echo(f"[Error] {client}: {e}", err=True)
+            exit_code = 1
+
+    if output_json:
+        click.echo(json.dumps(results, indent=2))
+    else:
+        for client, info in results.items():
+            click.echo(
+                f"[OK] Removed '{info['server_name']}' from {client} config ({info['scope']}): {info['config_path']}"
+            )
+            if info["backup_path"]:
+                click.echo(f"[Backup] {info['backup_path']}")
+
+    if exit_code != 0:
+        raise SystemExit(exit_code)
 
 
 @cli.group(name="claude-desktop", help="Configure Claude Desktop integration.")
 def claude_desktop():
-    """Manage Claude Desktop configuration for Anaconda MCP."""
-    pass
+    click.echo(
+        "Warning: 'claude-desktop' commands are deprecated. Use 'anaconda-mcp setup --client claude-desktop' instead.",
+        err=True,
+    )
 
 
 @claude_desktop.command(name="setup-config", help="Add Anaconda MCP to Claude Desktop configuration.")

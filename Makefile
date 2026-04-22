@@ -11,7 +11,7 @@ PROJECT := anaconda-mcp
 DIST_DIR := dist
 BUILD_DIR := build
 MCP_SERVER_PORT   ?= 4041
-ENV_NAME ?= anaconda-mcp-dev
+ENV_NAME ?= ./env
 CONDA    ?= conda
 
 # Docker settings
