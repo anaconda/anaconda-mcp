@@ -2,7 +2,7 @@ import sys
 from pathlib import Path
 from typing import Any, cast
 
-from platformdirs import user_config_dir, user_data_dir
+from platformdirs import user_data_dir
 
 from anaconda_mcp.claude_desktop import (
     backup_config_file,
@@ -83,7 +83,7 @@ def get_client_config_path(
         return Path(str(user_data_dir("Code", appauthor=False))) / "User" / "mcp.json"
 
     if client == "opencode":
-        return Path(str(user_config_dir("opencode", appauthor=False))) / "opencode.json"
+        return Path.home() / ".config" / "opencode" / "opencode.json"
 
     raise ValueError(f"Unsupported client: '{client}'")
 
