@@ -63,19 +63,14 @@ class TestClientRegistry:
     def test_get_config_path_opencode_linux(self):
         from anaconda_mcp.client_config import get_client_config_path
 
-        with mock.patch("anaconda_mcp.client_config.user_config_dir", return_value="/home/u/.config/opencode"):
+        with mock.patch.object(Path, "home", return_value=Path("/home/u")):
             assert get_client_config_path("opencode") == Path("/home/u/.config/opencode/opencode.json")
 
     def test_get_config_path_opencode_macos(self):
         from anaconda_mcp.client_config import get_client_config_path
 
-        with mock.patch(
-            "anaconda_mcp.client_config.user_config_dir",
-            return_value="/Users/u/Library/Application Support/opencode",
-        ):
-            assert get_client_config_path("opencode") == Path(
-                "/Users/u/Library/Application Support/opencode/opencode.json"
-            )
+        with mock.patch.object(Path, "home", return_value=Path("/Users/u")):
+            assert get_client_config_path("opencode") == Path("/Users/u/.config/opencode/opencode.json")
 
     def test_get_config_path_vscode_macos(self):
         from anaconda_mcp.client_config import get_client_config_path
