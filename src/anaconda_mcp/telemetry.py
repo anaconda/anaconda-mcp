@@ -105,6 +105,17 @@ class SnakeEyes:
         thread.start()
 
 
+def _get_client_info(context: Any) -> tuple[str, str]:
+    try:
+        if context is not None:
+            client_params = context.session.client_params
+            if client_params is not None:
+                return client_params.clientInfo.name, client_params.clientInfo.version
+    except Exception:
+        pass
+    return "unknown", "unknown"
+
+
 def install_tool_call_tracking(bearer_token_fn: Callable[[], str | None]) -> None:
     from mcp.server.fastmcp.tools import ToolManager as FastMCPToolManager
 
@@ -120,6 +131,7 @@ def install_tool_call_tracking(bearer_token_fn: Callable[[], str | None]) -> Non
             raise
         finally:
             if settings.SEND_METRICS:
+                client_name, client_version = _get_client_info(context)
                 duration_ms = round((time.monotonic() - start) * 1000)
                 SnakeEyes().send(
                     MetricData(
@@ -128,6 +140,8 @@ def install_tool_call_tracking(bearer_token_fn: Callable[[], str | None]) -> Non
                             "tool_name": name,
                             "duration_ms": duration_ms,
                             "success": error is None,
+                            "client_name": client_name,
+                            "client_version": client_version,
                         },
                     ),
                     bearer_token=bearer_token_fn(),

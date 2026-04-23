@@ -4,7 +4,7 @@ import httpx
 import pytest
 from mcp.server.fastmcp.tools import ToolManager as FastMCPToolManager
 
-from anaconda_mcp.telemetry import MetricData, MetricNames, install_tool_call_tracking
+from anaconda_mcp.telemetry import MetricData, MetricNames, _get_client_info, install_tool_call_tracking
 
 _REAL_CALL_TOOL = FastMCPToolManager.call_tool
 
@@ -56,6 +56,8 @@ def test_install_tool_call_tracking_sends_metric_on_success(mock_make_request):
     assert metric.event == MetricNames.TOOL_CALL.value
     assert metric.event_params["tool_name"] == "my_tool"
     assert metric.event_params["success"] is True
+    assert metric.event_params["client_name"] == "unknown"
+    assert metric.event_params["client_version"] == "unknown"
 
 
 def test_install_tool_call_tracking_sends_metric_on_failure(mock_make_request):
@@ -180,3 +182,54 @@ def test_install_tool_call_tracking_records_duration(mock_make_request):
     assert "duration_ms" in metric.event_params
     assert isinstance(metric.event_params["duration_ms"], int)
     assert metric.event_params["duration_ms"] >= 0
+
+
+def _make_context(name="claude-desktop", version="1.2.3"):
+    client_info = mock.MagicMock()
+    client_info.name = name
+    client_info.version = version
+    client_params = mock.MagicMock()
+    client_params.clientInfo = client_info
+    session = mock.MagicMock()
+    session.client_params = client_params
+    ctx = mock.MagicMock()
+    ctx.session = session
+    return ctx
+
+
+def test_get_client_info_returns_name_and_version():
+    ctx = _make_context(name="claude-desktop", version="1.2.3")
+    assert _get_client_info(ctx) == ("claude-desktop", "1.2.3")
+
+
+def test_get_client_info_returns_unknown_when_context_is_none():
+    assert _get_client_info(None) == ("unknown", "unknown")
+
+
+def test_get_client_info_returns_unknown_when_client_params_is_none():
+    ctx = mock.MagicMock()
+    ctx.session.client_params = None
+    assert _get_client_info(ctx) == ("unknown", "unknown")
+
+
+def test_get_client_info_returns_unknown_on_attribute_error():
+    assert _get_client_info(object()) == ("unknown", "unknown")
+
+
+def test_install_tool_call_tracking_includes_client_info_in_metric(mock_make_request):
+    install_tool_call_tracking(bearer_token_fn=lambda: None)
+
+    tool_manager = FastMCPToolManager()
+    tool_manager._tools["my_tool"] = mock.MagicMock(run=mock.AsyncMock(return_value="ok"))
+    ctx = _make_context(name="cursor", version="0.48.0")
+
+    with mock.patch("anaconda_mcp.telemetry.SnakeEyes.send") as mock_send:
+        import asyncio
+
+        asyncio.get_event_loop().run_until_complete(
+            FastMCPToolManager.call_tool(tool_manager, "my_tool", {}, context=ctx)
+        )
+
+    metric: MetricData = mock_send.call_args[0][0]
+    assert metric.event_params["client_name"] == "cursor"
+    assert metric.event_params["client_version"] == "0.48.0"
