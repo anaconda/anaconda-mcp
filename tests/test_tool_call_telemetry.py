@@ -4,7 +4,7 @@ import httpx
 import pytest
 from mcp.server.fastmcp.tools import ToolManager as FastMCPToolManager
 
-from anaconda_mcp.telemetry import MetricData, MetricNames, _get_client_info, install_tool_call_tracking
+from anaconda_mcp.telemetry import MetricData, MetricNames, _get_client_info, patch_tool_call_tracking
 
 _REAL_CALL_TOOL = FastMCPToolManager.call_tool
 
@@ -32,14 +32,14 @@ def test_tool_call_metric_name_exists():
     assert MetricNames.TOOL_CALL.value == "anaconda_mcp_tool_call"
 
 
-def test_install_tool_call_tracking_replaces_call_tool():
+def test_patch_tool_call_tracking_replaces_call_tool():
     original = FastMCPToolManager.call_tool
-    install_tool_call_tracking(bearer_token_fn=lambda: None)
+    patch_tool_call_tracking(bearer_token_fn=lambda: None)
     assert FastMCPToolManager.call_tool is not original
 
 
-def test_install_tool_call_tracking_sends_metric_on_success(mock_make_request):
-    install_tool_call_tracking(bearer_token_fn=lambda: "fake-token")
+def test_patch_tool_call_tracking_sends_metric_on_success(mock_make_request):
+    patch_tool_call_tracking(bearer_token_fn=lambda: "fake-token")
 
     tool_manager = FastMCPToolManager()
     mock_tool = mock.AsyncMock(return_value="result")
@@ -60,8 +60,8 @@ def test_install_tool_call_tracking_sends_metric_on_success(mock_make_request):
     assert metric.event_params["client_version"] == "unknown"
 
 
-def test_install_tool_call_tracking_sends_metric_on_failure(mock_make_request):
-    install_tool_call_tracking(bearer_token_fn=lambda: "fake-token")
+def test_patch_tool_call_tracking_sends_metric_on_failure(mock_make_request):
+    patch_tool_call_tracking(bearer_token_fn=lambda: "fake-token")
 
     tool_manager = FastMCPToolManager()
     mock_tool = mock.AsyncMock(side_effect=RuntimeError("boom"))
@@ -80,8 +80,8 @@ def test_install_tool_call_tracking_sends_metric_on_failure(mock_make_request):
     assert metric.event_params["success"] is False
 
 
-def test_install_tool_call_tracking_passes_bearer_token(mock_make_request):
-    install_tool_call_tracking(bearer_token_fn=lambda: "my-secret-token")
+def test_patch_tool_call_tracking_passes_bearer_token(mock_make_request):
+    patch_tool_call_tracking(bearer_token_fn=lambda: "my-secret-token")
 
     tool_manager = FastMCPToolManager()
     tool_manager._tools["a_tool"] = mock.MagicMock(run=mock.AsyncMock(return_value="ok"))
@@ -95,8 +95,8 @@ def test_install_tool_call_tracking_passes_bearer_token(mock_make_request):
     assert bearer == "my-secret-token"
 
 
-def test_install_tool_call_tracking_anonymous_when_no_token(mock_make_request):
-    install_tool_call_tracking(bearer_token_fn=lambda: None)
+def test_patch_tool_call_tracking_anonymous_when_no_token(mock_make_request):
+    patch_tool_call_tracking(bearer_token_fn=lambda: None)
 
     tool_manager = FastMCPToolManager()
     tool_manager._tools["anon_tool"] = mock.MagicMock(run=mock.AsyncMock(return_value="ok"))
@@ -110,7 +110,7 @@ def test_install_tool_call_tracking_anonymous_when_no_token(mock_make_request):
     assert bearer is None
 
 
-def test_install_tool_call_tracking_still_calls_original():
+def test_patch_tool_call_tracking_still_calls_original():
     results = []
 
     async def fake_original(self, name, arguments, context=None, convert_result=False):
@@ -118,7 +118,7 @@ def test_install_tool_call_tracking_still_calls_original():
         return "original-result"
 
     with mock.patch.object(FastMCPToolManager, "call_tool", fake_original):
-        install_tool_call_tracking(bearer_token_fn=lambda: None)
+        patch_tool_call_tracking(bearer_token_fn=lambda: None)
         tool_manager = FastMCPToolManager()
 
         with mock.patch("anaconda_mcp.telemetry.SnakeEyes.send"):
@@ -132,10 +132,10 @@ def test_install_tool_call_tracking_still_calls_original():
     assert results == ["some_tool"]
 
 
-def test_install_tool_call_tracking_suppressed_when_metrics_off(mock_make_request):
+def test_patch_tool_call_tracking_suppressed_when_metrics_off(mock_make_request):
     with mock.patch("anaconda_mcp.telemetry.settings") as mock_settings:
         mock_settings.SEND_METRICS = False
-        install_tool_call_tracking(bearer_token_fn=lambda: "token")
+        patch_tool_call_tracking(bearer_token_fn=lambda: "token")
 
         tool_manager = FastMCPToolManager()
         tool_manager._tools["quiet_tool"] = mock.MagicMock(run=mock.AsyncMock(return_value="ok"))
@@ -148,8 +148,8 @@ def test_install_tool_call_tracking_suppressed_when_metrics_off(mock_make_reques
         mock_send.assert_not_called()
 
 
-def test_install_tool_call_tracking_fires_on_background_thread(mock_make_request):
-    install_tool_call_tracking(bearer_token_fn=lambda: "token")
+def test_patch_tool_call_tracking_fires_on_background_thread(mock_make_request):
+    patch_tool_call_tracking(bearer_token_fn=lambda: "token")
 
     tool_manager = FastMCPToolManager()
     tool_manager._tools["bg_tool"] = mock.MagicMock(run=mock.AsyncMock(return_value="ok"))
@@ -167,8 +167,8 @@ def test_install_tool_call_tracking_fires_on_background_thread(mock_make_request
         mock_instance.start.assert_called_once()
 
 
-def test_install_tool_call_tracking_records_duration(mock_make_request):
-    install_tool_call_tracking(bearer_token_fn=lambda: None)
+def test_patch_tool_call_tracking_records_duration(mock_make_request):
+    patch_tool_call_tracking(bearer_token_fn=lambda: None)
 
     tool_manager = FastMCPToolManager()
     tool_manager._tools["slow_tool"] = mock.MagicMock(run=mock.AsyncMock(return_value="ok"))
@@ -216,8 +216,8 @@ def test_get_client_info_returns_unknown_on_attribute_error():
     assert _get_client_info(object()) == ("unknown", "unknown")
 
 
-def test_install_tool_call_tracking_includes_client_info_in_metric(mock_make_request):
-    install_tool_call_tracking(bearer_token_fn=lambda: None)
+def test_patch_tool_call_tracking_includes_client_info_in_metric(mock_make_request):
+    patch_tool_call_tracking(bearer_token_fn=lambda: None)
 
     tool_manager = FastMCPToolManager()
     tool_manager._tools["my_tool"] = mock.MagicMock(run=mock.AsyncMock(return_value="ok"))

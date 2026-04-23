@@ -116,7 +116,7 @@ def _get_client_info(context: Any) -> tuple[str, str]:
     return "unknown", "unknown"
 
 
-def install_tool_call_tracking(bearer_token_fn: Callable[[], str | None]) -> None:
+def patch_tool_call_tracking(bearer_token_fn: Callable[[], str | None]) -> None:
     from mcp.server.fastmcp.tools import ToolManager as FastMCPToolManager
 
     original_call_tool = FastMCPToolManager.call_tool
