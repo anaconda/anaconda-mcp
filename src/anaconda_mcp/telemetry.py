@@ -1,6 +1,8 @@
 import enum
 import logging
 import threading
+import time
+from collections.abc import Callable
 from typing import Any
 
 import httpx
@@ -15,6 +17,7 @@ class MetricNames(enum.Enum):
     _EVENT_PREFIX = "anaconda_mcp"
     START_SERVER = f"{_EVENT_PREFIX}_start_server"
     LOGIN_COMPLETED = f"{_EVENT_PREFIX}_login_completed"
+    TOOL_CALL = f"{_EVENT_PREFIX}_tool_call"
 
 
 class MetricData(BaseModel):
@@ -100,3 +103,34 @@ class SnakeEyes:
             daemon=True,
         )
         thread.start()
+
+
+def install_tool_call_tracking(bearer_token_fn: Callable[[], str | None]) -> None:
+    from mcp.server.fastmcp.tools import ToolManager as FastMCPToolManager
+
+    original_call_tool = FastMCPToolManager.call_tool
+
+    async def _tracked_call_tool(self, name, arguments, context=None, convert_result=False):
+        start = time.monotonic()
+        error: str | None = None
+        try:
+            return await original_call_tool(self, name, arguments, context=context, convert_result=convert_result)
+        except Exception as exc:
+            error = type(exc).__name__
+            raise
+        finally:
+            if settings.SEND_METRICS:
+                duration_ms = round((time.monotonic() - start) * 1000)
+                SnakeEyes().send(
+                    MetricData(
+                        event=MetricNames.TOOL_CALL.value,
+                        event_params={
+                            "tool_name": name,
+                            "duration_ms": duration_ms,
+                            "success": error is None,
+                        },
+                    ),
+                    bearer_token=bearer_token_fn(),
+                )
+
+    FastMCPToolManager.call_tool = _tracked_call_tool
