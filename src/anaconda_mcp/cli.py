@@ -90,10 +90,6 @@ def serve(ctx, config, host, port, delay):
 
     rendered_config = _render_config_template(config)
     time.sleep(delay)
-    try:
-        os_platform = OSSystems.current().value
-    except RuntimeError:
-        os_platform = "unknown"
     snake_eyes = SnakeEyes()
 
     def _on_auth(api_key):
@@ -107,6 +103,10 @@ def serve(ctx, config, host, port, delay):
         )
 
     start_login(_on_auth)
+    try:
+        os_platform = OSSystems.current().value
+    except RuntimeError:
+        os_platform = "unknown"
     snake_eyes.send(
         MetricData(
             event=MetricNames.START_SERVER.value,
