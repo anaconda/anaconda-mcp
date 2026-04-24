@@ -69,19 +69,16 @@ jobs:
           pytest tests/test_claude_desktop.py -v --cov=anaconda_mcp.claude_desktop --cov-report=xml --cov-report=term
 
       - name: Verify OS-specific path detection
-        shell: bash
         run: |
           chmod +x .github/scripts/verify_path_detection.sh
           .github/scripts/verify_path_detection.sh
 
       - name: Test CLI commands
-        shell: bash
         run: |
           chmod +x .github/scripts/test_cli.sh .github/scripts/verify_cli_config.sh
           .github/scripts/test_cli.sh
 
       - name: Test streamable-http transport
-        shell: bash
         run: |
           chmod +x .github/scripts/test_streamable_http.sh .github/scripts/verify_streamable_http.sh
           .github/scripts/test_streamable_http.sh
