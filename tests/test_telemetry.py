@@ -1,8 +1,10 @@
 from unittest import mock
 
 import httpx
+import jwt
 import pytest
 
+from anaconda_mcp.auth import get_user_id_from_token
 from anaconda_mcp.telemetry import MetricData, MetricNames, SnakeEyes
 
 
@@ -98,3 +100,29 @@ def test_snake_eyes_send_fires_on_background_thread(mock_make_request):
         mock_thread.assert_called_once()
         assert mock_thread.call_args[1]["daemon"] is True
         mock_instance.start.assert_called_once()
+
+
+@pytest.mark.parametrize(
+    ("token", "expected"),
+    [
+        pytest.param(
+            jwt.encode({"sub": "test-uuid-123"}, "test-secret", algorithm="HS256"),
+            "test-uuid-123",
+            id="valid_sub_claim",
+        ),
+        pytest.param(None, None, id="none_input"),
+        pytest.param("not-a-jwt", None, id="invalid_token"),
+        pytest.param(
+            jwt.encode({"foo": "bar"}, "test-secret", algorithm="HS256"),
+            None,
+            id="no_sub_claim",
+        ),
+        pytest.param(
+            jwt.encode({"sub": "test-uuid", "exp": 0}, "test-secret", algorithm="HS256"),
+            "test-uuid",
+            id="expired_token",
+        ),
+    ],
+)
+def test_get_user_id_from_token(token, expected):
+    assert get_user_id_from_token(token) == expected

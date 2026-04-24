@@ -3,6 +3,7 @@ import threading
 import time
 from collections.abc import Callable
 
+import jwt
 from anaconda_auth import login as anaconda_login
 from anaconda_auth.exceptions import TokenNotFoundError
 from anaconda_auth.token import TokenInfo
@@ -30,6 +31,34 @@ def get_auth_token() -> str | None:
         token: str = TokenInfo.load().api_key
         return token
     except TokenNotFoundError:
+        return None
+
+
+def get_user_id_from_token(bearer_token: str | None) -> str | None:
+    """
+    Extract the user ID from a JWT bearer token.
+
+    Args:
+        bearer_token (str | None): The JWT bearer token to decode.
+
+    Returns:
+        Optional[str]: The user ID (sub claim) if found, otherwise None.
+
+    Notes:
+        This function never raises exceptions. It safely handles invalid tokens,
+        expired tokens, and None inputs by returning None.
+    """
+    if bearer_token is None:
+        return None
+    try:
+        decoded = jwt.decode(
+            bearer_token,
+            algorithms=["RS256"],
+            options={"verify_signature": False, "verify_exp": False},
+        )
+        sub = decoded.get("sub")
+        return sub if isinstance(sub, str) else None
+    except Exception:
         return None
 
 

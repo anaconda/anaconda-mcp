@@ -21,7 +21,7 @@ from mcp_compose.cli import (
 )
 from mcp_compose.composer import ConflictResolution
 
-from anaconda_mcp.auth import get_auth_token, start_login
+from anaconda_mcp.auth import get_auth_token, get_user_id_from_token, start_login
 from anaconda_mcp.claude_desktop import (
     configure_claude_desktop,
     get_claude_desktop_config_path,
@@ -36,6 +36,7 @@ from anaconda_mcp.client_config import (
     is_client_installed,
     remove_client,
 )
+from anaconda_mcp.consts import OSSystems
 from anaconda_mcp.telemetry import MetricData, MetricNames, SnakeEyes, patch_tool_call_tracking
 from anaconda_mcp.utils import _render_config_template
 from anaconda_mcp.wizard import setup_wizard_page
@@ -90,11 +91,23 @@ def serve(ctx, config, host, port, delay):
     rendered_config = _render_config_template(config)
     time.sleep(delay)
     start_login(lambda x: x)
+    try:
+        os_platform = OSSystems.current().value
+    except RuntimeError:
+        os_platform = "unknown"
     snake_eyes = SnakeEyes()
     snake_eyes.send(
         MetricData(
             event=MetricNames.START_SERVER.value,
-            event_params={},
+            event_params={"os_platform": os_platform},
+        ),
+        bearer_token=get_auth_token(),
+    )
+    user_id = get_user_id_from_token(get_auth_token())
+    snake_eyes.send(
+        MetricData(
+            event=MetricNames.ACTIVE_USER_PING.value,
+            event_params={"user_id": user_id},
         ),
         bearer_token=get_auth_token(),
     )
