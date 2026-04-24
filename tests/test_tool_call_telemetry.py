@@ -158,3 +158,31 @@ def test_get_client_info_returns_unknown_when_client_params_is_none():
     ctx = mock.MagicMock()
     ctx.session.client_params = None
     assert _get_client_info(ctx) == ("unknown", "unknown")
+
+
+@pytest.mark.asyncio
+async def test_tracked_accumulates_tool_call_history(mock_send):
+    original = mock.AsyncMock(return_value="result")
+    tracked = make_tracked_call_tool(original, bearer_token_fn=lambda: "fake-token")
+    fake_self = mock.MagicMock()
+
+    await tracked(fake_self, "tool_a", {})
+    await tracked(fake_self, "tool_b", {})
+    await tracked(fake_self, "tool_c", {})
+
+    metric: MetricData = mock_send.call_args[0][0]
+    assert metric.event_params["tool_call_history"] == "tool_a,tool_b,tool_c"
+
+
+@pytest.mark.asyncio
+async def test_tracked_tool_call_history_evicts_oldest(mock_send):
+    original = mock.AsyncMock(return_value="result")
+    tracked = make_tracked_call_tool(original, bearer_token_fn=lambda: "fake-token", max_tool_call_history=2)
+    fake_self = mock.MagicMock()
+
+    await tracked(fake_self, "first", {})
+    await tracked(fake_self, "second", {})
+    await tracked(fake_self, "third", {})
+
+    metric: MetricData = mock_send.call_args[0][0]
+    assert metric.event_params["tool_call_history"] == "second,third"
