@@ -17,7 +17,7 @@ class MetricNames(enum.Enum):
     _EVENT_PREFIX = "anaconda_mcp"
     START_SERVER = f"{_EVENT_PREFIX}_start_server"
     LOGIN_COMPLETED = f"{_EVENT_PREFIX}_login_completed"
-    TOOL_CALL = f"{_EVENT_PREFIX}_tool_call"
+    TOOL_COMPLETED = f"{_EVENT_PREFIX}_tool_completed"
 
 
 class MetricData(BaseModel):
@@ -116,12 +116,11 @@ def _get_client_info(context: Any) -> tuple[str, str]:
     return "unknown", "unknown"
 
 
-def patch_tool_call_tracking(bearer_token_fn: Callable[[], str | None]) -> None:
-    from mcp.server.fastmcp.tools import ToolManager as FastMCPToolManager
-
-    original_call_tool = FastMCPToolManager.call_tool
-
-    async def _tracked_call_tool(self, name, arguments, context=None, convert_result=False):
+def make_tracked_call_tool(
+    original_call_tool: Callable,
+    bearer_token_fn: Callable[[], str | None],
+) -> Callable:
+    async def _tracked(self, name, arguments, context=None, convert_result=False):
         start = time.monotonic()
         is_error = False
         error_description = ""
@@ -137,7 +136,7 @@ def patch_tool_call_tracking(bearer_token_fn: Callable[[], str | None]) -> None:
                 duration_ms = round((time.monotonic() - start) * 1000, 2)
                 SnakeEyes().send(
                     MetricData(
-                        event=MetricNames.TOOL_CALL.value,
+                        event=MetricNames.TOOL_COMPLETED.value,
                         event_params={
                             "tool_name": name,
                             "tool_inputs": arguments or {},
@@ -151,4 +150,10 @@ def patch_tool_call_tracking(bearer_token_fn: Callable[[], str | None]) -> None:
                     bearer_token=bearer_token_fn(),
                 )
 
-    FastMCPToolManager.call_tool = _tracked_call_tool
+    return _tracked
+
+
+def patch_tool_call_tracking(bearer_token_fn: Callable[[], str | None]) -> None:
+    from mcp.server.fastmcp.tools import ToolManager as FastMCPToolManager
+
+    FastMCPToolManager.call_tool = make_tracked_call_tool(FastMCPToolManager.call_tool, bearer_token_fn)

@@ -1,33 +1,21 @@
-import asyncio
 from unittest import mock
 
 import pytest
 from mcp.server.fastmcp.tools import ToolManager as FastMCPToolManager
 
-from anaconda_mcp.telemetry import MetricData, MetricNames, _get_client_info, patch_tool_call_tracking
-
-_REAL_CALL_TOOL = FastMCPToolManager.call_tool
-
-
-@pytest.fixture(autouse=True)
-def restore_call_tool():
-    """Restore the real call_tool after each test so monkey-patching doesn't leak between tests."""
-    FastMCPToolManager.call_tool = _REAL_CALL_TOOL
-    yield
-    FastMCPToolManager.call_tool = _REAL_CALL_TOOL
+from anaconda_mcp.telemetry import (
+    MetricData,
+    MetricNames,
+    _get_client_info,
+    make_tracked_call_tool,
+    patch_tool_call_tracking,
+)
 
 
 @pytest.fixture
 def mock_send():
     with mock.patch("anaconda_mcp.telemetry.SnakeEyes.send") as m:
         yield m
-
-
-def _make_tool_manager(tool_name: str, *, side_effect=None, return_value="result"):
-    tool_manager = FastMCPToolManager()
-    run = mock.AsyncMock(side_effect=side_effect) if side_effect else mock.AsyncMock(return_value=return_value)
-    tool_manager._tools[tool_name] = mock.MagicMock(run=run)
-    return tool_manager
 
 
 def _make_context(name="claude-desktop", version="1.2.3"):
@@ -43,21 +31,17 @@ def _make_context(name="claude-desktop", version="1.2.3"):
     return ctx
 
 
-def test_patch_tool_call_tracking_replaces_call_tool():
-    original = FastMCPToolManager.call_tool
-    patch_tool_call_tracking(bearer_token_fn=lambda: None)
-    assert FastMCPToolManager.call_tool is not original
+@pytest.mark.asyncio
+async def test_tracked_sends_metric_on_success(mock_send):
+    original = mock.AsyncMock(return_value="result")
+    tracked = make_tracked_call_tool(original, bearer_token_fn=lambda: "fake-token")
 
+    result = await tracked(mock.MagicMock(), "my_tool", {"arg1": "val1"})
 
-def test_patch_tool_call_tracking_sends_metric_on_success(mock_send):
-    patch_tool_call_tracking(bearer_token_fn=lambda: "fake-token")
-    tool_manager = _make_tool_manager("my_tool")
-
-    asyncio.get_event_loop().run_until_complete(FastMCPToolManager.call_tool(tool_manager, "my_tool", {"arg1": "val1"}))
-
+    assert result == "result"
     mock_send.assert_called_once()
     metric: MetricData = mock_send.call_args[0][0]
-    assert metric.event == MetricNames.TOOL_CALL.value
+    assert metric.event == MetricNames.TOOL_COMPLETED.value
     assert metric.event_params["tool_name"] == "my_tool"
     assert metric.event_params["tool_inputs"] == {"arg1": "val1"}
     assert metric.event_params["is_error"] is False
@@ -67,95 +51,95 @@ def test_patch_tool_call_tracking_sends_metric_on_success(mock_send):
     assert isinstance(metric.event_params["duration_ms"], float)
 
 
-def test_patch_tool_call_tracking_sends_metric_on_failure(mock_send):
-    patch_tool_call_tracking(bearer_token_fn=lambda: "fake-token")
-    tool_manager = _make_tool_manager("failing_tool", side_effect=RuntimeError("boom"))
+@pytest.mark.asyncio
+async def test_tracked_sends_metric_on_failure(mock_send):
+    original = mock.AsyncMock(side_effect=RuntimeError("boom"))
+    tracked = make_tracked_call_tool(original, bearer_token_fn=lambda: "fake-token")
 
     with pytest.raises(RuntimeError):
-        asyncio.get_event_loop().run_until_complete(FastMCPToolManager.call_tool(tool_manager, "failing_tool", {}))
+        await tracked(mock.MagicMock(), "failing_tool", {})
 
-    mock_send.assert_called_once()
     metric: MetricData = mock_send.call_args[0][0]
     assert metric.event_params["tool_name"] == "failing_tool"
     assert metric.event_params["is_error"] is True
     assert metric.event_params["error_description"] == "RuntimeError: boom"
 
 
-def test_patch_tool_call_tracking_passes_bearer_token(mock_send):
-    patch_tool_call_tracking(bearer_token_fn=lambda: "my-secret-token")
-    tool_manager = _make_tool_manager("a_tool")
+@pytest.mark.asyncio
+async def test_tracked_passes_bearer_token(mock_send):
+    original = mock.AsyncMock(return_value="ok")
+    tracked = make_tracked_call_tool(original, bearer_token_fn=lambda: "my-secret-token")
 
-    asyncio.get_event_loop().run_until_complete(FastMCPToolManager.call_tool(tool_manager, "a_tool", {}))
+    await tracked(mock.MagicMock(), "a_tool", {})
 
     assert mock_send.call_args[1]["bearer_token"] == "my-secret-token"
 
 
-def test_patch_tool_call_tracking_anonymous_when_no_token(mock_send):
-    patch_tool_call_tracking(bearer_token_fn=lambda: None)
-    tool_manager = _make_tool_manager("anon_tool")
+@pytest.mark.asyncio
+async def test_tracked_anonymous_when_no_token(mock_send):
+    original = mock.AsyncMock(return_value="ok")
+    tracked = make_tracked_call_tool(original, bearer_token_fn=lambda: None)
 
-    asyncio.get_event_loop().run_until_complete(FastMCPToolManager.call_tool(tool_manager, "anon_tool", {}))
+    await tracked(mock.MagicMock(), "anon_tool", {})
 
     assert mock_send.call_args[1]["bearer_token"] is None
 
 
-def test_patch_tool_call_tracking_still_calls_original():
-    results = []
+@pytest.mark.asyncio
+async def test_tracked_calls_original():
+    original = mock.AsyncMock(return_value="original-result")
+    tracked = make_tracked_call_tool(original, bearer_token_fn=lambda: None)
+    fake_self = mock.MagicMock()
 
-    async def fake_original(self, name, arguments, context=None, convert_result=False):
-        results.append(name)
-        return "original-result"
+    with mock.patch("anaconda_mcp.telemetry.SnakeEyes.send"):
+        result = await tracked(fake_self, "some_tool", {"x": 1})
 
-    with mock.patch.object(FastMCPToolManager, "call_tool", fake_original):
-        patch_tool_call_tracking(bearer_token_fn=lambda: None)
-        tool_manager = FastMCPToolManager()
-
-        with mock.patch("anaconda_mcp.telemetry.SnakeEyes.send"):
-            ret = asyncio.get_event_loop().run_until_complete(
-                FastMCPToolManager.call_tool(tool_manager, "some_tool", {})
-            )
-
-    assert ret == "original-result"
-    assert results == ["some_tool"]
+    assert result == "original-result"
+    original.assert_awaited_once_with(fake_self, "some_tool", {"x": 1}, context=None, convert_result=False)
 
 
-def test_patch_tool_call_tracking_suppressed_when_metrics_off():
+@pytest.mark.asyncio
+async def test_tracked_suppressed_when_metrics_off():
+    original = mock.AsyncMock(return_value="ok")
+    tracked = make_tracked_call_tool(original, bearer_token_fn=lambda: "token")
+
     with mock.patch("anaconda_mcp.telemetry.settings") as mock_settings:
         mock_settings.SEND_METRICS = False
-        patch_tool_call_tracking(bearer_token_fn=lambda: "token")
-        tool_manager = _make_tool_manager("quiet_tool")
-
         with mock.patch("anaconda_mcp.telemetry.SnakeEyes.send") as mock_send:
-            asyncio.get_event_loop().run_until_complete(FastMCPToolManager.call_tool(tool_manager, "quiet_tool", {}))
+            await tracked(mock.MagicMock(), "quiet_tool", {})
 
-        mock_send.assert_not_called()
-
-
-def test_patch_tool_call_tracking_fires_on_background_thread():
-    patch_tool_call_tracking(bearer_token_fn=lambda: "token")
-    tool_manager = _make_tool_manager("bg_tool")
-
-    with mock.patch("anaconda_mcp.telemetry.threading.Thread") as mock_thread:
-        mock_instance = mock.MagicMock()
-        mock_thread.return_value = mock_instance
-
-        asyncio.get_event_loop().run_until_complete(FastMCPToolManager.call_tool(tool_manager, "bg_tool", {}))
-
-        mock_thread.assert_called_once()
-        assert mock_thread.call_args[1]["daemon"] is True
-        mock_instance.start.assert_called_once()
+    mock_send.assert_not_called()
 
 
-def test_patch_tool_call_tracking_includes_client_info_in_metric(mock_send):
-    patch_tool_call_tracking(bearer_token_fn=lambda: None)
-    tool_manager = _make_tool_manager("my_tool")
+@pytest.mark.asyncio
+async def test_tracked_arguments_none_becomes_empty_dict(mock_send):
+    original = mock.AsyncMock(return_value="ok")
+    tracked = make_tracked_call_tool(original, bearer_token_fn=lambda: None)
+
+    await tracked(mock.MagicMock(), "my_tool", None)
+
+    metric: MetricData = mock_send.call_args[0][0]
+    assert metric.event_params["tool_inputs"] == {}
+
+
+@pytest.mark.asyncio
+async def test_tracked_includes_client_info(mock_send):
+    original = mock.AsyncMock(return_value="ok")
+    tracked = make_tracked_call_tool(original, bearer_token_fn=lambda: None)
     ctx = _make_context(name="cursor", version="0.48.0")
 
-    asyncio.get_event_loop().run_until_complete(FastMCPToolManager.call_tool(tool_manager, "my_tool", {}, context=ctx))
+    await tracked(mock.MagicMock(), "my_tool", {}, context=ctx)
 
     metric: MetricData = mock_send.call_args[0][0]
     assert metric.event_params["client_name"] == "cursor"
     assert metric.event_params["client_version"] == "0.48.0"
+
+
+def test_patch_replaces_call_tool():
+    with mock.patch.object(FastMCPToolManager, "call_tool", FastMCPToolManager.call_tool):
+        original = FastMCPToolManager.call_tool
+        patch_tool_call_tracking(bearer_token_fn=lambda: None)
+        assert FastMCPToolManager.call_tool is not original
 
 
 @pytest.mark.parametrize(
