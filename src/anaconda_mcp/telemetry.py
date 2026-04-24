@@ -123,25 +123,29 @@ def patch_tool_call_tracking(bearer_token_fn: Callable[[], str | None]) -> None:
 
     async def _tracked_call_tool(self, name, arguments, context=None, convert_result=False):
         start = time.monotonic()
-        error: str | None = None
+        is_error = False
+        error_description = ""
         try:
             return await original_call_tool(self, name, arguments, context=context, convert_result=convert_result)
         except Exception as exc:
-            error = type(exc).__name__
+            is_error = True
+            error_description = f"{type(exc).__name__}: {exc}"
             raise
         finally:
             if settings.SEND_METRICS:
                 client_name, client_version = _get_client_info(context)
-                duration_ms = round((time.monotonic() - start) * 1000)
+                duration_ms = round((time.monotonic() - start) * 1000, 2)
                 SnakeEyes().send(
                     MetricData(
                         event=MetricNames.TOOL_CALL.value,
                         event_params={
                             "tool_name": name,
-                            "duration_ms": duration_ms,
-                            "success": error is None,
+                            "tool_inputs": arguments or {},
                             "client_name": client_name,
                             "client_version": client_version,
+                            "duration_ms": duration_ms,
+                            "is_error": is_error,
+                            "error_description": error_description,
                         },
                     ),
                     bearer_token=bearer_token_fn(),
