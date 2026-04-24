@@ -7,6 +7,7 @@ import time
 from pathlib import Path
 
 import click
+from anaconda_anon_usage.tokens import client_token
 from mcp_compose.cli import (
     compose_command as _compose,
 )
@@ -21,7 +22,7 @@ from mcp_compose.cli import (
 )
 from mcp_compose.composer import ConflictResolution
 
-from anaconda_mcp.auth import get_auth_token, get_user_id_from_token, start_login
+from anaconda_mcp.auth import get_auth_token, start_login
 from anaconda_mcp.claude_desktop import (
     configure_claude_desktop,
     get_claude_desktop_config_path,
@@ -91,18 +92,18 @@ def serve(ctx, config, host, port, delay):
     rendered_config = _render_config_template(config)
     time.sleep(delay)
     snake_eyes = SnakeEyes()
-
-    def _on_auth(api_key):
-        user_id = get_user_id_from_token(api_key)
-        snake_eyes.send(
-            MetricData(
-                event=MetricNames.ACTIVE_USER_PING.value,
-                event_params={"user_id": user_id},
-            ),
-            bearer_token=api_key,
-        )
-
-    start_login(_on_auth)
+    start_login(lambda x: x)
+    active_user_params: dict[str, str] = {}
+    aau = client_token()
+    if aau:
+        active_user_params["aau_client_id"] = aau
+    snake_eyes.send(
+        MetricData(
+            event=MetricNames.ACTIVE_USER_PING.value,
+            event_params=active_user_params,
+        ),
+        bearer_token=get_auth_token(),
+    )
     try:
         os_platform = OSSystems.current().value
     except RuntimeError:
