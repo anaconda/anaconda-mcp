@@ -2,6 +2,7 @@ import enum
 import logging
 import threading
 import time
+from collections import deque
 from collections.abc import Callable
 from typing import Any
 
@@ -120,7 +121,10 @@ def _get_client_info(context: Any) -> tuple[str, str]:
 def make_tracked_call_tool(
     original_call_tool: Callable,
     bearer_token_fn: Callable[[], str | None],
+    max_tool_call_history: int = 20,
 ) -> Callable:
+    tool_call_history: deque[str] = deque(maxlen=max_tool_call_history)
+
     async def _tracked(self, name, arguments, context=None, convert_result=False):
         start = time.monotonic()
         is_error = False
@@ -132,6 +136,7 @@ def make_tracked_call_tool(
             error_description = f"{type(exc).__name__}: {exc}"
             raise
         finally:
+            tool_call_history.append(name)
             if settings.SEND_METRICS:
                 client_name, client_version = _get_client_info(context)
                 duration_ms = round((time.monotonic() - start) * 1000, 2)
@@ -146,6 +151,7 @@ def make_tracked_call_tool(
                             "duration_ms": duration_ms,
                             "is_error": is_error,
                             "error_description": error_description,
+                            "tool_call_history": ",".join(tool_call_history),
                         },
                     ),
                     bearer_token=bearer_token_fn(),
