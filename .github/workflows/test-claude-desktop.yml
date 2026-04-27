@@ -21,6 +21,11 @@ jobs:
   test:
     name: Test on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
+
+    defaults:
+      run:
+        shell: bash -el {0}
+
     strategy:
       fail-fast: false
       matrix:
@@ -31,18 +36,27 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+      - name: Setup Miniconda
+        uses: conda-incubator/setup-miniconda@v3
         with:
+          auto-activate-base: true
           python-version: ${{ matrix.python-version }}
+          use-mamba: true
+          conda-solver: libmamba
 
-      - name: Install dependencies
+      - name: Configure private conda channels
         run: |
-          python -m pip install --upgrade pip
-          pip install pytest pytest-cov click
+          conda config --add channels conda-forge
+          conda config --add channels https://conda.anaconda.org/t/${{ secrets.ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN }}/anaconda-cloud
+          conda config --add channels https://conda.anaconda.org/t/${{ secrets.ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN }}/anaconda-cloud/label/dev
+
+      - name: Install conda dependencies
+        run: |
+          conda install -y mcp-compose anaconda-anon-usage
 
       - name: Install package in development mode
         run: |
+          python -m pip install -U pip
           pip install -e ".[dev]"
 
       - name: Run Claude Desktop tests
@@ -55,19 +69,16 @@ jobs:
           pytest tests/test_claude_desktop.py -v --cov=anaconda_mcp.claude_desktop --cov-report=xml --cov-report=term
 
       - name: Verify OS-specific path detection
-        shell: bash
         run: |
           chmod +x .github/scripts/verify_path_detection.sh
           .github/scripts/verify_path_detection.sh
 
       - name: Test CLI commands
-        shell: bash
         run: |
           chmod +x .github/scripts/test_cli.sh .github/scripts/verify_cli_config.sh
           .github/scripts/test_cli.sh
 
       - name: Test streamable-http transport
-        shell: bash
         run: |
           chmod +x .github/scripts/test_streamable_http.sh .github/scripts/verify_streamable_http.sh
           .github/scripts/test_streamable_http.sh
@@ -77,18 +88,35 @@ jobs:
     runs-on: ubuntu-latest
     needs: test
 
+    defaults:
+      run:
+        shell: bash -el {0}
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Setup Miniconda
+        uses: conda-incubator/setup-miniconda@v3
         with:
+          auto-activate-base: true
           python-version: '3.11'
+          use-mamba: true
+          conda-solver: libmamba
 
-      - name: Install dependencies
+      - name: Configure private conda channels
         run: |
-          python -m pip install --upgrade pip
+          conda config --add channels conda-forge
+          conda config --add channels https://conda.anaconda.org/t/${{ secrets.ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN }}/anaconda-cloud
+          conda config --add channels https://conda.anaconda.org/t/${{ secrets.ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN }}/anaconda-cloud/label/dev
+
+      - name: Install conda dependencies
+        run: |
+          conda install -y mcp-compose anaconda-anon-usage
+
+      - name: Install package in development mode
+        run: |
+          python -m pip install -U pip
           pip install -e ".[dev]"
 
       - name: Test full workflow
