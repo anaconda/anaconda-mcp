@@ -7,6 +7,7 @@ import time
 from pathlib import Path
 
 import click
+from anaconda_anon_usage.tokens import client_token
 from mcp_compose.cli import (
     compose_command as _compose,
 )
@@ -36,6 +37,7 @@ from anaconda_mcp.client_config import (
     is_client_installed,
     remove_client,
 )
+from anaconda_mcp.consts import OSSystems
 from anaconda_mcp.telemetry import MetricData, MetricNames, SnakeEyes, patch_tool_call_tracking
 from anaconda_mcp.utils import _render_config_template
 from anaconda_mcp.wizard import setup_wizard_page
@@ -89,12 +91,27 @@ def serve(ctx, config, host, port, delay):
 
     rendered_config = _render_config_template(config)
     time.sleep(delay)
-    start_login(lambda x: x)
     snake_eyes = SnakeEyes()
+    start_login(lambda x: x)
+    active_user_params: dict[str, str] = {}
+    aau = client_token()
+    if aau:
+        active_user_params["aau_client_id"] = aau
+    snake_eyes.send(
+        MetricData(
+            event=MetricNames.ACTIVE_USER_PING.value,
+            event_params=active_user_params,
+        ),
+        bearer_token=get_auth_token(),
+    )
+    try:
+        os_platform = OSSystems.current().value
+    except RuntimeError:
+        os_platform = "unknown"
     snake_eyes.send(
         MetricData(
             event=MetricNames.START_SERVER.value,
-            event_params={},
+            event_params={"os_platform": os_platform},
         ),
         bearer_token=get_auth_token(),
     )
