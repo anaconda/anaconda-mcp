@@ -66,10 +66,16 @@ def cli(ctx, verbose: bool):
     help="Path to mcp_compose.toml file (default: src/anaconda_mcp/mcp_compose.toml)",
 )
 @click.option("--host", default="0.0.0.0", show_default=True, help="Host to bind to.")
-@click.option("--port", default=8000, show_default=True, type=int, help="Port to bind to.")
+@click.option("--port", default=None, type=int, help="Port to bind to (default: read from config file).")
 @click.option("--delay", default=0, show_default=True, type=int, help="Delay in seconds added before serving")
+@click.option(
+    "--transport",
+    type=click.Choice(["stdio", "sse", "streamable-http"]),
+    default=None,
+    help="Transport override (default: read from config file).",
+)
 @click.pass_context
-def serve(ctx, config, host, port, delay):
+def serve(ctx, config, host, port, delay, transport):
     def _handle_sigterm(signum, frame):
         logger.info("Received SIGTERM, shutting down...")
         sys.exit(0)
@@ -100,7 +106,10 @@ def serve(ctx, config, host, port, delay):
     )
     patch_tool_call_tracking(bearer_token_fn=get_auth_token)
     try:
-        ns = _ns(verbose=ctx.obj["verbose"], config=rendered_config, host=host, port=port)
+        ns_kwargs = {"verbose": ctx.obj["verbose"], "config": rendered_config, "host": host, "transport": transport}
+        if port is not None:
+            ns_kwargs["port"] = port
+        ns = _ns(**ns_kwargs)
         sys.exit(_serve(ns))
     except Exception:
         logger.exception("MCP Composer returned an error. Exiting", exc_info=True)
