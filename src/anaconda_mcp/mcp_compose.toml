@@ -54,6 +54,19 @@ auto_start = true
 command = ["python", "-m", "environments_mcp_server", "start", "--transport", "streamable-http", "--port", "4041"]
 startup_delay = 3
 
+[[servers.proxied.streamable-http]]
+name = "conda-meta"
+url = "http://localhost:4042/mcp"
+timeout = 30
+keep_alive = true
+reconnect_on_failure = true
+max_reconnect_attempts = 10
+health_check_enabled = false
+mode = "proxy"
+auto_start = true
+command = ["cmm", "run", "--transport", "streamable-http", "--port", "4042"]
+startup_delay = 3
+
 
 # ============================================================================
 # Tool Manager Configuration
