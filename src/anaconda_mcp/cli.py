@@ -58,6 +58,10 @@ def cli(ctx, verbose: bool):
     ctx.ensure_object(dict)
     ctx.obj["verbose"] = verbose
     setup_logging(verbose)
+    click.echo(
+        "Warning: 'anaconda-mcp' is deprecated. Use 'anaconda mcp' instead.",
+        err=True,
+    )
 
 
 @cli.command(help="Start MCP servers from configuration file.")
