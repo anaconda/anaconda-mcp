@@ -33,16 +33,16 @@ def main(
 
 
 def _forward_to_click(args: list[str]) -> None:
-    """Forward command to the Click CLI."""
     try:
-        click_cli.main(args, standalone_mode=False)
+        click_cli.main(args, standalone_mode=True)
     except SystemExit as e:
         if e.code:
-            raise typer.Exit(code=e.code)
+            raise typer.Exit(code=e.code) from e
 
 
 @app.command(
     "serve",
+    add_help_option=False,
     context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
 )
 def serve(ctx: typer.Context):
@@ -52,6 +52,7 @@ def serve(ctx: typer.Context):
 
 @app.command(
     "compose",
+    add_help_option=False,
     context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
 )
 def compose(ctx: typer.Context):
@@ -61,6 +62,7 @@ def compose(ctx: typer.Context):
 
 @app.command(
     "discover",
+    add_help_option=False,
     context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
 )
 def discover(ctx: typer.Context):
@@ -70,6 +72,7 @@ def discover(ctx: typer.Context):
 
 @app.command(
     "clients",
+    add_help_option=False,
     context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
 )
 def clients(ctx: typer.Context):
@@ -79,6 +82,7 @@ def clients(ctx: typer.Context):
 
 @app.command(
     "setup",
+    add_help_option=False,
     context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
 )
 def setup(ctx: typer.Context):
@@ -88,6 +92,7 @@ def setup(ctx: typer.Context):
 
 @app.command(
     "remove",
+    add_help_option=False,
     context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
 )
 def remove(ctx: typer.Context):

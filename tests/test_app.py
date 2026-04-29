@@ -26,6 +26,8 @@ class TestSubcommandForwarding:
         [
             ("serve", ["--port", "9000"]),
             ("setup", ["--client", "cursor", "--no-backup"]),
+            ("serve", ["--help"]),
+            ("serve", ["-h"]),
         ],
     )
     def test_extra_args_are_passed_through(self, runner, subcommand, extra_args):
