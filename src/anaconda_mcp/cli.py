@@ -124,6 +124,7 @@ def serve(ctx, config, host, port, delay):
         sys.exit(1)
 
 
+@cli.command(help="Compose MCP servers from dependencies.")
 @click.option(
     "-p",
     "--pyproject",
@@ -146,7 +147,6 @@ def serve(ctx, config, host, port, delay):
     "--output-format", type=click.Choice(["text", "json"]), default="text", show_default=True, help="Output format."
 )
 @click.pass_context
-@cli.command(help="Compose MCP servers from dependencies.")
 def compose(ctx, pyproject, name, conflict_resolution, include, exclude, output, output_format):
     ns = _ns(
         verbose=ctx.obj["verbose"],
