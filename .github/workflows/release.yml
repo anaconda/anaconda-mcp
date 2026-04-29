@@ -35,10 +35,11 @@ jobs:
       - name: Setup Miniconda
         uses: conda-incubator/setup-miniconda@v3
         with:
-          auto-activate-base: true
           python-version: ${{ matrix.python-version }}
           use-mamba: true
           conda-solver: libmamba
+          auto-activate: true
+          activate-environment: base
 
       - name: Install conda-build
         run: conda install -y conda-build
@@ -99,9 +100,10 @@ jobs:
       - name: Setup Miniconda
         uses: conda-incubator/setup-miniconda@v3
         with:
-          auto-activate-base: true
           use-mamba: true
           conda-solver: libmamba
+          auto-activate: true
+          activate-environment: base
 
       - name: Install anaconda-client
         run: conda install -y anaconda-client
