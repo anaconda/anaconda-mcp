@@ -21,6 +21,9 @@ from mcp_compose.cli import (
     setup_logging,
 )
 from mcp_compose.composer import ConflictResolution
+from rich import print_json as rich_print_json
+from rich.console import Console
+from rich.table import Table
 
 from anaconda_mcp.auth import get_auth_token, start_login
 from anaconda_mcp.claude_desktop import (
@@ -192,24 +195,42 @@ def discover(ctx, pyproject, output_format):
 # ============================================================================
 
 
-def _print_clients_table(project_dir: Path | None = None) -> None:
-    col_width = max(len(c) for c in SUPPORTED_CLIENTS) + 2
-    trans_width = len("stdio, streamable-http") + 2
-    click.echo(f"{'CLIENT':<{col_width}}  {'TRANSPORTS':<{trans_width}}  {'SCOPE':<18}  INSTALLED")
-    click.echo("-" * (col_width + trans_width + 34))
+def _build_clients_data(project_dir: Path | None = None) -> dict:
+    result = {}
     for client in sorted(SUPPORTED_CLIENTS):
         supports_project = SUPPORTED_CLIENTS[client]["supports_project_scope"]
-        scope_str = "global, project" if supports_project else "global"
         status = is_client_installed(client, project_dir=project_dir)
+        result[client] = {
+            "transports": ["stdio", "streamable-http"],
+            "supports_global_scope": True,
+            "supports_project_scope": supports_project,
+            "config_key": SUPPORTED_CLIENTS[client]["config_key"],
+            "installed_global": status["global"],
+            "installed_project": status.get("project", None),
+        }
+    return result
+
+
+def _print_clients_table(project_dir: Path | None = None) -> None:
+    data = _build_clients_data(project_dir=project_dir)
+    console = Console()
+    table = Table(show_header=True, header_style="bold")
+    table.add_column("CLIENT", style="cyan", no_wrap=True)
+    table.add_column("TRANSPORTS")
+    table.add_column("SCOPE")
+    table.add_column("INSTALLED")
+
+    for client, info in data.items():
+        scope_str = "global, project" if info["supports_project_scope"] else "global"
         parts = []
-        if status["global"]:
+        if info["installed_global"]:
             parts.append("global")
-        if status.get("project"):
+        if info["installed_project"]:
             parts.append("project")
         installed_str = ", ".join(parts) if parts else "—"
-        click.echo(
-            f"{client:<{col_width}}  {'stdio, streamable-http':<{trans_width}}  {scope_str:<18}  {installed_str}"
-        )
+        table.add_row(client, "stdio, streamable-http", scope_str, installed_str)
+
+    console.print(table)
 
 
 @cli.command(help="List supported AI clients and their configuration options.")
@@ -219,8 +240,13 @@ def _print_clients_table(project_dir: Path | None = None) -> None:
     default=None,
     help="Project directory to check for project-scoped installs (defaults to CWD).",
 )
-def clients(project_dir):
-    _print_clients_table(project_dir=project_dir)
+@click.option("--json", "output_json", is_flag=True, help="Output as JSON.")
+def clients(project_dir, output_json):
+    data = _build_clients_data(project_dir=project_dir)
+    if output_json:
+        rich_print_json(json.dumps(data))
+    else:
+        _print_clients_table(project_dir=project_dir)
 
 
 # ============================================================================
