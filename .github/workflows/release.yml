@@ -26,6 +26,8 @@ jobs:
             runner: [self-hosted-amd64-medium-privileged-on-demand]
           - os: macos
             runner: macos-latest
+          - os: windows
+            runner: windows-latest
 
     steps:
       - uses: actions/checkout@v4
@@ -35,10 +37,11 @@ jobs:
       - name: Setup Miniconda
         uses: conda-incubator/setup-miniconda@v3
         with:
-          auto-activate-base: true
           python-version: ${{ matrix.python-version }}
           use-mamba: true
           conda-solver: libmamba
+          auto-activate: true
+          activate-environment: base
 
       - name: Install conda-build
         run: conda install -y conda-build
@@ -71,7 +74,7 @@ jobs:
             conda-build
 
       - name: Show built package
-        run: ls -lh build/conda/**/*.conda || ls -lh build/conda/**/*.tar.bz2
+        run: find build/conda -name "*.conda" -o -name "*.tar.bz2" | xargs ls -lh
 
       - name: Upload conda artifact
         uses: actions/upload-artifact@v4
@@ -99,9 +102,10 @@ jobs:
       - name: Setup Miniconda
         uses: conda-incubator/setup-miniconda@v3
         with:
-          auto-activate-base: true
           use-mamba: true
           conda-solver: libmamba
+          auto-activate: true
+          activate-environment: base
 
       - name: Install anaconda-client
         run: conda install -y anaconda-client

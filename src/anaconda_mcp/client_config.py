@@ -80,7 +80,7 @@ def get_client_config_path(
         return Path.home() / ".codeium" / "windsurf" / "mcp_config.json"
 
     if client == "vscode":
-        return Path(str(user_data_dir("Code", appauthor=False))) / "User" / "mcp.json"
+        return Path(str(user_data_dir("Code", appauthor=False, roaming=True))) / "User" / "mcp.json"
 
     if client == "opencode":
         return Path.home() / ".config" / "opencode" / "opencode.json"
