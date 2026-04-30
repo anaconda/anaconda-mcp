@@ -34,6 +34,15 @@ jobs:
           - os: linux
             runner: [self-hosted-amd64-medium-privileged-on-demand]
             python-version: "3.13"
+          - os: macos
+            runner: macos-latest
+            python-version: "3.11"
+          - os: macos
+            runner: macos-latest
+            python-version: "3.12"
+          - os: macos
+            runner: macos-latest
+            python-version: "3.13"
           - os: windows
             runner: windows-latest
             python-version: "3.11"
