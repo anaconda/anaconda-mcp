@@ -123,7 +123,7 @@ def serve(ctx, config, host, port, delay):
         ),
         bearer_token=get_auth_token(),
     )
-    patch_tool_call_tracking(bearer_token_fn=get_auth_token)
+    patch_tool_call_tracking(bearer_token_fn=get_auth_token, aau_client_id=aau or None)
     try:
         ns = _ns(verbose=ctx.obj["verbose"], config=rendered_config, host=host, port=port)
         sys.exit(_serve(ns))

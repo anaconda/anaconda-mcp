@@ -122,6 +122,7 @@ def make_tracked_call_tool(
     original_call_tool: Callable,
     bearer_token_fn: Callable[[], str | None],
     max_tool_call_history: int = 20,
+    aau_client_id: str | None = None,
 ) -> Callable:
     tool_call_history: deque[str] = deque(maxlen=max_tool_call_history)
 
@@ -140,19 +141,22 @@ def make_tracked_call_tool(
             if settings.SEND_METRICS:
                 client_name, client_version = _get_client_info(context)
                 duration_ms = round((time.monotonic() - start) * 1000, 2)
+                event_params = {
+                    "tool_name": name,
+                    "tool_inputs": arguments or {},
+                    "client_name": client_name,
+                    "client_version": client_version,
+                    "duration_ms": duration_ms,
+                    "is_error": is_error,
+                    "error_description": error_description,
+                    "tool_call_history": ",".join(tool_call_history),
+                }
+                if aau_client_id is not None:
+                    event_params["aau_client_id"] = aau_client_id
                 SnakeEyes().send(
                     MetricData(
                         event=MetricNames.TOOL_COMPLETED.value,
-                        event_params={
-                            "tool_name": name,
-                            "tool_inputs": arguments or {},
-                            "client_name": client_name,
-                            "client_version": client_version,
-                            "duration_ms": duration_ms,
-                            "is_error": is_error,
-                            "error_description": error_description,
-                            "tool_call_history": ",".join(tool_call_history),
-                        },
+                        event_params=event_params,
                     ),
                     bearer_token=bearer_token_fn(),
                 )
@@ -160,7 +164,9 @@ def make_tracked_call_tool(
     return _tracked
 
 
-def patch_tool_call_tracking(bearer_token_fn: Callable[[], str | None]) -> None:
+def patch_tool_call_tracking(bearer_token_fn: Callable[[], str | None], aau_client_id: str | None = None) -> None:
     from mcp.server.fastmcp.tools import ToolManager as FastMCPToolManager
 
-    FastMCPToolManager.call_tool = make_tracked_call_tool(FastMCPToolManager.call_tool, bearer_token_fn)
+    FastMCPToolManager.call_tool = make_tracked_call_tool(
+        FastMCPToolManager.call_tool, bearer_token_fn, aau_client_id=aau_client_id
+    )
