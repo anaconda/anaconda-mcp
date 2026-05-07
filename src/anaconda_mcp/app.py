@@ -37,7 +37,7 @@ def _forward_to_click(args: list[str]) -> None:
         click_cli.main(args, standalone_mode=True)
     except SystemExit as e:
         if e.code:
-            raise typer.Exit(code=e.code) from e
+            raise typer.Exit(code=int(e.code)) from e
 
 
 @app.command(
@@ -98,6 +98,16 @@ def setup(ctx: typer.Context):
 def remove(ctx: typer.Context):
     """Remove Anaconda MCP from AI client configurations."""
     _forward_to_click(["remove"] + ctx.args)
+
+
+@app.command(
+    "terms",
+    add_help_option=False,
+    context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
+)
+def terms(ctx: typer.Context):
+    """Manage Terms of Service acceptance."""
+    _forward_to_click(["terms"] + ctx.args)
 
 
 if __name__ == "__main__":

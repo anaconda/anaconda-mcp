@@ -42,6 +42,7 @@ from anaconda_mcp.client_config import (
 )
 from anaconda_mcp.consts import OSSystems
 from anaconda_mcp.telemetry import MetricData, MetricNames, SnakeEyes, patch_tool_call_tracking
+from anaconda_mcp.terms import TERMS_OF_SERVICE, check_terms_accepted, persist_acceptance
 from anaconda_mcp.utils import _render_config_template
 from anaconda_mcp.wizard import setup_wizard_page
 
@@ -66,6 +67,7 @@ def cli(ctx, verbose: bool):
             "Warning: 'anaconda-mcp' is deprecated. Use 'anaconda mcp' instead.",
             err=True,
         )
+    check_terms_accepted(ctx)
 
 
 @cli.command(help="Start MCP servers from configuration file.")
@@ -821,6 +823,37 @@ def claude_path():
     except RuntimeError as e:
         click.echo(f"[Error] {e}", err=True)
         sys.exit(1)
+
+
+@cli.group(name="terms", invoke_without_command=True, help="Manage Terms of Service acceptance.")
+@click.pass_context
+def terms(ctx):
+    if ctx.invoked_subcommand is None:
+        click.echo(TERMS_OF_SERVICE)
+        click.echo(ctx.get_help())
+
+
+@terms.command(name="status", help="Check whether the Terms of Service have been accepted.")
+def terms_status():
+    from anaconda_mcp.config import settings
+
+    if settings.accepted_terms is True:
+        click.echo("Terms of Service: accepted")
+    else:
+        status = "declined" if settings.accepted_terms is False else "not yet responded"
+        click.echo(f"Terms of Service: {status}")
+        sys.exit(1)
+
+
+@terms.command(name="accept", help="Accept the Terms of Service.")
+def terms_accept():
+    from anaconda_mcp.config import settings
+
+    if settings.accepted_terms is True:
+        click.echo("Terms of Service have already been accepted.")
+        return
+    persist_acceptance(True)
+    click.echo("Terms of Service accepted.")
 
 
 def main():

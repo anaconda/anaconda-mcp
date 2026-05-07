@@ -27,6 +27,7 @@ class Settings(AnacondaBaseSettings, plugin_name="mcp"):
     service_name: str = "anaconda-mcp"
     send_metrics: bool = True
     python_executable: str | None = None
+    accepted_terms: bool | None = None
 
     @model_validator(mode="after")
     def set_anaconda_domain(self):
