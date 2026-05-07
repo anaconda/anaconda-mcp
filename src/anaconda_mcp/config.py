@@ -1,8 +1,8 @@
 import logging
 from enum import Enum
 
-from pydantic import field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from anaconda_cli_base.config import AnacondaBaseSettings
+from pydantic import model_validator
 
 logger = logging.getLogger(__name__)
 
@@ -20,32 +20,27 @@ class AnacondaDomains(Enum):
     staging = "stage.anaconda.com"
 
 
-class Settings(BaseSettings):
-    model_config = SettingsConfigDict(
-        env_prefix=f"{ENV_VAR_PREFIX}_",
-        env_file=".env",
-        extra="allow",
-    )
-    ANACONDA_DOMAIN: str | None = None
+class Settings(AnacondaBaseSettings, plugin_name="mcp"):
     ENVIRONMENT: str = Environments.production.value
+    ANACONDA_DOMAIN: str | None = None
     LOG_LEVEL: str = "INFO"
     SERVICE_NAME: str = "anaconda-mcp"
     SEND_METRICS: bool = True
     PYTHON_EXECUTABLE: str | None = None
 
-    @field_validator("ANACONDA_DOMAIN", mode="before")
-    @classmethod
-    def set_anaconda_domain(cls, v, info):
-        if v is not None:
-            return v
+    @model_validator(mode="after")
+    def set_anaconda_domain(self):
+        if self.ANACONDA_DOMAIN is not None:
+            return self
 
-        env = info.data.get("ENVIRONMENT", "").lower()
+        env = self.ENVIRONMENT.lower()
 
         domains_mapping = {
             Environments.production.value: AnacondaDomains.production.value,
             Environments.staging.value: AnacondaDomains.staging.value,
         }
-        return domains_mapping.get(env, AnacondaDomains.production.value)
+        self.ANACONDA_DOMAIN = domains_mapping.get(env, AnacondaDomains.production.value)
+        return self
 
 
 settings = Settings()
