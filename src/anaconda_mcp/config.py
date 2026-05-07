@@ -21,25 +21,25 @@ class AnacondaDomains(Enum):
 
 
 class Settings(AnacondaBaseSettings, plugin_name="mcp"):
-    ENVIRONMENT: str = Environments.production.value
-    ANACONDA_DOMAIN: str | None = None
-    LOG_LEVEL: str = "INFO"
-    SERVICE_NAME: str = "anaconda-mcp"
-    SEND_METRICS: bool = True
-    PYTHON_EXECUTABLE: str | None = None
+    environment: str = Environments.production.value
+    anaconda_domain: str | None = None
+    log_level: str = "INFO"
+    service_name: str = "anaconda-mcp"
+    send_metrics: bool = True
+    python_executable: str | None = None
 
     @model_validator(mode="after")
     def set_anaconda_domain(self):
-        if self.ANACONDA_DOMAIN is not None:
+        if self.anaconda_domain is not None:
             return self
 
-        env = self.ENVIRONMENT.lower()
+        env = self.environment.lower()
 
         domains_mapping = {
             Environments.production.value: AnacondaDomains.production.value,
             Environments.staging.value: AnacondaDomains.staging.value,
         }
-        self.ANACONDA_DOMAIN = domains_mapping.get(env, AnacondaDomains.production.value)
+        self.anaconda_domain = domains_mapping.get(env, AnacondaDomains.production.value)
         return self
 
 
