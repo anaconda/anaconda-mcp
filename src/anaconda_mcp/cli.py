@@ -1,6 +1,7 @@
 import argparse
 import json
 import logging
+import os
 import signal
 import sys
 import time
@@ -117,6 +118,11 @@ def serve(ctx, config, host, port, delay):
     time.sleep(delay)
     snake_eyes = SnakeEyes()
     start_login(lambda x: x)
+    # Forward Anaconda token to downstream proxied servers via env var
+    # so that ${ANACONDA_API_KEY} in mcp_compose.toml resolves automatically
+    _token = get_auth_token()
+    if _token:
+        os.environ.setdefault("ANACONDA_API_KEY", _token)
     active_user_params: dict[str, str] = {}
     aau = client_token()
     if aau:

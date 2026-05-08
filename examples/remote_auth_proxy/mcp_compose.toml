@@ -1,0 +1,39 @@
+# Remote Auth Proxy Proof-of-Concept
+#
+# Demonstrates forwarding the Anaconda API token from keyring to a remote
+# proxied MCP server via the Authorization: Bearer header.
+#
+# The echo server at localhost:9999 receives the token and echoes it back
+# as the tool response, proving end-to-end auth forwarding works.
+#
+# USAGE:
+#   1. Start the echo server manually first:
+#        python examples/remote_auth_proxy/echo_auth_server.py
+#
+#   2. Then connect via MCP Inspector (streamable-http mode):
+#        anaconda-mcp serve --config examples/remote_auth_proxy/mcp_compose.toml
+#        # Then in Inspector, connect to: http://localhost:2391/mcp
+#
+#   OR use stdio mode:
+#        npx @modelcontextprotocol/inspector -- anaconda-mcp serve --config examples/remote_auth_proxy/mcp_compose.toml
+
+[composer]
+name = "remote-auth-proxy-test"
+conflict_resolution = "prefix"
+log_level = "INFO"
+port = 2391
+
+[transport]
+stdio_enabled = true
+streamable_http_enabled = true
+sse_enabled = false
+
+[authentication]
+enabled = false
+
+[[servers.proxied.streamable-http]]
+name = "auth_echo"
+url = "http://localhost:9999/mcp"
+auth_token = "${ANACONDA_API_KEY}"
+auth_type = "bearer"
+timeout = 30
