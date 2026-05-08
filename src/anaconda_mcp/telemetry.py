@@ -23,6 +23,9 @@ class MetricNames(enum.Enum):
     INSTALL_COMPLETED = f"{_EVENT_PREFIX}_install_completed"
 
 
+NEW_USER_THRESHOLD_DAYS = 1
+
+
 class MetricData(BaseModel):
     event: str
     event_params: dict[str, Any]
