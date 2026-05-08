@@ -1,18 +1,13 @@
-export PYTHONPATH := src
-
 .DEFAULT_GOAL := help
-ifdef CONDA_PREFIX
-  PYTHON ?= $(CONDA_PREFIX)/bin/python
-else
-  PYTHON ?= $(shell command -v python3 2>/dev/null || command -v python)
-endif
+ENV_NAME ?= ./env
+CONDA    ?= conda
+
+PYTHON ?= $(CONDA) run --no-capture-output -p $(ENV_NAME) python
 PIP := $(PYTHON) -m pip
 PROJECT := anaconda-mcp
 DIST_DIR := dist
 BUILD_DIR := build
 MCP_SERVER_PORT   ?= 4041
-ENV_NAME ?= ./env
-CONDA    ?= conda
 
 # Docker settings
 DOCKER_IMAGE ?= anaconda-mcp
@@ -80,17 +75,17 @@ install: wheel ## Build and install the package (production)
 	PIP_NO_CACHE_DIR=1 $(PIP) install --upgrade --force-reinstall $(DIST_DIR)/*.whl
 	@echo "Installed."
 
-install-dev: ## Install package in development mode with dev dependencies
-	@echo "Installing $(PROJECT) in development mode with dev dependencies..."
-	$(PIP) install -e ".[dev]"
+install-dev: ## Install package in development mode (no-deps; use make setup for full env)
+	@echo "Installing $(PROJECT) in development mode..."
+	$(PIP) install --no-deps -e .
 	@echo "Installed."
 
 uninstall: ## Uninstall the package from the current Python environment
 	$(PIP) uninstall -y $(PROJECT)
 
-run: ## Start the anaconda-mcp CLI
+run: ## Start the MCP server
 	@echo "Starting anaconda-mcp..."
-	$(PYTHON) -m anaconda_mcp.cli
+	$(PYTHON) -m anaconda_mcp.cli serve
 
 test: test-pytest ## Run all tests (alias for test-pytest)
 
@@ -164,12 +159,11 @@ mypy-install-types: ## Install missing type stubs (non-interactive)
 mypy-clean: ## Remove mypy cache
 	rm -rf $(MYPY_CACHE)
 
-shell: ## Open IPython with PYTHONPATH=src pre-set
-	@echo "Launching IPython with PYTHONPATH=src"
-	PYTHONPATH=src $(PYTHON) -m IPython
+shell: ## Open IPython in the dev env
+	$(PYTHON) -m IPython
 
-shell-reload: ## IPython with PYTHONPATH=src and autoreload enabled
-	PYTHONPATH=src $(PYTHON) -m IPython --ext autoreload --InteractiveShellApp.exec_lines="%autoreload 2"
+shell-reload: ## Open IPython in the dev env with autoreload enabled
+	$(PYTHON) -m IPython --ext autoreload --InteractiveShellApp.exec_lines="%autoreload 2"
 
 conda-build: ## Build conda package
 	@echo "Building conda package..."
@@ -236,13 +230,15 @@ docker-run: ## Run the Docker container in streamable-http mode with port mappin
 
 setup: ## Create or update the dev conda env from environment-dev.yml
 	@echo "Setting up Conda env: $(ENV_NAME)"
-	@if $(CONDA) env list | awk '{print $$1}' | grep -qx '$(ENV_NAME)'; then \
+	@if [ -d "$(ENV_NAME)" ]; then \
 		echo "Environment exists. Updating…"; \
-		$(CONDA) env update -n $(ENV_NAME) -f environment-dev.yml --prune; \
+		$(CONDA) env update -p $(ENV_NAME) -f environment-dev.yml --prune; \
 	else \
 		echo "Environment not found. Creating…"; \
-		$(CONDA) env create -n $(ENV_NAME) -f environment-dev.yml; \
+		$(CONDA) env create -p $(ENV_NAME) -f environment-dev.yml; \
 	fi
+	@echo "Installing package in editable mode…"
+	$(PYTHON) -m pip install --no-deps -e .
 	@echo "Done. Activate with: conda activate $(ENV_NAME)"
 
 setup-prod: ## Create or update production conda env from environment.yml
@@ -258,7 +254,7 @@ setup-prod: ## Create or update production conda env from environment.yml
 
 clean-setup: ## Remove the dev conda env and all build artifacts/dist (fresh start)
 	@echo "Removing Conda env: $(ENV_NAME) (if present)…"
-	-$(CONDA) env remove -n $(ENV_NAME) -y >/dev/null 2>&1 || true
+	-$(CONDA) env remove -p $(ENV_NAME) -y >/dev/null 2>&1 || true
 	@$(MAKE) clean
 	@echo "Clean reset complete."
 
