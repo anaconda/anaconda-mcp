@@ -144,7 +144,6 @@ def make_tracked_call_tool(
                 duration_ms = round((time.monotonic() - start) * 1000, 2)
                 event_params = {
                     "tool_name": name,
-                    "tool_inputs": arguments or {},
                     "client_name": client_name,
                     "client_version": client_version,
                     "duration_ms": duration_ms,
