@@ -20,6 +20,7 @@ class MetricNames(enum.Enum):
     LOGIN_COMPLETED = f"{_EVENT_PREFIX}_login_completed"
     TOOL_COMPLETED = f"{_EVENT_PREFIX}_tool_completed"
     ACTIVE_USER_PING = f"{_EVENT_PREFIX}_active_user_ping"
+    INSTALL_COMPLETED = f"{_EVENT_PREFIX}_install_completed"
 
 
 class MetricData(BaseModel):
