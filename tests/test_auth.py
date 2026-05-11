@@ -234,3 +234,15 @@ async def test_is_new_user_omitted_on_api_failure(mocked_init_telemetry, mock_ge
             assert isinstance(metric_data, MetricData)
             assert metric_data.event == MetricNames.LOGIN_COMPLETED.value
             assert "is_new_user" not in metric_data.event_params
+
+
+async def test_cli_gates_on_token_not_found(mock_token_info_load):
+    from anaconda_auth.exceptions import TokenNotFoundError
+
+    mock_token_info_load.side_effect = TokenNotFoundError("no token")
+
+    runner = CliRunner()
+    result = runner.invoke(cli, ["clients"])
+
+    assert result.exit_code == 1
+    assert isinstance(result.exception, TokenNotFoundError)

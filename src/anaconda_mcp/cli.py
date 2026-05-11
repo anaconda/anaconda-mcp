@@ -8,6 +8,7 @@ from pathlib import Path
 
 import click
 from anaconda_anon_usage.tokens import client_token
+from anaconda_auth.token import TokenInfo
 from mcp_compose.cli import (
     compose_command as _compose,
 )
@@ -81,6 +82,7 @@ def cli(ctx, verbose: bool):
             "Warning: 'anaconda-mcp' is deprecated. Use 'anaconda mcp' instead.",
             err=True,
         )
+    _ = TokenInfo.load()
 
 
 @cli.command(help="Start MCP servers from configuration file.")
