@@ -40,7 +40,6 @@ from anaconda_mcp.client_config import (
     is_client_installed,
     remove_client,
 )
-from anaconda_mcp.consts import OSSystems
 from anaconda_mcp.mcp_state import is_new_install, mark_installed
 from anaconda_mcp.telemetry import MetricData, MetricNames, SnakeEyes, patch_tool_call_tracking
 from anaconda_mcp.utils import _render_config_template
@@ -128,14 +127,10 @@ def serve(ctx, config, host, port, delay):
         ),
         bearer_token=get_auth_token(),
     )
-    try:
-        os_platform = OSSystems.current().value
-    except RuntimeError:
-        os_platform = "unknown"
     snake_eyes.send(
         MetricData(
             event=MetricNames.START_SERVER.value,
-            event_params={"os_platform": os_platform},
+            event_params={},
         ),
         bearer_token=get_auth_token(),
     )
