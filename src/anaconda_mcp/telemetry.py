@@ -1,5 +1,7 @@
 import enum
+import importlib.metadata
 import logging
+import platform
 import threading
 import time
 from collections import deque
@@ -31,6 +33,13 @@ class MetricData(BaseModel):
     event_params: dict[str, Any]
     service_id: str = settings.SERVICE_NAME
     user_environment: str = settings.ENVIRONMENT
+
+
+def _get_package_version() -> str:
+    try:
+        return importlib.metadata.version("anaconda-mcp")
+    except importlib.metadata.PackageNotFoundError:
+        return "unknown"
 
 
 # TODO: Introduce Anaconda OpenTelemetry when auth is compatible with api-keys or we have a solution in anaconda-auth
@@ -68,6 +77,10 @@ class SnakeEyes:
                 **metric_data.event_params,
                 "user_environment": metric_data.user_environment,
                 "is_authenticated": is_authenticated,
+                "os_platform": platform.system() or "unknown",
+                "os_arch": platform.machine() or "unknown",
+                "python_version": platform.python_version(),
+                "package_version": _get_package_version(),
             }
             if is_authenticated:
                 payload = {
