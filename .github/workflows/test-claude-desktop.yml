@@ -73,6 +73,16 @@ jobs:
           chmod +x .github/scripts/verify_path_detection.sh
           .github/scripts/verify_path_detection.sh
 
+      - name: Provision test auth token
+        run: |
+          mkdir -p ~/.anaconda
+          python -c "
+          import base64, json, pathlib
+          token = base64.b64encode(json.dumps({'api_key': 'fake'}).encode()).decode()
+          path = pathlib.Path.home() / '.anaconda' / 'keyring'
+          path.write_text(json.dumps({'Anaconda Cloud': {'anaconda.com': token}}))
+          "
+
       - name: Test CLI commands
         run: |
           chmod +x .github/scripts/test_cli.sh .github/scripts/verify_cli_config.sh
