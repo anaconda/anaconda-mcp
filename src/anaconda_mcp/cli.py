@@ -82,7 +82,8 @@ def cli(ctx, verbose: bool):
             "Warning: 'anaconda-mcp' is deprecated. Use 'anaconda mcp' instead.",
             err=True,
         )
-    _ = TokenInfo.load()
+    if ctx.invoked_subcommand != "serve":
+        _ = TokenInfo.load()
 
 
 @cli.command(help="Start MCP servers from configuration file.")

@@ -246,3 +246,16 @@ async def test_cli_gates_on_token_not_found(mock_token_info_load):
 
     assert result.exit_code == 1
     assert isinstance(result.exception, TokenNotFoundError)
+
+
+async def test_serve_bypasses_token_gate(mock_token_info_load, mock_start_login, mock_serve_command):
+    from anaconda_auth.exceptions import TokenNotFoundError
+
+    mock_token_info_load.side_effect = TokenNotFoundError("no token")
+
+    runner = CliRunner()
+    with mock.patch("anaconda_mcp.cli.Path.exists", return_value=True):
+        result = runner.invoke(cli, ["serve"])
+
+    assert result.exit_code == 0
+    assert mock_start_login.call_count == 1
