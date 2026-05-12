@@ -8,6 +8,7 @@ from pathlib import Path
 
 import click
 from anaconda_anon_usage.tokens import client_token
+from anaconda_auth.exceptions import TokenNotFoundError
 from anaconda_auth.token import TokenInfo
 from mcp_compose.cli import (
     compose_command as _compose,
@@ -117,6 +118,12 @@ def serve(ctx, config, host, port, delay):
 
     rendered_config = _render_config_template(config)
     time.sleep(delay)
+    token = get_auth_token()
+    if not token:
+        Console(stderr=True).print(
+            "[yellow]⚠️  Not authenticated. Some features may be limited. "
+            "Run [green]anaconda login[/green] to authenticate.[/yellow]"
+        )
     snake_eyes = SnakeEyes()
     start_login(lambda x: x)
     active_user_params: dict[str, str] = {}
@@ -128,14 +135,14 @@ def serve(ctx, config, host, port, delay):
             event=MetricNames.ACTIVE_USER_PING.value,
             event_params=active_user_params,
         ),
-        bearer_token=get_auth_token(),
+        bearer_token=token,
     )
     snake_eyes.send(
         MetricData(
             event=MetricNames.START_SERVER.value,
             event_params={},
         ),
-        bearer_token=get_auth_token(),
+        bearer_token=token,
     )
     patch_tool_call_tracking(bearer_token_fn=get_auth_token, aau_client_id=aau or None)
     try:
@@ -843,7 +850,14 @@ def claude_path():
 
 
 def main():
-    cli(obj={})  # entry point
+    try:
+        cli(obj={})  # entry point
+    except TokenNotFoundError:
+        click.echo(
+            "Error: Not authenticated. Please run 'anaconda login' to log in.",
+            err=True,
+        )
+        sys.exit(1)
 
 
 if __name__ == "__main__":
