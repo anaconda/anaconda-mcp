@@ -42,6 +42,8 @@ def get_auth_token() -> str | None:
 
 
 def validate_auth_token(token: str) -> bool:
+    if os.environ.get("ANACONDA_AUTH_SKIP_VALIDATION"):
+        return True
     try:
         _ = BaseClient(api_key=token).account
         return True
