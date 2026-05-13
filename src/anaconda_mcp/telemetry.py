@@ -1,5 +1,7 @@
 import enum
+import importlib.metadata
 import logging
+import platform
 import threading
 import time
 from collections import deque
@@ -20,6 +22,10 @@ class MetricNames(enum.Enum):
     LOGIN_COMPLETED = f"{_EVENT_PREFIX}_login_completed"
     TOOL_COMPLETED = f"{_EVENT_PREFIX}_tool_completed"
     ACTIVE_USER_PING = f"{_EVENT_PREFIX}_active_user_ping"
+    INSTALL_COMPLETED = f"{_EVENT_PREFIX}_install_completed"
+
+
+NEW_USER_THRESHOLD_DAYS = 1
 
 
 class MetricData(BaseModel):
@@ -27,6 +33,13 @@ class MetricData(BaseModel):
     event_params: dict[str, Any]
     service_id: str = settings.service_name
     user_environment: str = settings.environment
+
+
+def _get_package_version() -> str:
+    try:
+        return importlib.metadata.version("anaconda-mcp")
+    except importlib.metadata.PackageNotFoundError:
+        return "unknown"
 
 
 # TODO: Introduce Anaconda OpenTelemetry when auth is compatible with api-keys or we have a solution in anaconda-auth
@@ -64,6 +77,10 @@ class SnakeEyes:
                 **metric_data.event_params,
                 "user_environment": metric_data.user_environment,
                 "is_authenticated": is_authenticated,
+                "os_platform": platform.system() or "unknown",
+                "os_arch": platform.machine() or "unknown",
+                "python_version": platform.python_version(),
+                "package_version": _get_package_version(),
             }
             if is_authenticated:
                 payload = {
@@ -143,7 +160,6 @@ def make_tracked_call_tool(
                 duration_ms = round((time.monotonic() - start) * 1000, 2)
                 event_params = {
                     "tool_name": name,
-                    "tool_inputs": arguments or {},
                     "client_name": client_name,
                     "client_version": client_version,
                     "duration_ms": duration_ms,

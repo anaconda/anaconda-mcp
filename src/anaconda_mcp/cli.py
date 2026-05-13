@@ -41,7 +41,7 @@ from anaconda_mcp.client_config import (
     remove_client,
 )
 from anaconda_mcp.config import settings
-from anaconda_mcp.consts import OSSystems
+from anaconda_mcp.mcp_state import is_new_install, mark_installed
 from anaconda_mcp.telemetry import MetricData, MetricNames, SnakeEyes, patch_tool_call_tracking
 from anaconda_mcp.terms import (
     CURRENT_TOS_VERSION,
@@ -55,6 +55,21 @@ from anaconda_mcp.utils import _render_config_template
 from anaconda_mcp.wizard import setup_wizard_page
 
 logger = logging.getLogger(__name__)
+
+
+def _send_install_event():
+    try:
+        new_install = is_new_install()
+        mark_installed()
+        SnakeEyes().send(
+            MetricData(
+                event=MetricNames.INSTALL_COMPLETED.value,
+                event_params={"new_install": new_install},
+            ),
+            bearer_token=get_auth_token(),
+        )
+    except Exception:
+        logger.debug("Failed to send install event", exc_info=True)
 
 
 def _ns(**kwargs):
@@ -136,14 +151,10 @@ def serve(ctx, config, host, port, delay):
         ),
         bearer_token=get_auth_token(),
     )
-    try:
-        os_platform = OSSystems.current().value
-    except RuntimeError:
-        os_platform = "unknown"
     snake_eyes.send(
         MetricData(
             event=MetricNames.START_SERVER.value,
-            event_params={"os_platform": os_platform},
+            event_params={},
         ),
         bearer_token=get_auth_token(),
     )
@@ -418,6 +429,9 @@ def setup(clients, transport, host, port, server_name, scope, project_dir, no_ba
 
         if exit_code != 0:
             raise SystemExit(exit_code)
+
+        if adds:
+            _send_install_event()
         return
 
     results = {}
@@ -464,6 +478,8 @@ def setup(clients, transport, host, port, server_name, scope, project_dir, no_ba
 
     if exit_code != 0:
         raise SystemExit(exit_code)
+
+    _send_install_event()
 
 
 # ============================================================================

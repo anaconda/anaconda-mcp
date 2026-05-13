@@ -51,26 +51,6 @@ def serve(ctx: typer.Context):
 
 
 @app.command(
-    "compose",
-    add_help_option=False,
-    context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
-)
-def compose(ctx: typer.Context):
-    """Compose MCP servers from dependencies."""
-    _forward_to_click(["compose"] + ctx.args)
-
-
-@app.command(
-    "discover",
-    add_help_option=False,
-    context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
-)
-def discover(ctx: typer.Context):
-    """Discover MCP servers from dependencies."""
-    _forward_to_click(["discover"] + ctx.args)
-
-
-@app.command(
     "clients",
     add_help_option=False,
     context_settings={"allow_extra_args": True, "ignore_unknown_options": True},

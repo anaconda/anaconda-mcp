@@ -43,7 +43,6 @@ async def test_tracked_sends_metric_on_success(mock_send):
     metric: MetricData = mock_send.call_args[0][0]
     assert metric.event == MetricNames.TOOL_COMPLETED.value
     assert metric.event_params["tool_name"] == "my_tool"
-    assert metric.event_params["tool_inputs"] == {"arg1": "val1"}
     assert metric.event_params["is_error"] is False
     assert metric.event_params["error_description"] == ""
     assert metric.event_params["client_name"] == "unknown"
@@ -119,7 +118,7 @@ async def test_tracked_arguments_none_becomes_empty_dict(mock_send):
     await tracked(mock.MagicMock(), "my_tool", None)
 
     metric: MetricData = mock_send.call_args[0][0]
-    assert metric.event_params["tool_inputs"] == {}
+    assert metric.event_params["tool_name"] == "my_tool"
 
 
 @pytest.mark.asyncio

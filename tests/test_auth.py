@@ -2,6 +2,7 @@ import asyncio
 import logging
 import threading
 import time
+from datetime import datetime, timedelta, timezone
 from unittest import mock
 from unittest.mock import MagicMock
 
@@ -10,6 +11,7 @@ from click.testing import CliRunner
 
 from anaconda_mcp import auth
 from anaconda_mcp.cli import cli
+from anaconda_mcp.telemetry import MetricData, MetricNames
 
 logger = logging.getLogger(__name__)
 
@@ -45,8 +47,21 @@ def mock_serve_command():
         yield m
 
 
+@pytest.fixture
+def mock_base_client():
+    with mock.patch("anaconda_mcp.auth.BaseClient") as m:
+        m.return_value.account = {"user": {"created_at": "2020-01-01T00:00:00Z"}}
+        yield m
+
+
+@pytest.fixture
+def mock_snake_eyes():
+    with mock.patch("anaconda_mcp.auth.SnakeEyes") as m:
+        yield m
+
+
 async def test_auth_flow_should_be_initialized_only_once(
-    mocked_init_telemetry, mock_get_auth_token, mock_anaconda_login
+    mocked_init_telemetry, mock_get_auth_token, mock_anaconda_login, mock_base_client, mock_snake_eyes
 ):
     # Given
     auth._initialized = False
@@ -119,7 +134,7 @@ async def test_start_login_handles_login_exception(
     assert mocked_init_telemetry.call_count == 0
 
 
-async def test_init_once_thread_safety(mocked_token, mock_get_auth_token):
+async def test_init_once_thread_safety(mocked_token, mock_get_auth_token, mock_base_client, mock_snake_eyes):
     # Given
     auth._initialized = False
     mock_get_auth_token.return_value = mocked_token
@@ -144,3 +159,78 @@ async def test_init_once_thread_safety(mocked_token, mock_get_auth_token):
     # Then - telemetry should only be initialized once despite 10 concurrent calls
     assert call_count == 1
     assert auth._initialized is True
+
+
+async def test_is_new_user_true_for_recent_account(mocked_init_telemetry, mock_get_auth_token):
+    # Given - account created less than 1 day ago
+    auth._initialized = False
+    recent_timestamp = (datetime.now(timezone.utc) - timedelta(hours=1)).isoformat()
+
+    with mock.patch("anaconda_mcp.auth.BaseClient") as mock_base_client:
+        mock_client_instance = MagicMock()
+        mock_client_instance.account = {"user": {"created_at": recent_timestamp}}
+        mock_base_client.return_value = mock_client_instance
+
+        with mock.patch("anaconda_mcp.auth.SnakeEyes") as mock_snake_eyes:
+            mock_snake_eyes_instance = MagicMock()
+            mock_snake_eyes.return_value = mock_snake_eyes_instance
+
+            # When
+            auth.start_login(init_telemetry=mocked_init_telemetry)
+
+            # Then - SnakeEyes().send() should be called with is_new_user=True
+            assert mock_snake_eyes_instance.send.call_count == 1
+            call_args = mock_snake_eyes_instance.send.call_args
+            metric_data = call_args[0][0]
+            assert isinstance(metric_data, MetricData)
+            assert metric_data.event == MetricNames.LOGIN_COMPLETED.value
+            assert metric_data.event_params.get("is_new_user") is True
+
+
+async def test_is_new_user_false_for_old_account(mocked_init_telemetry, mock_get_auth_token):
+    # Given - account created 30 days ago
+    auth._initialized = False
+    old_timestamp = (datetime.now(timezone.utc) - timedelta(days=30)).isoformat()
+
+    with mock.patch("anaconda_mcp.auth.BaseClient") as mock_base_client:
+        mock_client_instance = MagicMock()
+        mock_client_instance.account = {"user": {"created_at": old_timestamp}}
+        mock_base_client.return_value = mock_client_instance
+
+        with mock.patch("anaconda_mcp.auth.SnakeEyes") as mock_snake_eyes:
+            mock_snake_eyes_instance = MagicMock()
+            mock_snake_eyes.return_value = mock_snake_eyes_instance
+
+            # When
+            auth.start_login(init_telemetry=mocked_init_telemetry)
+
+            # Then - SnakeEyes().send() should be called with is_new_user=False
+            assert mock_snake_eyes_instance.send.call_count == 1
+            call_args = mock_snake_eyes_instance.send.call_args
+            metric_data = call_args[0][0]
+            assert isinstance(metric_data, MetricData)
+            assert metric_data.event == MetricNames.LOGIN_COMPLETED.value
+            assert metric_data.event_params.get("is_new_user") is False
+
+
+async def test_is_new_user_omitted_on_api_failure(mocked_init_telemetry, mock_get_auth_token):
+    # Given - BaseClient raises an exception
+    auth._initialized = False
+
+    with mock.patch("anaconda_mcp.auth.BaseClient") as mock_base_client:
+        mock_base_client.side_effect = Exception("API error")
+
+        with mock.patch("anaconda_mcp.auth.SnakeEyes") as mock_snake_eyes:
+            mock_snake_eyes_instance = MagicMock()
+            mock_snake_eyes.return_value = mock_snake_eyes_instance
+
+            # When
+            auth.start_login(init_telemetry=mocked_init_telemetry)
+
+            # Then - SnakeEyes().send() should be called but without is_new_user in event_params
+            assert mock_snake_eyes_instance.send.call_count == 1
+            call_args = mock_snake_eyes_instance.send.call_args
+            metric_data = call_args[0][0]
+            assert isinstance(metric_data, MetricData)
+            assert metric_data.event == MetricNames.LOGIN_COMPLETED.value
+            assert "is_new_user" not in metric_data.event_params

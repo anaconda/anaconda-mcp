@@ -15,7 +15,7 @@ def runner():
 class TestSubcommandForwarding:
     """Each app subcommand should forward its name + any extra args to Click."""
 
-    @pytest.mark.parametrize("subcommand", ["serve", "compose", "discover", "clients", "setup", "remove"])
+    @pytest.mark.parametrize("subcommand", ["serve", "clients", "setup", "remove"])
     def test_subcommand_forwards_to_click(self, runner, subcommand):
         with mock.patch("anaconda_mcp.app._forward_to_click") as mock_fwd:
             runner.invoke(app, [subcommand])
