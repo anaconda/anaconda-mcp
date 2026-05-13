@@ -41,6 +41,14 @@ def get_auth_token() -> str | None:
         return None
 
 
+def validate_auth_token(token: str) -> bool:
+    try:
+        _ = BaseClient(api_key=token).account
+        return True
+    except Exception:
+        return False
+
+
 def start_login(
     init_telemetry: Callable[[str], None], poll_interval: float = 1.0, max_wait_sec: float | None = 60
 ) -> None:
@@ -139,8 +147,13 @@ def start_login(
 def make_auth_enforcement_hook(auth_token_fn: Callable[[], str | None]) -> Callable:
     def hook(original_call_tool: Callable) -> Callable:
         async def _enforced(self, name, arguments, context=None, convert_result=False):
-            if auth_token_fn() is None:
+            token = auth_token_fn()
+            if token is None:
                 raise PermissionError("Not authenticated. Please run 'anaconda login' to re-authenticate.")
+            if not validate_auth_token(token):
+                raise PermissionError(
+                    "Authentication token is invalid or expired. Please run 'anaconda login' to re-authenticate."
+                )
             return await original_call_tool(self, name, arguments, context=context, convert_result=convert_result)
 
         return _enforced

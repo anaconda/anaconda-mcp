@@ -26,7 +26,7 @@ from rich import print_json as rich_print_json
 from rich.console import Console
 from rich.table import Table
 
-from anaconda_mcp.auth import get_auth_token, make_auth_enforcement_hook, start_login
+from anaconda_mcp.auth import get_auth_token, make_auth_enforcement_hook, start_login, validate_auth_token
 from anaconda_mcp.claude_desktop import (
     configure_claude_desktop,
     get_claude_desktop_config_path,
@@ -83,8 +83,13 @@ def cli(ctx, verbose: bool):
             err=True,
         )
     if ctx.invoked_subcommand and ctx.invoked_subcommand != "serve":
-        if not get_auth_token():
+        token = get_auth_token()
+        if not token:
             raise TokenNotFoundError("Login is required to complete this action.")
+        if not validate_auth_token(token):
+            raise TokenNotFoundError(
+                "Authentication token is invalid or expired. Please run 'anaconda login' to re-authenticate."
+            )
 
 
 @cli.command(help="Start MCP servers from configuration file.")

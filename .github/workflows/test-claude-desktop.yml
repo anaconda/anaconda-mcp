@@ -23,7 +23,8 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     env:
-      ANACONDA_AUTH_API_KEY: fake
+      ANACONDA_AUTH_API_KEY: ${{ secrets.TEST_API_KEY }}
+      ANACONDA_AUTH_DOMAIN: stage.anaconda.com
 
     defaults:
       run:
@@ -92,7 +93,8 @@ jobs:
     needs: test
 
     env:
-      ANACONDA_AUTH_API_KEY: fake
+      ANACONDA_AUTH_API_KEY: ${{ secrets.TEST_API_KEY }}
+      ANACONDA_AUTH_DOMAIN: stage.anaconda.com
 
     defaults:
       run:
