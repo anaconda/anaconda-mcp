@@ -81,7 +81,7 @@ def start_login(
         # Account fetch outside lock to avoid blocking other threads on HTTP I/O
         event_params: dict[str, Any] = {}
         try:
-            client = BaseClient(domain=settings.ANACONDA_DOMAIN, api_key=api_key)
+            client = BaseClient(domain=settings.anaconda_domain, api_key=api_key)
             account = client.account
             created_at_str = account["user"]["created_at"]
             # Python 3.10 fromisoformat() doesn't handle the Z suffix
