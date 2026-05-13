@@ -73,17 +73,9 @@ jobs:
           chmod +x .github/scripts/verify_path_detection.sh
           .github/scripts/verify_path_detection.sh
 
-      - name: Provision test auth token
-        run: |
-          mkdir -p ~/.anaconda
-          python -c "
-          import base64, json, pathlib
-          token = base64.b64encode(json.dumps({'api_key': 'fake'}).encode()).decode()
-          path = pathlib.Path.home() / '.anaconda' / 'keyring'
-          path.write_text(json.dumps({'Anaconda Cloud': {'anaconda.com': token}}))
-          "
-
       - name: Test CLI commands
+        env:
+          ANACONDA_AUTH_API_KEY: fake
         run: |
           chmod +x .github/scripts/test_cli.sh .github/scripts/verify_cli_config.sh
           .github/scripts/test_cli.sh
@@ -129,17 +121,9 @@ jobs:
           python -m pip install -U pip
           pip install -e ".[dev]"
 
-      - name: Provision test auth token
-        run: |
-          mkdir -p ~/.anaconda
-          python -c "
-          import base64, json, pathlib
-          token = base64.b64encode(json.dumps({'api_key': 'fake'}).encode()).decode()
-          path = pathlib.Path.home() / '.anaconda' / 'keyring'
-          path.write_text(json.dumps({'Anaconda Cloud': {'anaconda.com': token}}))
-          "
-
       - name: Test full workflow
+        env:
+          ANACONDA_AUTH_API_KEY: fake
         run: |
           chmod +x .github/scripts/test_integration.sh .github/scripts/verify_uninstall.sh
           .github/scripts/test_integration.sh

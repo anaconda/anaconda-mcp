@@ -9,7 +9,6 @@ from pathlib import Path
 import click
 from anaconda_anon_usage.tokens import client_token
 from anaconda_auth.exceptions import TokenNotFoundError
-from anaconda_auth.token import TokenInfo
 from mcp_compose.cli import (
     compose_command as _compose,
 )
@@ -27,7 +26,7 @@ from rich import print_json as rich_print_json
 from rich.console import Console
 from rich.table import Table
 
-from anaconda_mcp.auth import get_auth_token, start_login
+from anaconda_mcp.auth import get_auth_token, make_auth_enforcement_hook, start_login
 from anaconda_mcp.claude_desktop import (
     configure_claude_desktop,
     get_claude_desktop_config_path,
@@ -43,7 +42,7 @@ from anaconda_mcp.client_config import (
     remove_client,
 )
 from anaconda_mcp.mcp_state import is_new_install, mark_installed
-from anaconda_mcp.telemetry import MetricData, MetricNames, SnakeEyes, patch_tool_call_tracking
+from anaconda_mcp.telemetry import MetricData, MetricNames, SnakeEyes, make_tracking_hook
 from anaconda_mcp.utils import _render_config_template
 from anaconda_mcp.wizard import setup_wizard_page
 
@@ -84,7 +83,8 @@ def cli(ctx, verbose: bool):
             err=True,
         )
     if ctx.invoked_subcommand and ctx.invoked_subcommand != "serve":
-        _ = TokenInfo.load()
+        if not get_auth_token():
+            raise TokenNotFoundError("Login is required to complete this action.")
 
 
 @cli.command(help="Start MCP servers from configuration file.")
@@ -144,7 +144,14 @@ def serve(ctx, config, host, port, delay):
         ),
         bearer_token=token,
     )
-    patch_tool_call_tracking(bearer_token_fn=get_auth_token, aau_client_id=aau or None)
+    from anaconda_mcp.tool_hooks import patch_tool_call_hooks
+
+    patch_tool_call_hooks(
+        [
+            make_auth_enforcement_hook(get_auth_token),
+            make_tracking_hook(get_auth_token, aau_client_id=aau or None),
+        ]
+    )
     try:
         ns = _ns(verbose=ctx.obj["verbose"], config=rendered_config, host=host, port=port)
         sys.exit(_serve(ns))

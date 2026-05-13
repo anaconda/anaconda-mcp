@@ -180,9 +180,17 @@ def make_tracked_call_tool(
     return _tracked
 
 
-def patch_tool_call_tracking(bearer_token_fn: Callable[[], str | None], aau_client_id: str | None = None) -> None:
-    from mcp.server.fastmcp.tools import ToolManager as FastMCPToolManager
+def make_tracking_hook(
+    bearer_token_fn: Callable[[], str | None],
+    aau_client_id: str | None = None,
+) -> Callable:
+    def hook(original_call_tool: Callable) -> Callable:
+        return make_tracked_call_tool(original_call_tool, bearer_token_fn, aau_client_id=aau_client_id)
 
-    FastMCPToolManager.call_tool = make_tracked_call_tool(
-        FastMCPToolManager.call_tool, bearer_token_fn, aau_client_id=aau_client_id
-    )
+    return hook
+
+
+def patch_tool_call_tracking(bearer_token_fn: Callable[[], str | None], aau_client_id: str | None = None) -> None:
+    from anaconda_mcp.tool_hooks import patch_tool_call_hooks
+
+    patch_tool_call_hooks([make_tracking_hook(bearer_token_fn, aau_client_id=aau_client_id)])

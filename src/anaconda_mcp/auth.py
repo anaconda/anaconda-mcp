@@ -1,4 +1,5 @@
 import logging
+import os
 import threading
 import time
 from collections.abc import Callable
@@ -30,6 +31,9 @@ def get_auth_token() -> str | None:
         This function is safe to call repeatedly and is used as the
         single source of truth for authentication state.
     """
+    env_token = os.environ.get("ANACONDA_AUTH_API_KEY")
+    if env_token:
+        return env_token
     try:
         token: str = TokenInfo.load().api_key
         return token
@@ -130,3 +134,15 @@ def start_login(
             time.sleep(poll_interval)
 
     threading.Thread(target=_watch, name="telemetry_watcher", daemon=True).start()
+
+
+def make_auth_enforcement_hook(auth_token_fn: Callable[[], str | None]) -> Callable:
+    def hook(original_call_tool: Callable) -> Callable:
+        async def _enforced(self, name, arguments, context=None, convert_result=False):
+            if auth_token_fn() is None:
+                raise PermissionError("Not authenticated. Please run 'anaconda login' to re-authenticate.")
+            return await original_call_tool(self, name, arguments, context=context, convert_result=convert_result)
+
+        return _enforced
+
+    return hook

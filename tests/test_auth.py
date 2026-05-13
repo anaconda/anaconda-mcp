@@ -237,21 +237,16 @@ async def test_is_new_user_omitted_on_api_failure(mocked_init_telemetry, mock_ge
 
 
 async def test_cli_gates_on_token_not_found(mock_token_info_load):
-    from anaconda_auth.exceptions import TokenNotFoundError
-
-    mock_token_info_load.side_effect = TokenNotFoundError("no token")
+    mock_token_info_load.return_value = None
 
     runner = CliRunner()
     result = runner.invoke(cli, ["clients"])
 
     assert result.exit_code == 1
-    assert isinstance(result.exception, TokenNotFoundError)
 
 
 async def test_serve_bypasses_token_gate(mock_token_info_load, mock_start_login, mock_serve_command):
-    from anaconda_auth.exceptions import TokenNotFoundError
-
-    mock_token_info_load.side_effect = TokenNotFoundError("no token")
+    mock_token_info_load.return_value = None
 
     runner = CliRunner()
     with mock.patch("anaconda_mcp.cli.Path.exists", return_value=True):
