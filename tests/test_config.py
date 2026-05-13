@@ -38,3 +38,17 @@ class TestSetAnacondaDomainValidator:
         monkeypatch.delenv("ANACONDA_MCP_ANACONDA_DOMAIN", raising=False)
         s = Settings()
         assert s.anaconda_domain == "anaconda.com"
+
+
+class TestAcceptedTermsVersionField:
+    def test_accepted_terms_version_field_exists(self, monkeypatch):
+        monkeypatch.delenv("ANACONDA_MCP_ACCEPTED_TERMS_VERSION", raising=False)
+        monkeypatch.setattr("anaconda_mcp.terms.settings.accepted_terms_version", None)
+        s = Settings()
+        assert hasattr(s, "accepted_terms_version")
+
+    def test_accepted_terms_version_can_be_set(self, monkeypatch):
+        monkeypatch.delenv("ANACONDA_MCP_ACCEPTED_TERMS_VERSION", raising=False)
+        s = Settings()
+        s.accepted_terms_version = "2026-01-01"
+        assert s.accepted_terms_version == "2026-01-01"

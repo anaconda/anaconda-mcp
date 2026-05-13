@@ -40,9 +40,17 @@ from anaconda_mcp.client_config import (
     is_client_installed,
     remove_client,
 )
+from anaconda_mcp.config import settings
 from anaconda_mcp.consts import OSSystems
 from anaconda_mcp.telemetry import MetricData, MetricNames, SnakeEyes, patch_tool_call_tracking
-from anaconda_mcp.terms import TERMS_OF_SERVICE, check_terms_accepted, persist_acceptance
+from anaconda_mcp.terms import (
+    CURRENT_TOS_VERSION,
+    TERMS_OF_SERVICE,
+    TermsError,
+    check_terms_accepted,
+    is_terms_current,
+    persist_acceptance,
+)
 from anaconda_mcp.utils import _render_config_template
 from anaconda_mcp.wizard import setup_wizard_page
 
@@ -67,7 +75,21 @@ def cli(ctx, verbose: bool):
             "Warning: 'anaconda-mcp' is deprecated. Use 'anaconda mcp' instead.",
             err=True,
         )
-    check_terms_accepted(ctx)
+    try:
+        check_terms_accepted(ctx)
+    except TermsError as e:
+        if ctx.invoked_subcommand == "serve":
+            click.echo(
+                f"⚠️  Anaconda MCP cannot start: {e.message}\n\n"
+                f"To resolve, run one of:\n"
+                f"  anaconda mcp terms accept          (interactive)\n"
+                f"  ANACONDA_MCP_ACCEPTED_TERMS=true   (environment variable)\n\n"
+                f"For more information: anaconda mcp terms status",
+                err=True,
+            )
+            sys.exit(78)
+        click.echo(f"Error: {e.message}\n{e.remediation}", err=True)
+        sys.exit(1)
 
 
 @cli.command(help="Start MCP servers from configuration file.")
@@ -826,18 +848,38 @@ def claude_path():
 
 
 @cli.group(name="terms", invoke_without_command=True, help="Manage Terms of Service acceptance.")
+@click.option("--json", "output_json", is_flag=True, help="Output in JSON format.")
 @click.pass_context
-def terms(ctx):
+def terms(ctx, output_json):
     if ctx.invoked_subcommand is None:
-        click.echo(TERMS_OF_SERVICE)
-        click.echo(ctx.get_help())
+        if output_json:
+            click.echo(json.dumps({"terms": TERMS_OF_SERVICE, "version": CURRENT_TOS_VERSION}, indent=2))
+        else:
+            click.echo(TERMS_OF_SERVICE)
+            click.echo(ctx.get_help())
 
 
 @terms.command(name="status", help="Check whether the Terms of Service have been accepted.")
-def terms_status():
-    from anaconda_mcp.config import settings
+@click.option("--json", "output_json", is_flag=True, help="Output in JSON format.")
+def terms_status(output_json):
+    # JSON path uses `needs_reaccept` for strict version enforcement (Desktop Plugin).
+    # Non-JSON path preserves backward compat: accepted_terms=True -> "accepted" + exit 0.
+    accepted = settings.accepted_terms is True
+    needs_reaccept = settings.accepted_terms is True and not is_terms_current(settings.accepted_terms_version)
 
-    if settings.accepted_terms is True:
+    if output_json:
+        data = {
+            "accepted": accepted,
+            "accepted_version": settings.accepted_terms_version,
+            "current_version": CURRENT_TOS_VERSION,
+            "needs_reaccept": needs_reaccept,
+        }
+        click.echo(json.dumps(data, indent=2))
+        if not accepted or needs_reaccept:
+            sys.exit(1)
+        return
+
+    if accepted:
         click.echo("Terms of Service: accepted")
     else:
         status = "declined" if settings.accepted_terms is False else "not yet responded"
@@ -846,14 +888,30 @@ def terms_status():
 
 
 @terms.command(name="accept", help="Accept the Terms of Service.")
-def terms_accept():
-    from anaconda_mcp.config import settings
+@click.option("--json", "output_json", is_flag=True, help="Output in JSON format.")
+def terms_accept(output_json):
+    already_current = settings.accepted_terms is True and is_terms_current(settings.accepted_terms_version)
 
-    if settings.accepted_terms is True:
-        click.echo("Terms of Service have already been accepted.")
+    if not already_current:
+        persist_acceptance(True)
+
+    if output_json:
+        click.echo(
+            json.dumps(
+                {
+                    "accepted": True,
+                    "accepted_version": settings.accepted_terms_version or CURRENT_TOS_VERSION,
+                    "previously_accepted": already_current,
+                },
+                indent=2,
+            )
+        )
         return
-    persist_acceptance(True)
-    click.echo("Terms of Service accepted.")
+
+    if already_current:
+        click.echo("Terms of Service have already been accepted.")
+    else:
+        click.echo("Terms of Service accepted.")
 
 
 def main():

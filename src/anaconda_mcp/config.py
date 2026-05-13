@@ -43,6 +43,7 @@ class Settings(AnacondaBaseSettings, plugin_name="mcp"):
     send_metrics: bool = True
     python_executable: str | None = None
     accepted_terms: bool | None = None
+    accepted_terms_version: str | None = None
 
     @cached_property
     def anaconda_domain(self) -> str:
