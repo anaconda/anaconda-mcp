@@ -98,6 +98,54 @@ async def test_serve_should_start_auth_flow(mock_start_login, mock_serve_command
     assert mock_serve_command.call_count == 1
 
 
+async def test_serve_transport_flag_is_passed_to_serve_command(mock_start_login, mock_serve_command):
+    # Given
+    runner = CliRunner()
+    with mock.patch("anaconda_mcp.cli.Path.exists", return_value=True):
+        result = runner.invoke(cli, ["serve", "--transport", "streamable-http"])
+
+    # Then
+    assert result.exit_code == 0
+    ns = mock_serve_command.call_args[0][0]
+    assert ns.transport == "streamable-http"
+
+
+async def test_serve_transport_flag_defaults_to_none(mock_start_login, mock_serve_command):
+    # Given
+    runner = CliRunner()
+    with mock.patch("anaconda_mcp.cli.Path.exists", return_value=True):
+        result = runner.invoke(cli, ["serve"])
+
+    # Then
+    assert result.exit_code == 0
+    ns = mock_serve_command.call_args[0][0]
+    assert ns.transport is None
+
+
+async def test_serve_port_flag_is_passed_to_serve_command(mock_start_login, mock_serve_command):
+    # Given
+    runner = CliRunner()
+    with mock.patch("anaconda_mcp.cli.Path.exists", return_value=True):
+        result = runner.invoke(cli, ["serve", "--port", "9000"])
+
+    # Then
+    assert result.exit_code == 0
+    ns = mock_serve_command.call_args[0][0]
+    assert ns.port == 9000
+
+
+async def test_serve_port_omitted_leaves_config_in_control(mock_start_login, mock_serve_command):
+    # Given
+    runner = CliRunner()
+    with mock.patch("anaconda_mcp.cli.Path.exists", return_value=True):
+        result = runner.invoke(cli, ["serve"])
+
+    # Then — port not in ns, so mcp-compose falls back to toml
+    assert result.exit_code == 0
+    ns = mock_serve_command.call_args[0][0]
+    assert not hasattr(ns, "port")
+
+
 async def test_start_login_times_out_without_token(mocked_init_telemetry, mock_get_auth_token, mock_anaconda_login):
     # Given - no token available
     auth._initialized = False
