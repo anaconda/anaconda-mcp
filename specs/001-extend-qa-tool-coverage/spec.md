@@ -139,6 +139,11 @@ QA engineer verifies that newly added tool tests include hang-stress variants wh
 
 **Independent Test**: Run `pytest tests/qa/mcp_tools -o addopts= --mcp-profile=stdio-stdio -m hang_stress` and verify newly added tools are included.
 
+**Hang-stress tool selection** (highest risk per MCP):
+- **environments-mcp**: Already covered (`conda_install_packages`, `conda_list_environments`, `conda_remove_environment`)
+- **conda-meta-mcp**: `repoquery` — uses libmamba solver, pagination, potentially large results
+- **search-mcp**: `search_packages` — upstream HTTP to anaconda.com, complex filtering, grouped results
+
 **Acceptance Scenarios**:
 
 1. **Given** a tool that now has positive scenario coverage, **When** the tool is exercised 20 times in succession with valid inputs, **Then** no timeout occurs and all iterations complete within the configured `TOOL_TIMEOUT`.
@@ -188,6 +193,15 @@ QA engineer verifies that newly added tool tests include hang-stress variants wh
 - **FR-012**: Tool constants in `tests/qa/mcp_tools/common/constants/mcp_tools.py` MUST be extended with new tool names
 - **FR-013**: Documentation in `tests/qa/mcp_tools/_docs/test_design.md` MUST be updated to reflect new tool coverage
 
+### Implementation Phases
+
+| Phase | Scope | Tools Affected |
+|-------|-------|----------------|
+| **Phase 1** | At least 1 positive test per tool | All 20 tools (16 new + 4 existing gaps) |
+| **Phase 2** | Additional positive tests for complex params | Tools with OR params, multiple modes |
+| **Phase 3** | Negative tests (1 per tool minimum) | All 20 tools |
+| **Phase 4** | Hang-stress tests | `repoquery`, `search_packages` (new); existing already covered |
+
 ### Key Entities
 
 - **MCP Tool**: A callable function exposed via MCP protocol with defined input schema and response shape
@@ -209,10 +223,18 @@ QA engineer verifies that newly added tool tests include hang-stress variants wh
 
 - The 20 tools to cover are distributed across 3 MCP servers: environments-mcp (6), conda-meta-mcp (9), search-mcp (5)
 - Existing test patterns and fixtures (`call_tool`, `conda_env`, etc.) are sufficient for environments-mcp tests
-- New fixtures may be needed for conda-meta-mcp and search-mcp tests (e.g., mock responses for remote APIs)
-- search-mcp tests may require network access or mock server configuration
+- All tests use real integration (no mocks): environments-mcp uses local conda, conda-meta-mcp queries public conda channels, search-mcp calls anaconda.com API
+- Test environment has network access to public conda channels (defaults, conda-forge) and anaconda.com
 - conda-meta-mcp server must be installed via `cmm` command in server environment
 - Hang-stress tests for new tools are desirable but not blocking for this feature (can be added incrementally)
+
+## Clarifications
+
+### Session 2026-05-14
+
+- Q: Should tests use live network calls or mocked responses for conda-meta-mcp and search-mcp? → A: Live integration tests - all servers run locally, conda-meta-mcp queries public channels, search-mcp calls real anaconda.com API
+- Q: What is the implementation priority order? → A: Phased approach: (1) At least one positive test per tool across all MCPs, (2) Additional positive tests for complex parameter sets, (3) Negative tests (1 per tool), (4) Hang-stress tests (1-2 tools per MCP based on risk)
+- Q: Which tools for hang-stress coverage per MCP? → A: conda-meta-mcp: `repoquery` (libmamba solver, large results); search-mcp: `search_packages` (upstream HTTP, complex filtering). environments-mcp already has coverage.
 
 ## References
 
