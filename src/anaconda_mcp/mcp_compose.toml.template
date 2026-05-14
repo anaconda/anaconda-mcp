@@ -43,21 +43,28 @@ domain = "anaconda.com"
 # ============================================================================
 
 # ============================================================================
-# Proxied Streamable HTTP MCP Servers
+# Proxied STDIO MCP Servers
+# ============================================================================
+[[servers.proxied.stdio]]
+name = "conda"
+command = ["{{PYTHON_EXECUTABLE}}", "-m", "conda_mcp_lite"]
+restart_policy = "on-failure"
+max_restarts = 3
+
+# ============================================================================
+# Proxied Streamable HTTP MCP Servers (remote, no auto_start)
 # ============================================================================
 [[servers.proxied.streamable-http]]
-name = "conda"
-url = "http://localhost:4041/mcp"
+name = "search"
+url = "https://stage.anaconda.com/api/search/mcp"
+auth_token = "{{ANACONDA_TOKEN}}"
+auth_type = "bearer"
 timeout = 30
 keep_alive = true
 reconnect_on_failure = true
 max_reconnect_attempts = 10
 health_check_enabled = false
 mode = "proxy"
-auto_start = true
-command = ["{{PYTHON_EXECUTABLE}}", "-m", "environments_mcp_server", "start", "--transport", "streamable-http", "--port", "4041"]
-startup_delay = 3
-
 
 # ============================================================================
 # Tool Manager Configuration
@@ -78,13 +85,4 @@ version_suffix_format = "_v{version}"
 # REST API Configuration
 # ============================================================================
 [api]
-enabled = true
-path_prefix = "/api/v1"
-host = "0.0.0.0"
-port = 8888
-cors_enabled = true
-cors_origins = ["http://localhost:3000"]
-cors_methods = ["GET", "POST", "PUT", "DELETE"]
-docs_enabled = true
-docs_path = "/docs"
-openapi_path = "/openapi.json"
+enabled = false
