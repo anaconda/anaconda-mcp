@@ -56,7 +56,7 @@ startup_delay = 3
 
 [[servers.proxied.streamable-http]]
 name = "search"
-url = "https://stage.anaconda.com/api/search/mcp"
+url = "https://anaconda.com/api/search/mcp"
 timeout = 30
 keep_alive = true
 reconnect_on_failure = true

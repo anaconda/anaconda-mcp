@@ -31,8 +31,9 @@ def get_auth_token() -> str | None:
         single source of truth for authentication state.
     """
     try:
-        token: str = TokenInfo.load().api_key
-        return token
+        token_info = TokenInfo.load(domain=settings.ANACONDA_DOMAIN)
+        api_key: str | None = token_info.api_key
+        return api_key
     except TokenNotFoundError:
         return None
 
@@ -108,7 +109,7 @@ def start_login(
     def _login():
         try:
             logger.info("Starting Anaconda login in background")
-            anaconda_login()
+            anaconda_login(site=settings.ANACONDA_DOMAIN)
             logger.info("Login flow finished (token may be available)")
         except Exception:
             logger.exception("Login failed")

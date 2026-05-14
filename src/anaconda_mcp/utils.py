@@ -13,6 +13,7 @@ def _render_config_template(config_path: str) -> str:
     Placeholders:
         {{PYTHON_EXECUTABLE}} - resolved from ANACONDA_MCP_PYTHON_EXECUTABLE or sys.executable
         {{ANACONDA_TOKEN}} - resolved from anaconda-auth token (empty string if not authenticated)
+        {{ANACONDA_DOMAIN}} - resolved from settings.ANACONDA_DOMAIN (e.g. anaconda.com, stage.anaconda.com)
 
     Returns the path to the rendered config file.
     """
@@ -38,6 +39,8 @@ def _render_config_template(config_path: str) -> str:
     if anaconda_token is None:
         raise RuntimeError("Not authenticated with Anaconda. Run 'anaconda-auth login' or sign in when prompted.")
     content = content.replace("{{ANACONDA_TOKEN}}", anaconda_token)
+
+    content = content.replace("{{ANACONDA_DOMAIN}}", settings.ANACONDA_DOMAIN or "anaconda.com")
 
     rendered_fd, rendered_path = tempfile.mkstemp(suffix=".toml", prefix="mcp_compose_")
     try:

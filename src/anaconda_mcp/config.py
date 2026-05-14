@@ -26,7 +26,7 @@ class Settings(BaseSettings):
         env_file=".env",
         extra="allow",
     )
-    ANACONDA_DOMAIN: str | None = None
+    ANACONDA_DOMAIN: str = "anaconda.com"
     ENVIRONMENT: str = Environments.production.value
     LOG_LEVEL: str = "INFO"
     SERVICE_NAME: str = "anaconda-mcp"
