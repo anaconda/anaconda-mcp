@@ -56,6 +56,7 @@ from anaconda_mcp.terms import (
     TermsError,
     check_terms_accepted,
     is_terms_current,
+    make_terms_enforcement_hook,
     persist_acceptance,
 )
 from anaconda_mcp.tool_hooks import patch_tool_call_hooks
@@ -208,6 +209,7 @@ def serve(ctx, config, host, port, delay):
     patch_tool_call_hooks(
         [
             make_auth_enforcement_hook(get_auth_token),
+            make_terms_enforcement_hook(),
             make_tracking_hook(get_auth_token, aau_client_id=aau or None),
         ]
     )
