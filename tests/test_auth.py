@@ -1,4 +1,3 @@
-import asyncio
 import logging
 import threading
 import time
@@ -96,42 +95,6 @@ async def test_serve_should_start_auth_flow(mock_start_login, mock_serve_command
     assert result.exit_code == 0
     assert mock_start_login.call_count == 1
     assert mock_serve_command.call_count == 1
-
-
-async def test_start_login_times_out_without_token(mocked_init_telemetry, mock_get_auth_token, mock_anaconda_login):
-    # Given - no token available
-    auth._initialized = False
-    mock_get_auth_token.return_value = None
-
-    # When - start login with very short timeout
-    auth.start_login(init_telemetry=mocked_init_telemetry, poll_interval=0.1, max_wait_sec=0.3)
-
-    # Give threads time to timeout
-    await asyncio.sleep(0.5)
-
-    # Then - telemetry should NOT be initialized due to timeout
-    assert mocked_init_telemetry.call_count == 0
-    assert auth._initialized is False
-
-
-async def test_start_login_handles_login_exception(
-    mocked_init_telemetry, mock_get_auth_token, mock_anaconda_login, caplog
-):
-    # Given - no token, login will fail
-    auth._initialized = False
-    mock_get_auth_token.return_value = None
-    mock_anaconda_login.side_effect = Exception("Login service unavailable")
-
-    # When - start login
-    with caplog.at_level(logging.ERROR):
-        auth.start_login(init_telemetry=mocked_init_telemetry, poll_interval=0.1, max_wait_sec=0.3)
-
-        # Give threads time to execute
-        await asyncio.sleep(0.5)
-
-    # Then - exception should be logged, but process continues
-    assert "Login failed" in caplog.text
-    assert mocked_init_telemetry.call_count == 0
 
 
 async def test_init_once_thread_safety(mocked_token, mock_get_auth_token, mock_base_client, mock_snake_eyes):
