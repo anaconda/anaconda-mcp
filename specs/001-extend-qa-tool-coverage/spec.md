@@ -95,7 +95,7 @@ Source: [anaconda/anaconda-mcp-search](https://github.com/anaconda/anaconda-mcp-
 | `search_documentation` | `query` | `page`, `page_size`, `types`, `keywords` | Basic search |
 | `search_forum` | `query` | `page`, `page_size`, `replies`, `last_updated_after`, `views`, `types` | Basic search |
 | `search_collections_and_files` | `query` | `page`, `page_size`, `collections_limit`, `include_deleted`, `min_file_size`, `ownership` | Basic search |
-| `search_environments` | `query` | (TBD - check source) | Basic search |
+| `search_environments` | `query` | `page`, `page_size`, `include_deleted`, `platforms`, `status`, `username`, `created_date_range`, `updated_date_range` | Basic search, with filters |
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -221,11 +221,23 @@ QA engineer verifies that newly added tool tests include hang-stress variants wh
 
 ## Assumptions
 
+### Infrastructure Prerequisites
+
+- PRs for search-mcp and conda-meta-mcp integration are merged to main branch before test implementation begins
+- Server configurations in `mcp_compose.toml` and `mcp_compose.toml.template` include all three MCP servers (conda, conda-meta, search)
+- QA test environment setup documentation (`tests/qa/mcp_tools/README.md`) is updated with conda-meta-mcp and search-mcp requirements
+
+### Test Environment
+
 - The 20 tools to cover are distributed across 3 MCP servers: environments-mcp (6), conda-meta-mcp (9), search-mcp (5)
 - Existing test patterns and fixtures (`call_tool`, `conda_env`, etc.) are sufficient for environments-mcp tests
 - All tests use real integration (no mocks): environments-mcp uses local conda, conda-meta-mcp queries public conda channels, search-mcp calls anaconda.com API
 - Test environment has network access to public conda channels (defaults, conda-forge) and anaconda.com
-- conda-meta-mcp server must be installed via `cmm` command in server environment
+- conda-meta-mcp server must be installed via `cmm` command (`pip install conda-meta-mcp`) in server environment
+- search-mcp tests require a valid Anaconda authentication token (`ANACONDA_TOKEN` environment variable) for API access; unauthenticated requests will fail
+
+### Implementation
+
 - Hang-stress tests for new tools are desirable but not blocking for this feature (can be added incrementally)
 
 ## Clarifications
