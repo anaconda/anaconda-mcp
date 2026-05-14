@@ -390,6 +390,8 @@ def _stdio_server_context(
     )
 
     try:
+        # Wait for server to initialize downstream connections before sending request
+        time.sleep(15)
         _send(
             proc,
             {
@@ -403,7 +405,7 @@ def _stdio_server_context(
                 },
             },
         )
-        init_resp = _recv(proc, timeout=45)
+        init_resp = _recv(proc, timeout=60)
         logger.info(
             "%s STDIO server ready — serverInfo: %s",
             label,
@@ -416,10 +418,17 @@ def _stdio_server_context(
             stderr_log.close()
         except OSError:
             pass
+        # Preserve stderr log for debugging
+        stderr_content = ""
+        try:
+            with open(stderr_path) as f:
+                stderr_content = f.read()
+        except Exception:
+            pass
         stderr_path.unlink(missing_ok=True)
         config.stash[stash_key] = None
         config_path.unlink(missing_ok=True)
-        pytest.fail(f"STDIO {label} server did not become ready: {exc}")
+        pytest.fail(f"STDIO {label} server did not become ready: {exc}\n\nServer stderr:\n{stderr_content[-4000:]}")
 
     try:
         yield proc

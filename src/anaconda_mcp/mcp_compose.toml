@@ -79,8 +79,8 @@ max_reconnect_attempts = 10
 health_check_enabled = false
 mode = "proxy"
 auto_start = true
-command = ["cmm", "run", "--transport", "streamable-http", "--port", "4042"]
-startup_delay = 3
+command = ["python", "-m", "conda_meta_mcp", "run", "--transport", "streamable-http", "--port", "4042"]
+startup_delay = 5
 
 
 # ============================================================================

@@ -96,7 +96,7 @@ health_check_enabled = false
 mode = "proxy"
 auto_start = true
 command = ["{python_executable}", "-m", "environments_mcp_server", "start", "--transport", "streamable-http", "--port", "{downstream_port}"]
-startup_delay = 15
+startup_delay = 5
 
 [tool_manager]
 conflict_resolution = "prefix"
@@ -120,7 +120,18 @@ def render_stdio_http_toml(
     Outer ``[transport]`` is STDIO-only; upstream uses the same streamable-http
     block as ``render_http_http_toml`` (different outer port / API block omitted
     where not needed).
+
+    Includes all 3 MCP servers:
+    - environments-mcp (conda): downstream_port
+    - search-mcp: remote (anaconda.com)
+    - conda-meta-mcp: downstream_port + 1
     """
+    import os
+
+    anaconda_domain = os.environ.get("ANACONDA_MCP_ANACONDA_DOMAIN", "anaconda.com")
+    anaconda_token = os.environ.get("ANACONDA_MCP_ANACONDA_TOKEN") or os.environ.get("ANACONDA_TOKEN", "")
+    conda_meta_port = downstream_port + 1
+
     return f"""\
 [composer]
 name = "anaconda-mcp"
@@ -143,7 +154,32 @@ health_check_enabled = false
 mode = "proxy"
 auto_start = true
 command = ["{python_executable}", "-m", "environments_mcp_server", "start", "--transport", "streamable-http", "--port", "{downstream_port}"]
-startup_delay = 15
+startup_delay = 5
+
+[[servers.proxied.streamable-http]]
+name = "search"
+url = "https://{anaconda_domain}/api/search/mcp"
+auth_token = "{anaconda_token}"
+auth_type = "bearer"
+timeout = 30
+keep_alive = true
+reconnect_on_failure = true
+max_reconnect_attempts = 10
+health_check_enabled = false
+mode = "proxy"
+
+[[servers.proxied.streamable-http]]
+name = "conda-meta"
+url = "http://localhost:{conda_meta_port}/mcp"
+timeout = 30
+keep_alive = true
+reconnect_on_failure = true
+max_reconnect_attempts = 10
+health_check_enabled = false
+mode = "proxy"
+auto_start = true
+command = ["{python_executable}", "-m", "conda_meta_mcp", "run", "--transport", "streamable-http", "--port", "{conda_meta_port}"]
+startup_delay = 5
 
 [tool_manager]
 conflict_resolution = "prefix"

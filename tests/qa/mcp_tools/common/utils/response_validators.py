@@ -145,3 +145,132 @@ def _validate_package_resolution_error(result: dict, env_name: str) -> None:
         "(e.g. 'Could not resolve the packages' or conda 'not available from current channels'), "
         f"got: {raw!r}"
     )
+
+
+# =============================================================================
+# environments-mcp validators (additional)
+# =============================================================================
+
+
+def validate_list_packages_success(result: dict, context: str = "") -> None:
+    """Assert that conda_list_environment_packages returned success."""
+    parts = ["Expected is_error=false (successful list packages)"]
+    if context:
+        parts.append(context)
+    error_desc = result.get(ToolResultFields.ERROR_DESCRIPTION, "")
+    if error_desc:
+        parts.append(f"error_description: {error_desc!r}")
+    parts.append(f"got: {result!r}")
+    assert not result.get(ToolResultFields.IS_ERROR), " — ".join(parts)
+
+
+def validate_remove_success(result: dict, context: str = "") -> None:
+    """Assert that a remove operation (env or packages) returned success."""
+    parts = ["Expected is_error=false (successful remove)"]
+    if context:
+        parts.append(context)
+    error_desc = result.get(ToolResultFields.ERROR_DESCRIPTION, "")
+    if error_desc:
+        parts.append(f"error_description: {error_desc!r}")
+    parts.append(f"got: {result!r}")
+    assert not result.get(ToolResultFields.IS_ERROR), " — ".join(parts)
+
+
+def validate_create_error(result: dict, context: str = "") -> None:
+    """Assert that conda_create_environment returned an error (e.g., duplicate name)."""
+    parts = ["Expected is_error=true (create should fail)"]
+    if context:
+        parts.append(context)
+    parts.append(f"got: {result!r}")
+    assert result.get(ToolResultFields.IS_ERROR) is True, " — ".join(parts)
+
+
+# =============================================================================
+# conda-meta-mcp validators
+# =============================================================================
+
+
+def validate_conda_meta_success(response: dict, context: str = "") -> None:
+    """
+    Assert that a conda-meta-mcp tool returned success.
+
+    conda-meta-mcp uses MCP standard response format:
+    {"content": [...], "isError": false}
+    """
+    parts = ["Expected isError=false (conda-meta success)"]
+    if context:
+        parts.append(context)
+
+    # Check for isError field (MCP standard uses camelCase)
+    is_error = response.get("isError", response.get("is_error", False))
+    parts.append(f"got: isError={is_error}")
+    assert not is_error, " — ".join(parts)
+
+
+def validate_conda_meta_text_content(response: dict, context: str = "") -> None:
+    """
+    Assert that conda-meta-mcp response has non-empty text content.
+
+    Checks that content array contains at least one text item.
+    """
+    parts = ["Expected non-empty text content"]
+    if context:
+        parts.append(context)
+
+    content = response.get("content", [])
+    text_items = [c for c in content if c.get("type") == "text" and c.get("text")]
+    parts.append(f"got {len(text_items)} text items")
+    assert len(text_items) > 0, " — ".join(parts)
+
+
+def validate_conda_meta_error(response: dict, context: str = "") -> None:
+    """Assert that a conda-meta-mcp tool returned an error."""
+    parts = ["Expected isError=true (conda-meta error)"]
+    if context:
+        parts.append(context)
+
+    is_error = response.get("isError", response.get("is_error", False))
+    parts.append(f"got: isError={is_error}")
+    assert is_error is True, " — ".join(parts)
+
+
+# =============================================================================
+# search-mcp validators
+# =============================================================================
+
+
+def validate_search_success(response: dict, context: str = "") -> None:
+    """
+    Assert that a search-mcp tool returned success.
+
+    search-mcp uses MCP standard response format.
+    """
+    parts = ["Expected isError=false (search success)"]
+    if context:
+        parts.append(context)
+
+    is_error = response.get("isError", response.get("is_error", False))
+    parts.append(f"got: isError={is_error}")
+    assert not is_error, " — ".join(parts)
+
+
+def validate_search_has_content(response: dict, context: str = "") -> None:
+    """Assert that search-mcp response has content."""
+    parts = ["Expected non-empty content"]
+    if context:
+        parts.append(context)
+
+    content = response.get("content", [])
+    parts.append(f"got {len(content)} content items")
+    assert len(content) > 0, " — ".join(parts)
+
+
+def validate_search_error(response: dict, context: str = "") -> None:
+    """Assert that a search-mcp tool returned an error."""
+    parts = ["Expected isError=true (search error)"]
+    if context:
+        parts.append(context)
+
+    is_error = response.get("isError", response.get("is_error", False))
+    parts.append(f"got: isError={is_error}")
+    assert is_error is True, " — ".join(parts)

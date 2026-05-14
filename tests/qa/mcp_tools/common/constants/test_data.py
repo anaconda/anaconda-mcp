@@ -37,3 +37,44 @@ KI011_HANG_FAIL_MSG = (
 
 # Alias for unified hang tests (historical stdio_tools name).
 HANG_FAIL_MSG = KI011_HANG_FAIL_MSG
+
+# =============================================================================
+# conda-meta-mcp test data
+# =============================================================================
+
+# Known import name that maps to a conda package.
+KNOWN_IMPORT = "yaml"
+KNOWN_IMPORT_PACKAGE = "pyyaml"
+
+# PyPI to conda package mapping test data.
+PYPI_PACKAGE = "PyYAML"
+CONDA_PACKAGE = "pyyaml"
+
+# Package search test data — ubiquitous packages always available.
+SEARCH_PACKAGE = "numpy"
+SEARCH_PACKAGE_WITH_VERSION = "numpy>=1.20"
+
+# Repoquery test data.
+REPOQUERY_SPEC = "python"
+REPOQUERY_CHANNEL = "defaults"
+
+# File path search pattern (common across conda envs).
+FILE_PATH_PATTERN = "yaml/__init__.py"
+
+# =============================================================================
+# search-mcp test data
+# =============================================================================
+
+# Broad queries that always return results.
+SEARCH_QUERY_PACKAGES = "numpy"
+SEARCH_QUERY_DOCS = "conda"
+SEARCH_QUERY_FORUM = "install"
+SEARCH_QUERY_COLLECTIONS = "data"
+SEARCH_QUERY_ENVIRONMENTS = "python"
+
+# Empty query for error path tests.
+EMPTY_QUERY = ""
+
+# Unknown/nonexistent values for error path tests.
+UNKNOWN_IMPORT = "nonexistent_module_xyz123"
+NONEXISTENT_PACKAGE_SPEC = "nonexistent-package-xyz123"
