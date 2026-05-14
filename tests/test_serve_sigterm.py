@@ -22,8 +22,7 @@ def reset_signal_handler():
 
 @pytest.fixture
 def mock_require_auth():
-    with patch("anaconda_mcp.cli.require_auth_or_login", return_value="mocked_token") as m:
-        yield m
+    yield
 
 
 @pytest.fixture
@@ -60,7 +59,6 @@ def invoke_serve(extra_args=None, env=None):
         patch("anaconda_mcp.cli._render_config_template", return_value="/fake/mcp.toml"),
         patch("anaconda_mcp.cli.time.sleep"),
         patch("anaconda_mcp.cli.get_auth_token", return_value=None),
-        patch("anaconda_mcp.cli.require_auth_or_login", return_value="mocked_token"),
         patch("anaconda_mcp.cli._serve", return_value=0),
     ):
         return runner.invoke(cli, args, env=env, catch_exceptions=False)
@@ -132,7 +130,6 @@ def test_sigterm_handler_calls_sys_exit_0():
         patch("anaconda_mcp.cli.Path.exists", return_value=True),
         patch("anaconda_mcp.cli._render_config_template", return_value="/fake/mcp.toml"),
         patch("anaconda_mcp.cli.time.sleep"),
-        patch("anaconda_mcp.cli.require_auth_or_login", return_value="mocked_token"),
         patch("anaconda_mcp.cli._serve", return_value=0),
     ):
         runner.invoke(cli, ["serve"])
@@ -163,7 +160,6 @@ def test_sigterm_during_sleep_exits_cleanly():
         with (
             patch("anaconda_mcp.cli.Path.exists", return_value=True),
             patch("anaconda_mcp.cli._render_config_template", return_value="/fake/mcp.toml"),
-            patch("anaconda_mcp.cli.require_auth_or_login", return_value="mocked_token"),
             patch("anaconda_mcp.cli._serve", return_value=0),
         ):
             # Use a real short sleep so SIGTERM can interrupt it
@@ -200,7 +196,6 @@ def test_sigterm_handler_logs_shutdown_message(caplog):
         patch("anaconda_mcp.cli.Path.exists", return_value=True),
         patch("anaconda_mcp.cli._render_config_template", return_value="/fake/mcp.toml"),
         patch("anaconda_mcp.cli.time.sleep"),
-        patch("anaconda_mcp.cli.require_auth_or_login", return_value="mocked_token"),
         patch("anaconda_mcp.cli._serve", return_value=0),
     ):
         runner.invoke(cli, ["serve"])
@@ -217,14 +212,12 @@ def test_sigterm_handler_logs_shutdown_message(caplog):
 
 
 def test_serve_normal_flow_completes_successfully(
-    mock_path_exists, mock_render_config, mock_sleep, mock_require_auth, mock_serve_command, mock_token_info_load
+    mock_path_exists, mock_render_config, mock_sleep, mock_require_auth, mock_serve_command
 ):
     """Without a SIGTERM, serve should run to completion and exit 0."""
-    mock_token_info_load.return_value = None
     runner = CliRunner()
     result = runner.invoke(cli, ["serve"], catch_exceptions=False)
     assert result.exit_code == 0
-    mock_require_auth.assert_called_once()
     mock_serve_command.assert_called_once()
 
 

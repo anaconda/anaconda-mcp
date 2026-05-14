@@ -29,7 +29,6 @@ from rich.table import Table
 from anaconda_mcp.auth import (
     get_auth_token,
     make_auth_enforcement_hook,
-    require_auth_or_login,
     validate_auth_token,
 )
 from anaconda_mcp.claude_desktop import (
@@ -130,8 +129,10 @@ def serve(ctx, config, host, port, delay):
     time.sleep(delay)
     token = get_auth_token()
     if not token:
-        Console(stderr=True).print("[yellow]⚠️  Not authenticated. Opening browser to log in (60s timeout)...[/yellow]")
-        token = require_auth_or_login(timeout=60.0)
+        Console(stderr=True).print(
+            "[red]❌ Not authenticated. Run [green]anaconda login[/green] to authenticate before starting the server.[/red]"
+        )
+        sys.exit(1)
     if not validate_auth_token(token):
         Console(stderr=True).print(
             "[red]❌ Token is invalid or expired. Run [green]anaconda login[/green] to re-authenticate.[/red]"
