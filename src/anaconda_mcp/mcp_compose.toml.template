@@ -58,6 +58,17 @@ auto_start = true
 command = ["{{PYTHON_EXECUTABLE}}", "-m", "environments_mcp_server", "start", "--transport", "streamable-http", "--port", "4041"]
 startup_delay = 3
 
+[[servers.proxied.streamable-http]]
+name = "search"
+url = "https://stage.anaconda.com/api/search/mcp"
+auth_token = "{{ANACONDA_TOKEN}}"
+auth_type = "bearer"
+timeout = 30
+keep_alive = true
+reconnect_on_failure = true
+max_reconnect_attempts = 10
+health_check_enabled = false
+mode = "proxy"
 
 # ============================================================================
 # Tool Manager Configuration
