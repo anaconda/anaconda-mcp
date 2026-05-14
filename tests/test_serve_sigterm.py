@@ -21,9 +21,8 @@ def reset_signal_handler():
 
 
 @pytest.fixture
-def mock_start_login():
-    with patch("anaconda_mcp.cli.start_login") as m:
-        yield m
+def mock_require_auth():
+    yield
 
 
 @pytest.fixture
@@ -59,14 +58,14 @@ def invoke_serve(extra_args=None, env=None):
         patch("anaconda_mcp.cli.Path.exists", return_value=True),
         patch("anaconda_mcp.cli._render_config_template", return_value="/fake/mcp.toml"),
         patch("anaconda_mcp.cli.time.sleep"),
-        patch("anaconda_mcp.cli.start_login"),
+        patch("anaconda_mcp.cli.get_auth_token", return_value=None),
         patch("anaconda_mcp.cli._serve", return_value=0),
     ):
         return runner.invoke(cli, args, env=env, catch_exceptions=False)
 
 
 def test_sigterm_handler_is_registered(
-    mock_path_exists, mock_render_config, mock_sleep, mock_start_login, mock_serve_command
+    mock_path_exists, mock_render_config, mock_sleep, mock_require_auth, mock_serve_command
 ):
     """signal.signal(SIGTERM, ...) must be called as the very first thing in serve()."""
     registered_handlers = []
@@ -86,7 +85,7 @@ def test_sigterm_handler_is_registered(
 
 
 def test_sigterm_handler_registered_before_sleep(
-    mock_path_exists, mock_render_config, mock_start_login, mock_serve_command
+    mock_path_exists, mock_render_config, mock_require_auth, mock_serve_command
 ):
     """The SIGTERM handler must be registered before time.sleep() is called."""
     call_order = []
@@ -131,7 +130,6 @@ def test_sigterm_handler_calls_sys_exit_0():
         patch("anaconda_mcp.cli.Path.exists", return_value=True),
         patch("anaconda_mcp.cli._render_config_template", return_value="/fake/mcp.toml"),
         patch("anaconda_mcp.cli.time.sleep"),
-        patch("anaconda_mcp.cli.start_login"),
         patch("anaconda_mcp.cli._serve", return_value=0),
     ):
         runner.invoke(cli, ["serve"])
@@ -162,7 +160,6 @@ def test_sigterm_during_sleep_exits_cleanly():
         with (
             patch("anaconda_mcp.cli.Path.exists", return_value=True),
             patch("anaconda_mcp.cli._render_config_template", return_value="/fake/mcp.toml"),
-            patch("anaconda_mcp.cli.start_login"),
             patch("anaconda_mcp.cli._serve", return_value=0),
         ):
             # Use a real short sleep so SIGTERM can interrupt it
@@ -199,7 +196,6 @@ def test_sigterm_handler_logs_shutdown_message(caplog):
         patch("anaconda_mcp.cli.Path.exists", return_value=True),
         patch("anaconda_mcp.cli._render_config_template", return_value="/fake/mcp.toml"),
         patch("anaconda_mcp.cli.time.sleep"),
-        patch("anaconda_mcp.cli.start_login"),
         patch("anaconda_mcp.cli._serve", return_value=0),
     ):
         runner.invoke(cli, ["serve"])
@@ -216,38 +212,17 @@ def test_sigterm_handler_logs_shutdown_message(caplog):
 
 
 def test_serve_normal_flow_completes_successfully(
-    mock_path_exists, mock_render_config, mock_sleep, mock_start_login, mock_serve_command
+    mock_path_exists, mock_render_config, mock_sleep, mock_require_auth, mock_serve_command
 ):
     """Without a SIGTERM, serve should run to completion and exit 0."""
     runner = CliRunner()
     result = runner.invoke(cli, ["serve"], catch_exceptions=False)
     assert result.exit_code == 0
-    mock_start_login.assert_called_once()
     mock_serve_command.assert_called_once()
 
 
-def test_serve_calls_start_login_after_sleep(
-    mock_path_exists, mock_render_config, mock_start_login, mock_serve_command
-):
-    """start_login must be called after the delay sleep, not before."""
-    call_order = []
-
-    mock_start_login.side_effect = lambda *a, **kw: call_order.append("start_login")
-
-    def capturing_sleep(seconds):
-        call_order.append("sleep")
-
-    runner = CliRunner()
-    with patch("anaconda_mcp.cli.time.sleep", side_effect=capturing_sleep):
-        runner.invoke(cli, ["serve"], catch_exceptions=False)
-
-    assert call_order.index("sleep") < call_order.index("start_login"), (
-        "start_login should be called after time.sleep()"
-    )
-
-
 def test_serve_exception_from_mcp_compose_exits_with_1(
-    mock_path_exists, mock_render_config, mock_sleep, mock_start_login
+    mock_path_exists, mock_render_config, mock_sleep, mock_require_auth
 ):
     """If _serve() raises an exception, serve should catch it and exit with code 1."""
     runner = CliRunner()
@@ -265,7 +240,7 @@ def test_serve_missing_config_exits_with_1(mock_sleep):
     assert "No configuration file found" in result.output
 
 
-def test_serve_delay_option_is_respected(mock_path_exists, mock_render_config, mock_start_login, mock_serve_command):
+def test_serve_delay_option_is_respected(mock_path_exists, mock_render_config, mock_require_auth, mock_serve_command):
     """The --delay flag must be passed directly to time.sleep."""
     runner = CliRunner()
     with patch("anaconda_mcp.cli.time.sleep") as mock_sleep:

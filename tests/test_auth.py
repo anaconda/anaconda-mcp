@@ -1,16 +1,11 @@
 import logging
-import threading
-import time
-from datetime import datetime, timedelta, timezone
 from unittest import mock
-from unittest.mock import MagicMock
 
 import pytest
 from click.testing import CliRunner
 
-from anaconda_mcp import auth
+from anaconda_mcp.auth import AuthenticationError
 from anaconda_mcp.cli import cli
-from anaconda_mcp.telemetry import MetricData, MetricNames
 
 logger = logging.getLogger(__name__)
 
@@ -19,23 +14,6 @@ logger = logging.getLogger(__name__)
 def mock_get_auth_token(mocked_token):
     with mock.patch("anaconda_mcp.auth.get_auth_token") as m:
         m.return_value = mocked_token
-        yield m
-
-
-@pytest.fixture
-def mock_anaconda_login():
-    with mock.patch("anaconda_mcp.auth.anaconda_login") as m:
-        yield m
-
-
-@pytest.fixture
-def mocked_init_telemetry():
-    return MagicMock()
-
-
-@pytest.fixture
-def mock_start_login():
-    with mock.patch("anaconda_mcp.cli.start_login") as m:
         yield m
 
 
@@ -59,141 +37,75 @@ def mock_snake_eyes():
         yield m
 
 
-async def test_auth_flow_should_be_initialized_only_once(
-    mocked_init_telemetry, mock_get_auth_token, mock_anaconda_login, mock_base_client, mock_snake_eyes
-):
-    # Given
-    auth._initialized = False
-    assert auth._initialized is False
-    assert mock_get_auth_token.call_count == 0
-    assert mocked_init_telemetry.call_count == 0
+async def test_cli_gates_on_token_not_found(mock_token_info_load):
+    mock_token_info_load.return_value = None
 
-    # When 1
-    auth.start_login(init_telemetry=mocked_init_telemetry)
-
-    # Then 1
-    assert auth._initialized is True
-    assert mock_get_auth_token.call_count == 1
-    assert mocked_init_telemetry.call_count == 1
-
-    # When 2 - going for a second call, this should not start another telemetry thread
-    auth.start_login(init_telemetry=mocked_init_telemetry)
-
-    # Then 2
-    assert auth._initialized is True
-    assert mock_get_auth_token.call_count == 2
-    assert mocked_init_telemetry.call_count == 1
-
-
-async def test_serve_should_start_auth_flow(mock_start_login, mock_serve_command):
-    # Given
     runner = CliRunner()
-    with mock.patch("anaconda_mcp.cli.Path.exists", return_value=True):
-        result = runner.invoke(cli, ["serve"])  # ← Invoke through the CLI group
+    result = runner.invoke(cli, ["clients"])
 
-    # Then
-    assert result.exit_code == 0
-    assert mock_start_login.call_count == 1
-    assert mock_serve_command.call_count == 1
+    assert result.exit_code == 1
 
 
-async def test_init_once_thread_safety(mocked_token, mock_get_auth_token, mock_base_client, mock_snake_eyes):
-    # Given
-    auth._initialized = False
-    mock_get_auth_token.return_value = mocked_token
-    call_count = 0
+async def test_auth_enforcement_hook_raises_authentication_error_on_missing_token():
+    # Given - no token available
+    from anaconda_mcp.auth import make_auth_enforcement_hook
 
-    def counting_telemetry(token):
-        nonlocal call_count
-        call_count += 1
-        time.sleep(0.01)
+    hook_fn = make_auth_enforcement_hook(lambda: None)
 
-    # When - call start_login concurrently from multiple threads
-    threads = []
-    for _ in range(10):
-        thread = threading.Thread(target=lambda: auth.start_login(init_telemetry=counting_telemetry))
-        threads.append(thread)
-        thread.start()
+    async def original_call_tool(self, name, arguments, context=None, convert_result=False):
+        return "success"
 
-    # Wait for all threads to complete
-    for thread in threads:
-        thread.join()
+    enforced_call = hook_fn(original_call_tool)
 
-    # Then - telemetry should only be initialized once despite 10 concurrent calls
-    assert call_count == 1
-    assert auth._initialized is True
+    # When/Then - should raise AuthenticationError
+    with pytest.raises(AuthenticationError, match="Not authenticated"):
+        await enforced_call(None, "test_tool", {})
 
 
-async def test_is_new_user_true_for_recent_account(mocked_init_telemetry, mock_get_auth_token):
-    # Given - account created less than 1 day ago
-    auth._initialized = False
-    recent_timestamp = (datetime.now(timezone.utc) - timedelta(hours=1)).isoformat()
+async def test_auth_enforcement_hook_raises_authentication_error_on_invalid_token():
+    # Given - invalid token
+    from anaconda_mcp.auth import make_auth_enforcement_hook
 
-    with mock.patch("anaconda_mcp.auth.BaseClient") as mock_base_client:
-        mock_client_instance = MagicMock()
-        mock_client_instance.account = {"user": {"created_at": recent_timestamp}}
-        mock_base_client.return_value = mock_client_instance
+    hook_fn = make_auth_enforcement_hook(lambda: "invalid-token")
 
-        with mock.patch("anaconda_mcp.auth.SnakeEyes") as mock_snake_eyes:
-            mock_snake_eyes_instance = MagicMock()
-            mock_snake_eyes.return_value = mock_snake_eyes_instance
+    async def original_call_tool(self, name, arguments, context=None, convert_result=False):
+        return "success"
 
-            # When
-            auth.start_login(init_telemetry=mocked_init_telemetry)
+    enforced_call = hook_fn(original_call_tool)
 
-            # Then - SnakeEyes().send() should be called with is_new_user=True
-            assert mock_snake_eyes_instance.send.call_count == 1
-            call_args = mock_snake_eyes_instance.send.call_args
-            metric_data = call_args[0][0]
-            assert isinstance(metric_data, MetricData)
-            assert metric_data.event == MetricNames.LOGIN_COMPLETED.value
-            assert metric_data.event_params.get("is_new_user") is True
+    # When - mock validate_auth_token to return False
+    with mock.patch("anaconda_mcp.auth.validate_auth_token", return_value=False):
+        # Then - should raise AuthenticationError
+        with pytest.raises(AuthenticationError, match="Authentication token is invalid or expired"):
+            await enforced_call(None, "test_tool", {})
 
 
-async def test_is_new_user_false_for_old_account(mocked_init_telemetry, mock_get_auth_token):
-    # Given - account created 30 days ago
-    auth._initialized = False
-    old_timestamp = (datetime.now(timezone.utc) - timedelta(days=30)).isoformat()
+async def test_auth_enforcement_hook_passes_with_valid_token():
+    # Given - valid token
+    from anaconda_mcp.auth import make_auth_enforcement_hook
 
-    with mock.patch("anaconda_mcp.auth.BaseClient") as mock_base_client:
-        mock_client_instance = MagicMock()
-        mock_client_instance.account = {"user": {"created_at": old_timestamp}}
-        mock_base_client.return_value = mock_client_instance
+    hook_fn = make_auth_enforcement_hook(lambda: "valid-token")
 
-        with mock.patch("anaconda_mcp.auth.SnakeEyes") as mock_snake_eyes:
-            mock_snake_eyes_instance = MagicMock()
-            mock_snake_eyes.return_value = mock_snake_eyes_instance
+    async def original_call_tool(self, name, arguments, context=None, convert_result=False):
+        return "success"
 
-            # When
-            auth.start_login(init_telemetry=mocked_init_telemetry)
+    enforced_call = hook_fn(original_call_tool)
 
-            # Then - SnakeEyes().send() should be called with is_new_user=False
-            assert mock_snake_eyes_instance.send.call_count == 1
-            call_args = mock_snake_eyes_instance.send.call_args
-            metric_data = call_args[0][0]
-            assert isinstance(metric_data, MetricData)
-            assert metric_data.event == MetricNames.LOGIN_COMPLETED.value
-            assert metric_data.event_params.get("is_new_user") is False
+    # When - mock validate_auth_token to return True
+    with mock.patch("anaconda_mcp.auth.validate_auth_token", return_value=True):
+        # Then - should call the original tool and return success
+        result = await enforced_call(None, "test_tool", {})
+        assert result == "success"
 
 
-async def test_is_new_user_omitted_on_api_failure(mocked_init_telemetry, mock_get_auth_token):
-    # Given - BaseClient raises an exception
-    auth._initialized = False
+async def test_serve_exits_immediately_without_token():
+    # Given - no token available
+    runner = CliRunner()
 
-    with mock.patch("anaconda_mcp.auth.BaseClient") as mock_base_client:
-        mock_base_client.side_effect = Exception("API error")
+    # When - invoke serve with no token (override the autouse fixture)
+    with mock.patch("anaconda_mcp.cli.get_auth_token", return_value=None):
+        with mock.patch("anaconda_mcp.cli.Path.exists", return_value=True):
+            result = runner.invoke(cli, ["serve"])
 
-        with mock.patch("anaconda_mcp.auth.SnakeEyes") as mock_snake_eyes:
-            mock_snake_eyes_instance = MagicMock()
-            mock_snake_eyes.return_value = mock_snake_eyes_instance
-
-            # When
-            auth.start_login(init_telemetry=mocked_init_telemetry)
-
-            # Then - SnakeEyes().send() should be called but without is_new_user in event_params
-            assert mock_snake_eyes_instance.send.call_count == 1
-            call_args = mock_snake_eyes_instance.send.call_args
-            metric_data = call_args[0][0]
-            assert isinstance(metric_data, MetricData)
-            assert metric_data.event == MetricNames.LOGIN_COMPLETED.value
-            assert "is_new_user" not in metric_data.event_params
+    # Then - should exit with code 1
+    assert result.exit_code == 1
