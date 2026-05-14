@@ -8,6 +8,7 @@ from pathlib import Path
 
 import click
 from anaconda_anon_usage.tokens import client_token
+from anaconda_auth.exceptions import TokenNotFoundError
 from mcp_compose.cli import (
     compose_command as _compose,
 )
@@ -25,7 +26,11 @@ from rich import print_json as rich_print_json
 from rich.console import Console
 from rich.table import Table
 
-from anaconda_mcp.auth import get_auth_token, start_login
+from anaconda_mcp.auth import (
+    get_auth_token,
+    make_auth_enforcement_hook,
+    validate_auth_token,
+)
 from anaconda_mcp.claude_desktop import (
     configure_claude_desktop,
     get_claude_desktop_config_path,
@@ -41,7 +46,7 @@ from anaconda_mcp.client_config import (
     remove_client,
 )
 from anaconda_mcp.mcp_state import is_new_install, mark_installed
-from anaconda_mcp.telemetry import MetricData, MetricNames, SnakeEyes, patch_tool_call_tracking
+from anaconda_mcp.telemetry import MetricData, MetricNames, SnakeEyes, make_tracking_hook
 from anaconda_mcp.utils import _render_config_template
 from anaconda_mcp.wizard import setup_wizard_page
 
@@ -81,6 +86,14 @@ def cli(ctx, verbose: bool):
             "Warning: 'anaconda-mcp' is deprecated. Use 'anaconda mcp' instead.",
             err=True,
         )
+    if ctx.invoked_subcommand and ctx.invoked_subcommand != "serve":
+        token = get_auth_token()
+        if not token:
+            raise TokenNotFoundError("Login is required to complete this action.")
+        if not validate_auth_token(token):
+            raise TokenNotFoundError(
+                "Authentication token is invalid or expired. Please run 'anaconda login' to re-authenticate."
+            )
 
 
 @cli.command(help="Start MCP servers from configuration file.")
@@ -114,8 +127,18 @@ def serve(ctx, config, host, port, delay):
 
     rendered_config = _render_config_template(config)
     time.sleep(delay)
+    token = get_auth_token()
+    if not token:
+        Console(stderr=True).print(
+            "[red]❌ Not authenticated. Run [green]anaconda login[/green] to authenticate before starting the server.[/red]"
+        )
+        sys.exit(1)
+    if not validate_auth_token(token):
+        Console(stderr=True).print(
+            "[red]❌ Token is invalid or expired. Run [green]anaconda login[/green] to re-authenticate.[/red]"
+        )
+        sys.exit(1)
     snake_eyes = SnakeEyes()
-    start_login(lambda x: x)
     active_user_params: dict[str, str] = {}
     aau = client_token()
     if aau:
@@ -125,16 +148,23 @@ def serve(ctx, config, host, port, delay):
             event=MetricNames.ACTIVE_USER_PING.value,
             event_params=active_user_params,
         ),
-        bearer_token=get_auth_token(),
+        bearer_token=token,
     )
     snake_eyes.send(
         MetricData(
             event=MetricNames.START_SERVER.value,
             event_params={},
         ),
-        bearer_token=get_auth_token(),
+        bearer_token=token,
     )
-    patch_tool_call_tracking(bearer_token_fn=get_auth_token, aau_client_id=aau or None)
+    from anaconda_mcp.tool_hooks import patch_tool_call_hooks
+
+    patch_tool_call_hooks(
+        [
+            make_auth_enforcement_hook(get_auth_token),
+            make_tracking_hook(get_auth_token, aau_client_id=aau or None),
+        ]
+    )
     try:
         ns = _ns(verbose=ctx.obj["verbose"], config=rendered_config, host=host, port=port)
         sys.exit(_serve(ns))
@@ -840,7 +870,14 @@ def claude_path():
 
 
 def main():
-    cli(obj={})  # entry point
+    try:
+        cli(obj={})  # entry point
+    except TokenNotFoundError:
+        click.echo(
+            "Error: Not authenticated. Please run 'anaconda login' to log in.",
+            err=True,
+        )
+        sys.exit(1)
 
 
 if __name__ == "__main__":
