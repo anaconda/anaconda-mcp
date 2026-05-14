@@ -9,6 +9,7 @@ from typing import Any
 from anaconda_auth import login as anaconda_login
 from anaconda_auth.client import BaseClient
 from anaconda_auth.exceptions import TokenNotFoundError
+from anaconda_auth.handlers import shutdown_all_servers
 from anaconda_auth.token import TokenInfo
 
 from anaconda_mcp.config import settings
@@ -144,6 +145,27 @@ def start_login(
             time.sleep(poll_interval)
 
     threading.Thread(target=_watch, name="telemetry_watcher", daemon=True).start()
+
+
+def require_auth_or_login(timeout: float = 60.0) -> str:
+    """Return a valid auth token, opening browser login if needed.
+
+    If no token is found and login times out, shuts down the auth callback server and exits.
+    """
+    if token := get_auth_token():
+        return token
+
+    login_thread = threading.Thread(target=anaconda_login, name="anaconda_login", daemon=True)
+    login_thread.start()
+
+    start = time.time()
+    while (time.time() - start) < timeout:
+        if token := get_auth_token():
+            return token
+        time.sleep(1.0)
+
+    shutdown_all_servers()
+    raise SystemExit(1)
 
 
 def make_auth_enforcement_hook(auth_token_fn: Callable[[], str | None]) -> Callable:

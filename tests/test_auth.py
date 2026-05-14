@@ -35,8 +35,8 @@ def mocked_init_telemetry():
 
 
 @pytest.fixture
-def mock_start_login():
-    with mock.patch("anaconda_mcp.cli.start_login") as m:
+def mock_require_auth():
+    with mock.patch("anaconda_mcp.cli.require_auth_or_login", return_value="mocked_token") as m:
         yield m
 
 
@@ -86,15 +86,16 @@ async def test_auth_flow_should_be_initialized_only_once(
     assert mocked_init_telemetry.call_count == 1
 
 
-async def test_serve_should_start_auth_flow(mock_start_login, mock_serve_command):
+async def test_serve_should_start_auth_flow(mock_token_info_load, mock_require_auth, mock_serve_command):
     # Given
+    mock_token_info_load.return_value = None
     runner = CliRunner()
     with mock.patch("anaconda_mcp.cli.Path.exists", return_value=True):
         result = runner.invoke(cli, ["serve"])  # ← Invoke through the CLI group
 
     # Then
     assert result.exit_code == 0
-    assert mock_start_login.call_count == 1
+    assert mock_require_auth.call_count == 1
     assert mock_serve_command.call_count == 1
 
 
@@ -245,7 +246,7 @@ async def test_cli_gates_on_token_not_found(mock_token_info_load):
     assert result.exit_code == 1
 
 
-async def test_serve_bypasses_token_gate(mock_token_info_load, mock_start_login, mock_serve_command):
+async def test_serve_bypasses_token_gate(mock_token_info_load, mock_require_auth, mock_serve_command):
     mock_token_info_load.return_value = None
 
     runner = CliRunner()
@@ -253,4 +254,4 @@ async def test_serve_bypasses_token_gate(mock_token_info_load, mock_start_login,
         result = runner.invoke(cli, ["serve"])
 
     assert result.exit_code == 0
-    assert mock_start_login.call_count == 1
+    assert mock_require_auth.call_count == 1

@@ -26,7 +26,12 @@ from rich import print_json as rich_print_json
 from rich.console import Console
 from rich.table import Table
 
-from anaconda_mcp.auth import get_auth_token, make_auth_enforcement_hook, start_login, validate_auth_token
+from anaconda_mcp.auth import (
+    get_auth_token,
+    make_auth_enforcement_hook,
+    require_auth_or_login,
+    validate_auth_token,
+)
 from anaconda_mcp.claude_desktop import (
     configure_claude_desktop,
     get_claude_desktop_config_path,
@@ -125,12 +130,14 @@ def serve(ctx, config, host, port, delay):
     time.sleep(delay)
     token = get_auth_token()
     if not token:
+        Console(stderr=True).print("[yellow]⚠️  Not authenticated. Opening browser to log in (60s timeout)...[/yellow]")
+        token = require_auth_or_login(timeout=60.0)
+    if not validate_auth_token(token):
         Console(stderr=True).print(
-            "[yellow]⚠️  Not authenticated. Some features may be limited. "
-            "Run [green]anaconda login[/green] to authenticate.[/yellow]"
+            "[red]❌ Token is invalid or expired. Run [green]anaconda login[/green] to re-authenticate.[/red]"
         )
+        sys.exit(1)
     snake_eyes = SnakeEyes()
-    start_login(lambda x: x)
     active_user_params: dict[str, str] = {}
     aau = client_token()
     if aau:
