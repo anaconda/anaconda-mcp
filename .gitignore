@@ -211,3 +211,25 @@ __marimo__/
 
 # Spec-driven development
 .sisyphus/
+
+# ============================================
+# Spec-Kit Personal/Cache Files
+# ============================================
+
+# Personal initialization choices
+.specify/init-options.json
+
+# Personal integration state
+.specify/integration.json
+.specify/integrations/
+
+# Extension caches and backups
+.specify/extensions/.cache/
+.specify/extensions/.backup/
+.specify/extensions/*/local-config.yml
+
+# ============================================
+# Claude Code (keep skills, ignore rest)
+# ============================================
+.claude/*
+!.claude/skills/
