@@ -17,6 +17,9 @@ on:
       - '.github/workflows/test-claude-desktop.yml'
   workflow_dispatch:
 
+env:
+  ANACONDA_MCP_ACCEPTED_TERMS: "true"
+
 jobs:
   test:
     name: Test on ${{ matrix.os }}
