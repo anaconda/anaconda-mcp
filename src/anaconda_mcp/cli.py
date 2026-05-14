@@ -4,10 +4,12 @@ import logging
 import signal
 import sys
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 
 import click
 from anaconda_anon_usage.tokens import client_token
+from anaconda_auth.client import BaseClient
 from anaconda_auth.exceptions import TokenNotFoundError
 from mcp_compose.cli import (
     compose_command as _compose,
@@ -47,7 +49,7 @@ from anaconda_mcp.client_config import (
 )
 from anaconda_mcp.config import settings
 from anaconda_mcp.mcp_state import is_new_install, mark_installed
-from anaconda_mcp.telemetry import MetricData, MetricNames, SnakeEyes, make_tracking_hook
+from anaconda_mcp.telemetry import NEW_USER_THRESHOLD_DAYS, MetricData, MetricNames, SnakeEyes, make_tracking_hook
 from anaconda_mcp.terms import (
     CURRENT_TOS_VERSION,
     TERMS_OF_SERVICE,
@@ -56,6 +58,7 @@ from anaconda_mcp.terms import (
     is_terms_current,
     persist_acceptance,
 )
+from anaconda_mcp.tool_hooks import patch_tool_call_hooks
 from anaconda_mcp.utils import _render_config_template
 from anaconda_mcp.wizard import setup_wizard_page
 
@@ -163,7 +166,26 @@ def serve(ctx, config, host, port, delay):
             "[red]❌ Token is invalid or expired. Run [green]anaconda login[/green] to re-authenticate.[/red]"
         )
         sys.exit(1)
+
+    login_event_params: dict[str, object] = {}
+    try:
+        client = BaseClient(api_key=token)
+        created_at_str = client.account["user"]["created_at"]
+        if created_at_str.endswith("Z"):
+            created_at_str = created_at_str[:-1] + "+00:00"
+        created_at = datetime.fromisoformat(created_at_str)
+        if created_at.tzinfo is None:
+            created_at = created_at.replace(tzinfo=timezone.utc)
+        account_age_days = (datetime.now(timezone.utc) - created_at).days
+        login_event_params["is_new_user"] = account_age_days < NEW_USER_THRESHOLD_DAYS
+    except Exception:
+        logger.debug("Could not determine new user status", exc_info=True)
+
     snake_eyes = SnakeEyes()
+    snake_eyes.send(
+        MetricData(event=MetricNames.LOGIN_COMPLETED.value, event_params=login_event_params),
+        bearer_token=token,
+    )
     active_user_params: dict[str, str] = {}
     aau = client_token()
     if aau:
@@ -182,7 +204,6 @@ def serve(ctx, config, host, port, delay):
         ),
         bearer_token=token,
     )
-    from anaconda_mcp.tool_hooks import patch_tool_call_hooks
 
     patch_tool_call_hooks(
         [
