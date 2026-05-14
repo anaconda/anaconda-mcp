@@ -44,13 +44,6 @@ class TestCheckTermsAccepted:
         ctx = click.Context(click.Command("serve"))
         check_terms_accepted(ctx)
 
-    def test_accepted_terms_false_exits(self, monkeypatch):
-        monkeypatch.setattr("anaconda_mcp.terms.settings.accepted_terms", False)
-        ctx = click.Context(click.Command("serve"))
-        with pytest.raises(TermsError) as exc_info:
-            check_terms_accepted(ctx)
-        assert exc_info.value.check_name == "terms"
-
     def test_accepted_terms_none_prompts_and_accepts(self, monkeypatch, no_terms):
         monkeypatch.setattr("sys.stdout.isatty", lambda: True)
         monkeypatch.setattr("anaconda_mcp.terms.Confirm.ask", lambda *a, **kw: True)
@@ -166,12 +159,6 @@ class TestVersionedAcceptance:
     def test_current_version_accepted_passes(self, monkeypatch):
         monkeypatch.setattr("anaconda_mcp.terms.settings.accepted_terms", None)
         monkeypatch.setattr("anaconda_mcp.terms.settings.accepted_terms_version", CURRENT_TOS_VERSION)
-        ctx = click.Context(click.Command("serve"))
-        check_terms_accepted(ctx)
-
-    def test_none_version_with_accepted_true_passes(self, monkeypatch):
-        monkeypatch.setattr("anaconda_mcp.terms.settings.accepted_terms", True)
-        monkeypatch.setattr("anaconda_mcp.terms.settings.accepted_terms_version", None)
         ctx = click.Context(click.Command("serve"))
         check_terms_accepted(ctx)
 
