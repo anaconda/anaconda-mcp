@@ -45,6 +45,12 @@ domain = "anaconda.com"
 # ============================================================================
 # Proxied Streamable HTTP MCP Servers
 # ============================================================================
+# Port allocation:
+#   - conda (environments-mcp): 4041
+#   - conda-meta (conda-meta-mcp): 4042
+#   - search (search-mcp): remote (no local port)
+# ============================================================================
+
 [[servers.proxied.streamable-http]]
 name = "conda"
 url = "http://localhost:4041/mcp"

@@ -55,11 +55,37 @@ conda install -c anaconda-cloud -c conda-forge -c defaults anaconda-connector-co
 
 **More detail:** [`tests/qa/_ai_docs/tech_details/LOCAL-DEV-SETUP.md`](../_ai_docs/tech_details/LOCAL-DEV-SETUP.md), [`INSTALL_OPTIONS.md`](../_ai_docs/tech_details/INSTALL_OPTIONS.md).
 
+### conda-meta-mcp setup
+
+Install the `conda-meta-mcp` package which provides the `cmm` command:
+
+```bash
+conda activate anaconda-mcp-server
+pip install conda-meta-mcp
+# Verify: cmm --help
+```
+
+The server starts automatically via mcp-compose config (`cmm run --transport streamable-http --port 4042`).
+
+### search-mcp setup
+
+search-mcp is a remote service (no local installation). Tests require:
+
+1. **Authentication token**: Set `ANACONDA_TOKEN` environment variable with a valid Anaconda.com API token
+2. **Network access**: Connectivity to `anaconda.com/api/search/mcp`
+
+```bash
+export ANACONDA_TOKEN="your-token-here"
+```
+
+Without a valid token, search-mcp tests will fail with authentication errors.
+
 **Verify the server env:**
 
 ```bash
 python -c "import anaconda_mcp; import environments_mcp_server; import anaconda_connector_conda; print('OK')"
 anaconda-mcp --help
+cmm --help  # conda-meta-mcp
 ```
 
 ### Packaged `mcp_compose.toml` vs QA
