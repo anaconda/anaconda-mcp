@@ -23,8 +23,7 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     env:
-      ANACONDA_AUTH_API_KEY: fake
-      ANACONDA_AUTH_SKIP_VALIDATION: "1"
+      ANACONDA_AUTH_API_KEY: ${{ secrets.TEST_API_KEY }}
 
     defaults:
       run:
@@ -93,8 +92,7 @@ jobs:
     needs: test
 
     env:
-      ANACONDA_AUTH_API_KEY: fake
-      ANACONDA_AUTH_SKIP_VALIDATION: "1"
+      ANACONDA_AUTH_API_KEY: ${{ secrets.TEST_API_KEY }}
 
     defaults:
       run:
