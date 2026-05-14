@@ -174,12 +174,25 @@ All test code lives under `tests/qa/mcp_tools/`:
 
 ## Phase 7: Polish & Documentation
 
-**Purpose**: Update documentation to reflect new coverage
+**Purpose**: Update documentation and CI to reflect new coverage
 
-- [ ] T054 Update tool coverage table in tests/qa/mcp_tools/_docs/test_design.md with all 20 tools
-- [ ] T055 [P] Verify all tests pass on stdio-http profile: `pytest tests/qa/mcp_tools -o addopts= --mcp-profile=stdio-http` (FR-011: stdio-http is declared supported profile; other profiles for troubleshooting only)
-- [ ] T056 [P] Run 10 consecutive test runs to verify no flaky tests (SC-004)
-- [ ] T057 Update tests/qa/mcp_tools/common/constants/mcp_tools.py docstring to reflect 20-tool coverage
+### Test documentation updates
+
+- [ ] T054 Update tool coverage table in tests/qa/mcp_tools/_docs/test_design.md with all 20 tools (add conda-meta-mcp and search-mcp sections)
+- [ ] T055 Update tests/qa/mcp_tools/_docs/architecture.md if needed to document 3-server stack
+- [ ] T056 Update tests/qa/mcp_tools/common/constants/mcp_tools.py docstring to reflect 20-tool coverage
+
+### GitHub workflow updates
+
+- [ ] T057 Update .github/workflows/qa-mcp-tools.yml to add `conda_meta_mcp_ref` input parameter for conda-meta-mcp version
+- [ ] T058 Update .github/workflows/qa-mcp-tools.yml to add `ANACONDA_TOKEN` secret usage for search-mcp authentication
+- [ ] T059 Update .github/workflows/qa-mcp-tools.yml to install conda-meta-mcp (`pip install conda-meta-mcp`) in server env
+- [ ] T060 Update workflow description comment to mention all 3 MCP servers (environments-mcp, conda-meta-mcp, search-mcp)
+
+### Validation
+
+- [ ] T061 Verify all tests pass on stdio-http profile: `pytest tests/qa/mcp_tools -o addopts= --mcp-profile=stdio-http` (FR-011: stdio-http is declared supported profile)
+- [ ] T062 Run 10 consecutive test runs to verify no flaky tests (SC-004)
 
 ---
 
@@ -233,8 +246,8 @@ All test code lives under `tests/qa/mcp_tools/`:
 | 4 US1 Complex | US1 | 8 |
 | 5 US2 Error | US2 | 9 |
 | 6 US3 Hang | US3 | 2 |
-| 7 Polish | — | 4 |
-| **Total** | | **57** |
+| 7 Polish | — | 9 |
+| **Total** | | **62** |
 
 ---
 
