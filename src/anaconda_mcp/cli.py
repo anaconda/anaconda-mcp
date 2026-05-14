@@ -7,7 +7,6 @@ import time
 from pathlib import Path
 
 import click
-from anaconda_anon_usage.tokens import client_token
 from mcp_compose.cli import (
     compose_command as _compose,
 )
@@ -46,6 +45,17 @@ from anaconda_mcp.utils import _render_config_template
 from anaconda_mcp.wizard import setup_wizard_page
 
 logger = logging.getLogger(__name__)
+
+_AAU_TOKEN_PATH = Path.home() / ".conda" / "aau_token"
+
+
+def _read_client_token() -> str:
+    try:
+        if _AAU_TOKEN_PATH.is_file():
+            return _AAU_TOKEN_PATH.read_text().strip().split()[0]
+    except OSError:
+        pass
+    return ""
 
 
 def _send_install_event():
@@ -117,7 +127,7 @@ def serve(ctx, config, host, port, delay):
     snake_eyes = SnakeEyes()
     start_login(lambda x: x)
     active_user_params: dict[str, str] = {}
-    aau = client_token()
+    aau = _read_client_token()
     if aau:
         active_user_params["aau_client_id"] = aau
     snake_eyes.send(
