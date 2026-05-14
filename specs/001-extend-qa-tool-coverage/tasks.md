@@ -68,12 +68,12 @@ All test code lives under `tests/qa/mcp_tools/`:
 
 **Independent Test**: `pytest tests/qa/mcp_tools -o addopts= --mcp-profile=stdio-http` — all 20 tools have passing happy-path tests
 
-### environments-mcp gaps (4 tests)
+### environments-mcp gaps (3 happy-path + 1 error per FR-004)
 
 - [ ] T017 [P] [US1] Create happy-path test for `conda_list_environment_packages` in tests/qa/mcp_tools/test_list_environment_packages.py
 - [ ] T018 [P] [US1] Create happy-path test for `conda_remove_packages` in tests/qa/mcp_tools/test_remove_packages.py
 - [ ] T019 [P] [US1] Create happy-path test for `conda_remove_environment` in tests/qa/mcp_tools/test_remove_environment_happy.py
-- [ ] T020 [P] [US1] Create error-path test for `conda_create_environment` (duplicate name) in tests/qa/mcp_tools/test_create_environment_error.py
+- [ ] T020 [P] [US2] Create error-path test for `conda_create_environment` (duplicate name) in tests/qa/mcp_tools/test_create_environment_error.py (FR-004)
 
 ### conda-meta-mcp (9 tests)
 
@@ -134,9 +134,9 @@ All test code lives under `tests/qa/mcp_tools/`:
 
 ### environments-mcp error paths
 
-- [ ] T043 [P] [US2] Add error test for `conda_list_environments` if meaningful error scenarios exist in tests/qa/mcp_tools/test_env_name_resolution.py
-- [ ] T044 [P] [US2] Add error test for `conda_list_environment_packages` (nonexistent env) in tests/qa/mcp_tools/test_list_environment_packages.py
-- [ ] T045 [P] [US2] Add error test for `conda_remove_packages` (package not installed) in tests/qa/mcp_tools/test_remove_packages.py
+- [ ] T043 [P] [US2] Add error test for `conda_list_environments` if meaningful error scenarios exist in tests/qa/mcp_tools/test_env_name_resolution.py (FR-005 — skip if no valid scenario)
+- [ ] T044 [P] [US2] Add error test for `conda_list_environment_packages` (nonexistent env) in tests/qa/mcp_tools/test_list_environment_packages.py (Edge case: nonexistent env)
+- [ ] T045 [P] [US2] Add error test for `conda_remove_packages` (package not installed) in tests/qa/mcp_tools/test_remove_packages.py (Edge case: package not installed)
 
 ### conda-meta-mcp error paths
 
@@ -177,7 +177,7 @@ All test code lives under `tests/qa/mcp_tools/`:
 **Purpose**: Update documentation to reflect new coverage
 
 - [ ] T054 Update tool coverage table in tests/qa/mcp_tools/_docs/test_design.md with all 20 tools
-- [ ] T055 [P] Verify all tests pass on stdio-http profile: `pytest tests/qa/mcp_tools -o addopts= --mcp-profile=stdio-http`
+- [ ] T055 [P] Verify all tests pass on stdio-http profile: `pytest tests/qa/mcp_tools -o addopts= --mcp-profile=stdio-http` (FR-011: stdio-http is declared supported profile; other profiles for troubleshooting only)
 - [ ] T056 [P] Run 10 consecutive test runs to verify no flaky tests (SC-004)
 - [ ] T057 Update tests/qa/mcp_tools/common/constants/mcp_tools.py docstring to reflect 20-tool coverage
 

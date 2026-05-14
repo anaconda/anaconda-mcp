@@ -153,20 +153,20 @@ QA engineer verifies that newly added tool tests include hang-stress variants wh
 ### Edge Cases
 
 **environments-mcp**:
-- What happens when `conda_list_environments` is called when no environments exist? (Should return empty list or just base)
-- What happens when `conda_list_environment_packages` is called on an environment with no user-installed packages? (Should return base packages or empty)
-- What happens when `conda_create_environment` is called with an already existing environment name? (Should return error)
-- What happens when `conda_remove_environment` is called on base environment? (Should be rejected)
-- What happens when `conda_remove_packages` is called with a package that isn't installed? (Should return appropriate error)
+- What happens when `conda_list_environments` is called when no environments exist? (Should return empty list or just base) — *Covered by FR-005/T043 if meaningful*
+- What happens when `conda_list_environment_packages` is called on an environment with no user-installed packages? (Should return base packages or empty) — *Happy path covers this implicitly*
+- What happens when `conda_create_environment` is called with an already existing environment name? (Should return error) — *Covered by FR-004/T020*
+- What happens when `conda_remove_environment` is called on base environment? (Should be rejected) — *Out of scope: base env protection is environments-mcp responsibility*
+- What happens when `conda_remove_packages` is called with a package that isn't installed? (Should return appropriate error) — *Covered by T045*
 
 **conda-meta-mcp**:
-- What happens when `package_search` finds no results? (Should return empty list, not error)
-- What happens when `import_mapping` is given an unknown import? (Should return empty or not-found response)
-- What happens when `repoquery` is called with an invalid package name? (Should return appropriate error)
+- What happens when `package_search` finds no results? (Should return empty list, not error) — *Covered by T046*
+- What happens when `import_mapping` is given an unknown import? (Should return empty or not-found response) — *Covered by T047*
+- What happens when `repoquery` is called with an invalid package name? (Should return appropriate error) — *Covered by T048*
 
 **search-mcp**:
-- What happens when search tools are called with empty query? (Should return error or empty results)
-- What happens when search tools have network issues? (Should return appropriate timeout/error)
+- What happens when search tools are called with empty query? (Should return error or empty results) — *Covered by T049-T051*
+- What happens when search tools have network issues? (Should return appropriate timeout/error) — *Out of scope: network resilience is search-mcp responsibility; tests assume network available*
 
 ## Requirements *(mandatory)*
 
@@ -216,7 +216,7 @@ QA engineer verifies that newly added tool tests include hang-stress variants wh
 - **SC-001**: All 20 tools have at least one happy-path test
 - **SC-002**: Tool coverage table in `test_design.md` shows checkmarks for all tools in "Happy path" column
 - **SC-003**: Test suite passes on declared supported profile without failures in new tests
-- **SC-004**: No new tests introduce flaky behavior (pass rate >99% across 10 consecutive runs)
+- **SC-004**: No new tests introduce flaky behavior (pass rate >99% across 10 consecutive runs — i.e., at most 1 failure per 100 test invocations total)
 - **SC-005**: Tool constants file includes all 20 tools organized by server
 
 ## Assumptions
