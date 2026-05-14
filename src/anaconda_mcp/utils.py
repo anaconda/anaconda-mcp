@@ -7,21 +7,21 @@ from anaconda_mcp.config import settings
 
 
 def _render_config_template(config_path: str) -> str:
-    """Render config template by replacing {{PYTHON_EXECUTABLE}} with sys.executable.
+    """Render config template by replacing placeholders with runtime values.
 
     Creates a temporary rendered config file from the template.
-    Supports multiple ways to specify the Python executable:
-    1. Environment variable: ANACONDA_MCP_PYTHON_EXECUTABLE
-    2. sys.executable (default)
+    Placeholders:
+        {{PYTHON_EXECUTABLE}} - resolved from ANACONDA_MCP_PYTHON_EXECUTABLE or sys.executable
+        {{ANACONDA_TOKEN}} - resolved from anaconda-auth token (empty string if not authenticated)
 
     Returns the path to the rendered config file.
     """
+    from anaconda_mcp.auth import get_auth_token
 
     config_file = Path(config_path)
 
     template_path = config_file.parent / f"{config_file.name}.template"
 
-    # If template exists, use it; otherwise use the config file itself
     source_path = template_path if template_path.exists() else config_file
 
     if not source_path.exists():
@@ -29,15 +29,15 @@ def _render_config_template(config_path: str) -> str:
 
     content = source_path.read_text()
 
-    # Determine which Python executable to use
-    # Priority: 1. Environment variable, 2. sys.executable
     python_executable = settings.PYTHON_EXECUTABLE or sys.executable
-
-    # Replace the placeholder with the Python executable
-    # Escape backslashes for Windows paths
     python_path = python_executable.replace("\\", "\\\\")
     content = content.replace("{{PYTHON_EXECUTABLE}}", python_path)
-    content = content.replace('"python"', f'"{python_path}"')  # Fallback for non-template
+    content = content.replace('"python"', f'"{python_path}"')
+
+    anaconda_token = get_auth_token()
+    if anaconda_token is None:
+        raise RuntimeError("Not authenticated with Anaconda. Run 'anaconda-auth login' or sign in when prompted.")
+    content = content.replace("{{ANACONDA_TOKEN}}", anaconda_token)
 
     rendered_fd, rendered_path = tempfile.mkstemp(suffix=".toml", prefix="mcp_compose_")
     try:
