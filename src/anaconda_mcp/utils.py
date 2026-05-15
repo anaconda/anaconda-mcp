@@ -3,6 +3,7 @@ import sys
 import tempfile
 from pathlib import Path
 
+from anaconda_mcp.auth import get_auth_token
 from anaconda_mcp.config import settings
 
 
@@ -17,8 +18,6 @@ def _render_config_template(config_path: str) -> str:
 
     Returns the path to the rendered config file.
     """
-    from anaconda_mcp.auth import get_auth_token
-
     config_file = Path(config_path)
 
     template_path = config_file.parent / f"{config_file.name}.template"
