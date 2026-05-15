@@ -57,6 +57,7 @@ conda activate anaconda-mcp-server
 pip install -e /path/to/anaconda-mcp
 pip install -e /path/to/environments-mcp
 conda install -c anaconda-cloud -c conda-forge -c defaults anaconda-connector-conda -y   # if import fails
+conda install -c anaconda-cloud anaconda-anon-usage -y   # required for telemetry
 ```
 
 **Pinning `mcp-compose`** (fork / branch / git URL) in the same env overrides PyPI—important for **stdio-stdio** proxy behavior. Verify with `python -c "import mcp_compose; print(mcp_compose.__file__)"`.
