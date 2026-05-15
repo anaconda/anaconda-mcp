@@ -71,10 +71,10 @@ Install the `conda-meta-mcp` package from conda-forge:
 ```bash
 conda activate anaconda-mcp-server
 conda install -c conda-forge conda-meta-mcp
-# Verify: python -m conda_meta_mcp --help
+# Verify: python -m conda_meta_mcp.cli --help
 ```
 
-The server starts automatically via mcp-compose config (`python -m conda_meta_mcp run --transport streamable-http --port 4042`).
+The server starts automatically via mcp-compose config (`python -m conda_meta_mcp.cli run --transport streamable-http --port 4042`).
 
 ### search-mcp setup
 
@@ -133,7 +133,7 @@ Without valid authentication, auth-required tests (`search_collections_and_files
 ```bash
 python -c "import anaconda_mcp; import environments_mcp_server; import anaconda_connector_conda; import conda_meta_mcp; print('OK')"
 anaconda-mcp --help
-python -m conda_meta_mcp --help  # conda-meta-mcp
+python -m conda_meta_mcp.cli --help  # conda-meta-mcp
 ```
 
 ### Packaged `mcp_compose.toml` vs QA
