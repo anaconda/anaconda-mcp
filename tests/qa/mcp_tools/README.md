@@ -105,6 +105,18 @@ export ANACONDA_TOKEN="your-token-here"
 
 Without a valid token, search-mcp tests will fail with authentication errors (401/403).
 
+**Note**: This is API token authentication, not conda channel authentication:
+- Uses an Anaconda.com API token (from Settings → Access)
+- Set via `ANACONDA_MCP_ANACONDA_TOKEN` or `ANACONDA_TOKEN` env var
+- Passed as bearer token to `anaconda.com/api/search/mcp`
+- No `anaconda login` or `.condarc` changes required
+
+For QA tests, you **don't** need the full `anaconda login` flow. You just need:
+
+```bash
+export ANACONDA_MCP_ANACONDA_TOKEN="your-api-token-from-anaconda.com"
+```
+
 **Verify the server env:**
 
 ```bash
