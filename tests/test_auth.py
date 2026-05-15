@@ -1,14 +1,10 @@
-import asyncio
 import logging
-import threading
-import time
 from unittest import mock
-from unittest.mock import MagicMock
 
 import pytest
 from click.testing import CliRunner
 
-from anaconda_mcp import auth
+from anaconda_mcp.auth import AuthenticationError
 from anaconda_mcp.cli import cli
 
 logger = logging.getLogger(__name__)
@@ -22,125 +18,94 @@ def mock_get_auth_token(mocked_token):
 
 
 @pytest.fixture
-def mock_anaconda_login():
-    with mock.patch("anaconda_mcp.auth.anaconda_login") as m:
-        yield m
-
-
-@pytest.fixture
-def mocked_init_telemetry():
-    return MagicMock()
-
-
-@pytest.fixture
-def mock_start_login():
-    with mock.patch("anaconda_mcp.cli.start_login") as m:
-        yield m
-
-
-@pytest.fixture
 def mock_serve_command():
     with mock.patch("anaconda_mcp.cli._serve") as m:
         m.return_value = 0
         yield m
 
 
-async def test_auth_flow_should_be_initialized_only_once(
-    mocked_init_telemetry, mock_get_auth_token, mock_anaconda_login
-):
-    # Given
-    auth._initialized = False
-    assert auth._initialized is False
-    assert mock_get_auth_token.call_count == 0
-    assert mocked_init_telemetry.call_count == 0
-
-    # When 1
-    auth.start_login(init_telemetry=mocked_init_telemetry)
-
-    # Then 1
-    assert auth._initialized is True
-    assert mock_get_auth_token.call_count == 1
-    assert mocked_init_telemetry.call_count == 1
-
-    # When 2 - going for a second call, this should not start another telemetry thread
-    auth.start_login(init_telemetry=mocked_init_telemetry)
-
-    # Then 2
-    assert auth._initialized is True
-    assert mock_get_auth_token.call_count == 2
-    assert mocked_init_telemetry.call_count == 1
+@pytest.fixture
+def mock_base_client():
+    with mock.patch("anaconda_mcp.auth.BaseClient") as m:
+        m.return_value.account = {"user": {"created_at": "2020-01-01T00:00:00Z"}}
+        yield m
 
 
-async def test_serve_should_start_auth_flow(mock_start_login, mock_serve_command):
-    # Given
+@pytest.fixture
+def mock_snake_eyes():
+    with mock.patch("anaconda_mcp.auth.SnakeEyes") as m:
+        yield m
+
+
+async def test_cli_gates_on_token_not_found(mock_token_info_load):
+    mock_token_info_load.return_value = None
+
     runner = CliRunner()
-    with mock.patch("anaconda_mcp.cli.Path.exists", return_value=True):
-        result = runner.invoke(cli, ["serve"])  # ← Invoke through the CLI group
+    result = runner.invoke(cli, ["clients"])
 
-    # Then
-    assert result.exit_code == 0
-    assert mock_start_login.call_count == 1
-    assert mock_serve_command.call_count == 1
+    assert result.exit_code == 1
 
 
-async def test_start_login_times_out_without_token(mocked_init_telemetry, mock_get_auth_token, mock_anaconda_login):
+async def test_auth_enforcement_hook_raises_authentication_error_on_missing_token():
     # Given - no token available
-    auth._initialized = False
-    mock_get_auth_token.return_value = None
+    from anaconda_mcp.auth import make_auth_enforcement_hook
 
-    # When - start login with very short timeout
-    auth.start_login(init_telemetry=mocked_init_telemetry, poll_interval=0.1, max_wait_sec=0.3)
+    hook_fn = make_auth_enforcement_hook(lambda: None)
 
-    # Give threads time to timeout
-    await asyncio.sleep(0.5)
+    async def original_call_tool(self, name, arguments, context=None, convert_result=False):
+        return "success"
 
-    # Then - telemetry should NOT be initialized due to timeout
-    assert mocked_init_telemetry.call_count == 0
-    assert auth._initialized is False
+    enforced_call = hook_fn(original_call_tool)
 
-
-async def test_start_login_handles_login_exception(
-    mocked_init_telemetry, mock_get_auth_token, mock_anaconda_login, caplog
-):
-    # Given - no token, login will fail
-    auth._initialized = False
-    mock_get_auth_token.return_value = None
-    mock_anaconda_login.side_effect = Exception("Login service unavailable")
-
-    # When - start login
-    with caplog.at_level(logging.ERROR):
-        auth.start_login(init_telemetry=mocked_init_telemetry, poll_interval=0.1, max_wait_sec=0.3)
-
-        # Give threads time to execute
-        await asyncio.sleep(0.5)
-
-    # Then - exception should be logged, but process continues
-    assert "Login failed" in caplog.text
-    assert mocked_init_telemetry.call_count == 0
+    # When/Then - should raise AuthenticationError
+    with pytest.raises(AuthenticationError, match="Not authenticated"):
+        await enforced_call(None, "test_tool", {})
 
 
-async def test_init_once_thread_safety(mocked_token, mock_get_auth_token):
-    # Given
-    auth._initialized = False
-    mock_get_auth_token.return_value = mocked_token
-    call_count = 0
+async def test_auth_enforcement_hook_raises_authentication_error_on_invalid_token():
+    # Given - invalid token
+    from anaconda_mcp.auth import make_auth_enforcement_hook
 
-    def counting_telemetry(token):
-        nonlocal call_count
-        call_count += 1
-        time.sleep(0.01)
+    hook_fn = make_auth_enforcement_hook(lambda: "invalid-token")
 
-    # When - call start_login concurrently from multiple threads
-    threads = []
-    for _ in range(10):
-        thread = threading.Thread(target=lambda: auth.start_login(init_telemetry=counting_telemetry))
-        threads.append(thread)
-        thread.start()
+    async def original_call_tool(self, name, arguments, context=None, convert_result=False):
+        return "success"
 
-    # Wait for all threads to complete
-    for thread in threads:
-        thread.join()
+    enforced_call = hook_fn(original_call_tool)
 
-    # Then - telemetry should only be initialized once despite 10 concurrent calls
-    assert call_count == 1
-    assert auth._initialized is True
+    # When - mock validate_auth_token to return False
+    with mock.patch("anaconda_mcp.auth.validate_auth_token", return_value=False):
+        # Then - should raise AuthenticationError
+        with pytest.raises(AuthenticationError, match="Authentication token is invalid or expired"):
+            await enforced_call(None, "test_tool", {})
+
+
+async def test_auth_enforcement_hook_passes_with_valid_token():
+    # Given - valid token
+    from anaconda_mcp.auth import make_auth_enforcement_hook
+
+    hook_fn = make_auth_enforcement_hook(lambda: "valid-token")
+
+    async def original_call_tool(self, name, arguments, context=None, convert_result=False):
+        return "success"
+
+    enforced_call = hook_fn(original_call_tool)
+
+    # When - mock validate_auth_token to return True
+    with mock.patch("anaconda_mcp.auth.validate_auth_token", return_value=True):
+        # Then - should call the original tool and return success
+        result = await enforced_call(None, "test_tool", {})
+        assert result == "success"
+
+
+async def test_serve_exits_immediately_without_token():
+    # Given - no token available
+    runner = CliRunner()
+
+    # When - invoke serve with no token (override the autouse fixture)
+    with mock.patch("anaconda_mcp.cli.get_auth_token", return_value=None):
+        with mock.patch("anaconda_mcp.cli.Path.exists", return_value=True):
+            result = runner.invoke(cli, ["serve"])
+
+    # Then - should exit with code 1
+    assert result.exit_code == 1

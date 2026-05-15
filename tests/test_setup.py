@@ -405,7 +405,7 @@ class TestSetupCommand:
     def test_setup_json_output(self, runner, patch_cursor_path):
         result = runner.invoke(cli, ["setup", "--client", "cursor", "--no-backup", "--json"])
         assert result.exit_code == 0
-        output = json.loads(result.output)
+        output = json.loads(_strip_warning(result.output))
         assert "cursor" in output
         assert output["cursor"]["created"] is True
 
@@ -449,7 +449,7 @@ class TestSetupCommand:
             )
 
         assert result.exit_code == 0
-        output = json.loads(result.output)
+        output = json.loads(_strip_warning(result.output))
         assert "cursor" in output
         assert "windsurf" in output
 
@@ -644,7 +644,7 @@ class TestSetupScopeFlag:
             ],
         )
         assert result.exit_code == 0
-        output = json.loads(result.output)
+        output = json.loads(_strip_warning(result.output))
         assert output["cursor"]["scope"] == "project"
 
     def test_list_shows_scope_column(self, runner):
@@ -960,7 +960,7 @@ class TestRemoveCommand:
             result = runner.invoke(cli, ["remove", "--client", "cursor", "--no-backup", "--json"])
 
         assert result.exit_code == 0
-        output = json.loads(result.output)
+        output = json.loads(_strip_warning(result.output))
         assert "cursor" in output
         assert output["cursor"]["removed"] is True
 

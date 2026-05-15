@@ -1,5 +1,7 @@
 import enum
+import importlib.metadata
 import logging
+import platform
 import threading
 import time
 from collections import deque
@@ -20,6 +22,10 @@ class MetricNames(enum.Enum):
     LOGIN_COMPLETED = f"{_EVENT_PREFIX}_login_completed"
     TOOL_COMPLETED = f"{_EVENT_PREFIX}_tool_completed"
     ACTIVE_USER_PING = f"{_EVENT_PREFIX}_active_user_ping"
+    INSTALL_COMPLETED = f"{_EVENT_PREFIX}_install_completed"
+
+
+NEW_USER_THRESHOLD_DAYS = 1
 
 
 class MetricData(BaseModel):
@@ -27,6 +33,13 @@ class MetricData(BaseModel):
     event_params: dict[str, Any]
     service_id: str = settings.SERVICE_NAME
     user_environment: str = settings.ENVIRONMENT
+
+
+def _get_package_version() -> str:
+    try:
+        return importlib.metadata.version("anaconda-mcp")
+    except importlib.metadata.PackageNotFoundError:
+        return "unknown"
 
 
 # TODO: Introduce Anaconda OpenTelemetry when auth is compatible with api-keys or we have a solution in anaconda-auth
@@ -64,6 +77,10 @@ class SnakeEyes:
                 **metric_data.event_params,
                 "user_environment": metric_data.user_environment,
                 "is_authenticated": is_authenticated,
+                "os_platform": platform.system() or "unknown",
+                "os_arch": platform.machine() or "unknown",
+                "python_version": platform.python_version(),
+                "package_version": _get_package_version(),
             }
             if is_authenticated:
                 payload = {
@@ -122,6 +139,7 @@ def make_tracked_call_tool(
     original_call_tool: Callable,
     bearer_token_fn: Callable[[], str | None],
     max_tool_call_history: int = 20,
+    aau_client_id: str | None = None,
 ) -> Callable:
     tool_call_history: deque[str] = deque(maxlen=max_tool_call_history)
 
@@ -140,19 +158,21 @@ def make_tracked_call_tool(
             if settings.SEND_METRICS:
                 client_name, client_version = _get_client_info(context)
                 duration_ms = round((time.monotonic() - start) * 1000, 2)
+                event_params = {
+                    "tool_name": name,
+                    "client_name": client_name,
+                    "client_version": client_version,
+                    "duration_ms": duration_ms,
+                    "is_error": is_error,
+                    "error_description": error_description,
+                    "tool_call_history": ",".join(tool_call_history),
+                }
+                if aau_client_id is not None:
+                    event_params["aau_client_id"] = aau_client_id
                 SnakeEyes().send(
                     MetricData(
                         event=MetricNames.TOOL_COMPLETED.value,
-                        event_params={
-                            "tool_name": name,
-                            "tool_inputs": arguments or {},
-                            "client_name": client_name,
-                            "client_version": client_version,
-                            "duration_ms": duration_ms,
-                            "is_error": is_error,
-                            "error_description": error_description,
-                            "tool_call_history": ",".join(tool_call_history),
-                        },
+                        event_params=event_params,
                     ),
                     bearer_token=bearer_token_fn(),
                 )
@@ -160,7 +180,17 @@ def make_tracked_call_tool(
     return _tracked
 
 
-def patch_tool_call_tracking(bearer_token_fn: Callable[[], str | None]) -> None:
-    from mcp.server.fastmcp.tools import ToolManager as FastMCPToolManager
+def make_tracking_hook(
+    bearer_token_fn: Callable[[], str | None],
+    aau_client_id: str | None = None,
+) -> Callable:
+    def hook(original_call_tool: Callable) -> Callable:
+        return make_tracked_call_tool(original_call_tool, bearer_token_fn, aau_client_id=aau_client_id)
 
-    FastMCPToolManager.call_tool = make_tracked_call_tool(FastMCPToolManager.call_tool, bearer_token_fn)
+    return hook
+
+
+def patch_tool_call_tracking(bearer_token_fn: Callable[[], str | None], aau_client_id: str | None = None) -> None:
+    from anaconda_mcp.tool_hooks import patch_tool_call_hooks
+
+    patch_tool_call_hooks([make_tracking_hook(bearer_token_fn, aau_client_id=aau_client_id)])

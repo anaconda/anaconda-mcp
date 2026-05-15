@@ -14,7 +14,8 @@ on:
 
 jobs:
   unit:
-    runs-on: [self-hosted-amd64-medium-privileged-on-demand]
+    name: Unit Tests (${{ matrix.os }}, py${{ matrix.python-version }})
+    runs-on: ${{ matrix.runner }}
 
     defaults:
       run:
@@ -24,9 +25,33 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - python-version: "3.11"
-          - python-version: "3.12"
-          - python-version: "3.13"
+          - os: linux
+            runner: [self-hosted-amd64-medium-privileged-on-demand]
+            python-version: "3.11"
+          - os: linux
+            runner: [self-hosted-amd64-medium-privileged-on-demand]
+            python-version: "3.12"
+          - os: linux
+            runner: [self-hosted-amd64-medium-privileged-on-demand]
+            python-version: "3.13"
+          - os: macos
+            runner: macos-latest
+            python-version: "3.11"
+          - os: macos
+            runner: macos-latest
+            python-version: "3.12"
+          - os: macos
+            runner: macos-latest
+            python-version: "3.13"
+          - os: windows
+            runner: windows-latest
+            python-version: "3.11"
+          - os: windows
+            runner: windows-latest
+            python-version: "3.12"
+          - os: windows
+            runner: windows-latest
+            python-version: "3.13"
 
     steps:
       - uses: actions/checkout@v4
@@ -56,4 +81,4 @@ jobs:
 
       - name: Run unit tests
         run: |
-          pytest tests/ --ignore=tests/qa -v --tb=short ${{ matrix.python-version == '3.13' && '--cov=anaconda_mcp --cov-report=xml --cov-report=term' || '' }}
+          pytest tests/ --ignore=tests/qa -v --tb=short ${{ matrix.python-version == '3.13' && matrix.os == 'linux' && '--cov=anaconda_mcp --cov-report=xml --cov-report=term' || '' }}

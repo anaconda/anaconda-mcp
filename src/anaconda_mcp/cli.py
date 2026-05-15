@@ -8,6 +8,7 @@ from pathlib import Path
 
 import click
 from anaconda_anon_usage.tokens import client_token
+from anaconda_auth.exceptions import TokenNotFoundError
 from mcp_compose.cli import (
     compose_command as _compose,
 )
@@ -21,8 +22,15 @@ from mcp_compose.cli import (
     setup_logging,
 )
 from mcp_compose.composer import ConflictResolution
+from rich import print_json as rich_print_json
+from rich.console import Console
+from rich.table import Table
 
-from anaconda_mcp.auth import get_auth_token, start_login
+from anaconda_mcp.auth import (
+    get_auth_token,
+    make_auth_enforcement_hook,
+    validate_auth_token,
+)
 from anaconda_mcp.claude_desktop import (
     configure_claude_desktop,
     get_claude_desktop_config_path,
@@ -37,12 +45,27 @@ from anaconda_mcp.client_config import (
     is_client_installed,
     remove_client,
 )
-from anaconda_mcp.consts import OSSystems
-from anaconda_mcp.telemetry import MetricData, MetricNames, SnakeEyes, patch_tool_call_tracking
+from anaconda_mcp.mcp_state import is_new_install, mark_installed
+from anaconda_mcp.telemetry import MetricData, MetricNames, SnakeEyes, make_tracking_hook
 from anaconda_mcp.utils import _render_config_template
 from anaconda_mcp.wizard import setup_wizard_page
 
 logger = logging.getLogger(__name__)
+
+
+def _send_install_event():
+    try:
+        new_install = is_new_install()
+        mark_installed()
+        SnakeEyes().send(
+            MetricData(
+                event=MetricNames.INSTALL_COMPLETED.value,
+                event_params={"new_install": new_install},
+            ),
+            bearer_token=get_auth_token(),
+        )
+    except Exception:
+        logger.debug("Failed to send install event", exc_info=True)
 
 
 def _ns(**kwargs):
@@ -58,6 +81,19 @@ def cli(ctx, verbose: bool):
     ctx.ensure_object(dict)
     ctx.obj["verbose"] = verbose
     setup_logging(verbose)
+    if ctx.info_name == "anaconda-mcp":
+        click.echo(
+            "Warning: 'anaconda-mcp' is deprecated. Use 'anaconda mcp' instead.",
+            err=True,
+        )
+    if ctx.invoked_subcommand and ctx.invoked_subcommand != "serve":
+        token = get_auth_token()
+        if not token:
+            raise TokenNotFoundError("Login is required to complete this action.")
+        if not validate_auth_token(token):
+            raise TokenNotFoundError(
+                "Authentication token is invalid or expired. Please run 'anaconda login' to re-authenticate."
+            )
 
 
 @cli.command(help="Start MCP servers from configuration file.")
@@ -91,8 +127,18 @@ def serve(ctx, config, host, port, delay):
 
     rendered_config = _render_config_template(config)
     time.sleep(delay)
+    token = get_auth_token()
+    if not token:
+        Console(stderr=True).print(
+            "[red]❌ Not authenticated. Run [green]anaconda login[/green] to authenticate before starting the server.[/red]"
+        )
+        sys.exit(1)
+    if not validate_auth_token(token):
+        Console(stderr=True).print(
+            "[red]❌ Token is invalid or expired. Run [green]anaconda login[/green] to re-authenticate.[/red]"
+        )
+        sys.exit(1)
     snake_eyes = SnakeEyes()
-    start_login(lambda x: x)
     active_user_params: dict[str, str] = {}
     aau = client_token()
     if aau:
@@ -102,20 +148,23 @@ def serve(ctx, config, host, port, delay):
             event=MetricNames.ACTIVE_USER_PING.value,
             event_params=active_user_params,
         ),
-        bearer_token=get_auth_token(),
+        bearer_token=token,
     )
-    try:
-        os_platform = OSSystems.current().value
-    except RuntimeError:
-        os_platform = "unknown"
     snake_eyes.send(
         MetricData(
             event=MetricNames.START_SERVER.value,
-            event_params={"os_platform": os_platform},
+            event_params={},
         ),
-        bearer_token=get_auth_token(),
+        bearer_token=token,
     )
-    patch_tool_call_tracking(bearer_token_fn=get_auth_token)
+    from anaconda_mcp.tool_hooks import patch_tool_call_hooks
+
+    patch_tool_call_hooks(
+        [
+            make_auth_enforcement_hook(get_auth_token),
+            make_tracking_hook(get_auth_token, aau_client_id=aau or None),
+        ]
+    )
     try:
         ns = _ns(verbose=ctx.obj["verbose"], config=rendered_config, host=host, port=port)
         sys.exit(_serve(ns))
@@ -124,6 +173,7 @@ def serve(ctx, config, host, port, delay):
         sys.exit(1)
 
 
+@cli.command(help="Compose MCP servers from dependencies.")
 @click.option(
     "-p",
     "--pyproject",
@@ -146,7 +196,6 @@ def serve(ctx, config, host, port, delay):
     "--output-format", type=click.Choice(["text", "json"]), default="text", show_default=True, help="Output format."
 )
 @click.pass_context
-@cli.command(help="Compose MCP servers from dependencies.")
 def compose(ctx, pyproject, name, conflict_resolution, include, exclude, output, output_format):
     ns = _ns(
         verbose=ctx.obj["verbose"],
@@ -188,24 +237,42 @@ def discover(ctx, pyproject, output_format):
 # ============================================================================
 
 
-def _print_clients_table(project_dir: Path | None = None) -> None:
-    col_width = max(len(c) for c in SUPPORTED_CLIENTS) + 2
-    trans_width = len("stdio, streamable-http") + 2
-    click.echo(f"{'CLIENT':<{col_width}}  {'TRANSPORTS':<{trans_width}}  {'SCOPE':<18}  INSTALLED")
-    click.echo("-" * (col_width + trans_width + 34))
+def _build_clients_data(project_dir: Path | None = None) -> dict:
+    result = {}
     for client in sorted(SUPPORTED_CLIENTS):
         supports_project = SUPPORTED_CLIENTS[client]["supports_project_scope"]
-        scope_str = "global, project" if supports_project else "global"
         status = is_client_installed(client, project_dir=project_dir)
+        result[client] = {
+            "transports": ["stdio", "streamable-http"],
+            "supports_global_scope": True,
+            "supports_project_scope": supports_project,
+            "config_key": SUPPORTED_CLIENTS[client]["config_key"],
+            "installed_global": status["global"],
+            "installed_project": status.get("project", None),
+        }
+    return result
+
+
+def _print_clients_table(project_dir: Path | None = None) -> None:
+    data = _build_clients_data(project_dir=project_dir)
+    console = Console()
+    table = Table(show_header=True, header_style="bold")
+    table.add_column("CLIENT", style="cyan", no_wrap=True)
+    table.add_column("TRANSPORTS")
+    table.add_column("SCOPE")
+    table.add_column("INSTALLED")
+
+    for client, info in data.items():
+        scope_str = "global, project" if info["supports_project_scope"] else "global"
         parts = []
-        if status["global"]:
+        if info["installed_global"]:
             parts.append("global")
-        if status.get("project"):
+        if info["installed_project"]:
             parts.append("project")
         installed_str = ", ".join(parts) if parts else "—"
-        click.echo(
-            f"{client:<{col_width}}  {'stdio, streamable-http':<{trans_width}}  {scope_str:<18}  {installed_str}"
-        )
+        table.add_row(client, "stdio, streamable-http", scope_str, installed_str)
+
+    console.print(table)
 
 
 @cli.command(help="List supported AI clients and their configuration options.")
@@ -215,8 +282,13 @@ def _print_clients_table(project_dir: Path | None = None) -> None:
     default=None,
     help="Project directory to check for project-scoped installs (defaults to CWD).",
 )
-def clients(project_dir):
-    _print_clients_table(project_dir=project_dir)
+@click.option("--json", "output_json", is_flag=True, help="Output as JSON.")
+def clients(project_dir, output_json):
+    data = _build_clients_data(project_dir=project_dir)
+    if output_json:
+        rich_print_json(json.dumps(data))
+    else:
+        _print_clients_table(project_dir=project_dir)
 
 
 # ============================================================================
@@ -363,6 +435,9 @@ def setup(clients, transport, host, port, server_name, scope, project_dir, no_ba
 
         if exit_code != 0:
             raise SystemExit(exit_code)
+
+        if adds:
+            _send_install_event()
         return
 
     results = {}
@@ -409,6 +484,8 @@ def setup(clients, transport, host, port, server_name, scope, project_dir, no_ba
 
     if exit_code != 0:
         raise SystemExit(exit_code)
+
+    _send_install_event()
 
 
 # ============================================================================
@@ -793,7 +870,14 @@ def claude_path():
 
 
 def main():
-    cli(obj={})  # entry point
+    try:
+        cli(obj={})  # entry point
+    except TokenNotFoundError:
+        click.echo(
+            "Error: Not authenticated. Please run 'anaconda login' to log in.",
+            err=True,
+        )
+        sys.exit(1)
 
 
 if __name__ == "__main__":
