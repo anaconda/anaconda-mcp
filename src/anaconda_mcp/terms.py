@@ -36,12 +36,12 @@ def is_terms_current(accepted_version: str | None) -> bool:
 
 def verify_terms_accepted() -> None:
     """Raise TermsError if terms are not accepted. No TTY interaction."""
-    if is_terms_current(settings.accepted_terms_version):
+    if settings.accepted_terms is True and is_terms_current(settings.accepted_terms_version):
         return
     raise TermsError(
         check_name="terms",
         message="You must accept the Anaconda MCP Terms of Service.",
-        remediation=f"Run 'anaconda mcp terms accept' or set ANACONDA_MCP_ACCEPTED_TERMS_VERSION={CURRENT_TOS_VERSION}.",
+        remediation=f"Run 'anaconda mcp terms accept' or set ANACONDA_MCP_ACCEPTED_TERMS=true ANACONDA_MCP_ACCEPTED_TERMS_VERSION={CURRENT_TOS_VERSION}.",
     )
 
 

@@ -168,10 +168,18 @@ class TestTermsGroupBareInvocation:
 
 class TestVersionedAcceptance:
     def test_current_version_accepted_passes(self, monkeypatch):
-        monkeypatch.setattr("anaconda_mcp.terms.settings.accepted_terms", None)
+        monkeypatch.setattr("anaconda_mcp.terms.settings.accepted_terms", True)
         monkeypatch.setattr("anaconda_mcp.terms.settings.accepted_terms_version", CURRENT_TOS_VERSION)
         ctx = click.Context(click.Command("serve"))
         check_terms_accepted(ctx)
+
+    def test_version_only_without_accepted_terms_raises(self, monkeypatch):
+        monkeypatch.setattr("anaconda_mcp.terms.settings.accepted_terms", None)
+        monkeypatch.setattr("anaconda_mcp.terms.settings.accepted_terms_version", CURRENT_TOS_VERSION)
+        monkeypatch.setattr("sys.stdout.isatty", lambda: False)
+        ctx = click.Context(click.Command("serve"))
+        with pytest.raises(TermsError):
+            check_terms_accepted(ctx)
 
     def test_none_version_none_accepted_non_tty_raises(self, monkeypatch, no_terms):
         monkeypatch.setattr("sys.stdout.isatty", lambda: False)

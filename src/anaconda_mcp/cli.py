@@ -107,7 +107,7 @@ def cli(ctx, verbose: bool):
                 f"⚠️  Anaconda MCP cannot start: {e.message}\n\n"
                 f"To resolve, run one of:\n"
                 f"  anaconda mcp terms accept          (interactive)\n"
-                f"  ANACONDA_MCP_ACCEPTED_TERMS_VERSION={CURRENT_TOS_VERSION}   (environment variable)\n\n"
+                f"  ANACONDA_MCP_ACCEPTED_TERMS=true ANACONDA_MCP_ACCEPTED_TERMS_VERSION={CURRENT_TOS_VERSION}   (environment variables)\n\n"
                 f"For more information: anaconda mcp terms status",
                 err=True,
             )
