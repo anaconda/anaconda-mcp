@@ -96,7 +96,7 @@ health_check_enabled = false
 mode = "proxy"
 auto_start = true
 command = ["{python_executable}", "-m", "environments_mcp_server", "start", "--transport", "streamable-http", "--port", "{downstream_port}"]
-startup_delay = 15
+startup_delay = 5
 
 [tool_manager]
 conflict_resolution = "prefix"
@@ -107,6 +107,31 @@ path_prefix = "/api/v1"
 host = "0.0.0.0"
 port = {compose_port}
 """
+
+
+def _get_auth_token_for_tests() -> str | None:
+    """
+    Retrieve the Anaconda API token for QA tests.
+
+    Mirrors the logic from anaconda_mcp.auth.get_auth_token() without importing
+    from anaconda_mcp (which is only installed in the server env, not the test runner env).
+
+    Resolution order:
+    1. ANACONDA_AUTH_API_KEY env var
+    2. Keyring token from 'anaconda login' (via anaconda_auth)
+    """
+    import os
+
+    env_token = os.environ.get("ANACONDA_AUTH_API_KEY")
+    if env_token:
+        return env_token
+    try:
+        from anaconda_auth.token import TokenInfo
+
+        token: str = TokenInfo.load().api_key
+        return token
+    except Exception:
+        return None
 
 
 def render_stdio_http_toml(
@@ -120,7 +145,26 @@ def render_stdio_http_toml(
     Outer ``[transport]`` is STDIO-only; upstream uses the same streamable-http
     block as ``render_http_http_toml`` (different outer port / API block omitted
     where not needed).
+
+    Includes all 3 MCP servers:
+    - environments-mcp (conda): downstream_port
+    - search-mcp: remote (anaconda.com)
+    - conda-meta-mcp: downstream_port + 1
+
+    Token resolution mirrors real user flow (anaconda_mcp.auth.get_auth_token):
+    1. ANACONDA_AUTH_API_KEY env var
+    2. Keyring token from 'anaconda login'
     """
+    import os
+
+    anaconda_domain = os.environ.get("ANACONDA_MCP_ANACONDA_DOMAIN", "anaconda.com")
+    anaconda_token = _get_auth_token_for_tests()
+    if anaconda_token is None:
+        raise RuntimeError(
+            "Not authenticated with Anaconda. Run 'anaconda login' or set ANACONDA_AUTH_API_KEY env var."
+        )
+    conda_meta_port = downstream_port + 1
+
     return f"""\
 [composer]
 name = "anaconda-mcp"
@@ -143,7 +187,32 @@ health_check_enabled = false
 mode = "proxy"
 auto_start = true
 command = ["{python_executable}", "-m", "environments_mcp_server", "start", "--transport", "streamable-http", "--port", "{downstream_port}"]
-startup_delay = 15
+startup_delay = 5
+
+[[servers.proxied.streamable-http]]
+name = "search"
+url = "https://{anaconda_domain}/api/search/mcp"
+auth_token = "{anaconda_token}"
+auth_type = "bearer"
+timeout = 30
+keep_alive = true
+reconnect_on_failure = true
+max_reconnect_attempts = 10
+health_check_enabled = false
+mode = "proxy"
+
+[[servers.proxied.streamable-http]]
+name = "conda-meta"
+url = "http://localhost:{conda_meta_port}/mcp"
+timeout = 30
+keep_alive = true
+reconnect_on_failure = true
+max_reconnect_attempts = 10
+health_check_enabled = false
+mode = "proxy"
+auto_start = true
+command = ["{python_executable}", "-m", "conda_meta_mcp.cli", "run", "--transport", "streamable-http", "--port", "{conda_meta_port}"]
+startup_delay = 5
 
 [tool_manager]
 conflict_resolution = "prefix"

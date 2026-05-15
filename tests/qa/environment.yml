@@ -19,3 +19,5 @@ dependencies:
   - pytest-timeout>=2.3
   - httpx>=0.27
   - pip
+  - pip:
+    - anaconda-auth  # for keyring token resolution in search-mcp tests

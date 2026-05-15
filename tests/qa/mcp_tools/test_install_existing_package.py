@@ -34,6 +34,7 @@ logger = logging.getLogger(__name__)
 
 
 @pytest.mark.slow
+@pytest.mark.auth_independent
 class TestInstallExistingPackage:
     """
     Happy-path: conda_install_packages with a valid package must succeed

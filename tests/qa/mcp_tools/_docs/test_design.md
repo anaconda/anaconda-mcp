@@ -66,12 +66,40 @@ Tool behaviour must be correct regardless of *how* the call travels to `environm
 
 ## 3. Tools and scenarios
 
+### environments-mcp (6 tools)
+
 | Tool | Happy path | Error path | Hang stress |
 |------|:----------:|:----------:|:-----------:|
 | `conda_list_environments` | ✓ | | ✓ |
 | `conda_install_packages` | ✓ | ✓ | ✓ |
-| `conda_remove_environment` | | ✓ | ✓ |
-| `conda_create_environment` | ✓ | | |
+| `conda_remove_environment` | ✓ | ✓ | ✓ |
+| `conda_create_environment` | ✓ | ✓ | |
+| `conda_list_environment_packages` | ✓ | ✓ | |
+| `conda_remove_packages` | ✓ | ✓ | |
+
+### conda-meta-mcp (9 tools)
+
+| Tool | Happy path | Error path | Hang stress |
+|------|:----------:|:----------:|:-----------:|
+| `conda-meta_info` | ✓ | | |
+| `conda-meta_cache_maintenance` | ✓ | | |
+| `conda-meta_cli_help` | ✓ | | |
+| `conda-meta_file_path_search` | ✓ | | |
+| `conda-meta_import_mapping` | ✓ | ✓ | |
+| `conda-meta_package_insights` | ✓ | | |
+| `conda-meta_package_search` | ✓ | ✓ | |
+| `conda-meta_pypi_to_conda` | ✓ | | |
+| `conda-meta_repoquery` | ✓ | ✓ | ✓ |
+
+### search-mcp (5 tools)
+
+| Tool | Happy path | Error path | Hang stress |
+|------|:----------:|:----------:|:-----------:|
+| `search_search_packages` | ✓ | ✓ | ✓ |
+| `search_search_documentation` | ✓ | ✓ | |
+| `search_search_forum` | ✓ | ✓ | |
+| `search_search_collections_and_files` | ✓ | | |
+| `search_search_environments` | ✓ | | |
 
 ---
 

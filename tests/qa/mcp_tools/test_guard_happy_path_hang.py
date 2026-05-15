@@ -29,6 +29,7 @@ _BASE_TIMEOUT = int((TOOL_TIMEOUT + ITERATION_DELAY) * WARM_ITERATIONS) + 60
 @pytest.mark.hang_stress
 @pytest.mark.regression
 @pytest.mark.slow
+@pytest.mark.auth_independent
 class TestHappyPathHang:
     @pytest.mark.timeout(_BASE_TIMEOUT)
     def test_hang_004_repeated_install_does_not_hang(self, conda_env, call_no_hang_unified):

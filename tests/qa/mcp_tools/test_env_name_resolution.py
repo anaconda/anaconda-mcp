@@ -64,6 +64,7 @@ def removable_env():
 
 
 @pytest.mark.regression
+@pytest.mark.auth_independent
 class TestEnvironmentNameResolution:
     """
     Regression: environment listing and removal must use correct names and

@@ -1,7 +1,11 @@
 name: QA — MCP tool tests
 
-# QA-owned: tests the full anaconda-mcp + environments-mcp + mcp-compose stack
-# across runners, Python versions, and transport profiles.
+# QA-owned: tests the full anaconda-mcp stack across 3 MCP servers:
+# - environments-mcp (6 tools): conda environment management
+# - conda-meta-mcp (9 tools): conda metadata queries
+# - search-mcp (5 tools): Anaconda.com search (requires ANACONDA_TOKEN)
+#
+# Tests run across runners, Python versions, and transport profiles.
 #
 # All defaults live in the `setup` job. The `test` job reads every value from
 # needs.setup.outputs.*, so name/runs-on/steps all share the same resolved values.
@@ -21,6 +25,10 @@ on:
         description: 'anaconda-connector conda package version (e.g. 0.1.11); empty = transitive dep'
         required: false
         default: '0.1.11'
+      conda_meta_mcp_ver:
+        description: 'conda-meta-mcp conda package version (e.g. 0.3.0); empty = latest from conda-forge'
+        required: false
+        default: ''
       mcp_compose_repo:
         description: 'mcp-compose GitHub URL (fork or canonical)'
         required: false
@@ -96,6 +104,7 @@ jobs:
       connector-ver:      ${{ steps.params.outputs.connector-ver }}
       compose-repo:       ${{ steps.params.outputs.compose-repo }}
       compose-ref:        ${{ steps.params.outputs.compose-ref }}
+      conda-meta-ver:     ${{ steps.params.outputs.conda-meta-ver }}
 
     steps:
       - name: Resolve parameters
@@ -110,6 +119,7 @@ jobs:
           CONNECTOR_VER="${{ inputs.anaconda_connector_ver || '0.1.11' }}"
           COMPOSE_REPO="${{ inputs.mcp_compose_repo        || 'https://github.com/j-iliukhina-anaconda/mcp-compose' }}"
           COMPOSE_REF="${{ inputs.mcp_compose_ref          || 'stdio-proxy-fixes' }}"
+          CONDA_META_VER="${{ inputs.conda_meta_mcp_ver    || '' }}"
 
           {
             echo "runner=$RUNNER"
@@ -121,6 +131,7 @@ jobs:
             echo "connector-ver=$CONNECTOR_VER"
             echo "compose-repo=$COMPOSE_REPO"
             echo "compose-ref=$COMPOSE_REF"
+            echo "conda-meta-ver=$CONDA_META_VER"
           } >> "$GITHUB_OUTPUT"
 
           echo "=== Resolved parameters ==="
@@ -132,6 +143,7 @@ jobs:
           printf "%-22s %s\n" "connector ver:"    "${CONNECTOR_VER:-<transitive dep>}"
           printf "%-22s %s\n" "mcp-compose repo:" "$COMPOSE_REPO"
           printf "%-22s %s\n" "mcp-compose ref:"  "${COMPOSE_REF:-<pinned by anaconda-mcp>}"
+          printf "%-22s %s\n" "conda-meta-mcp:"   "${CONDA_META_VER:-<latest from conda-forge>}"
 
   # ── Tests ─────────────────────────────────────────────────────────────────────
   test:
@@ -153,10 +165,15 @@ jobs:
       CONNECTOR_VER:      ${{ needs.setup.outputs.connector-ver }}
       COMPOSE_REPO:       ${{ needs.setup.outputs.compose-repo }}
       COMPOSE_REF:        ${{ needs.setup.outputs.compose-ref }}
+      CONDA_META_VER:     ${{ needs.setup.outputs.conda-meta-ver }}
       SERVER_ENV:         anaconda-mcp-server
       QA_ENV:             anaconda-mcp-qa
-      ANACONDA_MCP_ACCEPTED_TERMS: "true"
-      ANACONDA_MCP_ACCEPTED_TERMS_VERSION: "2026-01-01"
+      # Programmatic OAuth authentication for search-mcp tests
+      # These credentials are used to obtain fresh session tokens at runtime
+      ANACONDA_USER_EMAIL:    ${{ secrets.ANACONDA_USER_EMAIL }}
+      ANACONDA_USER_PASSWORD: ${{ secrets.ANACONDA_USER_PASSWORD }}
+      # Legacy: static token (deprecated, kept for fallback)
+      ANACONDA_TOKEN:     ${{ secrets.ANACONDA_TOKEN }}
 
     steps:
       # ── Checkout ──────────────────────────────────────────────────────────────
@@ -227,6 +244,14 @@ jobs:
             || conda install -n "$SERVER_ENV" --yes anaconda-connector-conda
           fi
 
+      - name: Install conda-meta-mcp
+        run: |
+          if [[ -n "$CONDA_META_VER" ]]; then
+            conda install -n "$SERVER_ENV" -c conda-forge --yes "conda-meta-mcp=$CONDA_META_VER"
+          else
+            conda install -n "$SERVER_ENV" -c conda-forge --yes conda-meta-mcp
+          fi
+
       # mcp-compose pyproject.toml has a build hook that compiles a UI bundle;
       # npm must be available before pip attempts to build the wheel from source.
       - name: Set up Node.js (required to build mcp-compose from source)
@@ -245,12 +270,17 @@ jobs:
       - name: Show installed versions in server env
         run: |
           conda run -n "$SERVER_ENV" --no-capture-output conda list \
-            | grep -E "^(python|anaconda-mcp|environments-mcp-server|anaconda-connector|mcp-compose) "
+            | grep -E "^(python|anaconda-mcp|environments-mcp-server|anaconda-connector|mcp-compose|conda-meta-mcp) "
 
       # ── Tests ─────────────────────────────────────────────────────────────────
       - name: Run MCP tool tests
         env:
           MCP_SERVER_CONDA_ENV: ${{ env.SERVER_ENV }}  # read by conftest.py
+          # Programmatic auth credentials (conftest.py loads these via detect_auth_state)
+          ANACONDA_USER_EMAIL: ${{ secrets.ANACONDA_USER_EMAIL }}
+          ANACONDA_USER_PASSWORD: ${{ secrets.ANACONDA_USER_PASSWORD }}
+          # Legacy token for server config (mcp_compose.toml template)
+          ANACONDA_MCP_ANACONDA_TOKEN: ${{ secrets.ANACONDA_TOKEN }}
         run: |
           EXTRA_ARGS=""
           [[ "$MCP_PROFILE"     == "http-http" ]] && EXTRA_ARGS="$EXTRA_ARGS --start-server"

@@ -1,6 +1,14 @@
 # mcp_tools — unified MCP tool tests
 
-One suite for all transport profiles. Architecture, configuration, test design, and reporting details live under [`_docs/`](_docs/index.md).
+One suite for all transport profiles covering **20 tools across 3 MCP servers**:
+
+| Server | Tools | Description |
+|--------|-------|-------------|
+| environments-mcp | 6 | Conda environment management |
+| conda-meta-mcp | 9 | Conda metadata queries |
+| search-mcp | 5 | Anaconda.com search (remote) |
+
+Architecture, configuration, test design, and reporting details live under [`_docs/`](_docs/index.md).
 
 ## Profiles
 
@@ -49,17 +57,83 @@ conda activate anaconda-mcp-server
 pip install -e /path/to/anaconda-mcp
 pip install -e /path/to/environments-mcp
 conda install -c anaconda-cloud -c conda-forge -c defaults anaconda-connector-conda -y   # if import fails
+conda install -c anaconda-cloud anaconda-anon-usage -y   # required for telemetry
 ```
 
 **Pinning `mcp-compose`** (fork / branch / git URL) in the same env overrides PyPI—important for **stdio-stdio** proxy behavior. Verify with `python -c "import mcp_compose; print(mcp_compose.__file__)"`.
 
 **More detail:** [`tests/qa/_ai_docs/tech_details/LOCAL-DEV-SETUP.md`](../_ai_docs/tech_details/LOCAL-DEV-SETUP.md), [`INSTALL_OPTIONS.md`](../_ai_docs/tech_details/INSTALL_OPTIONS.md).
 
+### conda-meta-mcp setup
+
+Install the `conda-meta-mcp` package from conda-forge:
+
+```bash
+conda activate anaconda-mcp-server
+conda install -c conda-forge conda-meta-mcp
+# Verify: python -m conda_meta_mcp --help
+```
+
+The server starts automatically via mcp-compose config (`python -m conda_meta_mcp run --transport streamable-http --port 4042`).
+
+### search-mcp setup
+
+search-mcp is a remote service hosted at `anaconda.com/api/search/mcp` (no local installation required).
+
+**Requirements:**
+1. **Anaconda authentication** (see options below)
+2. **Network access** to anaconda.com
+
+**Authentication options (in priority order):**
+
+#### Option 1: `.env` file (recommended for local development)
+
+Create a `.env` file in the repo root:
+
+```bash
+ANACONDA_USER_EMAIL="your-email@example.com"
+ANACONDA_USER_PASSWORD="your-password"
+```
+
+The test harness loads this automatically via `conftest.py` and obtains a fresh token via OAuth.
+
+#### Option 2: Environment variables (CI/headless)
+
+```bash
+export ANACONDA_USER_EMAIL="your-email@example.com"
+export ANACONDA_USER_PASSWORD="your-password"
+```
+
+For GitHub Actions, configure repository secrets:
+- `ANACONDA_USER_EMAIL`
+- `ANACONDA_USER_PASSWORD`
+
+#### Option 3: Keyring fallback (from `anaconda login`)
+
+```bash
+anaconda login
+anaconda whoami
+```
+
+The token from `anaconda login` is used as a fallback when credentials are not available.
+
+**Auth-state-aware testing:**
+
+Tests adapt based on authentication state:
+
+| Auth State | auth_independent (15 tools) | auth_required (2 tools) | auth_enhanced (3 tools) |
+|------------|----------------------------|-------------------------|------------------------|
+| Logged in | Run normally | Run normally | Run normally |
+| Logged out | Run normally | Skip with message | Run (public-only) |
+
+Without valid authentication, auth-required tests (`search_collections_and_files`, `search_environments`) will skip.
+
 **Verify the server env:**
 
 ```bash
-python -c "import anaconda_mcp; import environments_mcp_server; import anaconda_connector_conda; print('OK')"
+python -c "import anaconda_mcp; import environments_mcp_server; import anaconda_connector_conda; import conda_meta_mcp; print('OK')"
 anaconda-mcp --help
+python -m conda_meta_mcp --help  # conda-meta-mcp
 ```
 
 ### Packaged `mcp_compose.toml` vs QA
@@ -71,17 +145,26 @@ The file **`src/anaconda_mcp/mcp_compose.toml`** is a **packaged default** when 
 From the repo root (with `anaconda-mcp-qa` activated):
 
 ```bash
+# Full suite with stdio-http profile (recommended for CI)
+pytest tests/qa/mcp_tools -o addopts= \
+  --mcp-profile=stdio-http \
+  --server-conda-env anaconda-mcp-server
+
+# HTTP-HTTP profile (requires --start-server)
 pytest tests/qa/mcp_tools -o addopts= \
   --mcp-profile=http-http \
   --server-url http://localhost:9888/mcp \
   --start-server --server-conda-env anaconda-mcp-server
 
+# STDIO-STDIO profile
 pytest tests/qa/mcp_tools -o addopts= \
   --mcp-profile=stdio-stdio \
   --server-conda-env anaconda-mcp-server
 ```
 
 Or: `conda run -n anaconda-mcp-qa pytest tests/qa/mcp_tools -o addopts= …`
+
+**Note**: The full suite tests all 20 tools across environments-mcp, conda-meta-mcp, and search-mcp. Ensure all three servers are properly configured (see setup sections above).
 
 ### Quick suite (no hang stress)
 
