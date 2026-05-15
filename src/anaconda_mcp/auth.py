@@ -39,7 +39,7 @@ def get_auth_token() -> str | None:
 
 def validate_auth_token(token: str) -> bool:
     try:
-        _ = BaseClient(api_key=token).account
+        _ = BaseClient(api_key=token, domain=settings.anaconda_domain).account
         return True
     except Exception:
         return False
