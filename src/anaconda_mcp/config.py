@@ -1,8 +1,10 @@
 import logging
+import re
 from enum import Enum
+from functools import cached_property
 
-from pydantic import field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from anaconda_cli_base.config import AnacondaBaseSettings
+from pydantic import AliasChoices, Field
 
 logger = logging.getLogger(__name__)
 
@@ -20,32 +22,36 @@ class AnacondaDomains(Enum):
     staging = "stage.anaconda.com"
 
 
-class Settings(BaseSettings):
-    model_config = SettingsConfigDict(
-        env_prefix=f"{ENV_VAR_PREFIX}_",
-        env_file=".env",
-        extra="allow",
+ENVIRONMENT_TO_DOMAIN = {
+    Environments.production.value: AnacondaDomains.production.value,
+    Environments.staging.value: AnacondaDomains.staging.value,
+}
+
+
+class Settings(AnacondaBaseSettings, plugin_name="mcp"):
+    environment: str = Field(
+        default=Environments.production.value,
+        validation_alias=AliasChoices(
+            "anaconda_domain",
+            "environment",
+            "ANACONDA_MCP_ANACONDA_DOMAIN",
+            "ANACONDA_MCP_ENVIRONMENT",
+        ),
     )
-    ANACONDA_DOMAIN: str | None = None
-    ENVIRONMENT: str = Environments.production.value
-    LOG_LEVEL: str = "INFO"
-    SERVICE_NAME: str = "anaconda-mcp"
-    SEND_METRICS: bool = True
-    PYTHON_EXECUTABLE: str | None = None
+    log_level: str = "INFO"
+    service_name: str = "anaconda-mcp"
+    send_metrics: bool = True
+    python_executable: str | None = None
+    accepted_terms: bool | None = None
+    accepted_terms_version: str | None = None
 
-    @field_validator("ANACONDA_DOMAIN", mode="before")
-    @classmethod
-    def set_anaconda_domain(cls, v, info):
-        if v is not None:
-            return v
-
-        env = info.data.get("ENVIRONMENT", "").lower()
-
-        domains_mapping = {
-            Environments.production.value: AnacondaDomains.production.value,
-            Environments.staging.value: AnacondaDomains.staging.value,
-        }
-        return domains_mapping.get(env, AnacondaDomains.production.value)
+    @cached_property
+    def anaconda_domain(self) -> str:
+        if self.environment in ENVIRONMENT_TO_DOMAIN:
+            return ENVIRONMENT_TO_DOMAIN[self.environment]
+        if re.search(r"[.:]", self.environment):
+            return self.environment
+        return AnacondaDomains.production.value
 
 
 settings = Settings()

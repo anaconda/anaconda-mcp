@@ -103,7 +103,7 @@ async def test_tracked_suppressed_when_metrics_off():
     tracked = make_tracked_call_tool(original, bearer_token_fn=lambda: "token")
 
     with mock.patch("anaconda_mcp.telemetry.settings") as mock_settings:
-        mock_settings.SEND_METRICS = False
+        mock_settings.send_metrics = False
         with mock.patch("anaconda_mcp.telemetry.SnakeEyes.send") as mock_send:
             await tracked(mock.MagicMock(), "quiet_tool", {})
 
