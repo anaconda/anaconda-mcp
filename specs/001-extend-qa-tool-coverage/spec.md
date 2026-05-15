@@ -150,7 +150,30 @@ QA engineer verifies that newly added tool tests include hang-stress variants wh
 
 ---
 
+### User Story 4 - Programmatic Authentication for CI (Priority: P1)
+
+QA engineer configures the GitHub Actions workflow to run search-mcp tests without requiring pre-stored static API tokens. The test infrastructure obtains fresh session tokens at runtime using user credentials stored as GitHub secrets.
+
+**Why this priority**: Without programmatic auth, search-mcp tests cannot run in CI because tokens expire between sessions. This blocks CI/CD coverage for 5 search-mcp tools.
+
+**Independent Test**: Run the `qa-mcp-tools.yml` workflow in GitHub Actions with `ANACONDA_USER_EMAIL` and `ANACONDA_USER_PASSWORD` secrets configured, verify search-mcp tests pass.
+
+**Acceptance Scenarios**:
+
+1. **Given** the GitHub workflow has `ANACONDA_USER_EMAIL` and `ANACONDA_USER_PASSWORD` secrets configured, **When** the workflow runs search-mcp tests, **Then** the auth service obtains a fresh token via OAuth API and tests pass.
+
+2. **Given** a developer runs tests locally without having run `anaconda login`, **When** they have `ANACONDA_USER_EMAIL` and `ANACONDA_USER_PASSWORD` in `.env`, **Then** the auth service obtains a token programmatically and tests pass.
+
+3. **Given** a developer has previously run `anaconda login` locally, **When** they run tests without credentials in `.env`, **Then** the existing keyring token is used as fallback.
+
+---
+
 ### Edge Cases
+
+**Authentication**:
+- What happens when credentials are invalid? (Should fail fast with clear error before tests start)
+- What happens when Anaconda auth API is temporarily unavailable? (Should retry with backoff, then fail with actionable error)
+- What happens when token expires mid-test-run? (Out of scope for v1: assume token lifetime exceeds test duration)
 
 **environments-mcp**:
 - What happens when `conda_list_environments` is called when no environments exist? (Should return empty list or just base) — *Covered by FR-005/T043 if meaningful*
@@ -187,6 +210,13 @@ QA engineer verifies that newly added tool tests include hang-stress variants wh
 - **FR-008**: Test suite MUST include at least one happy-path test for each of the 5 search-mcp tools
 - **FR-009**: Test suite MUST include error-path tests for search tools (empty query, invalid parameters)
 
+**Authentication for CI/CD**:
+- **FR-014**: Test infrastructure MUST support programmatic authentication that obtains fresh tokens at runtime (tokens are session-scoped and expire)
+- **FR-015**: Authentication service MUST implement OAuth 2-step login flow: (1) authorize request to get state token, (2) login with credentials to get session token
+- **FR-016**: Credentials (email/password) MUST be sourced from environment variables locally (`.env`) and GitHub secrets in CI workflows
+- **FR-017**: Authentication MUST work in both local development (interactive `anaconda login` fallback) and headless CI environments (API-based login)
+- **FR-018**: Token obtained via API login MUST be passed to search-mcp via the `ANACONDA_AUTH_API_KEY` environment variable or mcp-compose config
+
 **Infrastructure**:
 - **FR-010**: All new tests MUST follow existing test patterns in `tests/qa/mcp_tools/` (class-based, use fixtures, proper marks)
 - **FR-011**: All new tests MUST be transport-agnostic (work across all `--mcp-profile` values)
@@ -208,6 +238,7 @@ QA engineer verifies that newly added tool tests include hang-stress variants wh
 - **Test Scenario**: A single test case exercising one tool with specific inputs and expected outputs
 - **Transport Profile**: Configuration determining how test communicates with MCP server (`http-http`, `stdio-http`, `stdio-stdio`)
 - **MCP Server**: A proxied backend providing tools (environments-mcp, conda-meta-mcp, search-mcp)
+- **Auth Service**: Component that programmatically obtains Anaconda session tokens via OAuth API flow using credentials
 
 ## Success Criteria *(mandatory)*
 
@@ -218,6 +249,7 @@ QA engineer verifies that newly added tool tests include hang-stress variants wh
 - **SC-003**: Test suite passes on declared supported profile without failures in new tests
 - **SC-004**: No new tests introduce flaky behavior (pass rate >99% across 10 consecutive runs — i.e., at most 1 failure per 100 test invocations total)
 - **SC-005**: Tool constants file includes all 20 tools organized by server
+- **SC-006**: search-mcp tests pass in GitHub Actions workflow using programmatic authentication (no pre-stored static tokens)
 
 ## Assumptions
 
@@ -234,7 +266,7 @@ QA engineer verifies that newly added tool tests include hang-stress variants wh
 - All tests use real integration (no mocks): environments-mcp uses local conda, conda-meta-mcp queries public conda channels, search-mcp calls anaconda.com API
 - Test environment has network access to public conda channels (defaults, conda-forge) and anaconda.com
 - conda-meta-mcp server must be installed via `cmm` command (`pip install conda-meta-mcp`) in server environment
-- search-mcp tests require a valid Anaconda authentication token (`ANACONDA_TOKEN` environment variable) for API access; unauthenticated requests will fail
+- search-mcp tests require valid Anaconda authentication; tokens are session-scoped and must be obtained programmatically at runtime via OAuth API flow
 
 ### Implementation
 
@@ -248,9 +280,15 @@ QA engineer verifies that newly added tool tests include hang-stress variants wh
 - Q: What is the implementation priority order? → A: Phased approach: (1) At least one positive test per tool across all MCPs, (2) Additional positive tests for complex parameter sets, (3) Negative tests (1 per tool), (4) Hang-stress tests (1-2 tools per MCP based on risk)
 - Q: Which tools for hang-stress coverage per MCP? → A: conda-meta-mcp: `repoquery` (libmamba solver, large results); search-mcp: `search_packages` (upstream HTTP, complex filtering). environments-mcp already has coverage.
 
+### Session 2026-05-15
+
+- Q: How should search-mcp authentication work in CI/GH workflows? → A: Tokens are session-scoped and expire, so static tokens in secrets won't work reliably. Implement programmatic OAuth 2-step login (like anaconda-desktop's `api-auth-service.ts`): (1) POST authorize to get state, (2) POST login with credentials to get session token. Credentials (email/password) stored in `.env` locally or GitHub secrets for CI.
+- Q: Reference implementation for API auth? → A: `/Users/iiliukhina/projects/anaconda-desktop/src/__tests__/e2e/rest-api/api-auth-service.ts` - REST API class with `authorize()` and `login()` methods implementing the OAuth flow.
+
 ## References
 
 - environments-mcp: https://github.com/anaconda/environments-mcp
 - conda-meta-mcp: https://github.com/conda-incubator/conda-meta-mcp
 - search-mcp: https://github.com/anaconda/anaconda-mcp-search
 - conda-meta-mcp blog: https://conda.org/blog/conda-meta-mcp/
+- API auth reference implementation: `anaconda-desktop/src/__tests__/e2e/rest-api/api-auth-service.ts` (OAuth 2-step login pattern)
