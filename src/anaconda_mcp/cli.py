@@ -932,10 +932,8 @@ def terms(ctx, output_json):
 @terms.command(name="status", help="Check whether the Terms of Service have been accepted.")
 @click.option("--json", "output_json", is_flag=True, help="Output in JSON format.")
 def terms_status(output_json):
-    # JSON path uses `needs_reaccept` for strict version enforcement (Desktop Plugin).
-    # Non-JSON path preserves backward compat: accepted_terms=True -> "accepted" + exit 0.
     accepted = settings.accepted_terms is True
-    needs_reaccept = settings.accepted_terms is True and not is_terms_current(settings.accepted_terms_version)
+    needs_reaccept = accepted and not is_terms_current(settings.accepted_terms_version)
 
     if output_json:
         data = {
@@ -949,12 +947,19 @@ def terms_status(output_json):
             sys.exit(1)
         return
 
-    if accepted:
-        click.echo("Terms of Service: accepted")
-    else:
+    if not accepted:
         status = "declined" if settings.accepted_terms is False else "not yet responded"
         click.echo(f"Terms of Service: {status}")
         sys.exit(1)
+
+    if needs_reaccept:
+        click.echo(
+            f"Terms of Service: accepted (version {settings.accepted_terms_version}), "
+            f"but current version is {CURRENT_TOS_VERSION}. Please re-accept."
+        )
+        sys.exit(1)
+
+    click.echo("Terms of Service: accepted")
 
 
 @terms.command(name="accept", help="Accept the Terms of Service.")

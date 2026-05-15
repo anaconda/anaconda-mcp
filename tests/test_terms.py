@@ -109,6 +109,7 @@ class TestPersistAcceptance:
 class TestTermsStatusCommand:
     def test_status_accepted(self, monkeypatch):
         monkeypatch.setattr("anaconda_mcp.config.settings.accepted_terms", True)
+        monkeypatch.setattr("anaconda_mcp.terms.settings.accepted_terms_version", CURRENT_TOS_VERSION)
         runner = CliRunner()
         result = runner.invoke(cli, ["terms", "status"])
         assert result.exit_code == 0
@@ -127,6 +128,16 @@ class TestTermsStatusCommand:
         result = runner.invoke(cli, ["terms", "status"])
         assert result.exit_code == 1
         assert "not yet responded" in result.output
+
+    def test_status_needs_reaccept(self, monkeypatch):
+        monkeypatch.setattr("anaconda_mcp.config.settings.accepted_terms", True)
+        monkeypatch.setattr("anaconda_mcp.terms.settings.accepted_terms_version", "2025-01-01")
+        runner = CliRunner()
+        result = runner.invoke(cli, ["terms", "status"])
+        assert result.exit_code == 1
+        assert "re-accept" in result.output
+        assert "2025-01-01" in result.output
+        assert CURRENT_TOS_VERSION in result.output
 
 
 class TestTermsAcceptCommand:
@@ -205,6 +216,7 @@ class TestTermsJsonOutput:
         "accepted_terms,accepted_version,expected_exit,expected_accepted",
         [
             (True, CURRENT_TOS_VERSION, 0, True),
+            (True, "2025-01-01", 1, True),  # accepted but stale version
             (None, None, 1, False),
             (False, None, 1, False),
         ],
