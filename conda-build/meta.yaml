@@ -16,7 +16,7 @@ requirements:
   host:
     - hatch-vcs >=0.4
     - hatchling >=1.25
-    - python
+    - python >=3.13,<3.14
     - pip
   run:
     - python >=3.13,<3.14
