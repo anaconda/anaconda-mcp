@@ -76,6 +76,19 @@ max_reconnect_attempts = 10
 health_check_enabled = false
 mode = "proxy"
 
+[[servers.proxied.streamable-http]]
+name = "conda-meta"
+url = "http://localhost:4042/mcp"
+timeout = 30
+keep_alive = true
+reconnect_on_failure = true
+max_reconnect_attempts = 10
+health_check_enabled = false
+mode = "proxy"
+auto_start = true
+command = ["{{PYTHON_EXECUTABLE}}", "-m", "conda_meta_mcp.cli", "run", "--transport", "streamable-http", "--port", "4042"]
+startup_delay = 3
+
 # ============================================================================
 # Tool Manager Configuration
 # ============================================================================

@@ -16,16 +16,17 @@ requirements:
   host:
     - hatch-vcs >=0.4
     - hatchling >=1.25
-    - python
+    - python >=3.13,<3.14
     - pip
   run:
-    - python >=3.10,<3.14
+    - python >=3.13,<3.14
     - environments-mcp-server >=0.1.0,<2.0.0
     - mcp-compose >=0.1.12,<2.0.0
     - anaconda-auth >=0.13.0,<0.15.0
     - anaconda-cli-base >=0.8.1,<1.0.0
     - anaconda-anon-usage
     - anaconda-opentelemetry >=0.8.1,<1.2.0
+    - conda-meta-mcp >=0.1.1,<0.2.0
     - click >=8.1.0,<9.0.0
 
 about:
