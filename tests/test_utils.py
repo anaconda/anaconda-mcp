@@ -48,7 +48,8 @@ command = ["python", "-m", "test_module"]
 
 def test_render_template_with_placeholder(sample_template):
     """Test that template placeholders are replaced with sys.executable."""
-    rendered_path = _render_config_template(sample_template)
+    with patch("anaconda_mcp.auth.get_auth_token", return_value="fake-token"):
+        rendered_path = _render_config_template(sample_template)
 
     try:
         with open(rendered_path) as f:
@@ -110,7 +111,8 @@ def test_render_fallback_to_sys_executable(sample_template):
 
 def test_render_python_literal_fallback(sample_config_with_python):
     """Test that 'python' literal is replaced even without template."""
-    rendered_path = _render_config_template(sample_config_with_python)
+    with patch("anaconda_mcp.auth.get_auth_token", return_value="fake-token"):
+        rendered_path = _render_config_template(sample_config_with_python)
 
     try:
         with open(rendered_path) as f:
@@ -134,7 +136,8 @@ def test_render_nonexistent_config(temp_config_dir):
 
 def test_render_creates_temp_file(sample_template):
     """Test that rendered config is written to a temp file."""
-    rendered_path = _render_config_template(sample_template)
+    with patch("anaconda_mcp.auth.get_auth_token", return_value="fake-token"):
+        rendered_path = _render_config_template(sample_template)
 
     try:
         assert rendered_path.startswith(tempfile.gettempdir())
@@ -150,7 +153,8 @@ def test_render_template_preserves_structure(sample_template):
     """Test that template rendering preserves TOML structure."""
 
     # when
-    rendered_path = _render_config_template(sample_template)
+    with patch("anaconda_mcp.auth.get_auth_token", return_value="fake-token"):
+        rendered_path = _render_config_template(sample_template)
 
     try:
         # then
