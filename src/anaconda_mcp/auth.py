@@ -6,6 +6,8 @@ from anaconda_auth.client import BaseClient
 from anaconda_auth.exceptions import TokenNotFoundError
 from anaconda_auth.token import TokenInfo
 
+from anaconda_mcp.config import settings
+
 logger = logging.getLogger(__name__)
 
 
@@ -28,15 +30,16 @@ def get_auth_token() -> str | None:
     if env_token:
         return env_token
     try:
-        token: str = TokenInfo.load().api_key
-        return token
+        token_info = TokenInfo.load(domain=settings.anaconda_domain)
+        api_key: str | None = token_info.api_key
+        return api_key
     except TokenNotFoundError:
         return None
 
 
 def validate_auth_token(token: str) -> bool:
     try:
-        _ = BaseClient(api_key=token).account
+        _ = BaseClient(api_key=token, domain=settings.anaconda_domain).account
         return True
     except Exception:
         return False
