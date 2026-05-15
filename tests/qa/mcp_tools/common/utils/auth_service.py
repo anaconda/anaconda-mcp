@@ -49,17 +49,19 @@ class AuthState:
 class AuthService:
     """Programmatic OAuth authentication service for Anaconda API."""
 
-    DEFAULT_BASE_URL = "https://api.anaconda.com"
+    DEFAULT_BASE_URL = "https://anaconda.com"
+    DEFAULT_RETURN_TO = "https://anaconda.com"
 
     def __init__(self, base_url: str | None = None) -> None:
         """Initialize auth service with API base URL."""
         self.base_url = base_url or os.environ.get("ANACONDA_API_URL", self.DEFAULT_BASE_URL)
-        self.client = httpx.Client(timeout=30.0)
+        self.client = httpx.Client(timeout=30.0, follow_redirects=True)
 
     def _authorize(self) -> str:
-        """Step 1: Get state token for OAuth flow."""
+        """Step 1: Get state token for OAuth flow via POST /api/auth/authorize."""
+        return_to = os.environ.get("ANACONDA_AUTH_RETURN_TO", self.DEFAULT_RETURN_TO)
         try:
-            response = self.client.post(f"{self.base_url}/api/auth/authorize")
+            response = self.client.post(f"{self.base_url}/api/auth/authorize?return_to={return_to}")
             response.raise_for_status()
             data = response.json()
             state: str | None = data.get("state")
@@ -75,6 +77,9 @@ class AuthService:
         """
         Complete OAuth 2-step flow and return session token.
 
+        Step 1: POST /api/auth/authorize?return_to=... → {state}
+        Step 2: POST /api/auth/login/password/{state} → {redirect} → follow for token
+
         Args:
             email: Anaconda account email
             password: Anaconda account password
@@ -89,18 +94,29 @@ class AuthService:
 
         try:
             response = self.client.post(
-                f"{self.base_url}/api/auth/login",
-                json={"state": state, "email": email, "password": password},
+                f"{self.base_url}/api/auth/login/password/{state}",
+                json={"email": email, "password": password},
             )
             response.raise_for_status()
             data = response.json()
 
-            token: str | None = data.get("token") or data.get("access_token")
-            if not token:
-                raise AuthError(f"No token in login response: {data}")
+            # The login endpoint returns a redirect URL; follow it to get the session
+            redirect_url: str | None = data.get("redirect")
+            if redirect_url:
+                # Following the redirect sets the session cookie
+                redirect_response = self.client.get(redirect_url)
+                redirect_response.raise_for_status()
 
-            logger.info("Successfully obtained auth token via OAuth flow")
-            return token
+            # Get token via whoami endpoint after session is established
+            whoami_response = self.client.get(f"{self.base_url}/api/auth/sessions/whoami")
+            if whoami_response.status_code == 200:
+                whoami_data = whoami_response.json()
+                token: str | None = whoami_data.get("tokenized")
+                if token:
+                    logger.info("Successfully obtained auth token via OAuth flow")
+                    return token
+
+            raise AuthError(f"Could not obtain token after login. Response: {data}")
 
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 401:
@@ -128,12 +144,13 @@ def get_keyring_token() -> str | None:
         Token string if available, None otherwise
     """
     try:
-        from anaconda_auth import login
+        from anaconda_auth.token import TokenInfo
 
-        token: str | None = login.get_auth_token()
+        token: str = TokenInfo.load().api_key
         if token:
             logger.info("Found auth token in keyring")
-        return token
+            return token
+        return None
     except ImportError:
         logger.debug("anaconda-auth not available for keyring lookup")
         return None
@@ -147,13 +164,19 @@ def detect_auth_state() -> AuthState:
     Detect current authentication state.
 
     Priority order:
-    1. Environment credentials (ANACONDA_USER_EMAIL + ANACONDA_USER_PASSWORD)
-    2. Keyring token (from `anaconda login`)
+    1. Keyring token (from `anaconda login`) - works locally
+    2. Environment credentials (ANACONDA_USER_EMAIL + ANACONDA_USER_PASSWORD) - for CI
     3. No authentication available
 
     Returns:
         AuthState with logged_in status and source information
     """
+    # Priority 1: Keyring token (from `anaconda login`)
+    keyring_token = get_keyring_token()
+    if keyring_token:
+        return AuthState(logged_in=True, token=keyring_token, source="keyring")
+
+    # Priority 2: Environment credentials (for CI with programmatic OAuth)
     email = os.environ.get("ANACONDA_USER_EMAIL")
     password = os.environ.get("ANACONDA_USER_PASSWORD")
 
@@ -164,11 +187,7 @@ def detect_auth_state() -> AuthState:
                 return AuthState(logged_in=True, token=token, source="env_credentials")
         except AuthError as e:
             logger.warning(f"Environment credentials failed: {e}")
-            return AuthState(logged_in=False, source="env_credentials_failed")
-
-    keyring_token = get_keyring_token()
-    if keyring_token:
-        return AuthState(logged_in=True, token=keyring_token, source="keyring")
+            # Fall through to no_auth
 
     logger.info("No authentication available - running in logged-out mode")
     return AuthState(logged_in=False, source="no_auth")

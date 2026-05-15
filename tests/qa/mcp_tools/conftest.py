@@ -624,6 +624,10 @@ def pytest_sessionstart(session: pytest.Session) -> None:
     _AUTH_STATE_CACHE = detect_auth_state()
     logger.info("Auth state: %s", _AUTH_STATE_CACHE)
 
+    # Export token to env so mcp_compose_profiles.py can use it
+    if _AUTH_STATE_CACHE.logged_in and _AUTH_STATE_CACHE.token:
+        os.environ["ANACONDA_AUTH_API_KEY"] = _AUTH_STATE_CACHE.token
+
     config = session.config
     metadata: dict | None = getattr(config, "_metadata", None)
     if metadata is None:
