@@ -334,11 +334,16 @@ def mcp_server(request: pytest.FixtureRequest, server_url: str):
         request.config.stash[_MCP_SERVER_LOG_PATH_KEY] = log_path
 
         logger.info("Starting MCP server (conda env: %s, port: %s)", conda_env, port)
+        env = os.environ.copy()
+        # Terms acceptance required by main branch
+        env["ANACONDA_MCP_ACCEPTED_TERMS"] = "true"
+        env["ANACONDA_MCP_ACCEPTED_TERMS_VERSION"] = "2026-01-01"
         server_proc = subprocess.Popen(
             ["conda", "run", "-n", conda_env, "--no-capture-output", "bash", str(_SCRIPT_PATH), port],
             stdout=log_file,
             stderr=subprocess.STDOUT,
             start_new_session=True,
+            env=env,
         )
 
         def _on_timeout() -> None:
@@ -413,6 +418,9 @@ def _stdio_server_context(
 
     env = os.environ.copy()
     env["PYTHONUNBUFFERED"] = "1"
+    # Terms acceptance required by main branch
+    env["ANACONDA_MCP_ACCEPTED_TERMS"] = "true"
+    env["ANACONDA_MCP_ACCEPTED_TERMS_VERSION"] = "2026-01-01"
 
     stderr_log = tempfile.NamedTemporaryFile(
         prefix=log_prefix,
