@@ -170,7 +170,7 @@ def serve(ctx, config, host, port, delay):
 
     login_event_params: dict[str, object] = {}
     try:
-        client = BaseClient(api_key=token)
+        client = BaseClient(api_key=token, domain=settings.anaconda_domain)
         created_at_str = client.account["user"]["created_at"]
         if created_at_str.endswith("Z"):
             created_at_str = created_at_str[:-1] + "+00:00"

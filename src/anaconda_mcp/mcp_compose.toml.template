@@ -8,6 +8,11 @@
 # 1. ANACONDA_MCP_PYTHON_EXECUTABLE environment variable (if set), or
 # 2. sys.executable (the Python interpreter running anaconda-mcp)
 #
+# The {{ANACONDA_DOMAIN}} placeholder will be replaced at runtime with:
+# 1. ANACONDA_MCP_ANACONDA_DOMAIN environment variable (if set), or
+# 2. Domain derived from ANACONDA_MCP_ENVIRONMENT (staging → stage.anaconda.com), or
+# 3. "anaconda.com" (default)
+#
 # This file demonstrates all available configuration options
 
 # ============================================================================
@@ -60,6 +65,18 @@ command = ["{{PYTHON_EXECUTABLE}}", "-m", "environments_mcp_server", "start", "-
 startup_delay = 3
 
 [[servers.proxied.streamable-http]]
+name = "search"
+url = "https://{{ANACONDA_DOMAIN}}/api/search/mcp"
+auth_token = "{{ANACONDA_TOKEN}}"
+auth_type = "bearer"
+timeout = 30
+keep_alive = true
+reconnect_on_failure = true
+max_reconnect_attempts = 10
+health_check_enabled = false
+mode = "proxy"
+
+[[servers.proxied.streamable-http]]
 name = "conda-meta"
 url = "http://localhost:4042/mcp"
 timeout = 30
@@ -71,7 +88,6 @@ mode = "proxy"
 auto_start = true
 command = ["cmm", "run", "--transport", "streamable-http", "--port", "4042"]
 startup_delay = 3
-
 
 # ============================================================================
 # Tool Manager Configuration
