@@ -69,8 +69,11 @@ def test_render_template_with_env_var(sample_template, monkeypatch):
     custom_python = "/custom/path/to/python"
 
     # Mock the settings object with proper attribute
-    with patch("anaconda_mcp.utils.settings") as mock_settings:
-        mock_settings.configure_mock(python_executable=custom_python)
+    with (
+        patch("anaconda_mcp.utils.settings") as mock_settings,
+        patch("anaconda_mcp.auth.get_auth_token", return_value="fake-token"),
+    ):
+        mock_settings.configure_mock(python_executable=custom_python, anaconda_domain="anaconda.com")
 
         rendered_path = _render_config_template(sample_template)
 
@@ -87,8 +90,11 @@ def test_render_template_with_env_var(sample_template, monkeypatch):
 
 def test_render_fallback_to_sys_executable(sample_template):
     """Test that sys.executable is used when no env var is set."""
-    with patch("anaconda_mcp.utils.settings") as mock_settings:
-        mock_settings.configure_mock(python_executable=None)
+    with (
+        patch("anaconda_mcp.utils.settings") as mock_settings,
+        patch("anaconda_mcp.auth.get_auth_token", return_value="fake-token"),
+    ):
+        mock_settings.configure_mock(python_executable=None, anaconda_domain="anaconda.com")
 
         rendered_path = _render_config_template(sample_template)
 

@@ -13,7 +13,7 @@ def _render_config_template(config_path: str) -> str:
     Placeholders:
         {{PYTHON_EXECUTABLE}} - resolved from ANACONDA_MCP_PYTHON_EXECUTABLE or sys.executable
         {{ANACONDA_TOKEN}} - resolved from anaconda-auth token (empty string if not authenticated)
-        {{ANACONDA_DOMAIN}} - resolved from settings.ANACONDA_DOMAIN (e.g. anaconda.com, stage.anaconda.com)
+        {{ANACONDA_DOMAIN}} - resolved from settings.anaconda_domain (e.g. anaconda.com, stage.anaconda.com)
 
     Returns the path to the rendered config file.
     """
