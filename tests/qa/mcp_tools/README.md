@@ -1,6 +1,14 @@
 # mcp_tools — unified MCP tool tests
 
-One suite for all transport profiles. Architecture, configuration, test design, and reporting details live under [`_docs/`](_docs/index.md).
+One suite for all transport profiles covering **20 tools across 3 MCP servers**:
+
+| Server | Tools | Description |
+|--------|-------|-------------|
+| environments-mcp | 6 | Conda environment management |
+| conda-meta-mcp | 9 | Conda metadata queries |
+| search-mcp | 5 | Anaconda.com search (remote) |
+
+Architecture, configuration, test design, and reporting details live under [`_docs/`](_docs/index.md).
 
 ## Profiles
 
@@ -57,25 +65,26 @@ conda install -c anaconda-cloud -c conda-forge -c defaults anaconda-connector-co
 
 ### conda-meta-mcp setup
 
-Install the `conda-meta-mcp` package which provides the `cmm` command:
+Install the `conda-meta-mcp` package from conda-forge:
 
 ```bash
 conda activate anaconda-mcp-server
-pip install conda-meta-mcp
-# Verify: cmm --help
+conda install -c conda-forge conda-meta-mcp
+# Verify: python -m conda_meta_mcp --help
 ```
 
-The server starts automatically via mcp-compose config (`cmm run --transport streamable-http --port 4042`).
+The server starts automatically via mcp-compose config (`python -m conda_meta_mcp run --transport streamable-http --port 4042`).
 
 ### search-mcp setup
 
 search-mcp is a remote service (no local installation). Tests require:
 
-1. **Authentication token**: Set `ANACONDA_TOKEN` environment variable with a valid Anaconda.com API token
+1. **Authentication token**: Set `ANACONDA_MCP_ANACONDA_TOKEN` (preferred) or `ANACONDA_TOKEN` environment variable with a valid Anaconda.com API token
 2. **Network access**: Connectivity to `anaconda.com/api/search/mcp`
 
 ```bash
-export ANACONDA_TOKEN="your-token-here"
+export ANACONDA_MCP_ANACONDA_TOKEN="your-token-here"
+# or: export ANACONDA_TOKEN="your-token-here"
 ```
 
 Without a valid token, search-mcp tests will fail with authentication errors.
@@ -83,9 +92,9 @@ Without a valid token, search-mcp tests will fail with authentication errors.
 **Verify the server env:**
 
 ```bash
-python -c "import anaconda_mcp; import environments_mcp_server; import anaconda_connector_conda; print('OK')"
+python -c "import anaconda_mcp; import environments_mcp_server; import anaconda_connector_conda; import conda_meta_mcp; print('OK')"
 anaconda-mcp --help
-cmm --help  # conda-meta-mcp
+python -m conda_meta_mcp --help  # conda-meta-mcp
 ```
 
 ### Packaged `mcp_compose.toml` vs QA
@@ -97,17 +106,26 @@ The file **`src/anaconda_mcp/mcp_compose.toml`** is a **packaged default** when 
 From the repo root (with `anaconda-mcp-qa` activated):
 
 ```bash
+# Full suite with stdio-http profile (recommended for CI)
+pytest tests/qa/mcp_tools -o addopts= \
+  --mcp-profile=stdio-http \
+  --server-conda-env anaconda-mcp-server
+
+# HTTP-HTTP profile (requires --start-server)
 pytest tests/qa/mcp_tools -o addopts= \
   --mcp-profile=http-http \
   --server-url http://localhost:9888/mcp \
   --start-server --server-conda-env anaconda-mcp-server
 
+# STDIO-STDIO profile
 pytest tests/qa/mcp_tools -o addopts= \
   --mcp-profile=stdio-stdio \
   --server-conda-env anaconda-mcp-server
 ```
 
 Or: `conda run -n anaconda-mcp-qa pytest tests/qa/mcp_tools -o addopts= …`
+
+**Note**: The full suite tests all 20 tools across environments-mcp, conda-meta-mcp, and search-mcp. Ensure all three servers are properly configured (see setup sections above).
 
 ### Quick suite (no hang stress)
 
