@@ -26,6 +26,7 @@ logger = logging.getLogger(__name__)
 
 
 @pytest.mark.slow
+@pytest.mark.auth_independent
 class TestRemoveEnvironment:
     """
     Happy-path: conda_remove_environment must succeed when removing a real environment.

@@ -28,6 +28,7 @@ def _extract_mcp_response(response: dict):
 
 
 @pytest.mark.slow
+@pytest.mark.auth_independent
 class TestCondaMetaInfo:
     """
     Happy-path: conda-meta_info tool must succeed and return conda system info.

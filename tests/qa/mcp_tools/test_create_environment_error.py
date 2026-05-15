@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 @pytest.mark.slow
+@pytest.mark.auth_independent
 class TestCreateEnvironmentError:
     """
     Error-path: conda_create_environment must return an error when attempting

@@ -38,6 +38,7 @@ def _extract_mcp_response(response: dict):
 
 
 @pytest.mark.slow
+@pytest.mark.auth_independent
 class TestCondaMetaRepoquery:
     """
     Happy-path and error-path tests for conda-meta_repoquery tool.
@@ -109,6 +110,7 @@ _BASE_TIMEOUT = int((TOOL_TIMEOUT + ITERATION_DELAY) * WARM_ITERATIONS) + 60
 @pytest.mark.hang_stress
 @pytest.mark.regression
 @pytest.mark.slow
+@pytest.mark.auth_independent
 class TestCondaMetaRepoqueryHangStress:
     """
     Hang-stress test: conda-meta_repoquery must complete 20 iterations without hanging.

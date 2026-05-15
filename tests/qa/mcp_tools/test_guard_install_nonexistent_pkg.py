@@ -42,6 +42,7 @@ logger = logging.getLogger(__name__)
 
 @pytest.mark.regression
 @pytest.mark.slow
+@pytest.mark.auth_independent
 class TestInstallNonexistentPackage:
     """
     Regression: conda_install_packages with a nonexistent package must return

@@ -180,21 +180,21 @@ All test code lives under `tests/qa/mcp_tools/`:
 
 ### AuthService implementation
 
-- [ ] T063 [P] [US4] Create `AuthService` class implementing 2-step OAuth flow in tests/qa/mcp_tools/common/utils/auth_service.py
-- [ ] T064 [P] [US4] Create `AuthState` dataclass for session auth state in tests/qa/mcp_tools/common/utils/auth_service.py
-- [ ] T065 [P] [US4] Create `AuthError` exception class in tests/qa/mcp_tools/common/utils/auth_service.py
-- [ ] T066 [US4] Add `get_keyring_token()` helper function for keyring fallback in tests/qa/mcp_tools/common/utils/auth_service.py
+- [x] T063 [P] [US4] Create `AuthService` class implementing 2-step OAuth flow in tests/qa/mcp_tools/common/utils/auth_service.py
+- [x] T064 [P] [US4] Create `AuthState` dataclass for session auth state in tests/qa/mcp_tools/common/utils/auth_service.py
+- [x] T065 [P] [US4] Create `AuthError` exception class in tests/qa/mcp_tools/common/utils/auth_service.py
+- [x] T066 [US4] Add `get_keyring_token()` helper function for keyring fallback in tests/qa/mcp_tools/common/utils/auth_service.py
 
 ### Pytest fixtures
 
-- [ ] T067 [US4] Add session-scoped `auth_state` fixture to detect auth state at startup in tests/qa/mcp_tools/conftest.py
-- [ ] T068 [US4] Add `.env` file loading (python-dotenv) to conftest.py for local credential support in tests/qa/mcp_tools/conftest.py
-- [ ] T069 [US4] Add auth state reporting to pytest session summary in tests/qa/mcp_tools/conftest.py
+- [x] T067 [US4] Add session-scoped `auth_state` fixture to detect auth state at startup in tests/qa/mcp_tools/conftest.py
+- [x] T068 [US4] Add `.env` file loading (python-dotenv) to conftest.py for local credential support in tests/qa/mcp_tools/conftest.py
+- [x] T069 [US4] Add auth state reporting to pytest session summary in tests/qa/mcp_tools/conftest.py
 
 ### CI workflow updates
 
-- [ ] T070 [P] [US4] Update .github/workflows/qa-mcp-tools.yml to use `ANACONDA_USER_EMAIL` and `ANACONDA_USER_PASSWORD` secrets instead of static token
-- [ ] T071 [US4] Document required GitHub secrets in tests/qa/mcp_tools/README.md
+- [x] T070 [P] [US4] Update .github/workflows/qa-mcp-tools.yml to use `ANACONDA_USER_EMAIL` and `ANACONDA_USER_PASSWORD` secrets instead of static token
+- [x] T071 [US4] Document required GitHub secrets in tests/qa/mcp_tools/README.md
 
 **Checkpoint**: Tests can obtain fresh tokens programmatically in both local (.env) and CI (secrets) environments
 
@@ -208,24 +208,24 @@ All test code lives under `tests/qa/mcp_tools/`:
 
 ### Pytest markers
 
-- [ ] T072 [P] [US5] Add `auth_independent`, `auth_required`, `auth_enhanced` markers to pytest.ini in tests/qa/mcp_tools/pytest.ini
-- [ ] T073 [US5] Add `ToolAuthCategory` enum and `TOOL_AUTH_CATEGORIES` mapping in tests/qa/mcp_tools/common/constants/mcp_tools.py
+- [x] T072 [P] [US5] Add `auth_independent`, `auth_required`, `auth_enhanced` markers to pytest.ini in tests/qa/mcp_tools/pytest.ini
+- [x] T073 [US5] Add `ToolAuthCategory` enum and `TOOL_AUTH_CATEGORIES` mapping in tests/qa/mcp_tools/common/constants/mcp_tools.py
 
 ### search-mcp test updates (auth-required tools)
 
-- [ ] T074 [P] [US5] Update test_search_collections_files.py to add `@pytest.mark.auth_required` and skip logic when logged out
-- [ ] T075 [P] [US5] Update test_search_environments.py to add `@pytest.mark.auth_required` and skip logic when logged out
+- [x] T074 [P] [US5] Update test_search_collections_files.py to add `@pytest.mark.auth_required` and skip logic when logged out
+- [x] T075 [P] [US5] Update test_search_environments.py to add `@pytest.mark.auth_required` and skip logic when logged out
 
 ### search-mcp test updates (auth-enhanced tools)
 
-- [ ] T076 [P] [US5] Update test_search_packages.py to add `@pytest.mark.auth_enhanced` and public-only assertions when logged out
-- [ ] T077 [P] [US5] Update test_search_documentation.py to add `@pytest.mark.auth_enhanced` and public-only assertions when logged out
-- [ ] T078 [P] [US5] Update test_search_forum.py to add `@pytest.mark.auth_enhanced` and public-only assertions when logged out
+- [x] T076 [P] [US5] Update test_search_packages.py to add `@pytest.mark.auth_enhanced` and public-only assertions when logged out
+- [x] T077 [P] [US5] Update test_search_documentation.py to add `@pytest.mark.auth_enhanced` and public-only assertions when logged out
+- [x] T078 [P] [US5] Update test_search_forum.py to add `@pytest.mark.auth_enhanced` and public-only assertions when logged out
 
 ### environments-mcp and conda-meta-mcp markers (auth-independent)
 
-- [ ] T079 [P] [US5] Add `@pytest.mark.auth_independent` marker to all environments-mcp test files (6 tools)
-- [ ] T080 [P] [US5] Add `@pytest.mark.auth_independent` marker to all conda-meta-mcp test files (9 tools)
+- [x] T079 [P] [US5] Add `@pytest.mark.auth_independent` marker to all environments-mcp test files (6 tools)
+- [x] T080 [P] [US5] Add `@pytest.mark.auth_independent` marker to all conda-meta-mcp test files (9 tools)
 
 **Checkpoint**: Test suite passes in both logged-out mode (skip auth-required, public-only auth-enhanced) and logged-in mode (all tests run)
 
@@ -305,9 +305,9 @@ All test code lives under `tests/qa/mcp_tools/`:
 4. US1 Phase 4 → Complex parameter coverage ✅
 5. US2 Phase 5 → Error handling coverage ✅
 6. US3 Phase 6 → Hang-stress coverage ✅
-7. US4 Phase 7 → Programmatic auth for CI ⬜ **NEXT**
-8. US5 Phase 8 → Auth-state-aware tests ⬜
-9. Polish Phase 9 → Documentation complete ⬜
+7. US4 Phase 7 → Programmatic auth for CI ✅
+8. US5 Phase 8 → Auth-state-aware tests ✅
+9. Polish Phase 9 → Documentation complete ⬜ **NEXT**
 
 ### Task Counts
 
@@ -319,10 +319,10 @@ All test code lives under `tests/qa/mcp_tools/`:
 | 4 US1 Complex | US1 | 8 | ✅ Complete |
 | 5 US2 Error | US2 | 9 | ✅ Complete |
 | 6 US3 Hang | US3 | 2 | ✅ Complete |
-| 7 US4 Auth | US4 | 9 | ⬜ New |
-| 8 US5 Auth-State | US5 | 9 | ⬜ New |
+| 7 US4 Auth | US4 | 9 | ✅ Complete |
+| 8 US5 Auth-State | US5 | 9 | ✅ Complete |
 | 9 Polish | — | 14 | 🔶 Partial (6 done, 8 new) |
-| **Total** | | **85** | **62 done, 23 new** |
+| **Total** | | **85** | **80 done, 5 remaining** |
 
 ---
 

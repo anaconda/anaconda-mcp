@@ -26,6 +26,7 @@ _ENV_NAME = "ki016-regression-test"
 
 
 @pytest.mark.regression
+@pytest.mark.auth_independent
 class TestCreateEnvironmentWithRootPath:
     """KI-016: conda_create_environment with environment_root_path must never return a frozen_instance error."""
 

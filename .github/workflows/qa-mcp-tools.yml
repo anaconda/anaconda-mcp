@@ -168,6 +168,11 @@ jobs:
       CONDA_META_VER:     ${{ needs.setup.outputs.conda-meta-ver }}
       SERVER_ENV:         anaconda-mcp-server
       QA_ENV:             anaconda-mcp-qa
+      # Programmatic OAuth authentication for search-mcp tests
+      # These credentials are used to obtain fresh session tokens at runtime
+      ANACONDA_USER_EMAIL:    ${{ secrets.ANACONDA_USER_EMAIL }}
+      ANACONDA_USER_PASSWORD: ${{ secrets.ANACONDA_USER_PASSWORD }}
+      # Legacy: static token (deprecated, kept for fallback)
       ANACONDA_TOKEN:     ${{ secrets.ANACONDA_TOKEN }}
 
     steps:
@@ -271,7 +276,11 @@ jobs:
       - name: Run MCP tool tests
         env:
           MCP_SERVER_CONDA_ENV: ${{ env.SERVER_ENV }}  # read by conftest.py
-          ANACONDA_MCP_ANACONDA_TOKEN: ${{ secrets.ANACONDA_TOKEN }}  # for search-mcp authentication
+          # Programmatic auth credentials (conftest.py loads these via detect_auth_state)
+          ANACONDA_USER_EMAIL: ${{ secrets.ANACONDA_USER_EMAIL }}
+          ANACONDA_USER_PASSWORD: ${{ secrets.ANACONDA_USER_PASSWORD }}
+          # Legacy token for server config (mcp_compose.toml template)
+          ANACONDA_MCP_ANACONDA_TOKEN: ${{ secrets.ANACONDA_TOKEN }}
         run: |
           EXTRA_ARGS=""
           [[ "$MCP_PROFILE"     == "http-http" ]] && EXTRA_ARGS="$EXTRA_ARGS --start-server"

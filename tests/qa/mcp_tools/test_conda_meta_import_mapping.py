@@ -30,6 +30,7 @@ def _extract_mcp_response(response: dict):
 
 
 @pytest.mark.slow
+@pytest.mark.auth_independent
 class TestCondaMetaImportMapping:
     """
     Happy-path and error-path tests for conda-meta_import_mapping tool.

@@ -29,6 +29,7 @@ def _extract_mcp_response(response: dict):
 
 
 @pytest.mark.slow
+@pytest.mark.auth_independent
 class TestCondaMetaCliHelp:
     """
     Happy-path: conda-meta_cli_help tool must succeed and return help text.

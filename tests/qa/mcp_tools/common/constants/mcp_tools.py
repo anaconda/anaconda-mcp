@@ -208,3 +208,43 @@ class ToolResultFields(str, Enum):
     IS_ERROR = "is_error"
     ERROR_DESCRIPTION = "error_description"
     TOOL_RESULT = "tool_result"
+
+
+# =============================================================================
+# Authentication categories
+# =============================================================================
+
+
+class ToolAuthCategory(str, Enum):
+    """Tool authentication dependency classification."""
+
+    INDEPENDENT = "auth_independent"  # Works identically with/without auth
+    REQUIRED = "auth_required"  # Needs auth to return results
+    ENHANCED = "auth_enhanced"  # Works both ways, different results
+
+
+TOOL_AUTH_CATEGORIES: dict[str, ToolAuthCategory] = {
+    # environments-mcp (6) - all auth-independent
+    Tools.CONDA_CREATE_ENVIRONMENT: ToolAuthCategory.INDEPENDENT,
+    Tools.CONDA_INSTALL_PACKAGES: ToolAuthCategory.INDEPENDENT,
+    Tools.CONDA_LIST_ENVIRONMENTS: ToolAuthCategory.INDEPENDENT,
+    Tools.CONDA_LIST_ENVIRONMENT_PACKAGES: ToolAuthCategory.INDEPENDENT,
+    Tools.CONDA_REMOVE_ENVIRONMENT: ToolAuthCategory.INDEPENDENT,
+    Tools.CONDA_REMOVE_PACKAGES: ToolAuthCategory.INDEPENDENT,
+    # conda-meta-mcp (9) - all auth-independent
+    CondaMetaTools.INFO: ToolAuthCategory.INDEPENDENT,
+    CondaMetaTools.CACHE_MAINTENANCE: ToolAuthCategory.INDEPENDENT,
+    CondaMetaTools.CLI_HELP: ToolAuthCategory.INDEPENDENT,
+    CondaMetaTools.FILE_PATH_SEARCH: ToolAuthCategory.INDEPENDENT,
+    CondaMetaTools.IMPORT_MAPPING: ToolAuthCategory.INDEPENDENT,
+    CondaMetaTools.PACKAGE_INSIGHTS: ToolAuthCategory.INDEPENDENT,
+    CondaMetaTools.PACKAGE_SEARCH: ToolAuthCategory.INDEPENDENT,
+    CondaMetaTools.PYPI_TO_CONDA: ToolAuthCategory.INDEPENDENT,
+    CondaMetaTools.REPOQUERY: ToolAuthCategory.INDEPENDENT,
+    # search-mcp (5) - mixed
+    SearchTools.SEARCH_PACKAGES: ToolAuthCategory.ENHANCED,
+    SearchTools.SEARCH_DOCUMENTATION: ToolAuthCategory.ENHANCED,
+    SearchTools.SEARCH_FORUM: ToolAuthCategory.ENHANCED,
+    SearchTools.SEARCH_COLLECTIONS_AND_FILES: ToolAuthCategory.REQUIRED,
+    SearchTools.SEARCH_ENVIRONMENTS: ToolAuthCategory.REQUIRED,
+}

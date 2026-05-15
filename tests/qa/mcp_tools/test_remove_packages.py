@@ -31,6 +31,7 @@ logger = logging.getLogger(__name__)
 
 
 @pytest.mark.slow
+@pytest.mark.auth_independent
 class TestRemovePackages:
     """
     Happy-path: conda_remove_packages must succeed — addressed both by name and by prefix.
@@ -103,6 +104,7 @@ class TestRemovePackages:
 
 
 @pytest.mark.slow
+@pytest.mark.auth_independent
 class TestRemovePackagesErrors:
     """
     Error-path: conda_remove_packages must return is_error=true for invalid operations.

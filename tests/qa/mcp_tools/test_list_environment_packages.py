@@ -25,6 +25,7 @@ logger = logging.getLogger(__name__)
 
 
 @pytest.mark.slow
+@pytest.mark.auth_independent
 class TestListEnvironmentPackages:
     """
     Happy-path: conda_list_environment_packages must succeed and return
@@ -69,6 +70,7 @@ class TestListEnvironmentPackages:
 
 
 @pytest.mark.slow
+@pytest.mark.auth_independent
 class TestListEnvironmentPackagesErrors:
     """
     Error-path: conda_list_environment_packages must return is_error=true for invalid inputs.

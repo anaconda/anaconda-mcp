@@ -28,6 +28,7 @@ def _extract_mcp_response(response: dict):
 
 
 @pytest.mark.slow
+@pytest.mark.auth_independent
 class TestCondaMetaCacheMaintenance:
     """
     Happy-path: conda-meta_cache_maintenance tool must succeed.

@@ -7,6 +7,8 @@ Tests verify:
 - isError=true when searching with empty query
 - Response contains content
 - 20 repeated calls do not cause hang (KI-011 pattern)
+
+Note: This tool is auth-enhanced - works both ways but returns public-only when logged out.
 """
 
 from __future__ import annotations
@@ -34,6 +36,7 @@ def _extract_mcp_response(response: dict):
 
 
 @pytest.mark.slow
+@pytest.mark.auth_enhanced
 class TestSearchPackages:
     """
     Happy-path and error-path tests for search_search_packages tool.
@@ -107,6 +110,7 @@ _BASE_TIMEOUT = int((TOOL_TIMEOUT + ITERATION_DELAY) * WARM_ITERATIONS) + 60
 @pytest.mark.hang_stress
 @pytest.mark.regression
 @pytest.mark.slow
+@pytest.mark.auth_enhanced
 class TestSearchPackagesHangStress:
     """
     Hang-stress test: search_search_packages must complete 20 iterations without hanging.

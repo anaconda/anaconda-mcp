@@ -3,6 +3,11 @@ Unified pytest configuration for MCP tool tests (all transport profiles).
 
 ``--mcp-profile`` selects client edge + upstream (http-http, stdio-http, stdio-stdio).
 Fixtures adapt server lifecycle and call_tool without duplicating test modules.
+
+Authentication support:
+- ``auth_state`` fixture detects login status at session start
+- Credentials from .env file (local) or environment variables (CI)
+- Tests can use markers: @pytest.mark.auth_required, @pytest.mark.auth_enhanced
 """
 
 from __future__ import annotations
@@ -22,6 +27,7 @@ from typing import Any
 import httpx
 import pytest
 from common.constants.test_data import ENV_NAME
+from common.utils.auth_service import AuthState, detect_auth_state
 from common.utils.conda_utils import _conda_env_prefix
 from common.utils.mcp_client import _initialize_session
 from common.utils.stdio_client import (
@@ -32,6 +38,9 @@ from common.utils.stdio_client import (
 from mcp_compose_profiles import PROFILES_BY_SLUG, ClientEdge
 
 logger = logging.getLogger(__name__)
+
+# Cache auth state at module load to avoid repeated detection
+_AUTH_STATE_CACHE: AuthState | None = None
 
 _INIT_BODY = {
     "jsonrpc": "2.0",
@@ -120,13 +129,46 @@ def pytest_addoption(parser: pytest.Parser) -> None:
     )
 
 
+def _load_dotenv() -> None:
+    """Load .env file from repo root if it exists."""
+    env_file = Path(__file__).resolve().parent.parent.parent.parent / ".env"
+    if not env_file.exists():
+        return
+
+    logger.debug("Loading environment from %s", env_file)
+    try:
+        with open(env_file) as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith("#"):
+                    continue
+                if "=" not in line:
+                    continue
+                key, _, value = line.partition("=")
+                key = key.strip()
+                value = value.strip().strip('"').strip("'")
+                if key and key not in os.environ:
+                    os.environ[key] = value
+                    logger.debug("Loaded %s from .env", key)
+    except Exception as e:
+        logger.warning("Failed to load .env: %s", e)
+
+
 @pytest.hookimpl(tryfirst=True)
 def pytest_configure(config: pytest.Config) -> None:
     """
     Default pytest-html output under ``tests/qa/mcp_tools/reports/report.html``
     (self-contained), cwd-independent. Omit with ``pytest --html=...`` or
     uninstall pytest-html.
+
+    Also loads .env file and registers auth markers.
     """
+    _load_dotenv()
+
+    config.addinivalue_line("markers", "auth_independent: Tool works without authentication")
+    config.addinivalue_line("markers", "auth_required: Tool requires authentication to return results")
+    config.addinivalue_line("markers", "auth_enhanced: Tool works with/without auth, different results")
+
     if config.pluginmanager.has_plugin("html"):
         try:
             if not config.getoption("htmlpath"):
@@ -578,6 +620,10 @@ def cleanup_conda_env():
 
 
 def pytest_sessionstart(session: pytest.Session) -> None:
+    global _AUTH_STATE_CACHE
+    _AUTH_STATE_CACHE = detect_auth_state()
+    logger.info("Auth state: %s", _AUTH_STATE_CACHE)
+
     config = session.config
     metadata: dict | None = getattr(config, "_metadata", None)
     if metadata is None:
@@ -586,9 +632,39 @@ def pytest_sessionstart(session: pytest.Session) -> None:
     metadata["MCP profile"] = config.getoption("--mcp-profile")
     metadata["Server URL"] = config.getoption("--server-url")
     metadata["Server conda env"] = config.getoption("--server-conda-env")
+    metadata["Auth state"] = str(_AUTH_STATE_CACHE)
 
     py_ver = config.getoption("--python-version")
     metadata["Server Python"] = py_ver if py_ver else "(not set — use --python-version)"
+
+
+def pytest_report_header(config: pytest.Config) -> list[str]:
+    """Report auth state in test session header."""
+    global _AUTH_STATE_CACHE
+    if _AUTH_STATE_CACHE is None:
+        _AUTH_STATE_CACHE = detect_auth_state()
+    return [f"auth state: {_AUTH_STATE_CACHE}"]
+
+
+@pytest.fixture(scope="session")
+def auth_state() -> AuthState:
+    """
+    Session-scoped fixture providing authentication state.
+
+    Detection priority:
+    1. Environment credentials (ANACONDA_USER_EMAIL + ANACONDA_USER_PASSWORD)
+    2. Keyring token (from `anaconda login`)
+    3. No authentication available
+
+    Usage in tests:
+        def test_example(auth_state):
+            if not auth_state.logged_in:
+                pytest.skip("Requires authentication")
+    """
+    global _AUTH_STATE_CACHE
+    if _AUTH_STATE_CACHE is None:
+        _AUTH_STATE_CACHE = detect_auth_state()
+    return _AUTH_STATE_CACHE
 
 
 def _port_from_url(url: str) -> str:

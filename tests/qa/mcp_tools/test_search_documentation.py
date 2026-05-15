@@ -5,6 +5,8 @@ Tests verify:
 - isError=false when searching documentation
 - isError=true when searching with empty query
 - Response contains content
+
+Note: This tool is auth-enhanced - works both ways but returns public-only when logged out.
 """
 
 from __future__ import annotations
@@ -30,6 +32,7 @@ def _extract_mcp_response(response: dict):
 
 
 @pytest.mark.slow
+@pytest.mark.auth_enhanced
 class TestSearchDocumentation:
     """
     Happy-path and error-path tests for search_search_documentation tool.

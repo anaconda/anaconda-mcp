@@ -81,35 +81,52 @@ The server starts automatically via mcp-compose config (`python -m conda_meta_mc
 search-mcp is a remote service hosted at `anaconda.com/api/search/mcp` (no local installation required).
 
 **Requirements:**
-1. **Anaconda authentication** (token stored in keyring)
+1. **Anaconda authentication** (see options below)
 2. **Network access** to anaconda.com
 
-**Authentication setup:**
+**Authentication options (in priority order):**
+
+#### Option 1: `.env` file (recommended for local development)
+
+Create a `.env` file in the repo root:
 
 ```bash
-# Login to Anaconda (stores token in keyring)
-anaconda login
+ANACONDA_USER_EMAIL="your-email@example.com"
+ANACONDA_USER_PASSWORD="your-password"
+```
 
-# Verify authentication
+The test harness loads this automatically via `conftest.py` and obtains a fresh token via OAuth.
+
+#### Option 2: Environment variables (CI/headless)
+
+```bash
+export ANACONDA_USER_EMAIL="your-email@example.com"
+export ANACONDA_USER_PASSWORD="your-password"
+```
+
+For GitHub Actions, configure repository secrets:
+- `ANACONDA_USER_EMAIL`
+- `ANACONDA_USER_PASSWORD`
+
+#### Option 3: Keyring fallback (from `anaconda login`)
+
+```bash
+anaconda login
 anaconda whoami
 ```
 
-The token from `anaconda login` is automatically used for search-mcp authentication via `anaconda_mcp.auth.get_auth_token()`.
+The token from `anaconda login` is used as a fallback when credentials are not available.
 
-**Alternative: Environment variable**
+**Auth-state-aware testing:**
 
-For CI or headless environments, set `ANACONDA_AUTH_API_KEY`:
+Tests adapt based on authentication state:
 
-```bash
-export ANACONDA_AUTH_API_KEY="your-api-token"
-```
+| Auth State | auth_independent (15 tools) | auth_required (2 tools) | auth_enhanced (3 tools) |
+|------------|----------------------------|-------------------------|------------------------|
+| Logged in | Run normally | Run normally | Run normally |
+| Logged out | Run normally | Skip with message | Run (public-only) |
 
-This env var takes precedence over the keyring token.
-
-Without valid authentication, search-mcp tests will fail with:
-```
-RuntimeError: Not authenticated with Anaconda. Run 'anaconda login' or set ANACONDA_AUTH_API_KEY env var.
-```
+Without valid authentication, auth-required tests (`search_collections_and_files`, `search_environments`) will skip.
 
 **Verify the server env:**
 

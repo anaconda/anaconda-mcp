@@ -28,6 +28,7 @@ def _extract_mcp_response(response: dict):
 
 
 @pytest.mark.slow
+@pytest.mark.auth_independent
 class TestCondaMetaPackageInsights:
     """
     Happy-path: conda-meta_package_insights tool must succeed.

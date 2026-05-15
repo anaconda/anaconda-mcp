@@ -29,6 +29,7 @@ def _extract_mcp_response(response: dict):
 
 
 @pytest.mark.slow
+@pytest.mark.auth_independent
 class TestCondaMetaFilePathSearch:
     """
     Happy-path: conda-meta_file_path_search tool must succeed.
