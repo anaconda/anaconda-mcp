@@ -1,9 +1,10 @@
 """
-Happy-path tests for conda_remove_packages tool.
+Happy-path and error-path tests for conda_remove_packages tool.
 
 Tests verify:
 - is_error=false when removing a package by environment name
 - is_error=false when removing a package by prefix
+- is_error=true when removing a package that is not installed
 
 Note: This test installs a package first, then removes it to verify the remove path.
 """
@@ -18,10 +19,11 @@ from common.constants.mcp_tools import (
     RemovePackagesArgs,
     Tools,
 )
-from common.constants.test_data import EXISTING_PKG
+from common.constants.test_data import EXISTING_PKG, NONEXISTENT_PKG
 from common.utils.mcp_client import _tool_result
 from common.utils.response_validators import (
     _validate_install_success,
+    validate_error_response,
     validate_remove_success,
 )
 
@@ -98,3 +100,31 @@ class TestRemovePackages:
         )
         result = _tool_result(response)
         validate_remove_success(result, context=f"prefix={conda_env['prefix']!r} pkg={EXISTING_PKG!r}")
+
+
+@pytest.mark.slow
+class TestRemovePackagesErrors:
+    """
+    Error-path: conda_remove_packages must return is_error=true for invalid operations.
+    """
+
+    def test_remove_nonexistent_package(self, conda_env, call_tool):
+        """
+        Removing a package that is not installed must return is_error=true.
+
+        Validates error handling when attempting to remove a non-installed package.
+        """
+        logger.info(
+            "Attempting to remove nonexistent package '%s' from env '%s'",
+            NONEXISTENT_PKG,
+            conda_env["name"],
+        )
+        response = call_tool(
+            Tools.CONDA_REMOVE_PACKAGES,
+            {
+                RemovePackagesArgs.ENVIRONMENT: conda_env["name"],
+                RemovePackagesArgs.PACKAGES: [NONEXISTENT_PKG],
+            },
+        )
+        result = _tool_result(response)
+        validate_error_response(result, context=f"env={conda_env['name']!r} pkg={NONEXISTENT_PKG!r}")

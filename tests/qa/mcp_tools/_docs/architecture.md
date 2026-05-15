@@ -26,14 +26,26 @@ flowchart LR
       AM --> MC
     end
 
-    subgraph ems["Process: environments_mcp_server"]
+    subgraph ems["Process: environments_mcp_server (6 tools)"]
       direction TB
       EM["environments-mcp<br/>· package version"]
       AC["anaconda-connector<br/>· package / conda build version"]
       EM --> AC
     end
 
+    subgraph cmm["Process: conda_meta_mcp (9 tools)"]
+      direction TB
+      CM["conda-meta-mcp<br/>· package version"]
+    end
+
+    subgraph sms["Remote: search-mcp (5 tools)"]
+      direction TB
+      SM["search-mcp<br/>· hosted at anaconda.com"]
+    end
+
     MC <-->|"② upstream MCP<br/>streamable HTTP or STDIO"| EM
+    MC <-->|"③ upstream MCP<br/>streamable HTTP"| CM
+    MC <-->|"④ remote MCP<br/>SSE"| SM
   end
 
   CL <-->|"① outer MCP<br/>HTTP or STDIO"| AM
@@ -41,6 +53,8 @@ flowchart LR
 
 - **①** — transport between the **MCP client** and **`anaconda-mcp`**: streamable HTTP or STDIO.
 - **②** — transport between **`mcp-compose`** and **`environments_mcp_server`**: streamable HTTP or STDIO. Independent of ①.
+- **③** — transport between **`mcp-compose`** and **`conda_meta_mcp`**: streamable HTTP.
+- **④** — transport between **`mcp-compose`** and **`search-mcp`**: SSE (remote server at anaconda.com).
 - **`environments-mcp` → `anaconda-connector`** — Python API for conda operations; not a third MCP wire.
 - **`mcp-compose`** ships as a dependency of `anaconda-mcp`; it can be **overridden** (fork / git) to test transport fixes without changing `anaconda-mcp` itself.
 
@@ -52,6 +66,8 @@ flowchart LR
 | **`mcp-compose`** | Transitive dep; override with `pip install` (fork / git) — see [`README.md`](../README.md) |
 | **`environments-mcp`** | Release or editable in the **same** env as `anaconda-mcp` |
 | **`anaconda-connector-conda`** | Conda/pip pin; must be importable as `anaconda_connector_conda` or tools fail to register |
+| **`conda-meta-mcp`** | Install from conda-forge: `conda install -c conda-forge conda-meta-mcp` |
+| **`search-mcp`** | Remote service; no local install needed. Requires `ANACONDA_TOKEN` for authentication. |
 
 ---
 

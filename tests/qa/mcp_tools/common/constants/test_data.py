@@ -16,6 +16,9 @@ REMOVABLE_ENV_NAME = "guard-env-remove-test"
 # Package name guaranteed not to exist in any conda channel.
 NONEXISTENT_PKG = "nonexistent-package-xyz123"
 
+# Environment name guaranteed not to exist.
+NONEXISTENT_ENV_NAME = "nonexistent-env-xyz123"
+
 # Small, real package available in conda defaults; used for happy-path install tests.
 EXISTING_PKG = "pyyaml"
 

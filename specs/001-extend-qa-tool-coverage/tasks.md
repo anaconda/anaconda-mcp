@@ -26,17 +26,17 @@ All test code lives under `tests/qa/mcp_tools/`:
 
 **Purpose**: Extend tool constants and validators to support all 3 MCP servers
 
-- [ ] T001 Add `CondaMetaTools` enum (9 tools) to tests/qa/mcp_tools/common/constants/mcp_tools.py
-- [ ] T002 [P] Add `SearchTools` enum (5 tools) to tests/qa/mcp_tools/common/constants/mcp_tools.py
-- [ ] T003 [P] Add missing environments-mcp tools (`CONDA_LIST_ENVIRONMENT_PACKAGES`, `CONDA_REMOVE_PACKAGES`) to `Tools` enum in tests/qa/mcp_tools/common/constants/mcp_tools.py
-- [ ] T004 [P] Add argument enums for conda-meta-mcp tools in tests/qa/mcp_tools/common/constants/mcp_tools.py
-- [ ] T005 [P] Add argument enums for search-mcp tools in tests/qa/mcp_tools/common/constants/mcp_tools.py
-- [ ] T006 [P] Add argument enums for missing environments-mcp tools in tests/qa/mcp_tools/common/constants/mcp_tools.py
-- [ ] T007 Add conda-meta-mcp test data constants to tests/qa/mcp_tools/common/constants/test_data.py
-- [ ] T008 [P] Add search-mcp test data constants to tests/qa/mcp_tools/common/constants/test_data.py
-- [ ] T009 Add `validate_conda_meta_success` and `validate_conda_meta_text_content` validators to tests/qa/mcp_tools/common/utils/response_validators.py
-- [ ] T010 [P] Add `validate_search_success` and `validate_search_results` validators to tests/qa/mcp_tools/common/utils/response_validators.py
-- [ ] T011 [P] Add `validate_list_packages_success` and `validate_remove_success` validators for environments-mcp to tests/qa/mcp_tools/common/utils/response_validators.py
+- [x] T001 Add `CondaMetaTools` enum (9 tools) to tests/qa/mcp_tools/common/constants/mcp_tools.py
+- [x] T002 [P] Add `SearchTools` enum (5 tools) to tests/qa/mcp_tools/common/constants/mcp_tools.py
+- [x] T003 [P] Add missing environments-mcp tools (`CONDA_LIST_ENVIRONMENT_PACKAGES`, `CONDA_REMOVE_PACKAGES`) to `Tools` enum in tests/qa/mcp_tools/common/constants/mcp_tools.py
+- [x] T004 [P] Add argument enums for conda-meta-mcp tools in tests/qa/mcp_tools/common/constants/mcp_tools.py
+- [x] T005 [P] Add argument enums for search-mcp tools in tests/qa/mcp_tools/common/constants/mcp_tools.py
+- [x] T006 [P] Add argument enums for missing environments-mcp tools in tests/qa/mcp_tools/common/constants/mcp_tools.py
+- [x] T007 Add conda-meta-mcp test data constants to tests/qa/mcp_tools/common/constants/test_data.py
+- [x] T008 [P] Add search-mcp test data constants to tests/qa/mcp_tools/common/constants/test_data.py
+- [x] T009 Add `validate_conda_meta_success` and `validate_conda_meta_text_content` validators to tests/qa/mcp_tools/common/utils/response_validators.py
+- [x] T010 [P] Add `validate_search_success` and `validate_search_results` validators to tests/qa/mcp_tools/common/utils/response_validators.py
+- [x] T011 [P] Add `validate_list_packages_success` and `validate_remove_success` validators for environments-mcp to tests/qa/mcp_tools/common/utils/response_validators.py
 
 **Checkpoint**: All tool enums, argument enums, test data, and validators ready for test implementation
 
@@ -52,11 +52,11 @@ All test code lives under `tests/qa/mcp_tools/`:
 
 ### Validation tasks
 
-- [ ] T012 [US0] Start anaconda-mcp server with all 3 MCP servers: `conda run -n anaconda-mcp-server anaconda-mcp serve`
-- [ ] T013 [US0] Verify environments-mcp tools exposed (6 tools): call `tools/list` and check `conda_*` tools present
-- [ ] T014 [US0] Verify conda-meta-mcp tools exposed (9 tools): check `info`, `cache_maintenance`, `cli_help`, `file_path_search`, `import_mapping`, `package_insights`, `package_search`, `pypi_to_conda`, `repoquery` present
-- [ ] T015 [US0] Verify search-mcp tools exposed (5 tools): check `search_packages`, `search_documentation`, `search_forum`, `search_collections_and_files`, `search_environments` present
-- [ ] T016 [US0] Document any configuration fixes needed in mcp_compose.toml or mcp_compose.toml.template
+- [x] T012 [US0] Start anaconda-mcp server with all 3 MCP servers: `conda run -n anaconda-mcp anaconda-mcp serve`
+- [x] T013 [US0] Verify environments-mcp tools exposed (6 tools): call `tools/list` and check `conda_*` tools present
+- [x] T014 [US0] Verify conda-meta-mcp tools exposed (9 tools): check `conda-meta_info`, `conda-meta_cache_maintenance`, `conda-meta_cli_help`, `conda-meta_file_path_search`, `conda-meta_import_mapping`, `conda-meta_package_insights`, `conda-meta_package_search`, `conda-meta_pypi_to_conda`, `conda-meta_repoquery` present (tools prefixed by mcp-compose)
+- [x] T015 [US0] Verify search-mcp tools exposed (5 tools): check `search_search_packages`, `search_search_documentation`, `search_search_forum`, `search_search_collections_and_files`, `search_search_environments` present (tools prefixed by mcp-compose)
+- [x] T016 [US0] Document configuration fixes: (1) Updated utils.py to render {{ANACONDA_DOMAIN}} and {{ANACONDA_TOKEN}} placeholders; (2) Changed conda-meta command from `cmm` to `python -m conda_meta_mcp` in mcp_compose.toml.template; (3) Increased startup_delay to 5s; (4) Updated tool constants to use mcp-compose prefixed names
 
 **Checkpoint**: All 20 tools from 3 MCP servers are visible via `tools/list` — infrastructure validated
 
@@ -70,30 +70,30 @@ All test code lives under `tests/qa/mcp_tools/`:
 
 ### environments-mcp gaps (3 happy-path + 1 error per FR-004)
 
-- [ ] T017 [P] [US1] Create happy-path test for `conda_list_environment_packages` in tests/qa/mcp_tools/test_list_environment_packages.py
-- [ ] T018 [P] [US1] Create happy-path test for `conda_remove_packages` in tests/qa/mcp_tools/test_remove_packages.py
-- [ ] T019 [P] [US1] Create happy-path test for `conda_remove_environment` in tests/qa/mcp_tools/test_remove_environment_happy.py
-- [ ] T020 [P] [US2] Create error-path test for `conda_create_environment` (duplicate name) in tests/qa/mcp_tools/test_create_environment_error.py (FR-004)
+- [x] T017 [P] [US1] Create happy-path test for `conda_list_environment_packages` in tests/qa/mcp_tools/test_list_environment_packages.py
+- [x] T018 [P] [US1] Create happy-path test for `conda_remove_packages` in tests/qa/mcp_tools/test_remove_packages.py
+- [x] T019 [P] [US1] Create happy-path test for `conda_remove_environment` in tests/qa/mcp_tools/test_remove_environment_happy.py
+- [x] T020 [P] [US2] Create error-path test for `conda_create_environment` (duplicate name) in tests/qa/mcp_tools/test_create_environment_error.py (FR-004)
 
 ### conda-meta-mcp (9 tests)
 
-- [ ] T021 [P] [US1] Create happy-path test for `info` tool in tests/qa/mcp_tools/test_conda_meta_info.py
-- [ ] T022 [P] [US1] Create happy-path test for `cache_maintenance` tool in tests/qa/mcp_tools/test_conda_meta_cache.py
-- [ ] T023 [P] [US1] Create happy-path test for `cli_help` tool in tests/qa/mcp_tools/test_conda_meta_cli_help.py
-- [ ] T024 [P] [US1] Create happy-path test for `file_path_search` tool in tests/qa/mcp_tools/test_conda_meta_file_path.py
-- [ ] T025 [P] [US1] Create happy-path test for `import_mapping` tool in tests/qa/mcp_tools/test_conda_meta_import_mapping.py
-- [ ] T026 [P] [US1] Create happy-path test for `package_insights` tool in tests/qa/mcp_tools/test_conda_meta_package_insights.py
-- [ ] T027 [P] [US1] Create happy-path test for `package_search` tool in tests/qa/mcp_tools/test_conda_meta_package_search.py
-- [ ] T028 [P] [US1] Create happy-path test for `pypi_to_conda` tool in tests/qa/mcp_tools/test_conda_meta_pypi_to_conda.py
-- [ ] T029 [P] [US1] Create happy-path test for `repoquery` tool (depends mode) in tests/qa/mcp_tools/test_conda_meta_repoquery.py
+- [x] T021 [P] [US1] Create happy-path test for `info` tool in tests/qa/mcp_tools/test_conda_meta_info.py
+- [x] T022 [P] [US1] Create happy-path test for `cache_maintenance` tool in tests/qa/mcp_tools/test_conda_meta_cache.py
+- [x] T023 [P] [US1] Create happy-path test for `cli_help` tool in tests/qa/mcp_tools/test_conda_meta_cli_help.py
+- [x] T024 [P] [US1] Create happy-path test for `file_path_search` tool in tests/qa/mcp_tools/test_conda_meta_file_path.py
+- [x] T025 [P] [US1] Create happy-path test for `import_mapping` tool in tests/qa/mcp_tools/test_conda_meta_import_mapping.py
+- [x] T026 [P] [US1] Create happy-path test for `package_insights` tool in tests/qa/mcp_tools/test_conda_meta_package_insights.py
+- [x] T027 [P] [US1] Create happy-path test for `package_search` tool in tests/qa/mcp_tools/test_conda_meta_package_search.py
+- [x] T028 [P] [US1] Create happy-path test for `pypi_to_conda` tool in tests/qa/mcp_tools/test_conda_meta_pypi_to_conda.py
+- [x] T029 [P] [US1] Create happy-path test for `repoquery` tool (depends mode) in tests/qa/mcp_tools/test_conda_meta_repoquery.py
 
 ### search-mcp (5 tests)
 
-- [ ] T030 [P] [US1] Create happy-path test for `search_packages` tool in tests/qa/mcp_tools/test_search_packages.py
-- [ ] T031 [P] [US1] Create happy-path test for `search_documentation` tool in tests/qa/mcp_tools/test_search_documentation.py
-- [ ] T032 [P] [US1] Create happy-path test for `search_forum` tool in tests/qa/mcp_tools/test_search_forum.py
-- [ ] T033 [P] [US1] Create happy-path test for `search_collections_and_files` tool in tests/qa/mcp_tools/test_search_collections_files.py
-- [ ] T034 [P] [US1] Create happy-path test for `search_environments` tool in tests/qa/mcp_tools/test_search_environments.py
+- [x] T030 [P] [US1] Create happy-path test for `search_packages` tool in tests/qa/mcp_tools/test_search_packages.py
+- [x] T031 [P] [US1] Create happy-path test for `search_documentation` tool in tests/qa/mcp_tools/test_search_documentation.py
+- [x] T032 [P] [US1] Create happy-path test for `search_forum` tool in tests/qa/mcp_tools/test_search_forum.py
+- [x] T033 [P] [US1] Create happy-path test for `search_collections_and_files` tool in tests/qa/mcp_tools/test_search_collections_files.py
+- [x] T034 [P] [US1] Create happy-path test for `search_environments` tool in tests/qa/mcp_tools/test_search_environments.py
 
 **Checkpoint**: All 20 tools have at least one passing happy-path test (SC-001)
 
@@ -107,20 +107,20 @@ All test code lives under `tests/qa/mcp_tools/`:
 
 ### environments-mcp complex params
 
-- [ ] T035 [P] [US1] Add test for `conda_create_environment` with prefix parameter in tests/qa/mcp_tools/test_create_environment_root_path.py
-- [ ] T036 [P] [US1] Add test for `conda_list_environment_packages` by prefix in tests/qa/mcp_tools/test_list_environment_packages.py
-- [ ] T037 [P] [US1] Add test for `conda_remove_packages` by prefix in tests/qa/mcp_tools/test_remove_packages.py
+- [x] T035 [P] [US1] Add test for `conda_create_environment` with prefix parameter in tests/qa/mcp_tools/test_create_environment_root_path.py (existing test covers this)
+- [x] T036 [P] [US1] Add test for `conda_list_environment_packages` by prefix in tests/qa/mcp_tools/test_list_environment_packages.py
+- [x] T037 [P] [US1] Add test for `conda_remove_packages` by prefix in tests/qa/mcp_tools/test_remove_packages.py
 
 ### conda-meta-mcp complex params
 
-- [ ] T038 [P] [US1] Add test for `repoquery` whoneeds mode in tests/qa/mcp_tools/test_conda_meta_repoquery.py
-- [ ] T039 [P] [US1] Add test for `cli_help` with grep filter in tests/qa/mcp_tools/test_conda_meta_cli_help.py
-- [ ] T040 [P] [US1] Add test for `package_search` with version spec in tests/qa/mcp_tools/test_conda_meta_package_search.py
+- [x] T038 [P] [US1] Add test for `repoquery` whoneeds mode in tests/qa/mcp_tools/test_conda_meta_repoquery.py
+- [x] T039 [P] [US1] Add test for `cli_help` with grep filter in tests/qa/mcp_tools/test_conda_meta_cli_help.py
+- [x] T040 [P] [US1] Add test for `package_search` with version spec in tests/qa/mcp_tools/test_conda_meta_package_search.py
 
 ### search-mcp complex params
 
-- [ ] T041 [P] [US1] Add test for `search_packages` with channel filter in tests/qa/mcp_tools/test_search_packages.py
-- [ ] T042 [P] [US1] Add test for `search_environments` with platform filter in tests/qa/mcp_tools/test_search_environments.py
+- [x] T041 [P] [US1] Add test for `search_packages` with channel filter in tests/qa/mcp_tools/test_search_packages.py
+- [x] T042 [P] [US1] Add test for `search_environments` with platform filter in tests/qa/mcp_tools/test_search_environments.py
 
 **Checkpoint**: Tools with OR params and multiple modes have comprehensive positive coverage
 
@@ -134,21 +134,21 @@ All test code lives under `tests/qa/mcp_tools/`:
 
 ### environments-mcp error paths
 
-- [ ] T043 [P] [US2] Add error test for `conda_list_environments` if meaningful error scenarios exist in tests/qa/mcp_tools/test_env_name_resolution.py (FR-005 — skip if no valid scenario)
-- [ ] T044 [P] [US2] Add error test for `conda_list_environment_packages` (nonexistent env) in tests/qa/mcp_tools/test_list_environment_packages.py (Edge case: nonexistent env)
-- [ ] T045 [P] [US2] Add error test for `conda_remove_packages` (package not installed) in tests/qa/mcp_tools/test_remove_packages.py (Edge case: package not installed)
+- [x] T043 [P] [US2] Add error test for `conda_list_environments` if meaningful error scenarios exist in tests/qa/mcp_tools/test_env_name_resolution.py (FR-005 — skip if no valid scenario) — SKIPPED: no meaningful error scenario for listing environments
+- [x] T044 [P] [US2] Add error test for `conda_list_environment_packages` (nonexistent env) in tests/qa/mcp_tools/test_list_environment_packages.py (Edge case: nonexistent env)
+- [x] T045 [P] [US2] Add error test for `conda_remove_packages` (package not installed) in tests/qa/mcp_tools/test_remove_packages.py (Edge case: package not installed)
 
 ### conda-meta-mcp error paths
 
-- [ ] T046 [P] [US2] Add error test for `package_search` (no results) in tests/qa/mcp_tools/test_conda_meta_package_search.py
-- [ ] T047 [P] [US2] Add error test for `import_mapping` (unknown import) in tests/qa/mcp_tools/test_conda_meta_import_mapping.py
-- [ ] T048 [P] [US2] Add error test for `repoquery` (invalid package) in tests/qa/mcp_tools/test_conda_meta_repoquery.py
+- [x] T046 [P] [US2] Add error test for `package_search` (no results) in tests/qa/mcp_tools/test_conda_meta_package_search.py
+- [x] T047 [P] [US2] Add error test for `import_mapping` (unknown import) in tests/qa/mcp_tools/test_conda_meta_import_mapping.py
+- [x] T048 [P] [US2] Add error test for `repoquery` (invalid package) in tests/qa/mcp_tools/test_conda_meta_repoquery.py
 
 ### search-mcp error paths
 
-- [ ] T049 [P] [US2] Add error test for `search_packages` (empty query) in tests/qa/mcp_tools/test_search_packages.py
-- [ ] T050 [P] [US2] Add error test for `search_documentation` (empty query) in tests/qa/mcp_tools/test_search_documentation.py
-- [ ] T051 [P] [US2] Add error test for `search_forum` (empty query) in tests/qa/mcp_tools/test_search_forum.py
+- [x] T049 [P] [US2] Add error test for `search_packages` (empty query) in tests/qa/mcp_tools/test_search_packages.py
+- [x] T050 [P] [US2] Add error test for `search_documentation` (empty query) in tests/qa/mcp_tools/test_search_documentation.py
+- [x] T051 [P] [US2] Add error test for `search_forum` (empty query) in tests/qa/mcp_tools/test_search_forum.py
 
 **Checkpoint**: Error handling verified for tools with meaningful failure modes (FR-004, FR-007, FR-009)
 
@@ -162,11 +162,11 @@ All test code lives under `tests/qa/mcp_tools/`:
 
 ### conda-meta-mcp hang-stress
 
-- [ ] T052 [US3] Add hang-stress test for `repoquery` tool (20 iterations) in tests/qa/mcp_tools/test_conda_meta_repoquery.py
+- [x] T052 [US3] Add hang-stress test for `repoquery` tool (20 iterations) in tests/qa/mcp_tools/test_conda_meta_repoquery.py
 
 ### search-mcp hang-stress
 
-- [ ] T053 [US3] Add hang-stress test for `search_packages` tool (20 iterations) in tests/qa/mcp_tools/test_search_packages.py
+- [x] T053 [US3] Add hang-stress test for `search_packages` tool (20 iterations) in tests/qa/mcp_tools/test_search_packages.py
 
 **Checkpoint**: High-risk tools validated for proxy-state bugs under repeated invocation
 
@@ -178,21 +178,21 @@ All test code lives under `tests/qa/mcp_tools/`:
 
 ### Test documentation updates
 
-- [ ] T054 Update tool coverage table in tests/qa/mcp_tools/_docs/test_design.md with all 20 tools (add conda-meta-mcp and search-mcp sections)
-- [ ] T055 Update tests/qa/mcp_tools/_docs/architecture.md if needed to document 3-server stack
-- [ ] T056 Update tests/qa/mcp_tools/common/constants/mcp_tools.py docstring to reflect 20-tool coverage
+- [x] T054 Update tool coverage table in tests/qa/mcp_tools/_docs/test_design.md with all 20 tools (add conda-meta-mcp and search-mcp sections)
+- [x] T055 Update tests/qa/mcp_tools/_docs/architecture.md if needed to document 3-server stack
+- [x] T056 Update tests/qa/mcp_tools/common/constants/mcp_tools.py docstring to reflect 20-tool coverage
 
 ### GitHub workflow updates
 
-- [ ] T057 Update .github/workflows/qa-mcp-tools.yml to add `conda_meta_mcp_ref` input parameter for conda-meta-mcp version
-- [ ] T058 Update .github/workflows/qa-mcp-tools.yml to add `ANACONDA_TOKEN` secret usage for search-mcp authentication
-- [ ] T059 Update .github/workflows/qa-mcp-tools.yml to install conda-meta-mcp (`pip install conda-meta-mcp`) in server env
-- [ ] T060 Update workflow description comment to mention all 3 MCP servers (environments-mcp, conda-meta-mcp, search-mcp)
+- [x] T057 Update .github/workflows/qa-mcp-tools.yml to add `conda_meta_mcp_ver` input parameter for conda-meta-mcp version
+- [x] T058 Update .github/workflows/qa-mcp-tools.yml to add `ANACONDA_TOKEN` secret usage for search-mcp authentication
+- [x] T059 Update .github/workflows/qa-mcp-tools.yml to install conda-meta-mcp (`conda install -c conda-forge conda-meta-mcp`) in server env
+- [x] T060 Update workflow description comment to mention all 3 MCP servers (environments-mcp, conda-meta-mcp, search-mcp)
 
 ### Validation
 
-- [ ] T061 Verify all tests pass on stdio-http profile: `pytest tests/qa/mcp_tools -o addopts= --mcp-profile=stdio-http` (FR-011: stdio-http is declared supported profile)
-- [ ] T062 Run 10 consecutive test runs to verify no flaky tests (SC-004)
+- [ ] T061 Verify all tests pass on stdio-http profile: `pytest tests/qa/mcp_tools -o addopts= --mcp-profile=stdio-http` (FR-011: stdio-http is declared supported profile) — MANUAL VERIFICATION REQUIRED
+- [ ] T062 Run 10 consecutive test runs to verify no flaky tests (SC-004) — MANUAL VERIFICATION REQUIRED
 
 ---
 

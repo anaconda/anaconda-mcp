@@ -1,9 +1,10 @@
 """
-Happy-path tests for conda_list_environment_packages tool.
+Happy-path and error-path tests for conda_list_environment_packages tool.
 
 Tests verify:
 - is_error=false when listing packages by environment name
 - is_error=false when listing packages by prefix
+- is_error=true when listing packages for nonexistent environment
 - Response contains package list
 """
 
@@ -13,8 +14,12 @@ import logging
 
 import pytest
 from common.constants.mcp_tools import ListEnvironmentPackagesArgs, Tools
+from common.constants.test_data import NONEXISTENT_ENV_NAME
 from common.utils.mcp_client import _tool_result
-from common.utils.response_validators import validate_list_packages_success
+from common.utils.response_validators import (
+    validate_error_response,
+    validate_list_packages_success,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -61,3 +66,26 @@ class TestListEnvironmentPackages:
         )
         result = _tool_result(response)
         validate_list_packages_success(result, context=f"prefix={conda_env['prefix']!r}")
+
+
+@pytest.mark.slow
+class TestListEnvironmentPackagesErrors:
+    """
+    Error-path: conda_list_environment_packages must return is_error=true for invalid inputs.
+    """
+
+    def test_list_packages_nonexistent_env(self, call_tool):
+        """
+        Listing packages for a nonexistent environment must return is_error=true.
+
+        Validates error handling for invalid environment lookup.
+        """
+        logger.info("Listing packages in nonexistent env '%s'", NONEXISTENT_ENV_NAME)
+        response = call_tool(
+            Tools.CONDA_LIST_ENVIRONMENT_PACKAGES,
+            {
+                ListEnvironmentPackagesArgs.ENVIRONMENT: NONEXISTENT_ENV_NAME,
+            },
+        )
+        result = _tool_result(response)
+        validate_error_response(result, context=f"nonexistent env={NONEXISTENT_ENV_NAME!r}")
