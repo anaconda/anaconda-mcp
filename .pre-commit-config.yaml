@@ -23,5 +23,8 @@ repos:
     rev: v1.20.1
     hooks:
       - id: mypy
-        additional_dependencies: []
+        additional_dependencies:
+          - anaconda-cli-base>=0.8.2
+          - pydantic>=2.0
+          - pydantic-settings>=2.0
         args: [--ignore-missing-imports]

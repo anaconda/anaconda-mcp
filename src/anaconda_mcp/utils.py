@@ -30,7 +30,12 @@ def _render_config_template(config_path: str) -> str:
 
     content = source_path.read_text()
 
-    python_executable = settings.PYTHON_EXECUTABLE or sys.executable
+    # Determine which Python executable to use
+    # Priority: 1. Environment variable, 2. sys.executable
+    python_executable = settings.python_executable or sys.executable
+
+    # Replace the placeholder with the Python executable
+    # Escape backslashes for Windows paths
     python_path = python_executable.replace("\\", "\\\\")
     content = content.replace("{{PYTHON_EXECUTABLE}}", python_path)
     content = content.replace('"python"', f'"{python_path}"')
@@ -40,7 +45,7 @@ def _render_config_template(config_path: str) -> str:
         raise RuntimeError("Not authenticated with Anaconda. Run 'anaconda-auth login' or sign in when prompted.")
     content = content.replace("{{ANACONDA_TOKEN}}", anaconda_token)
 
-    content = content.replace("{{ANACONDA_DOMAIN}}", settings.ANACONDA_DOMAIN or "anaconda.com")
+    content = content.replace("{{ANACONDA_DOMAIN}}", settings.anaconda_domain or "anaconda.com")
 
     rendered_fd, rendered_path = tempfile.mkstemp(suffix=".toml", prefix="mcp_compose_")
     try:
