@@ -38,3 +38,7 @@
 - **Gaps**: 16 tools with no coverage + 3 missing paths on existing tools
 - Tool parameters documented to inform test scenario planning
 - Server configs for search-mcp and conda-meta-mcp cherry-picked to branch (commit e409ac8)
+- **User Story 5 added (2026-05-15)**: Authentication-state-aware test behavior — tests adapt based on logged-in/logged-out state
+  - Auth-independent tools (15): All environments-mcp, all conda-meta-mcp — same behavior in both states
+  - Auth-required tools (2): `search_collections_and_files`, `search_environments` — skip when logged out
+  - Auth-enhanced tools (3): `search_packages`, `search_documentation`, `search_forum` — work both ways, public-only when logged out

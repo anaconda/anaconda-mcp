@@ -168,12 +168,45 @@ QA engineer configures the GitHub Actions workflow to run search-mcp tests witho
 
 ---
 
+### User Story 5 - Authentication-State-Aware Test Behavior (Priority: P1)
+
+QA engineer runs positive tool tests in both authenticated and unauthenticated modes, with tests automatically adjusting their behavior and assertions based on the current authentication state.
+
+**Why this priority**: Some tools work identically regardless of auth state (environments-mcp, conda-meta-mcp), some tools require authentication (search-mcp private content), and some tools return different results based on auth state (search-mcp public vs private results). Tests must handle all cases to provide accurate coverage.
+
+**Independent Test**: Run `pytest tests/qa/mcp_tools -o addopts=` twice: once with auth credentials configured, once without. Verify appropriate tests pass in each mode.
+
+**Tool Authentication Classification**:
+
+| Category | Tools | Logged Out Behavior | Logged In Behavior |
+|----------|-------|--------------------|--------------------|
+| **Auth-Independent** | All environments-mcp (6), all conda-meta-mcp (9) | Works normally | Works normally (no change) |
+| **Auth-Required** | `search_collections_and_files`, `search_environments` | Should skip or return auth-required error | Returns private/user-scoped results |
+| **Auth-Enhanced** | `search_packages`, `search_documentation`, `search_forum` | Returns public results only | Returns public + private/user results |
+
+**Acceptance Scenarios**:
+
+1. **Given** a test for an auth-independent tool (environments-mcp, conda-meta-mcp), **When** the test runs in either logged-out or logged-in mode, **Then** the test passes with identical behavior and assertions.
+
+2. **Given** a test for an auth-required tool (`search_collections_and_files`, `search_environments`), **When** the user is logged out, **Then** the test is skipped with clear message OR validates the auth-required error response.
+
+3. **Given** a test for an auth-required tool, **When** the user is logged in, **Then** the test validates the tool returns user-scoped results successfully.
+
+4. **Given** a test for an auth-enhanced tool (`search_packages`, `search_documentation`, `search_forum`), **When** the user is logged out, **Then** the test validates the tool works with public data and makes no assertions about private content.
+
+5. **Given** a test for an auth-enhanced tool, **When** the user is logged in, **Then** the test validates the tool works (same as logged-out) — private content assertions are optional/separate tests.
+
+---
+
 ### Edge Cases
 
-**Authentication**:
+**Authentication & Auth State**:
 - What happens when credentials are invalid? (Should fail fast with clear error before tests start)
 - What happens when Anaconda auth API is temporarily unavailable? (Should retry with backoff, then fail with actionable error)
 - What happens when token expires mid-test-run? (Out of scope for v1: assume token lifetime exceeds test duration)
+- What happens when auth-required tool is called while logged out? (Test skips OR validates auth error response)
+- What happens when auth-enhanced tool is called while logged out? (Tool works with public data; test validates public-only behavior)
+- What happens when running tests without any auth config (no credentials, no keyring)? (Auth-independent tests pass; auth-required tests skip; auth-enhanced tests run public-only mode)
 
 **environments-mcp**:
 - What happens when `conda_list_environments` is called when no environments exist? (Should return empty list or just base) — *Covered by FR-005/T043 if meaningful*
@@ -217,6 +250,14 @@ QA engineer configures the GitHub Actions workflow to run search-mcp tests witho
 - **FR-017**: Authentication MUST work in both local development (interactive `anaconda login` fallback) and headless CI environments (API-based login)
 - **FR-018**: Token obtained via API login MUST be passed to search-mcp via the `ANACONDA_AUTH_API_KEY` environment variable or mcp-compose config
 
+**Authentication-State-Aware Testing**:
+- **FR-019**: Test suite MUST detect current authentication state (logged-in vs logged-out) before running search-mcp tests
+- **FR-020**: Tests for auth-independent tools (environments-mcp, conda-meta-mcp) MUST produce identical results regardless of auth state
+- **FR-021**: Tests for auth-required tools (`search_collections_and_files`, `search_environments`) MUST skip with clear message when user is logged out
+- **FR-022**: Tests for auth-enhanced tools (`search_packages`, `search_documentation`, `search_forum`) MUST validate public-data behavior when logged out and work identically when logged in
+- **FR-023**: Test fixtures/markers MUST provide mechanism to declare tool's auth category (independent, required, enhanced)
+- **FR-024**: Test output MUST clearly indicate which tests were skipped due to auth state and how to run them with auth
+
 **Infrastructure**:
 - **FR-010**: All new tests MUST follow existing test patterns in `tests/qa/mcp_tools/` (class-based, use fixtures, proper marks)
 - **FR-011**: All new tests MUST be transport-agnostic (work across all `--mcp-profile` values)
@@ -239,6 +280,8 @@ QA engineer configures the GitHub Actions workflow to run search-mcp tests witho
 - **Transport Profile**: Configuration determining how test communicates with MCP server (`http-http`, `stdio-http`, `stdio-stdio`)
 - **MCP Server**: A proxied backend providing tools (environments-mcp, conda-meta-mcp, search-mcp)
 - **Auth Service**: Component that programmatically obtains Anaconda session tokens via OAuth API flow using credentials
+- **Auth State**: Current authentication status (logged-in or logged-out) that affects tool behavior and test expectations
+- **Tool Auth Category**: Classification of a tool's authentication dependency: auth-independent (works same either way), auth-required (needs login), or auth-enhanced (works both ways, different results)
 
 ## Success Criteria *(mandatory)*
 
@@ -250,6 +293,9 @@ QA engineer configures the GitHub Actions workflow to run search-mcp tests witho
 - **SC-004**: No new tests introduce flaky behavior (pass rate >99% across 10 consecutive runs — i.e., at most 1 failure per 100 test invocations total)
 - **SC-005**: Tool constants file includes all 20 tools organized by server
 - **SC-006**: search-mcp tests pass in GitHub Actions workflow using programmatic authentication (no pre-stored static tokens)
+- **SC-007**: Test suite passes when run without authentication (logged-out mode): auth-independent tests pass, auth-required tests skip, auth-enhanced tests run public-only
+- **SC-008**: Test suite passes when run with authentication (logged-in mode): all tests pass including auth-required and auth-enhanced tests
+- **SC-009**: Test output clearly reports auth state and lists any skipped tests with reason
 
 ## Assumptions
 
