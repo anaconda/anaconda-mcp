@@ -21,9 +21,24 @@
    ```
 
 3. **Authentication** (for search-mcp):
+
+   **Option A: `.env` file (local development)**
    ```bash
-   export ANACONDA_TOKEN="your-anaconda-api-token"
+   # Create .env in repo root (already in .gitignore)
+   echo 'ANACONDA_USER_EMAIL="your-email@example.com"' >> .env
+   echo 'ANACONDA_USER_PASSWORD="your-password"' >> .env
    ```
+
+   **Option B: GitHub secrets (CI workflow)**
+   - `ANACONDA_USER_EMAIL` and `ANACONDA_USER_PASSWORD` configured as repository secrets
+   - Workflow loads them automatically via `env:` block
+
+   **Option C: Keyring token (fallback)**
+   ```bash
+   anaconda login
+   ```
+
+   **Priority order**: `.env` credentials → keyring token → no auth (skip/public-only mode)
 
 4. **Network access**: Required for conda-meta-mcp (public channels) and search-mcp (anaconda.com API)
 
@@ -124,6 +139,31 @@ pytest tests/qa/mcp_tools -o addopts= --mcp-profile=stdio-stdio -m hang_stress
 pytest tests/qa/mcp_tools -o addopts= --mcp-profile=stdio-http --skip-hang-stress
 ```
 
+## Authentication-Aware Testing
+
+### Auth Categories
+
+| Category | Tools | Logged-Out Behavior |
+|----------|-------|---------------------|
+| Auth-Independent | All environments-mcp (6), all conda-meta-mcp (9) | Runs normally |
+| Auth-Required | `search_collections_and_files`, `search_environments` | Skips with message |
+| Auth-Enhanced | `search_packages`, `search_documentation`, `search_forum` | Runs, asserts public data only |
+
+### Running with/without Auth
+
+```bash
+# With credentials (all tests run)
+ANACONDA_USER_EMAIL=test@example.com ANACONDA_USER_PASSWORD=secret \
+  pytest tests/qa/mcp_tools -o addopts= --mcp-profile=stdio-http
+
+# Without credentials (auth-required tests skip)
+pytest tests/qa/mcp_tools -o addopts= --mcp-profile=stdio-http
+# Output: SKIPPED [2] Requires authentication...
+
+# Only auth-independent tests
+pytest tests/qa/mcp_tools -o addopts= --mcp-profile=stdio-http -m "auth_independent"
+```
+
 ## Validation
 
 After implementation:
@@ -131,3 +171,5 @@ After implementation:
 2. Tool coverage table in `test_design.md` updated
 3. `mcp_tools.py` contains all 20 tools organized by server
 4. Tests pass on declared supported profile (`stdio-http`)
+5. Tests pass in logged-out mode (auth-required skip, auth-enhanced run public-only)
+6. Tests pass in logged-in mode (all tests run)

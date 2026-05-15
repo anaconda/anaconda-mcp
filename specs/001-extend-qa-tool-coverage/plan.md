@@ -1,32 +1,35 @@
 # Implementation Plan: Extend QA Tool Test Coverage
 
-**Branch**: `001-extend-qa-tool-coverage` | **Date**: 2026-05-14 | **Spec**: [spec.md](spec.md)
+**Branch**: `001-extend-qa-tool-coverage` | **Date**: 2026-05-15 | **Spec**: [spec.md](spec.md)
 
 **Input**: Feature specification from `/specs/001-extend-qa-tool-coverage/spec.md`
 
 ## Summary
 
-Extend QA-owned MCP tool tests to achieve complete coverage across all 20 tools from 3 MCP servers (environments-mcp: 6, conda-meta-mcp: 9, search-mcp: 5). Currently, only 4 tools have any test coverage, all in environments-mcp. Implementation follows a phased approach: positive tests first, then complex parameter scenarios, negative tests, and finally hang-stress tests for high-risk tools.
+Extend QA-owned MCP tool tests to achieve 100% happy-path coverage across all 20 tools (environments-mcp: 6, conda-meta-mcp: 9, search-mcp: 5), implement programmatic OAuth authentication for CI workflows, and add authentication-state-aware test behavior that adapts based on logged-in vs logged-out state.
 
 ## Technical Context
 
-**Language/Version**: Python 3.11+ (test suite runs in `anaconda-mcp-qa` conda env)
+**Language/Version**: Python 3.10+ (pyproject.toml: `requires-python = ">=3.10,<3.14"`)
 
-**Primary Dependencies**: pytest, httpx (HTTP transport), mcp-compose (server orchestration)
+**Primary Dependencies**: pytest, httpx, mcp-compose, anaconda-auth (for OAuth flow)
 
-**Storage**: N/A (tests use live MCP servers, no persistent storage)
+**Storage**: N/A (test infrastructure, no persistence)
 
-**Testing**: pytest with custom fixtures (`call_tool`, `conda_env`, `call_no_hang_unified`)
+**Testing**: pytest with pytest-asyncio, pytest-html for reports
 
-**Target Platform**: Linux/macOS CI runners with conda, network access to public channels and anaconda.com
+**Target Platform**: Linux/macOS for CI (GitHub Actions), local development on macOS/Linux
 
-**Project Type**: Test suite extension (QA)
+**Project Type**: Test infrastructure extension (QA test suite)
 
-**Performance Goals**: Each test completes within `TOOL_CALL_WALL_SECONDS` (single call) or 60s per iteration (hang-stress)
+**Performance Goals**: Test suite completes within CI job time limits; individual tool calls timeout at 60s (`TOOL_TIMEOUT`)
 
-**Constraints**: Tests must be transport-agnostic, deterministic, and pass on declared supported profiles
+**Constraints**:
+- Tests must be transport-agnostic (work across `http-http`, `stdio-http`, `stdio-stdio` profiles)
+- Auth-required tests must skip gracefully when credentials unavailable
+- No mocks: all tests use real integrations (local conda, public channels, anaconda.com API)
 
-**Scale/Scope**: 20 tools × (happy path + error path + hang-stress where applicable) = ~40-50 test methods
+**Scale/Scope**: 20 tools across 3 MCP servers; ~35-40 new test methods
 
 ## Constitution Check
 
@@ -34,17 +37,13 @@ Extend QA-owned MCP tool tests to achieve complete coverage across all 20 tools 
 
 | Principle | Status | Notes |
 |-----------|--------|-------|
-| **I. MCP Server Composition** | ✅ Pass | Tests exercise tools via mcp-compose; tool contracts verified |
-| **II. Type Safety** | ✅ Pass | Tests use typed enums (`Tools`, `*Args`), validators have type hints |
-| **III. QA-Owned Test Standards** | ✅ Pass | Tests in `tests/qa/mcp_tools/`, follow established patterns, transport-agnostic |
-| **IV. Observability** | ✅ Pass | Tests validate well-formed MCP responses, use logging |
+| **I. MCP Server Composition** | ✅ Pass | Tests verify tool contracts over defined interfaces; transport-agnostic design maintained |
+| **II. Type Safety & Code Quality** | ✅ Pass | All test code will have type annotations; pre-commit hooks enforced |
+| **III. QA-Owned Test Standards** | ✅ Pass | Tests follow existing patterns in `tests/qa/mcp_tools/`; documented in `_docs/test_design.md` |
+| **IV. Observability & Error Handling** | ✅ Pass | Tests validate well-formed MCP responses; error scenarios verify `is_error=True` with meaningful messages |
+| **PR Separation** | ✅ Pass | This is a QA-focused PR; no codebase changes |
 
-**Constitution Requirements Applied**:
-- All new tests MUST pass on profiles declared as supported
-- Tests MUST be deterministic: same input → same output
-- Dual environment setup required: `anaconda-mcp-qa` + server env with all MCP servers
-- Hang-stress tests use 20 iterations with timeout guards
-- Tool constants organized in `mcp_tools.py` by server
+**Gate Result**: PASS — No violations requiring justification.
 
 ## Project Structure
 
@@ -53,66 +52,41 @@ Extend QA-owned MCP tool tests to achieve complete coverage across all 20 tools 
 ```text
 specs/001-extend-qa-tool-coverage/
 ├── plan.md              # This file
-├── spec.md              # Feature specification
-├── research.md          # Phase 0 output
-├── data-model.md        # Phase 1 output (test entity model)
-├── checklists/          # Quality validation
-│   └── requirements.md
-└── tasks.md             # Phase 2 output (from /speckit-tasks)
+├── research.md          # Phase 0: Auth service design, test patterns
+├── data-model.md        # Phase 1: Test entity model, auth categories
+├── quickstart.md        # Phase 1: Quick setup guide for running new tests
+├── contracts/           # Phase 1: Auth service interface, test markers
+└── tasks.md             # Phase 2 output (/speckit-tasks command)
 ```
 
-### Source Code (test files)
+### Source Code (repository root)
 
 ```text
 tests/qa/mcp_tools/
-├── _docs/
-│   └── test_design.md           # Update with new tool coverage table
+├── conftest.py                          # Extended: auth fixtures, skip markers
 ├── common/
 │   ├── constants/
-│   │   └── mcp_tools.py         # Extend with conda-meta and search-mcp tools
+│   │   └── mcp_tools.py                # Already complete: all 20 tools defined
 │   └── utils/
-│       └── response_validators.py  # Add validators for new response shapes
-├── conftest.py                  # Existing fixtures (no changes expected)
+│       ├── auth_service.py             # NEW: OAuth programmatic auth
+│       └── response_validators.py      # Existing: may add auth validators
+├── _docs/
+│   └── test_design.md                  # Updated: coverage tables, auth section
 │
-│ # Existing tests (environments-mcp)
-├── test_create_environment_root_path.py
-├── test_env_name_resolution.py
-├── test_guard_happy_path_hang.py
-├── test_guard_install_nonexistent_pkg.py
-├── test_guard_proxy_error_hang.py
-├── test_install_existing_package.py
+# Existing test files (environments-mcp) - may need gap fixes:
+├── test_create_environment_*.py
+├── test_list_environment_packages.py
+├── test_remove_*.py
 │
-│ # New tests - environments-mcp gaps
-├── test_list_environment_packages.py      # FR-001: happy path
-├── test_remove_packages.py                # FR-002: happy path
-├── test_remove_environment_happy.py       # FR-003: happy path
-├── test_create_environment_error.py       # FR-004: error path
+# Existing test files (conda-meta-mcp) - already have coverage:
+├── test_conda_meta_*.py                # 9 files, happy + some error paths
 │
-│ # New tests - conda-meta-mcp (9 tools)
-├── test_conda_meta_info.py                # info tool
-├── test_conda_meta_cache.py               # cache_maintenance tool
-├── test_conda_meta_cli_help.py            # cli_help tool
-├── test_conda_meta_file_path.py           # file_path_search tool
-├── test_conda_meta_import_mapping.py      # import_mapping tool
-├── test_conda_meta_package_insights.py    # package_insights tool
-├── test_conda_meta_package_search.py      # package_search tool
-├── test_conda_meta_pypi_to_conda.py       # pypi_to_conda tool
-├── test_conda_meta_repoquery.py           # repoquery tool (+ hang-stress)
-│
-│ # New tests - search-mcp (5 tools)
-├── test_search_packages.py                # search_packages (+ hang-stress)
-├── test_search_documentation.py           # search_documentation
-├── test_search_forum.py                   # search_forum
-├── test_search_collections_files.py       # search_collections_and_files
-└── test_search_environments.py            # search_environments
+# Existing test files (search-mcp) - need auth-state handling:
+├── test_search_*.py                    # 5 files, need auth-aware logic
 ```
 
-**Structure Decision**: Flat file structure per test module (matching existing pattern). Each test file covers one tool with happy/error/stress scenarios as class methods.
+**Structure Decision**: Extend existing `tests/qa/mcp_tools/` structure. No new directories needed except `contracts/` in the spec folder for design artifacts.
 
 ## Complexity Tracking
 
-No constitution violations. All tests follow established patterns:
-- Class-based test structure
-- Fixtures for tool invocation and environment setup
-- Validators for response shape assertions
-- Marks for categorization (`slow`, `regression`, `hang_stress`)
+> No violations requiring justification. Structure follows established patterns.

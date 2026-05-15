@@ -263,3 +263,122 @@ SEARCH_QUERY_ENVIRONMENTS = "python"
 3. **Response shape**: Must contain expected fields per server
 4. **Error flag**: `is_error`/`isError` must be boolean
 5. **Content presence**: Success response must have non-empty content/tool_result
+
+---
+
+## Session 2026-05-15: Authentication Entities
+
+### AuthState
+
+Represents the current authentication state detected at session start.
+
+```python
+# tests/qa/mcp_tools/common/utils/auth_service.py
+
+from dataclasses import dataclass
+from typing import Literal
+
+AuthSource = Literal["env_credentials", "keyring", "no_auth", "env_credentials_failed"]
+
+@dataclass
+class AuthState:
+    """Authentication state for the test session."""
+    logged_in: bool
+    token: str | None = None
+    source: AuthSource = "no_auth"
+```
+
+### AuthService
+
+OAuth 2-step login implementation for programmatic token acquisition.
+
+```python
+class AuthService:
+    """Programmatic OAuth authentication service."""
+
+    def __init__(self, base_url: str = "https://api.anaconda.com"):
+        self.base_url = base_url
+        self.client = httpx.Client(timeout=30.0)
+
+    def _authorize(self) -> str:
+        """Step 1: Get state token."""
+        response = self.client.post(f"{self.base_url}/auth/authorize")
+        response.raise_for_status()
+        return response.json()["state"]
+
+    def login(self, email: str, password: str) -> str:
+        """Step 2: Complete OAuth flow, return session token."""
+        state = self._authorize()
+        response = self.client.post(
+            f"{self.base_url}/auth/login",
+            json={"state": state, "email": email, "password": password}
+        )
+        response.raise_for_status()
+        return response.json()["token"]
+```
+
+### Tool Auth Category Enum
+
+Classification of tools by their authentication dependency.
+
+```python
+from enum import Enum
+
+class ToolAuthCategory(str, Enum):
+    """Tool authentication dependency classification."""
+    INDEPENDENT = "auth_independent"  # Works identically with/without auth
+    REQUIRED = "auth_required"        # Needs auth to return results
+    ENHANCED = "auth_enhanced"        # Works both ways, different results
+```
+
+### Tool-to-Category Mapping
+
+```python
+TOOL_AUTH_CATEGORIES: dict[str, ToolAuthCategory] = {
+    # environments-mcp (6) - all auth-independent
+    "conda_create_environment": ToolAuthCategory.INDEPENDENT,
+    "conda_install_packages": ToolAuthCategory.INDEPENDENT,
+    "conda_list_environments": ToolAuthCategory.INDEPENDENT,
+    "conda_list_environment_packages": ToolAuthCategory.INDEPENDENT,
+    "conda_remove_environment": ToolAuthCategory.INDEPENDENT,
+    "conda_remove_packages": ToolAuthCategory.INDEPENDENT,
+
+    # conda-meta-mcp (9) - all auth-independent
+    "conda-meta_info": ToolAuthCategory.INDEPENDENT,
+    "conda-meta_cache_maintenance": ToolAuthCategory.INDEPENDENT,
+    "conda-meta_cli_help": ToolAuthCategory.INDEPENDENT,
+    "conda-meta_file_path_search": ToolAuthCategory.INDEPENDENT,
+    "conda-meta_import_mapping": ToolAuthCategory.INDEPENDENT,
+    "conda-meta_package_insights": ToolAuthCategory.INDEPENDENT,
+    "conda-meta_package_search": ToolAuthCategory.INDEPENDENT,
+    "conda-meta_pypi_to_conda": ToolAuthCategory.INDEPENDENT,
+    "conda-meta_repoquery": ToolAuthCategory.INDEPENDENT,
+
+    # search-mcp (5) - mixed
+    "search_search_packages": ToolAuthCategory.ENHANCED,
+    "search_search_documentation": ToolAuthCategory.ENHANCED,
+    "search_search_forum": ToolAuthCategory.ENHANCED,
+    "search_search_collections_and_files": ToolAuthCategory.REQUIRED,
+    "search_search_environments": ToolAuthCategory.REQUIRED,
+}
+```
+
+### Pytest Markers
+
+```python
+# conftest.py pytest_configure()
+
+def pytest_configure(config):
+    config.addinivalue_line(
+        "markers",
+        "auth_independent: Tool works without authentication"
+    )
+    config.addinivalue_line(
+        "markers",
+        "auth_required: Tool requires authentication to return results"
+    )
+    config.addinivalue_line(
+        "markers",
+        "auth_enhanced: Tool works with/without auth, different results"
+    )
+```

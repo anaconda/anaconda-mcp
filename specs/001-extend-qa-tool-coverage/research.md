@@ -126,5 +126,127 @@ def validate_search_success(response, context): ...
 |------|--------|------------|
 | Network flakiness | search-mcp tests fail intermittently | Use broad queries, retry fixture, mark as `slow` |
 | conda-meta-mcp cache state | Test pollution | `cache_maintenance` call in fixture setup |
-| Auth token expiry | search-mcp tests fail | Document token requirement, CI secret rotation |
+| Auth token expiry | search-mcp tests fail | Programmatic OAuth flow obtains fresh tokens |
 | Channel availability | conda-meta tests fail | Use defaults + conda-forge (high availability) |
+| Missing credentials | Auth-required tests skip | Clear skip messages, fallback to keyring |
+
+---
+
+## Session 2026-05-15: Authentication Research
+
+### 7. OAuth Programmatic Authentication
+
+**Question**: How should tests obtain fresh authentication tokens in CI?
+
+**Decision**: Implement a Python `AuthService` class that performs the 2-step OAuth login flow.
+
+**Reference Implementation**: anaconda-desktop `api-auth-service.ts` demonstrates:
+1. `authorize()` → POST to `/auth/authorize` → returns `state` token
+2. `login(state, email, password)` → POST to `/auth/login` → returns session token
+
+**Python Pattern**:
+```python
+class AuthService:
+    def __init__(self, base_url: str = "https://api.anaconda.com"):
+        self.base_url = base_url
+        self.client = httpx.Client()
+
+    def login(self, email: str, password: str) -> str:
+        """Complete OAuth flow and return session token."""
+        state = self._authorize()
+        response = self.client.post(
+            f"{self.base_url}/auth/login",
+            json={"state": state, "email": email, "password": password}
+        )
+        return response.json()["token"]
+```
+
+**Rationale**: Tokens are session-scoped and expire, so static tokens in GitHub secrets won't work reliably.
+
+**Alternatives Rejected**:
+| Alternative | Why Rejected |
+|-------------|--------------|
+| Static tokens in secrets | Tokens expire; unreliable for CI |
+| `anaconda login` CLI call | Requires interactive TTY; not headless-friendly |
+| Mock auth responses | Violates constitution: "All tests use real integration" |
+
+### 8. Authentication State Detection
+
+**Question**: How should tests detect auth state to adapt their behavior?
+
+**Decision**: Session-scoped pytest fixture with priority-based detection:
+
+```python
+@pytest.fixture(scope="session")
+def auth_state() -> AuthState:
+    # Priority 1: .env file or environment credentials (local dev / CI)
+    # conftest loads .env automatically via python-dotenv
+    email = os.environ.get("ANACONDA_USER_EMAIL")
+    password = os.environ.get("ANACONDA_USER_PASSWORD")
+    if email and password:
+        try:
+            token = AuthService().login(email, password)
+            return AuthState(logged_in=True, token=token, source="env_credentials")
+        except AuthError:
+            return AuthState(logged_in=False, source="env_credentials_failed")
+
+    # Priority 2: Keyring token (fallback from `anaconda login`)
+    try:
+        token = get_keyring_token()  # via anaconda-auth
+        return AuthState(logged_in=True, token=token, source="keyring")
+    except:
+        return AuthState(logged_in=False, source="no_auth")
+```
+
+**Credential sources**:
+- **Local development**: `.env` file in repo root (already in `.gitignore`)
+- **CI workflow**: GitHub secrets loaded via `env:` block in workflow YAML
+
+**Rationale**: Centralized detection at session start; no redundant per-test checks.
+
+### 9. Tool Auth Categories
+
+**Question**: How should tests declare their auth dependency?
+
+**Decision**: Three pytest markers based on spec User Story 5:
+
+| Category | Marker | Behavior When Logged Out |
+|----------|--------|--------------------------|
+| Auth-Independent (15 tools) | `@pytest.mark.auth_independent` | Run normally |
+| Auth-Required (2 tools) | `@pytest.mark.auth_required` | Skip with message |
+| Auth-Enhanced (3 tools) | `@pytest.mark.auth_enhanced` | Run, assert public-only |
+
+**Tool Classification**:
+- **Auth-Independent**: All environments-mcp (6), all conda-meta-mcp (9)
+- **Auth-Required**: `search_collections_and_files`, `search_environments`
+- **Auth-Enhanced**: `search_packages`, `search_documentation`, `search_forum`
+
+### 10. Test Coverage Gap Analysis (Updated)
+
+**Finding**: Test coverage is more complete than initially assessed in spec. From `test_design.md`:
+
+| Server | Tools | Happy Path | Error Path | Hang Stress |
+|--------|-------|:----------:|:----------:|:-----------:|
+| environments-mcp | 6 | 6 ✓ | 5 ✓ | 3 ✓ |
+| conda-meta-mcp | 9 | 9 ✓ | 3 ✓ | 1 ✓ |
+| search-mcp | 5 | 5 ✓ | 3 ✓ | 1 ✓ |
+
+**Remaining Work**:
+1. Add auth-state handling to existing search-mcp tests
+2. Implement AuthService class
+3. Add auth fixtures and markers to conftest.py
+4. Update test_design.md with auth documentation
+
+### 11. CI Workflow Integration
+
+**Decision**: Extend `qa-mcp-tools.yml` to pass credentials via environment variables.
+
+```yaml
+env:
+  ANACONDA_USER_EMAIL: ${{ secrets.ANACONDA_USER_EMAIL }}
+  ANACONDA_USER_PASSWORD: ${{ secrets.ANACONDA_USER_PASSWORD }}
+```
+
+**Secrets Required**:
+- `ANACONDA_USER_EMAIL`: Test account email
+- `ANACONDA_USER_PASSWORD`: Test account password
