@@ -125,11 +125,21 @@ def render_stdio_http_toml(
     - environments-mcp (conda): downstream_port
     - search-mcp: remote (anaconda.com)
     - conda-meta-mcp: downstream_port + 1
+
+    Token resolution mirrors real user flow (anaconda_mcp.auth.get_auth_token):
+    1. ANACONDA_AUTH_API_KEY env var
+    2. Keyring token from 'anaconda login'
     """
     import os
 
+    from anaconda_mcp.auth import get_auth_token
+
     anaconda_domain = os.environ.get("ANACONDA_MCP_ANACONDA_DOMAIN", "anaconda.com")
-    anaconda_token = os.environ.get("ANACONDA_MCP_ANACONDA_TOKEN") or os.environ.get("ANACONDA_TOKEN", "")
+    anaconda_token = get_auth_token()
+    if anaconda_token is None:
+        raise RuntimeError(
+            "Not authenticated with Anaconda. Run 'anaconda login' or set ANACONDA_AUTH_API_KEY env var."
+        )
     conda_meta_port = downstream_port + 1
 
     return f"""\

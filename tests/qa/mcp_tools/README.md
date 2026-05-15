@@ -80,41 +80,34 @@ The server starts automatically via mcp-compose config (`python -m conda_meta_mc
 search-mcp is a remote service hosted at `anaconda.com/api/search/mcp` (no local installation required).
 
 **Requirements:**
-1. **Anaconda.com API token** for authentication
+1. **Anaconda authentication** (token stored in keyring)
 2. **Network access** to anaconda.com
 
-**Getting an API token:**
-
-1. Log in to [anaconda.com](https://anaconda.com)
-2. Go to **Settings** → **Access** (or visit `anaconda.com/settings/access`)
-3. Click **Generate New Token**
-4. Give it a name (e.g., "MCP QA Tests") and select appropriate scopes
-5. Copy the generated token
-
-**Setting the token:**
+**Authentication setup:**
 
 ```bash
-# Preferred (specific to anaconda-mcp)
-export ANACONDA_MCP_ANACONDA_TOKEN="your-token-here"
+# Login to Anaconda (stores token in keyring)
+anaconda login
 
-# Alternative (also works)
-export ANACONDA_TOKEN="your-token-here"
+# Verify authentication
+anaconda whoami
 ```
 
-**Tip**: Add to your shell profile (`~/.bashrc`, `~/.zshrc`) or use a `.env` file for persistence.
+The token from `anaconda login` is automatically used for search-mcp authentication via `anaconda_mcp.auth.get_auth_token()`.
 
-Without a valid token, search-mcp tests will fail with authentication errors (401/403).
+**Alternative: Environment variable**
 
-**Note**: This is API token authentication, not conda channel authentication:
-- Uses an Anaconda.com API token (from Settings → Access)
-- Set via `ANACONDA_MCP_ANACONDA_TOKEN` or `ANACONDA_TOKEN` env var
-- Passed as bearer token to `anaconda.com/api/search/mcp`
-- No `anaconda login` or `.condarc` changes required
-
-For QA tests, you **don't** need the full `anaconda login` flow. You just need:
+For CI or headless environments, set `ANACONDA_AUTH_API_KEY`:
 
 ```bash
-export ANACONDA_MCP_ANACONDA_TOKEN="your-api-token-from-anaconda.com"
+export ANACONDA_AUTH_API_KEY="your-api-token"
+```
+
+This env var takes precedence over the keyring token.
+
+Without valid authentication, search-mcp tests will fail with:
+```
+RuntimeError: Not authenticated with Anaconda. Run 'anaconda login' or set ANACONDA_AUTH_API_KEY env var.
 ```
 
 **Verify the server env:**
