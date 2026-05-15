@@ -63,7 +63,7 @@ class TestSearchEnvironments:
             SearchTools.SEARCH_ENVIRONMENTS,
             {
                 SearchEnvironmentsArgs.QUERY: SEARCH_QUERY_ENVIRONMENTS,
-                SearchEnvironmentsArgs.PLATFORMS: ["linux-64"],
+                SearchEnvironmentsArgs.PLATFORMS: "linux-64",  # string, not list
             },
         )
         mcp_result = _extract_mcp_response(response)

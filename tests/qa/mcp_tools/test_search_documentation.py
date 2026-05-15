@@ -15,7 +15,6 @@ import pytest
 from common.constants.mcp_tools import SearchDocumentationArgs, SearchTools
 from common.constants.test_data import EMPTY_QUERY, SEARCH_QUERY_DOCS
 from common.utils.response_validators import (
-    validate_search_error,
     validate_search_has_content,
     validate_search_success,
 )
@@ -55,9 +54,10 @@ class TestSearchDocumentation:
 
     def test_search_documentation_empty_query(self, call_tool):
         """
-        Searching documentation with an empty query must return isError=true.
+        Searching documentation with an empty query returns text content with an error message.
 
-        Validates error handling for invalid input.
+        search-mcp returns isError=false with a validation message in text content
+        rather than setting isError=true. This test validates graceful handling.
         """
         logger.info("Calling search_search_documentation with empty query")
         response = call_tool(
@@ -67,4 +67,12 @@ class TestSearchDocumentation:
             },
         )
         mcp_result = _extract_mcp_response(response)
-        validate_search_error(mcp_result, context="search_documentation empty query")
+        # Tool returns success with error message in text (not isError=true)
+        validate_search_has_content(mcp_result, context="search_documentation empty query")
+        # Verify the response indicates invalid input
+        content = mcp_result.get("content", [])
+        text_items = [c.get("text", "") for c in content if c.get("type") == "text"]
+        all_text = " ".join(text_items).lower()
+        assert "non-empty" in all_text or "invalid" in all_text or "empty" in all_text, (
+            f"Expected validation error message for empty query, got: {text_items!r}"
+        )

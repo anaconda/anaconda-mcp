@@ -109,6 +109,31 @@ port = {compose_port}
 """
 
 
+def _get_auth_token_for_tests() -> str | None:
+    """
+    Retrieve the Anaconda API token for QA tests.
+
+    Mirrors the logic from anaconda_mcp.auth.get_auth_token() without importing
+    from anaconda_mcp (which is only installed in the server env, not the test runner env).
+
+    Resolution order:
+    1. ANACONDA_AUTH_API_KEY env var
+    2. Keyring token from 'anaconda login' (via anaconda_auth)
+    """
+    import os
+
+    env_token = os.environ.get("ANACONDA_AUTH_API_KEY")
+    if env_token:
+        return env_token
+    try:
+        from anaconda_auth.token import TokenInfo
+
+        token: str = TokenInfo.load().api_key
+        return token
+    except Exception:
+        return None
+
+
 def render_stdio_http_toml(
     *,
     downstream_port: int,
@@ -132,10 +157,8 @@ def render_stdio_http_toml(
     """
     import os
 
-    from anaconda_mcp.auth import get_auth_token
-
     anaconda_domain = os.environ.get("ANACONDA_MCP_ANACONDA_DOMAIN", "anaconda.com")
-    anaconda_token = get_auth_token()
+    anaconda_token = _get_auth_token_for_tests()
     if anaconda_token is None:
         raise RuntimeError(
             "Not authenticated with Anaconda. Run 'anaconda login' or set ANACONDA_AUTH_API_KEY env var."
