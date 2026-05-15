@@ -77,17 +77,33 @@ The server starts automatically via mcp-compose config (`python -m conda_meta_mc
 
 ### search-mcp setup
 
-search-mcp is a remote service (no local installation). Tests require:
+search-mcp is a remote service hosted at `anaconda.com/api/search/mcp` (no local installation required).
 
-1. **Authentication token**: Set `ANACONDA_MCP_ANACONDA_TOKEN` (preferred) or `ANACONDA_TOKEN` environment variable with a valid Anaconda.com API token
-2. **Network access**: Connectivity to `anaconda.com/api/search/mcp`
+**Requirements:**
+1. **Anaconda.com API token** for authentication
+2. **Network access** to anaconda.com
+
+**Getting an API token:**
+
+1. Log in to [anaconda.com](https://anaconda.com)
+2. Go to **Settings** → **Access** (or visit `anaconda.com/settings/access`)
+3. Click **Generate New Token**
+4. Give it a name (e.g., "MCP QA Tests") and select appropriate scopes
+5. Copy the generated token
+
+**Setting the token:**
 
 ```bash
+# Preferred (specific to anaconda-mcp)
 export ANACONDA_MCP_ANACONDA_TOKEN="your-token-here"
-# or: export ANACONDA_TOKEN="your-token-here"
+
+# Alternative (also works)
+export ANACONDA_TOKEN="your-token-here"
 ```
 
-Without a valid token, search-mcp tests will fail with authentication errors.
+**Tip**: Add to your shell profile (`~/.bashrc`, `~/.zshrc`) or use a `.env` file for persistence.
+
+Without a valid token, search-mcp tests will fail with authentication errors (401/403).
 
 **Verify the server env:**
 
