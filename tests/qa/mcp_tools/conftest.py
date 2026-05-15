@@ -161,9 +161,19 @@ def pytest_configure(config: pytest.Config) -> None:
     (self-contained), cwd-independent. Omit with ``pytest --html=...`` or
     uninstall pytest-html.
 
-    Also loads .env file and registers auth markers.
+    Also loads .env file, detects auth state, and registers auth markers.
     """
+    global _AUTH_STATE_CACHE
+
     _load_dotenv()
+
+    # Detect auth state early so token is available for mcp_compose_profiles
+    _AUTH_STATE_CACHE = detect_auth_state()
+    logger.info("Auth state: %s", _AUTH_STATE_CACHE)
+
+    # Export token to env so mcp_compose_profiles.py can use it
+    if _AUTH_STATE_CACHE.logged_in and _AUTH_STATE_CACHE.token:
+        os.environ["ANACONDA_AUTH_API_KEY"] = _AUTH_STATE_CACHE.token
 
     config.addinivalue_line("markers", "auth_independent: Tool works without authentication")
     config.addinivalue_line("markers", "auth_required: Tool requires authentication to return results")
@@ -621,12 +631,12 @@ def cleanup_conda_env():
 
 def pytest_sessionstart(session: pytest.Session) -> None:
     global _AUTH_STATE_CACHE
-    _AUTH_STATE_CACHE = detect_auth_state()
-    logger.info("Auth state: %s", _AUTH_STATE_CACHE)
-
-    # Export token to env so mcp_compose_profiles.py can use it
-    if _AUTH_STATE_CACHE.logged_in and _AUTH_STATE_CACHE.token:
-        os.environ["ANACONDA_AUTH_API_KEY"] = _AUTH_STATE_CACHE.token
+    # Auth state already detected in pytest_configure (needed early for token export)
+    if _AUTH_STATE_CACHE is None:
+        _AUTH_STATE_CACHE = detect_auth_state()
+        logger.info("Auth state: %s", _AUTH_STATE_CACHE)
+        if _AUTH_STATE_CACHE.logged_in and _AUTH_STATE_CACHE.token:
+            os.environ["ANACONDA_AUTH_API_KEY"] = _AUTH_STATE_CACHE.token
 
     config = session.config
     metadata: dict | None = getattr(config, "_metadata", None)
