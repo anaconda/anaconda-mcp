@@ -20,6 +20,7 @@
 # ============================================================================
 [composer]
 name = "anaconda-mcp"
+prune_downstreams_on_start = true
 conflict_resolution = "prefix"  # prefix, suffix, ignore, error, override, custom
 log_level = "INFO"
 port = 2391
