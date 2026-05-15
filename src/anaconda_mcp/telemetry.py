@@ -31,8 +31,8 @@ NEW_USER_THRESHOLD_DAYS = 1
 class MetricData(BaseModel):
     event: str
     event_params: dict[str, Any]
-    service_id: str = settings.SERVICE_NAME
-    user_environment: str = settings.ENVIRONMENT
+    service_id: str = settings.service_name
+    user_environment: str = settings.environment
 
 
 def _get_package_version() -> str:
@@ -57,7 +57,7 @@ class SnakeEyes:
             headers["Authorization"] = f"Bearer {bearer_token}"
 
         with httpx.Client(
-            base_url=f"https://{settings.ANACONDA_DOMAIN}",
+            base_url=f"https://{settings.anaconda_domain}",
             headers=headers,
             timeout=httpx.Timeout(3.0),
         ) as client:
@@ -65,7 +65,7 @@ class SnakeEyes:
             return response
 
     def _send(self, metric_data: MetricData, bearer_token: str | None = None) -> bool:
-        if not settings.SEND_METRICS:
+        if not settings.send_metrics:
             logger.debug("Metrics are OFF. Metrics will not be sent.")
             return False
 
@@ -155,7 +155,7 @@ def make_tracked_call_tool(
             raise
         finally:
             tool_call_history.append(name)
-            if settings.SEND_METRICS:
+            if settings.send_metrics:
                 client_name, client_version = _get_client_info(context)
                 duration_ms = round((time.monotonic() - start) * 1000, 2)
                 event_params = {
