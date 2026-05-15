@@ -185,6 +185,15 @@ def validate_create_error(result: dict, context: str = "") -> None:
     assert result.get(ToolResultFields.IS_ERROR) is True, " — ".join(parts)
 
 
+def validate_error_response(result: dict, context: str = "") -> None:
+    """Assert that an environments-mcp tool returned an error (is_error=true)."""
+    parts = ["Expected is_error=true (error response)"]
+    if context:
+        parts.append(context)
+    parts.append(f"got: {result!r}")
+    assert result.get(ToolResultFields.IS_ERROR) is True, " — ".join(parts)
+
+
 # =============================================================================
 # conda-meta-mcp validators
 # =============================================================================
