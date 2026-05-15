@@ -21,7 +21,7 @@ requirements:
   run:
     - python >=3.10,<3.14
     - environments-mcp-server >=0.1.0,<2.0.0
-    - mcp-compose >=0.1.11,<2.0.0
+    - mcp-compose >=0.1.12,<2.0.0
     - anaconda-auth >=0.13.0,<0.15.0
     - anaconda-cli-base >=0.8.1,<1.0.0
     - anaconda-anon-usage

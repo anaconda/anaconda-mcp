@@ -42,7 +42,7 @@ def test_snake_eyes_send_anonymous_metric_when_no_auth_token(mock_make_request):
 
 def test_snake_eyes_send_metrics_off_suppresses(mock_make_request):
     with mock.patch("anaconda_mcp.telemetry.settings") as mock_settings:
-        mock_settings.SEND_METRICS = False
+        mock_settings.send_metrics = False
         metric = MetricData(
             event=MetricNames.START_SERVER.value,
             event_params={},

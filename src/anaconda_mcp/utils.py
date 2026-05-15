@@ -31,7 +31,7 @@ def _render_config_template(config_path: str) -> str:
 
     # Determine which Python executable to use
     # Priority: 1. Environment variable, 2. sys.executable
-    python_executable = settings.PYTHON_EXECUTABLE or sys.executable
+    python_executable = settings.python_executable or sys.executable
 
     # Replace the placeholder with the Python executable
     # Escape backslashes for Windows paths

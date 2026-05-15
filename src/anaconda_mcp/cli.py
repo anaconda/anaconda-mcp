@@ -4,10 +4,12 @@ import logging
 import signal
 import sys
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 
 import click
 from anaconda_anon_usage.tokens import client_token
+from anaconda_auth.client import BaseClient
 from anaconda_auth.exceptions import TokenNotFoundError
 from mcp_compose.cli import (
     compose_command as _compose,
@@ -45,8 +47,19 @@ from anaconda_mcp.client_config import (
     is_client_installed,
     remove_client,
 )
+from anaconda_mcp.config import settings
 from anaconda_mcp.mcp_state import is_new_install, mark_installed
-from anaconda_mcp.telemetry import MetricData, MetricNames, SnakeEyes, make_tracking_hook
+from anaconda_mcp.telemetry import NEW_USER_THRESHOLD_DAYS, MetricData, MetricNames, SnakeEyes, make_tracking_hook
+from anaconda_mcp.terms import (
+    CURRENT_TOS_VERSION,
+    TERMS_OF_SERVICE,
+    TermsError,
+    check_terms_accepted,
+    is_terms_current,
+    make_terms_enforcement_hook,
+    persist_acceptance,
+)
+from anaconda_mcp.tool_hooks import patch_tool_call_hooks
 from anaconda_mcp.utils import _render_config_template
 from anaconda_mcp.wizard import setup_wizard_page
 
@@ -86,6 +99,22 @@ def cli(ctx, verbose: bool):
             "Warning: 'anaconda-mcp' is deprecated. Use 'anaconda mcp' instead.",
             err=True,
         )
+    try:
+        check_terms_accepted(ctx)
+    except TermsError as e:
+        if ctx.invoked_subcommand == "serve":
+            click.echo(
+                f"⚠️  Anaconda MCP cannot start: {e.message}\n\n"
+                f"To resolve, run one of:\n"
+                f"  anaconda mcp terms accept          (interactive)\n"
+                f"  ANACONDA_MCP_ACCEPTED_TERMS=true ANACONDA_MCP_ACCEPTED_TERMS_VERSION={CURRENT_TOS_VERSION}   (environment variables)\n\n"
+                f"For more information: anaconda mcp terms status",
+                err=True,
+            )
+            sys.exit(78)
+        click.echo(f"Error: {e.message}\n{e.remediation}", err=True)
+        sys.exit(1)
+
     if ctx.invoked_subcommand and ctx.invoked_subcommand != "serve":
         token = get_auth_token()
         if not token:
@@ -138,7 +167,26 @@ def serve(ctx, config, host, port, delay):
             "[red]❌ Token is invalid or expired. Run [green]anaconda login[/green] to re-authenticate.[/red]"
         )
         sys.exit(1)
+
+    login_event_params: dict[str, object] = {}
+    try:
+        client = BaseClient(api_key=token)
+        created_at_str = client.account["user"]["created_at"]
+        if created_at_str.endswith("Z"):
+            created_at_str = created_at_str[:-1] + "+00:00"
+        created_at = datetime.fromisoformat(created_at_str)
+        if created_at.tzinfo is None:
+            created_at = created_at.replace(tzinfo=timezone.utc)
+        account_age_days = (datetime.now(timezone.utc) - created_at).days
+        login_event_params["is_new_user"] = account_age_days < NEW_USER_THRESHOLD_DAYS
+    except Exception:
+        logger.debug("Could not determine new user status", exc_info=True)
+
     snake_eyes = SnakeEyes()
+    snake_eyes.send(
+        MetricData(event=MetricNames.LOGIN_COMPLETED.value, event_params=login_event_params),
+        bearer_token=token,
+    )
     active_user_params: dict[str, str] = {}
     aau = client_token()
     if aau:
@@ -157,11 +205,11 @@ def serve(ctx, config, host, port, delay):
         ),
         bearer_token=token,
     )
-    from anaconda_mcp.tool_hooks import patch_tool_call_hooks
 
     patch_tool_call_hooks(
         [
             make_auth_enforcement_hook(get_auth_token),
+            make_terms_enforcement_hook(),
             make_tracking_hook(get_auth_token, aau_client_id=aau or None),
         ]
     )
@@ -867,6 +915,78 @@ def claude_path():
     except RuntimeError as e:
         click.echo(f"[Error] {e}", err=True)
         sys.exit(1)
+
+
+@cli.group(name="terms", invoke_without_command=True, help="Manage Terms of Service acceptance.")
+@click.option("--json", "output_json", is_flag=True, help="Output in JSON format.")
+@click.pass_context
+def terms(ctx, output_json):
+    if ctx.invoked_subcommand is None:
+        if output_json:
+            click.echo(json.dumps({"terms": TERMS_OF_SERVICE, "version": CURRENT_TOS_VERSION}, indent=2))
+        else:
+            click.echo(TERMS_OF_SERVICE)
+            click.echo(ctx.get_help())
+
+
+@terms.command(name="status", help="Check whether the Terms of Service have been accepted.")
+@click.option("--json", "output_json", is_flag=True, help="Output in JSON format.")
+def terms_status(output_json):
+    accepted = settings.accepted_terms is True
+    needs_reaccept = accepted and not is_terms_current(settings.accepted_terms_version)
+
+    if output_json:
+        data = {
+            "accepted": accepted,
+            "accepted_version": settings.accepted_terms_version,
+            "current_version": CURRENT_TOS_VERSION,
+            "needs_reaccept": needs_reaccept,
+        }
+        click.echo(json.dumps(data, indent=2))
+        if not accepted or needs_reaccept:
+            sys.exit(1)
+        return
+
+    if not accepted:
+        status = "declined" if settings.accepted_terms is False else "not yet responded"
+        click.echo(f"Terms of Service: {status}")
+        sys.exit(1)
+
+    if needs_reaccept:
+        click.echo(
+            f"Terms of Service: accepted (version {settings.accepted_terms_version}), "
+            f"but current version is {CURRENT_TOS_VERSION}. Please re-accept."
+        )
+        sys.exit(1)
+
+    click.echo("Terms of Service: accepted")
+
+
+@terms.command(name="accept", help="Accept the Terms of Service.")
+@click.option("--json", "output_json", is_flag=True, help="Output in JSON format.")
+def terms_accept(output_json):
+    already_current = settings.accepted_terms is True and is_terms_current(settings.accepted_terms_version)
+
+    if not already_current:
+        persist_acceptance(True)
+
+    if output_json:
+        click.echo(
+            json.dumps(
+                {
+                    "accepted": True,
+                    "accepted_version": settings.accepted_terms_version or CURRENT_TOS_VERSION,
+                    "previously_accepted": already_current,
+                },
+                indent=2,
+            )
+        )
+        return
+
+    if already_current:
+        click.echo("Terms of Service have already been accepted.")
+    else:
+        click.echo("Terms of Service accepted.")
 
 
 def main():

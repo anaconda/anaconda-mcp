@@ -13,6 +13,10 @@ on:
       - '.github/workflows/docker.yml'
   workflow_dispatch:
 
+env:
+  ANACONDA_MCP_ACCEPTED_TERMS: "true"
+  ANACONDA_MCP_ACCEPTED_TERMS_VERSION: "2026-01-01"
+
 jobs:
   build:
     name: Build Docker image
