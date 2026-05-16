@@ -2,15 +2,23 @@
 
 This document describes how authentication is handled in MCP tool tests.
 
+## Authentication Requirement
+
+**anaconda-mcp requires authentication to function.** The server will not start without valid credentials. Users attempting to run without auth get a clear error:
+
+```
+RuntimeError: Not authenticated with Anaconda. Run 'anaconda-auth login' or sign in when prompted.
+```
+
 ## Auth Categories
 
-Tools are classified into three categories based on their authentication requirements:
+Tools are classified into categories based on their authentication behavior:
 
 | Category | Marker | Behavior |
 |----------|--------|----------|
-| **auth_independent** | `@pytest.mark.auth_independent` | Works identically with/without auth |
-| **auth_required** | `@pytest.mark.auth_required` | Requires auth to return results; returns auth error when unauthenticated |
-| **auth_enhanced** | `@pytest.mark.auth_enhanced` | Works both ways, may return different results |
+| **auth_independent** | `@pytest.mark.auth_independent` | Works identically regardless of token scope |
+| **auth_required** | `@pytest.mark.auth_required` | Requires specific token permissions |
+| **auth_enhanced** | `@pytest.mark.auth_enhanced` | May return different results based on permissions |
 
 ### Tool Classification
 
@@ -21,54 +29,26 @@ Tools are classified into three categories based on their authentication require
 | search-mcp | `search_packages`, `search_documentation`, `search_forum` | auth_enhanced |
 | search-mcp | `search_collections_and_files`, `search_environments` | auth_required |
 
-## Testing Both Auth States
-
-Auth-required tests validate behavior in BOTH authenticated and unauthenticated modes
-using conditional assertions based on `auth_state`:
-
-```python
-def test_feature(self, call_tool, auth_state: AuthState):
-    response = call_tool(ToolName.TOOL, {"query": "test"})
-    result = _extract_mcp_response(response)
-
-    if auth_state.logged_in:
-        # Authenticated: expect success with results
-        validate_search_success(result, context="...")
-        validate_search_has_content(result, context="...")
-    else:
-        # Unauthenticated: expect graceful auth error
-        validate_auth_error_response(result, context="...")
-```
-
-This ensures:
-- Tools work correctly when authenticated
-- Tools return graceful errors when unauthenticated (not crashes or hangs)
-
 ## Running Tests
 
-### Authenticated Mode
+Tests require `ANACONDA_AUTH_API_KEY` to be set:
 
 ```bash
 ANACONDA_AUTH_API_KEY=<your-key> pytest tests/qa/mcp_tools -o addopts= --mcp-profile=stdio-http
 ```
 
-Expected: All tests pass with successful results.
-
-### Unauthenticated Mode
-
-```bash
-pytest tests/qa/mcp_tools -o addopts= --mcp-profile=stdio-http
+Or set it in `.env` file at repo root:
 ```
-
-Expected: auth_independent and auth_enhanced tests pass with results;
-auth_required tests pass by validating graceful auth error responses.
+ANACONDA_AUTH_API_KEY=<your-key>
+```
 
 ## Auth State Detection
 
 Auth state is detected once at session start via `detect_auth_state()`:
 
 1. Check `ANACONDA_AUTH_API_KEY` environment variable
-2. If not found, run in unauthenticated mode
+2. Check keyring token from `anaconda login`
+3. If neither found, server startup will fail
 
 The auth state is displayed in:
 - Pytest session header: `auth state: logged_in=True, source=env_credentials`
@@ -76,16 +56,17 @@ The auth state is displayed in:
 
 ## Troubleshooting
 
-### Unexpected auth error responses
+### Server won't start
 
-Check pytest output header for auth state:
+If you see:
 ```
-auth state: logged_in=False, source=no_auth
+RuntimeError: Not authenticated with Anaconda. Run 'anaconda-auth login' or sign in when prompted.
 ```
 
-If not authenticated when expected:
-- Verify `ANACONDA_AUTH_API_KEY` is set: `echo $ANACONDA_AUTH_API_KEY`
-- Check `.env` file exists at repo root with `ANACONDA_AUTH_API_KEY=<token>`
+Solutions:
+- Set `ANACONDA_AUTH_API_KEY` environment variable
+- Run `anaconda login` to store token in keyring
+- Add token to `.env` file at repo root
 
 ### Token errors
 

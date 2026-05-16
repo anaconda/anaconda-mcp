@@ -1,11 +1,11 @@
 """
-Tests for search-mcp search_collections_and_files tool.
+Happy-path test for search-mcp search_collections_and_files tool.
 
 Tests verify:
-- When authenticated: isError=false and response contains content
-- When unauthenticated: graceful auth error response
+- isError=false when searching collections and files
+- Response contains content
 
-This tool requires authentication to return results.
+Note: This tool requires authentication. Server won't start without auth.
 """
 
 from __future__ import annotations
@@ -15,9 +15,7 @@ import logging
 import pytest
 from common.constants.mcp_tools import SearchCollectionsFilesArgs, SearchTools
 from common.constants.test_data import SEARCH_QUERY_COLLECTIONS
-from common.utils.auth_service import AuthState
 from common.utils.response_validators import (
-    validate_auth_error_response,
     validate_search_has_content,
     validate_search_success,
 )
@@ -36,24 +34,16 @@ def _extract_mcp_response(response: dict):
 @pytest.mark.auth_required
 class TestSearchCollectionsFiles:
     """
-    Tests for search_search_collections_and_files tool.
-
-    Tests run in both authenticated and unauthenticated modes with
-    different expectations for each.
+    Happy-path tests for search_search_collections_and_files tool.
     """
 
-    def test_search_collections_files_basic(self, call_tool, auth_state: AuthState):
+    def test_search_collections_files_basic(self, call_tool):
         """
-        Search collections and files behavior depends on auth state.
+        Searching collections and files must return isError=false.
 
-        - Authenticated: returns isError=false with results
-        - Unauthenticated: returns graceful auth error
+        Uses 'data' which is a broad search term.
         """
-        logger.info(
-            "Calling search_search_collections_and_files for '%s' (auth=%s)",
-            SEARCH_QUERY_COLLECTIONS,
-            auth_state.logged_in,
-        )
+        logger.info("Calling search_search_collections_and_files for '%s'", SEARCH_QUERY_COLLECTIONS)
         response = call_tool(
             SearchTools.SEARCH_COLLECTIONS_AND_FILES,
             {
@@ -61,9 +51,5 @@ class TestSearchCollectionsFiles:
             },
         )
         mcp_result = _extract_mcp_response(response)
-
-        if auth_state.logged_in:
-            validate_search_success(mcp_result, context=f"search_collections query={SEARCH_QUERY_COLLECTIONS!r}")
-            validate_search_has_content(mcp_result, context=f"search_collections query={SEARCH_QUERY_COLLECTIONS!r}")
-        else:
-            validate_auth_error_response(mcp_result, context=f"search_collections query={SEARCH_QUERY_COLLECTIONS!r}")
+        validate_search_success(mcp_result, context=f"search_collections query={SEARCH_QUERY_COLLECTIONS!r}")
+        validate_search_has_content(mcp_result, context=f"search_collections query={SEARCH_QUERY_COLLECTIONS!r}")

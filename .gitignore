@@ -212,6 +212,9 @@ __marimo__/
 # Spec-driven development
 .sisyphus/
 
+# .env and bak
+.env
+*.bak
 # ============================================
 # Spec-Kit Personal/Cache Files
 # ============================================

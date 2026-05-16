@@ -154,7 +154,10 @@ def render_stdio_http_toml(
     Token resolution mirrors real user flow (anaconda_mcp.auth.get_auth_token):
     1. ANACONDA_AUTH_API_KEY env var
     2. Keyring token from 'anaconda login'
-    3. Placeholder token for unauthenticated testing (search-mcp will return auth errors)
+
+    Note: anaconda-mcp server requires authentication to start. If no token is
+    available, the config is still generated but server startup will fail with
+    a clear error message directing users to authenticate.
     """
     import os
 
