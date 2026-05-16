@@ -7,15 +7,26 @@
 
 ## Summary
 
-mcp-compose STDIO proxy has a response desync bug when multiple STDIO servers are configured or under concurrent requests. Responses from downstream servers get mismatched to requests, causing "Unknown tool" errors or incorrect responses.
+mcp-compose STDIO proxy has a response desync bug when multiple STDIO servers are configured or under concurrent requests. Responses from downstream servers get mismatched to requests.
 
-## Symptoms
+## Observed Errors
+
+Primary error pattern observed in CI (GitHub Actions run 25952789005):
+
+### "No response from tool execution"
+
+Tool is recognized but response never arrives:
 
 ```
-{'content': [{'text': 'Unknown tool: conda-meta_cache_maintenance', 'type': 'text'}], 'isError': True}
+{'content': [{'text': 'Error executing tool conda-meta_cli_help: No response from tool execution', 'type': 'text'}], 'isError': True}
 ```
 
-The tool exists and works fine via `stdio-http` profile, but fails via `stdio-stdio`.
+This error affects all servers when using multi-server STDIO config:
+- `conda-meta_*` tools (all 9 tools fail)
+- `conda_*` tools (environments-mcp - fails when other STDIO servers are configured)
+- `search_*` tools (when configured)
+
+All errors occur for tools that work correctly via `stdio-http` profile.
 
 ## Root Cause
 
@@ -63,9 +74,22 @@ The `stdio-http` profile uses HTTP for the upstream connection (mcp-compose → 
 
 Until the fix is merged upstream:
 
-- `stdio-stdio` profile may produce intermittent failures for conda-meta-mcp and search-mcp tools
-- environments-mcp tools may work (single server, simpler traffic pattern)
+- `stdio-stdio` profile produces consistent failures for conda-meta-mcp tools (14 of 14 tests fail)
+- environments-mcp tools work (single server, simpler traffic pattern)
+- search-mcp may also fail (shares the STDIO proxy issue)
 - CI should use `stdio-http` as the default profile
+
+### Observed Failure Rate (stdio-stdio with multi-server config)
+
+| Server | Tests | Passed | Failed | Notes |
+|--------|-------|--------|--------|-------|
+| environments-mcp | 6 | 6 | 0 | Works (original single-server config) |
+| conda-meta-mcp | 9 | 0 | 9 | All fail with "No response from tool execution" |
+| search-mcp | 5 | 0 | 5 | All fail with same error |
+
+### Config Status
+
+The multi-server config for `stdio-stdio` is implemented in `mcp_compose_profiles.py` for debugging purposes but should not be used in CI until the upstream bug is fixed. The config adds conda-meta-mcp (STDIO) and search-mcp (streamable-http, remote) to the existing environments-mcp (STDIO) server.
 
 ## References
 
