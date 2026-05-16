@@ -80,7 +80,6 @@ on:
           - self-hosted-default
           - self-hosted-amd64-medium-privileged
           - macos-latest
-          - macos-15-intel
           - windows-latest
           - ubuntu-latest
           - ubuntu-24.04-arm
@@ -219,6 +218,9 @@ jobs:
             SRC="./anaconda-mcp-server-src"
           fi
           conda run -n "$SERVER_ENV" --no-capture-output pip install -e "$SRC"
+
+      - name: Install anaconda-anon-usage
+        run: conda install -n "$SERVER_ENV" -c defaults --yes anaconda-anon-usage
 
       - name: Checkout environments-mcp (${{ needs.setup.outputs.env-mcp-ref }})
         uses: actions/checkout@v4
