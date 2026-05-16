@@ -154,16 +154,19 @@ def render_stdio_http_toml(
     Token resolution mirrors real user flow (anaconda_mcp.auth.get_auth_token):
     1. ANACONDA_AUTH_API_KEY env var
     2. Keyring token from 'anaconda login'
+    3. Placeholder token for unauthenticated testing (search-mcp will return auth errors)
     """
     import os
 
     anaconda_domain = os.environ.get("ANACONDA_MCP_ANACONDA_DOMAIN", "anaconda.com")
     anaconda_token = _get_auth_token_for_tests()
-    if anaconda_token is None:
-        raise RuntimeError(
-            "Not authenticated with Anaconda. Run 'anaconda login' or set ANACONDA_AUTH_API_KEY env var."
-        )
     conda_meta_port = downstream_port + 1
+
+    # Auth config for search-mcp: only include if token available
+    if anaconda_token:
+        search_auth_config = f'auth_token = "{anaconda_token}"\nauth_type = "bearer"'
+    else:
+        search_auth_config = "# No auth token - unauthenticated mode"
 
     return f"""\
 [composer]
@@ -192,8 +195,7 @@ startup_delay = 5
 [[servers.proxied.streamable-http]]
 name = "search"
 url = "https://{anaconda_domain}/api/search/mcp"
-auth_token = "{anaconda_token}"
-auth_type = "bearer"
+{search_auth_config}
 timeout = 30
 keep_alive = true
 reconnect_on_failure = true
