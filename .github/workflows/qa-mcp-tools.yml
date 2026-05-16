@@ -89,16 +89,6 @@ on:
         description: 'Runner: windows-latest'
         type: boolean
         default: false
-      # ── Multi-select: Auth modes ──────────────────────────────────────────────
-      # Check multiple boxes to run tests with different auth configurations
-      auth_authenticated:
-        description: 'Auth: with API key (authenticated)'
-        type: boolean
-        default: true
-      auth_unauthenticated:
-        description: 'Auth: without API key (unauthenticated)'
-        type: boolean
-        default: false
 
   push:
     branches:
@@ -177,28 +167,16 @@ jobs:
             RUNNERS=("macos-latest")
           fi
 
-          # Build auth modes array from checkboxes (default to authenticated if none selected)
-          AUTH_MODES=()
-          [[ "${{ inputs.auth_authenticated }}" == "true" ]]    && AUTH_MODES+=("authenticated")
-          [[ "${{ inputs.auth_unauthenticated }}" == "true" ]]  && AUTH_MODES+=("unauthenticated")
-
-          # Default to authenticated if no auth mode selected
-          if [[ ${#AUTH_MODES[@]} -eq 0 ]]; then
-            AUTH_MODES=("authenticated")
-          fi
-
-          # Build JSON matrix
+          # Build JSON matrix (runners only - auth always required)
           MATRIX_JSON='{"include":['
           FIRST=true
           for runner in "${RUNNERS[@]}"; do
-            for auth in "${AUTH_MODES[@]}"; do
-              if [[ "$FIRST" == "true" ]]; then
-                FIRST=false
-              else
-                MATRIX_JSON+=','
-              fi
-              MATRIX_JSON+="{\"runner\":\"$runner\",\"auth_mode\":\"$auth\"}"
-            done
+            if [[ "$FIRST" == "true" ]]; then
+              FIRST=false
+            else
+              MATRIX_JSON+=','
+            fi
+            MATRIX_JSON+="{\"runner\":\"$runner\"}"
           done
           MATRIX_JSON+=']}'
 
@@ -209,20 +187,18 @@ jobs:
           # Summary
           echo "### Test Matrix" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Runner | Auth Mode |" >> "$GITHUB_STEP_SUMMARY"
-          echo "|--------|-----------|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Runner |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|--------|" >> "$GITHUB_STEP_SUMMARY"
           for runner in "${RUNNERS[@]}"; do
-            for auth in "${AUTH_MODES[@]}"; do
-              echo "| $runner | $auth |" >> "$GITHUB_STEP_SUMMARY"
-            done
+            echo "| $runner |" >> "$GITHUB_STEP_SUMMARY"
           done
           echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "**Total combinations**: $((${#RUNNERS[@]} * ${#AUTH_MODES[@]}))" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Total configurations**: ${#RUNNERS[@]}" >> "$GITHUB_STEP_SUMMARY"
 
-  # ── Tests (matrix: runner × auth_mode) ─────────────────────────────────────────
+  # ── Tests (matrix: runners) ───────────────────────────────────────────────────
   test:
     needs: setup
-    name: "[${{ matrix.runner }}] py${{ needs.setup.outputs.python-version }} / ${{ needs.setup.outputs.mcp-profile }} / ${{ matrix.auth_mode }}"
+    name: "[${{ matrix.runner }}] py${{ needs.setup.outputs.python-version }} / ${{ needs.setup.outputs.mcp-profile }}"
     runs-on: ${{ matrix.runner }}
 
     strategy:
@@ -235,7 +211,6 @@ jobs:
 
     env:
       RUNNER:             ${{ matrix.runner }}
-      AUTH_MODE:          ${{ matrix.auth_mode }}
       PYTHON_VERSION:     ${{ needs.setup.outputs.python-version }}
       MCP_PROFILE:        ${{ needs.setup.outputs.mcp-profile }}
       TEST_SCOPE:         ${{ needs.setup.outputs.test-scope }}
@@ -353,8 +328,7 @@ jobs:
         id: test
         env:
           MCP_SERVER_CONDA_ENV: ${{ env.SERVER_ENV }}
-          # Only set API key for authenticated mode
-          ANACONDA_AUTH_API_KEY: ${{ matrix.auth_mode == 'authenticated' && secrets.TEST_API_KEY || '' }}
+          ANACONDA_AUTH_API_KEY: ${{ secrets.TEST_API_KEY }}
         run: |
           # Use array to preserve argument boundaries (avoids word-splitting issues)
           EXTRA_ARGS=()
@@ -382,9 +356,7 @@ jobs:
               ;;
           esac
 
-          echo "=== Running tests ($AUTH_MODE mode) ==="
-          echo "Auth mode: $AUTH_MODE"
-          echo "API key set: $([[ -n \"$ANACONDA_AUTH_API_KEY\" ]] && echo 'yes' || echo 'no')"
+          echo "=== Running tests ==="
           echo "Extra args: ${EXTRA_ARGS[*]}"
 
           conda run -n "$QA_ENV" --no-capture-output python -m pytest \
@@ -415,11 +387,11 @@ jobs:
 
           # Save for summary job
           mkdir -p results
-          echo "passed=$PASSED" > "results/${{ matrix.runner }}-${{ matrix.auth_mode }}.txt"
-          echo "failed=$FAILED" >> "results/${{ matrix.runner }}-${{ matrix.auth_mode }}.txt"
-          echo "skipped=$SKIPPED" >> "results/${{ matrix.runner }}-${{ matrix.auth_mode }}.txt"
-          echo "errors=$ERRORS" >> "results/${{ matrix.runner }}-${{ matrix.auth_mode }}.txt"
-          echo "status=${{ job.status }}" >> "results/${{ matrix.runner }}-${{ matrix.auth_mode }}.txt"
+          echo "passed=$PASSED" > "results/${{ matrix.runner }}.txt"
+          echo "failed=$FAILED" >> "results/${{ matrix.runner }}.txt"
+          echo "skipped=$SKIPPED" >> "results/${{ matrix.runner }}.txt"
+          echo "errors=$ERRORS" >> "results/${{ matrix.runner }}.txt"
+          echo "status=${{ job.status }}" >> "results/${{ matrix.runner }}.txt"
 
           exit $PYTEST_EXIT
 
@@ -428,7 +400,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: "qa-report-${{ matrix.runner }}-py${{ env.PYTHON_VERSION }}-${{ env.MCP_PROFILE }}-${{ matrix.auth_mode }}"
+          name: "qa-report-${{ matrix.runner }}-py${{ env.PYTHON_VERSION }}-${{ env.MCP_PROFILE }}"
           path: tests/qa/mcp_tools/reports/report.html
           if-no-files-found: ignore
 
@@ -436,7 +408,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: "result-${{ matrix.runner }}-${{ matrix.auth_mode }}"
+          name: "result-${{ matrix.runner }}"
           path: results/
           if-no-files-found: ignore
 
@@ -474,10 +446,10 @@ jobs:
           echo "" >> "$GITHUB_STEP_SUMMARY"
 
           # Results table
-          echo "### Results by Configuration" >> "$GITHUB_STEP_SUMMARY"
+          echo "### Results by Runner" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Runner | Auth Mode | Passed | Failed | Skipped | Errors | Status |" >> "$GITHUB_STEP_SUMMARY"
-          echo "|--------|-----------|--------|--------|---------|--------|--------|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Runner | Passed | Failed | Skipped | Errors | Status |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|--------|--------|--------|---------|--------|--------|" >> "$GITHUB_STEP_SUMMARY"
 
           CONFIGS_PASSED=0
           CONFIGS_FAILED=0
@@ -489,10 +461,7 @@ jobs:
           shopt -s nullglob
           for file in all-results/*.txt; do
             if [[ -f "$file" ]]; then
-              BASENAME=$(basename "$file" .txt)
-              # Parse runner and auth from filename (format: runner-auth.txt)
-              AUTH_MODE="${BASENAME##*-}"
-              RUNNER="${BASENAME%-*}"
+              RUNNER=$(basename "$file" .txt)
 
               # Read test counts from file
               source "$file"  # loads passed, failed, skipped, errors, status
@@ -510,12 +479,12 @@ jobs:
                 CONFIGS_FAILED=$((CONFIGS_FAILED + 1))
               fi
 
-              echo "| $RUNNER | $AUTH_MODE | ${passed:-0} | ${failed:-0} | ${skipped:-0} | ${errors:-0} | $ICON |" >> "$GITHUB_STEP_SUMMARY"
+              echo "| $RUNNER | ${passed:-0} | ${failed:-0} | ${skipped:-0} | ${errors:-0} | $ICON |" >> "$GITHUB_STEP_SUMMARY"
             fi
           done
 
           if [[ $TOTAL_CONFIGS -eq 0 ]]; then
-            echo "| (no results found) | - | - | - | - | - | - |" >> "$GITHUB_STEP_SUMMARY"
+            echo "| (no results found) | - | - | - | - | - |" >> "$GITHUB_STEP_SUMMARY"
           fi
 
           echo "" >> "$GITHUB_STEP_SUMMARY"
