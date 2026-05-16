@@ -27,9 +27,13 @@ else
 fi
 
 echo "=== Cleanup ==="
-pkill -9 -f "anaconda-mcp" 2>/dev/null || true
-pkill -9 -f "environments_mcp" 2>/dev/null || true
+# Kill any existing MCP server processes (careful not to kill pytest which runs from anaconda-mcp dir)
+# Use specific patterns that match the server command, not just any path containing "anaconda-mcp"
+pkill -9 -f "anaconda_mcp serve" 2>/dev/null || true
+pkill -9 -f "python -m anaconda_mcp" 2>/dev/null || true
+pkill -9 -f "environments_mcp_server" 2>/dev/null || true
 pkill -9 -f "conda_meta_mcp" 2>/dev/null || true
+# Kill processes on specific ports
 lsof -ti:$PORT | xargs kill -9 2>/dev/null || true
 lsof -ti:$DOWNSTREAM_PORT | xargs kill -9 2>/dev/null || true
 lsof -ti:$CONDA_META_PORT | xargs kill -9 2>/dev/null || true
