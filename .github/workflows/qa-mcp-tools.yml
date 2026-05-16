@@ -353,6 +353,30 @@ jobs:
           echo "---"
           cat /etc/conda/.condarc 2>/dev/null || echo "No /etc/conda/.condarc"
 
+      # ── Debug (Linux only) ────────────────────────────────────────────────────
+      - name: Debug system resources (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          echo "=== System Memory ==="
+          free -h
+          echo ""
+          echo "=== CPU Info ==="
+          nproc
+          lscpu | grep -E "^(Architecture|CPU\(s\)|Model name)" || true
+          echo ""
+          echo "=== Disk Space ==="
+          df -h /
+          echo ""
+          echo "=== Running Processes (by memory) ==="
+          ps aux --sort=-%mem | head -15
+          echo ""
+          echo "=== Kernel OOM Settings ==="
+          cat /proc/sys/vm/overcommit_memory 2>/dev/null || true
+          cat /proc/sys/vm/overcommit_ratio 2>/dev/null || true
+          echo ""
+          echo "=== cgroup memory limits ==="
+          cat /sys/fs/cgroup/memory.max 2>/dev/null || cat /sys/fs/cgroup/memory/memory.limit_in_bytes 2>/dev/null || echo "No cgroup memory limit found"
+
       # ── Tests ─────────────────────────────────────────────────────────────────
       - name: Run MCP tool tests
         id: test
@@ -400,6 +424,20 @@ jobs:
           echo "=== Running tests ==="
           echo "Extra args: ${EXTRA_ARGS[*]}"
 
+          # Start background memory monitor for http-http on Linux (to debug OOM kills)
+          if [[ "$MCP_PROFILE" == "http-http" && "$RUNNER_OS" == "Linux" ]]; then
+            echo "=== Starting memory monitor (http-http on Linux) ==="
+            (
+              while true; do
+                echo "[$(date +%H:%M:%S)] Memory: $(free -h | grep Mem | awk '{print $3 "/" $2}')"
+                ps aux --sort=-%mem | head -6 | tail -5
+                sleep 10
+              done
+            ) &
+            MEM_MONITOR_PID=$!
+            echo "Memory monitor PID: $MEM_MONITOR_PID"
+          fi
+
           # Disable exit-on-error so we can capture exit code and parse results
           set +e
           conda run -n "$QA_ENV" --no-capture-output python -m pytest \
@@ -415,6 +453,11 @@ jobs:
             --junitxml="tests/qa/mcp_tools/reports/results.xml" \
             2>&1 | tee pytest-output.txt
           PYTEST_EXIT=${PIPESTATUS[0]}
+
+          # Stop memory monitor if started
+          if [[ -n "${MEM_MONITOR_PID:-}" ]]; then
+            kill $MEM_MONITOR_PID 2>/dev/null || true
+          fi
 
           # Keep set +e for parsing (grep returns 1 on no match)
           # Parse pytest summary line: "X passed, Y failed, Z skipped"
