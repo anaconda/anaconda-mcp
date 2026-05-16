@@ -486,7 +486,8 @@ jobs:
           TOTAL_TESTS_FAILED=0
           TOTAL_TESTS_SKIPPED=0
 
-          for file in all-results/*.txt 2>/dev/null; do
+          shopt -s nullglob
+          for file in all-results/*.txt; do
             if [[ -f "$file" ]]; then
               BASENAME=$(basename "$file" .txt)
               # Parse runner and auth from filename (format: runner-auth.txt)
