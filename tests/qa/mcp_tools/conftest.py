@@ -695,22 +695,6 @@ def auth_state() -> AuthState:
     return _AUTH_STATE_CACHE
 
 
-@pytest.fixture
-def require_auth(auth_state: AuthState) -> None:
-    """
-    Auto-skip test if not authenticated.
-
-    Use this fixture instead of manual auth checks in test bodies.
-
-    Usage:
-        def test_auth_required_feature(self, call_tool, require_auth):
-            # No manual skip check needed - fixture handles it
-            response = call_tool(...)
-    """
-    if not auth_state.logged_in:
-        pytest.skip("Requires authentication - set ANACONDA_AUTH_API_KEY env var")
-
-
 def _port_from_url(url: str) -> str:
     try:
         return url.rstrip("/").rsplit(":", 1)[-1].split("/")[0]

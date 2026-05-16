@@ -33,54 +33,61 @@
 
 ## Phase 2: Foundational (Blocking Prerequisites)
 
-**Purpose**: Add core fixture that all user story tasks depend on
+**Purpose**: Add validator for auth error responses
 
-**⚠️ CRITICAL**: User Story 1 tasks cannot begin until this fixture exists
+**⚠️ CRITICAL**: User Story 1 tasks cannot begin until this validator exists
 
-- [x] T001 Add `require_auth` fixture to tests/qa/mcp_tools/conftest.py
+- [x] T001 Add `validate_auth_error_response` validator to tests/qa/mcp_tools/common/utils/response_validators.py
 
 **Implementation details for T001**:
 ```python
-@pytest.fixture
-def require_auth(auth_state: AuthState) -> None:
-    """Auto-skip test if not authenticated."""
-    if not auth_state.logged_in:
-        pytest.skip("Requires authentication - set ANACONDA_AUTH_API_KEY env var")
+def validate_auth_error_response(response: dict, context: str = "") -> None:
+    """
+    Assert that a tool returned a graceful authentication error.
+    Checks isError=true and content contains auth-related message.
+    """
 ```
 
 **Checkpoint**: Foundation ready - user story implementation can now begin
 
 ---
 
-## Phase 3: User Story 1 - DRY Auth-Aware Test Execution (Priority: P1) 🎯 MVP
+## Phase 3: User Story 1 - Dual-Mode Auth Test Execution (Priority: P1) 🎯 MVP
 
-**Goal**: Eliminate manual auth checks in test bodies by using `require_auth` fixture
+**Goal**: Tests validate BOTH auth states with conditional assertions (no skipping)
 
-**Independent Test**: Run `pytest tests/qa/mcp_tools -o addopts= --mcp-profile=stdio-http -k search_environments` with and without `ANACONDA_AUTH_API_KEY`. Verify tests skip automatically when not authenticated.
+**Independent Test**: Run `pytest tests/qa/mcp_tools -o addopts= --mcp-profile=stdio-http -k search_environments` with and without `ANACONDA_AUTH_API_KEY`. Verify tests pass in both modes with appropriate assertions.
 
 ### Implementation for User Story 1
 
-- [x] T002 [P] [US1] Update test_search_environments.py to use require_auth fixture (remove 2 manual skip checks)
-- [x] T003 [P] [US1] Update test_search_collections_files.py to use require_auth fixture (remove 1 manual skip check)
+- [x] T002 [P] [US1] Update test_search_environments.py to use conditional assertions based on auth_state
+- [x] T003 [P] [US1] Update test_search_collections_files.py to use conditional assertions based on auth_state
 
 **Migration pattern for T002 and T003**:
 
-Before:
-```python
-def test_search_environments_basic(self, call_tool, auth_state):
-    if not auth_state.logged_in:
-        pytest.skip("Requires authentication - set ANACONDA_USER_EMAIL/PASSWORD")
-    # ... test code
-```
-
-After:
+Before (old skip approach - DO NOT USE):
 ```python
 def test_search_environments_basic(self, call_tool, require_auth):
-    # No skip check needed - fixture handles it
-    # ... test code
+    # fixture skips if not authenticated
+    # ... test code expecting success only
 ```
 
-**Checkpoint**: User Story 1 complete - auth-required tests now use fixture
+After (conditional assertions - IMPLEMENTED):
+```python
+def test_search_environments_basic(self, call_tool, auth_state: AuthState):
+    response = call_tool(SearchTools.SEARCH_ENVIRONMENTS, {...})
+    mcp_result = _extract_mcp_response(response)
+
+    if auth_state.logged_in:
+        # Authenticated: expect success with results
+        validate_search_success(mcp_result, context="...")
+        validate_search_has_content(mcp_result, context="...")
+    else:
+        # Unauthenticated: expect graceful auth error
+        validate_auth_error_response(mcp_result, context="...")
+```
+
+**Checkpoint**: User Story 1 complete - auth-required tests validate both modes
 
 ---
 
@@ -88,19 +95,19 @@ def test_search_environments_basic(self, call_tool, require_auth):
 
 **Goal**: Verify test suite works correctly in both authenticated and unauthenticated modes
 
-**Independent Test**: Run full test suite twice (with/without API key) and verify expected skip counts
+**Independent Test**: Run full test suite twice (with/without API key) and verify all tests pass
 
 ### Implementation for User Story 2
 
 - [x] T004 [US2] Verify test suite passes with ANACONDA_AUTH_API_KEY set (all tests pass)
-- [x] T005 [US2] Verify test suite passes without ANACONDA_AUTH_API_KEY (auth-required skipped, others pass)
+- [x] T005 [US2] Verify test suite passes without ANACONDA_AUTH_API_KEY (all tests pass with different assertions)
 
 **Verification commands**:
 ```bash
-# Authenticated mode
+# Authenticated mode - all tests pass with success assertions
 ANACONDA_AUTH_API_KEY=<key> pytest tests/qa/mcp_tools -o addopts= --mcp-profile=stdio-http -v
 
-# Unauthenticated mode
+# Unauthenticated mode - all tests pass (auth-required tests validate auth errors)
 pytest tests/qa/mcp_tools -o addopts= --mcp-profile=stdio-http -v
 ```
 
@@ -129,12 +136,12 @@ pytest tests/qa/mcp_tools -o addopts= --mcp-profile=stdio-http -v
 
 **Purpose**: Documentation and cleanup
 
-- [x] T008 [P] Create auth testing documentation in tests/qa/mcp_tools/_docs/auth_testing.md
-- [x] T009 Run quickstart.md validation checklist
+- [x] T008 [P] Update auth testing documentation in tests/qa/mcp_tools/_docs/auth_testing.md
+- [x] T009 Remove deprecated require_auth fixture from conftest.py
 
 **Documentation content for T008**:
 - Auth categories explanation (auth_independent, auth_required, auth_enhanced)
-- How to use `require_auth` fixture
+- How to use conditional assertions with auth_state fixture
 - How to run tests in authenticated vs unauthenticated mode
 - Troubleshooting common auth issues
 
@@ -154,7 +161,7 @@ pytest tests/qa/mcp_tools -o addopts= --mcp-profile=stdio-http -v
 ### User Story Dependencies
 
 - **User Story 1 (P1)**: Depends on Foundational (T001)
-- **User Story 2 (P2)**: Depends on US1 (needs fixture changes applied)
+- **User Story 2 (P2)**: Depends on US1 (needs conditional assertion changes applied)
 - **User Story 3 (P2)**: Independent (verification only)
 
 ### Within User Story 1
@@ -169,32 +176,22 @@ pytest tests/qa/mcp_tools -o addopts= --mcp-profile=stdio-http -v
 
 ---
 
-## Parallel Example: User Story 1
-
-```bash
-# Launch both auth-required test file updates together:
-Task: "Update test_search_environments.py to use require_auth fixture"
-Task: "Update test_search_collections_files.py to use require_auth fixture"
-```
-
----
-
 ## Implementation Strategy
 
 ### MVP First (User Story 1 Only)
 
-1. Complete T001 (Foundational fixture)
-2. Complete T002, T003 (Update test files)
+1. Complete T001 (Foundational validator)
+2. Complete T002, T003 (Update test files with conditional assertions)
 3. **STOP and VALIDATE**: Run auth-required tests with/without API key
 4. Merge if passing
 
 ### Incremental Delivery
 
-1. T001 → Fixture ready
+1. T001 → Validator ready
 2. T002, T003 → MVP complete (US1)
 3. T004, T005 → Dual-mode verified (US2)
 4. T006, T007 → Reporting verified (US3)
-5. T008, T009 → Documentation complete
+5. T008, T009 → Documentation and cleanup complete
 
 ---
 
@@ -202,6 +199,7 @@ Task: "Update test_search_collections_files.py to use require_auth fixture"
 
 - Total tasks: 9
 - Tasks per user story: US1=2, US2=2, US3=2, Foundational=1, Polish=2
-- Migration scope: 4 manual skip occurrences in 2 files
+- Migration scope: 3 tests in 2 files updated to conditional assertions
 - No new test files needed - infrastructure enhancement only
-- Success criteria from spec.md: SC-001 (zero manual skips) is the primary metric
+- **Key change**: Tests do NOT skip when unauthenticated - they validate graceful auth error responses
+- Success criteria from spec.md: FR-005 (tests validate auth error response, not skip)

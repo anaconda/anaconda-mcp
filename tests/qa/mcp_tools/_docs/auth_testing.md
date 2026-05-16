@@ -9,7 +9,7 @@ Tools are classified into three categories based on their authentication require
 | Category | Marker | Behavior |
 |----------|--------|----------|
 | **auth_independent** | `@pytest.mark.auth_independent` | Works identically with/without auth |
-| **auth_required** | `@pytest.mark.auth_required` | Requires auth to return results |
+| **auth_required** | `@pytest.mark.auth_required` | Requires auth to return results; returns auth error when unauthenticated |
 | **auth_enhanced** | `@pytest.mark.auth_enhanced` | Works both ways, may return different results |
 
 ### Tool Classification
@@ -21,38 +21,47 @@ Tools are classified into three categories based on their authentication require
 | search-mcp | `search_packages`, `search_documentation`, `search_forum` | auth_enhanced |
 | search-mcp | `search_collections_and_files`, `search_environments` | auth_required |
 
-## Using the `require_auth` Fixture
+## Testing Both Auth States
 
-For auth-required tests, use the `require_auth` fixture instead of manual auth checks:
+Auth-required tests validate behavior in BOTH authenticated and unauthenticated modes
+using conditional assertions based on `auth_state`:
 
 ```python
-# Before (manual check - DO NOT USE)
-def test_feature(self, call_tool, auth_state):
-    if not auth_state.logged_in:
-        pytest.skip("Requires authentication")
-    # ... test code
+def test_feature(self, call_tool, auth_state: AuthState):
+    response = call_tool(ToolName.TOOL, {"query": "test"})
+    result = _extract_mcp_response(response)
 
-# After (use fixture - PREFERRED)
-def test_feature(self, call_tool, require_auth):
-    # No manual skip needed - fixture handles it
-    # ... test code
+    if auth_state.logged_in:
+        # Authenticated: expect success with results
+        validate_search_success(result, context="...")
+        validate_search_has_content(result, context="...")
+    else:
+        # Unauthenticated: expect graceful auth error
+        validate_auth_error_response(result, context="...")
 ```
 
-The fixture automatically skips the test with a clear message when not authenticated.
+This ensures:
+- Tools work correctly when authenticated
+- Tools return graceful errors when unauthenticated (not crashes or hangs)
 
 ## Running Tests
 
-### Authenticated Mode (full coverage)
+### Authenticated Mode
 
 ```bash
 ANACONDA_AUTH_API_KEY=<your-key> pytest tests/qa/mcp_tools -o addopts= --mcp-profile=stdio-http
 ```
 
-### Unauthenticated Mode (auth-required tests skipped)
+Expected: All tests pass with successful results.
+
+### Unauthenticated Mode
 
 ```bash
 pytest tests/qa/mcp_tools -o addopts= --mcp-profile=stdio-http
 ```
+
+Expected: auth_independent and auth_enhanced tests pass with results;
+auth_required tests pass by validating graceful auth error responses.
 
 ## Auth State Detection
 
@@ -67,7 +76,7 @@ The auth state is displayed in:
 
 ## Troubleshooting
 
-### Tests skipping unexpectedly
+### Unexpected auth error responses
 
 Check pytest output header for auth state:
 ```

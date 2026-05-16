@@ -283,3 +283,29 @@ def validate_search_error(response: dict, context: str = "") -> None:
     is_error = response.get("isError", response.get("is_error", False))
     parts.append(f"got: isError={is_error}")
     assert is_error is True, " — ".join(parts)
+
+
+def validate_auth_error_response(response: dict, context: str = "") -> None:
+    """
+    Assert that a tool returned a graceful authentication error.
+
+    When a user calls an auth-required tool without authentication,
+    the tool should return an error response indicating auth is needed.
+    """
+    parts = ["Expected auth error response (isError=true with auth-related message)"]
+    if context:
+        parts.append(context)
+
+    is_error = response.get("isError", response.get("is_error", False))
+    content = response.get("content", [])
+    text_content = " ".join(c.get("text", "") for c in content if c.get("type") == "text").lower()
+
+    parts.append(f"isError={is_error}, content_preview={text_content[:200]!r}")
+
+    assert is_error is True, " — ".join(parts)
+
+    auth_keywords = ["auth", "login", "credential", "token", "unauthorized", "403", "401"]
+    has_auth_message = any(kw in text_content for kw in auth_keywords)
+    assert has_auth_message, (
+        f"Expected auth-related error message containing one of {auth_keywords}, got: {text_content[:300]!r}"
+    )
