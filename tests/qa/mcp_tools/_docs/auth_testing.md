@@ -47,8 +47,15 @@ ANACONDA_AUTH_API_KEY=<your-key>
 Auth state is detected once at session start via `detect_auth_state()`:
 
 1. Check `ANACONDA_AUTH_API_KEY` environment variable
-2. Check keyring token from `anaconda login`
-3. If neither found, server startup will fail
+2. If not found, tests report `logged_in=False`
+
+For mcp-compose config generation, `_get_auth_token_for_tests()` also checks:
+1. `ANACONDA_AUTH_API_KEY` environment variable
+2. Keyring token from `anaconda login` (via `anaconda_auth`)
+
+**Note:** The server itself (anaconda-mcp) has its own auth detection that includes
+keyring fallback. If `ANACONDA_AUTH_API_KEY` is not set but you've run `anaconda login`,
+the server may still start successfully.
 
 The auth state is displayed in:
 - Pytest session header: `auth state: logged_in=True, source=env_credentials`
