@@ -76,57 +76,67 @@ conda install -c conda-forge conda-meta-mcp
 
 The server starts automatically via mcp-compose config (`python -m conda_meta_mcp.cli run --transport streamable-http --port 4042`).
 
+### Authentication (Required)
+
+**anaconda-mcp requires authentication to function.** The server will not start without valid credentials.
+
+#### Getting an API Key
+
+1. Go to [anaconda.com](https://anaconda.com) and sign in
+2. Navigate to **Account Settings** → **Access** → **API Keys**
+3. Click **Generate API Key**
+4. Copy the generated key (shown only once)
+
+**Required permissions:** Read-only access is sufficient. Standard user keys work for all tests.
+
+#### Local Development: `.env` file (recommended)
+
+Create a `.env` file in the repo root:
+
+```bash
+ANACONDA_AUTH_API_KEY=your-api-key-here
+```
+
+The test harness loads this automatically via `conftest.py`.
+
+#### Local Development: Environment variable
+
+```bash
+export ANACONDA_AUTH_API_KEY=your-api-key-here
+```
+
+#### Local Development: Keyring (from `anaconda login`)
+
+```bash
+anaconda login
+anaconda whoami  # verify login
+```
+
+The token from `anaconda login` is used as a fallback when `ANACONDA_AUTH_API_KEY` is not set.
+
+#### GitHub Actions: Repository Secret
+
+Configure the following repository secret:
+- **`TEST_API_KEY`** — Your Anaconda API key
+
+The workflow uses this secret as `ANACONDA_AUTH_API_KEY`.
+
+**Auth detection order:**
+1. `ANACONDA_AUTH_API_KEY` environment variable
+2. Keyring token from `anaconda login`
+
+**If not authenticated:** Server startup fails with:
+```
+RuntimeError: Not authenticated with Anaconda. Run 'anaconda-auth login' or sign in when prompted.
+```
+
 ### search-mcp setup
 
 search-mcp is a remote service hosted at `anaconda.com/api/search/mcp` (no local installation required).
 
 **Requirements:**
-1. **Anaconda authentication** (see options below)
+1. **Anaconda authentication** (see above)
 2. **Network access** to anaconda.com
-
-**Authentication options (in priority order):**
-
-#### Option 1: `.env` file (recommended for local development)
-
-Create a `.env` file in the repo root:
-
-```bash
-ANACONDA_USER_EMAIL="your-email@example.com"
-ANACONDA_USER_PASSWORD="your-password"
-```
-
-The test harness loads this automatically via `conftest.py` and obtains a fresh token via OAuth.
-
-#### Option 2: Environment variables (CI/headless)
-
-```bash
-export ANACONDA_USER_EMAIL="your-email@example.com"
-export ANACONDA_USER_PASSWORD="your-password"
-```
-
-For GitHub Actions, configure repository secrets:
-- `ANACONDA_USER_EMAIL`
-- `ANACONDA_USER_PASSWORD`
-
-#### Option 3: Keyring fallback (from `anaconda login`)
-
-```bash
-anaconda login
-anaconda whoami
-```
-
-The token from `anaconda login` is used as a fallback when credentials are not available.
-
-**Auth-state-aware testing:**
-
-Tests adapt based on authentication state:
-
-| Auth State | auth_independent (15 tools) | auth_required (2 tools) | auth_enhanced (3 tools) |
-|------------|----------------------------|-------------------------|------------------------|
-| Logged in | Run normally | Run normally | Run normally |
-| Logged out | Run normally | Skip with message | Run (public-only) |
-
-Without valid authentication, auth-required tests (`search_collections_and_files`, `search_environments`) will skip.
 
 **Verify the server env:**
 

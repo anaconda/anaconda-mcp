@@ -23,7 +23,7 @@ import time
 import pytest
 from common.constants.mcp_tools import RemoveEnvironmentArgs, ToolResultFields, Tools
 from common.constants.test_data import REMOVABLE_ENV_NAME
-from common.utils.conda_utils import _conda_env_prefix
+from common.utils.conda_utils import _conda_env_prefix, _get_conda_exe
 from common.utils.mcp_client import _tool_result
 
 logger = logging.getLogger(__name__)
@@ -39,10 +39,11 @@ def removable_env():
     """
     import time as _time
 
+    conda_exe = _get_conda_exe()
     t0 = _time.monotonic()
-    logger.info("[FIXTURE] removable_env: creating conda env '%s'...", REMOVABLE_ENV_NAME)
+    logger.info("[FIXTURE] removable_env: creating conda env '%s' (using %s)...", REMOVABLE_ENV_NAME, conda_exe)
     result = subprocess.run(
-        ["conda", "create", "-n", REMOVABLE_ENV_NAME, "python=3.11", "-y"],
+        [conda_exe, "create", "-n", REMOVABLE_ENV_NAME, "python=3.11", "-y"],
         check=True,
         capture_output=True,
         text=True,
@@ -57,7 +58,7 @@ def removable_env():
     yield {"name": REMOVABLE_ENV_NAME, "prefix": prefix}
     logger.info("[FIXTURE] removable_env: teardown — removing env '%s'", REMOVABLE_ENV_NAME)
     subprocess.run(
-        ["conda", "remove", "-n", REMOVABLE_ENV_NAME, "--all", "-y"],
+        [conda_exe, "remove", "-n", REMOVABLE_ENV_NAME, "--all", "-y"],
         check=False,  # env may already be gone if MCP removal succeeded
     )
     logger.info("[FIXTURE] removable_env: teardown complete")

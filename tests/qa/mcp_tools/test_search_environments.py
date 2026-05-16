@@ -6,7 +6,7 @@ Tests verify:
 - isError=false when searching with platform filter
 - Response contains content
 
-Note: This tool requires authentication. Tests skip when not logged in.
+Note: This tool requires authentication. Server won't start without auth.
 """
 
 from __future__ import annotations
@@ -38,15 +38,12 @@ class TestSearchEnvironments:
     Happy-path tests for search_search_environments tool.
     """
 
-    def test_search_environments_basic(self, call_tool, auth_state):
+    def test_search_environments_basic(self, call_tool):
         """
         Searching environments must return isError=false.
 
         Uses 'python' which is a common environment search term.
         """
-        if not auth_state.logged_in:
-            pytest.skip("Requires authentication - set ANACONDA_USER_EMAIL/PASSWORD")
-
         logger.info("Calling search_search_environments for '%s'", SEARCH_QUERY_ENVIRONMENTS)
         response = call_tool(
             SearchTools.SEARCH_ENVIRONMENTS,
@@ -58,15 +55,12 @@ class TestSearchEnvironments:
         validate_search_success(mcp_result, context=f"search_environments query={SEARCH_QUERY_ENVIRONMENTS!r}")
         validate_search_has_content(mcp_result, context=f"search_environments query={SEARCH_QUERY_ENVIRONMENTS!r}")
 
-    def test_search_environments_with_platform_filter(self, call_tool, auth_state):
+    def test_search_environments_with_platform_filter(self, call_tool):
         """
         Searching environments with platform filter must return isError=false.
 
         Uses 'python' with linux-64 platform filter.
         """
-        if not auth_state.logged_in:
-            pytest.skip("Requires authentication - set ANACONDA_USER_EMAIL/PASSWORD")
-
         logger.info("Calling search_search_environments for '%s' with platform filter", SEARCH_QUERY_ENVIRONMENTS)
         response = call_tool(
             SearchTools.SEARCH_ENVIRONMENTS,

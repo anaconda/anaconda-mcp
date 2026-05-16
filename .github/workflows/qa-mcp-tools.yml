@@ -5,7 +5,8 @@ name: QA — MCP tool tests
 # - conda-meta-mcp (9 tools): conda metadata queries
 # - search-mcp (5 tools): Anaconda.com search (requires ANACONDA_TOKEN)
 #
-# Tests run across runners, Python versions, and transport profiles.
+# Tests run across runners, Python versions, transport profiles, and auth modes.
+# Use checkboxes to select multiple runners and auth modes for parallel matrix execution.
 #
 # All defaults live in the `setup` job. The `test` job reads every value from
 # needs.setup.outputs.*, so name/runs-on/steps all share the same resolved values.
@@ -32,8 +33,6 @@ on:
       mcp_compose_repo:
         description: 'mcp-compose GitHub URL (fork or canonical)'
         required: false
-        # https://github.com/datalayer/mcp-compose
-        # https://github.com/j-iliukhina-anaconda/mcp-compose
         default: 'https://github.com/datalayer/mcp-compose'
       mcp_compose_ref:
         description: 'mcp-compose branch or tag (empty = use pip-installed version)'
@@ -71,28 +70,33 @@ on:
           - 'environments-mcp'
           - 'search-mcp'
           - 'conda-meta-mcp'
-      runner:
-        description: 'Runner to use'
-        required: false
-        default: 'macos-latest'
-        type: choice
-        options:
-          - self-hosted-default
-          - self-hosted-amd64-medium-privileged
-          - macos-latest
-          - windows-latest
-          - ubuntu-latest
-          - ubuntu-24.04-arm
+
+      # ── Multi-select: Runners ─────────────────────────────────────────────────
+      # Check multiple boxes to run tests on multiple runners in parallel
+      runner_macos:
+        description: 'Runner: macos-latest'
+        type: boolean
+        default: true
+      runner_ubuntu:
+        description: 'Runner: ubuntu-latest'
+        type: boolean
+        default: false
+      runner_ubuntu_arm:
+        description: 'Runner: ubuntu-24.04-arm'
+        type: boolean
+        default: false
+      runner_windows:
+        description: 'Runner: windows-latest'
+        type: boolean
+        default: false
 
   push:
     branches:
       - desk-1328-qa-owned-tests
 
 jobs:
-  # ── Resolve parameters ────────────────────────────────────────────────────────
-  # Single source of truth for all defaults. Runs on a cheap Ubuntu runner.
-  # The test job reads every value from needs.setup.outputs.* so name/runs-on
-  # and all steps share exactly the same resolved values — no scattered ||.
+  # ── Resolve parameters & build matrix ─────────────────────────────────────────
+  # Single source of truth for all defaults. Builds the runner×auth matrix.
   setup:
     runs-on: ubuntu-latest
     defaults:
@@ -100,7 +104,7 @@ jobs:
         shell: bash
 
     outputs:
-      runner:             ${{ steps.params.outputs.runner }}
+      matrix:             ${{ steps.matrix.outputs.matrix }}
       python-version:     ${{ steps.params.outputs.python-version }}
       mcp-profile:        ${{ steps.params.outputs.mcp-profile }}
       test-scope:         ${{ steps.params.outputs.test-scope }}
@@ -115,7 +119,6 @@ jobs:
       - name: Resolve parameters
         id: params
         run: |
-          RUNNER="${{ inputs.runner              || 'macos-latest' }}"
           PYTHON_VERSION="${{ inputs.python_version        || '3.13' }}"
           MCP_PROFILE="${{ inputs.mcp_profile              || 'stdio-http' }}"
           TEST_SCOPE="${{ inputs.test_scope                || 'all-no-hangs' }}"
@@ -127,7 +130,6 @@ jobs:
           CONDA_META_VER="${{ inputs.conda_meta_mcp_ver    || '0.1.1' }}"
 
           {
-            echo "runner=$RUNNER"
             echo "python-version=$PYTHON_VERSION"
             echo "mcp-profile=$MCP_PROFILE"
             echo "test-scope=$TEST_SCOPE"
@@ -140,7 +142,6 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
           echo "=== Resolved parameters ==="
-          printf "%-22s %s\n" "runner:"           "$RUNNER"
           printf "%-22s %s\n" "python:"           "$PYTHON_VERSION"
           printf "%-22s %s\n" "mcp-profile:"      "$MCP_PROFILE"
           printf "%-22s %s\n" "test-scope:"       "$TEST_SCOPE"
@@ -151,18 +152,65 @@ jobs:
           printf "%-22s %s\n" "mcp-compose ref:"  "${COMPOSE_REF:-<pip-installed version>}"
           printf "%-22s %s\n" "conda-meta-mcp:"   "${CONDA_META_VER:-<latest from conda-forge>}"
 
-  # ── Tests ─────────────────────────────────────────────────────────────────────
+      - name: Build runner × auth matrix
+        id: matrix
+        run: |
+          # Build runners array from checkboxes (default to macos-latest if none selected)
+          RUNNERS=()
+          [[ "${{ inputs.runner_macos }}" == "true" ]]              && RUNNERS+=("macos-latest")
+          [[ "${{ inputs.runner_ubuntu }}" == "true" ]]             && RUNNERS+=("ubuntu-latest")
+          [[ "${{ inputs.runner_ubuntu_arm }}" == "true" ]]         && RUNNERS+=("ubuntu-24.04-arm")
+          [[ "${{ inputs.runner_windows }}" == "true" ]]            && RUNNERS+=("windows-latest")
+
+          # Default to macos-latest if no runner selected
+          if [[ ${#RUNNERS[@]} -eq 0 ]]; then
+            RUNNERS=("macos-latest")
+          fi
+
+          # Build JSON matrix (runners only - auth always required)
+          MATRIX_JSON='{"include":['
+          FIRST=true
+          for runner in "${RUNNERS[@]}"; do
+            if [[ "$FIRST" == "true" ]]; then
+              FIRST=false
+            else
+              MATRIX_JSON+=','
+            fi
+            MATRIX_JSON+="{\"runner\":\"$runner\"}"
+          done
+          MATRIX_JSON+=']}'
+
+          echo "matrix=$MATRIX_JSON" >> "$GITHUB_OUTPUT"
+          echo "=== Matrix ==="
+          echo "$MATRIX_JSON" | jq .
+
+          # Summary
+          echo "### Test Matrix" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Runner |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|--------|" >> "$GITHUB_STEP_SUMMARY"
+          for runner in "${RUNNERS[@]}"; do
+            echo "| $runner |" >> "$GITHUB_STEP_SUMMARY"
+          done
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Total configurations**: ${#RUNNERS[@]}" >> "$GITHUB_STEP_SUMMARY"
+
+  # ── Tests (matrix: runners) ───────────────────────────────────────────────────
   test:
     needs: setup
-    name: "[${{ needs.setup.outputs.runner }}] py${{ needs.setup.outputs.python-version }} / ${{ needs.setup.outputs.mcp-profile }}"
-    runs-on: ${{ needs.setup.outputs.runner }}
+    name: "[${{ matrix.runner }}] py${{ needs.setup.outputs.python-version }} / ${{ needs.setup.outputs.mcp-profile }}"
+    runs-on: ${{ matrix.runner }}
+
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.setup.outputs.matrix) }}
 
     defaults:
       run:
         shell: bash -el {0}
 
     env:
-      RUNNER:             ${{ needs.setup.outputs.runner }}
+      RUNNER:             ${{ matrix.runner }}
       PYTHON_VERSION:     ${{ needs.setup.outputs.python-version }}
       MCP_PROFILE:        ${{ needs.setup.outputs.mcp-profile }}
       TEST_SCOPE:         ${{ needs.setup.outputs.test-scope }}
@@ -174,8 +222,6 @@ jobs:
       CONDA_META_VER:     ${{ needs.setup.outputs.conda-meta-ver }}
       SERVER_ENV:         anaconda-mcp-server
       QA_ENV:             anaconda-mcp-qa
-      # API key for authenticated tests (long-lived, survives full test suite)
-      ANACONDA_AUTH_API_KEY:  ${{ secrets.TEST_API_KEY }}
 
     steps:
       # ── Checkout ──────────────────────────────────────────────────────────────
@@ -199,6 +245,9 @@ jobs:
         with:
           auto-activate-base: true
           python-version: ${{ env.PYTHON_VERSION }}
+          # Force fresh miniconda install to avoid using pre-installed /usr/share/miniconda
+          # on ubuntu-latest, which causes path resolution issues in environments-mcp
+          miniconda-version: "latest"
 
       # ── QA runner env ─────────────────────────────────────────────────────────
       - name: Create / update QA env (pytest + dependencies)
@@ -277,52 +326,255 @@ jobs:
           conda run -n "$SERVER_ENV" --no-capture-output conda list \
             | grep -E "^(python|anaconda-mcp|environments-mcp-server|anaconda-connector|mcp-compose|conda-meta-mcp) "
 
+      - name: Debug conda configuration
+        run: |
+          echo "=== System conda info ==="
+          conda info
+          echo ""
+          echo "=== System conda config ==="
+          conda config --show channels
+          conda config --show envs_dirs
+          echo ""
+          echo "=== QA env conda info ==="
+          conda run -n "$QA_ENV" --no-capture-output conda info
+          echo ""
+          echo "=== Server env conda info ==="
+          conda run -n "$SERVER_ENV" --no-capture-output conda info
+          echo ""
+          echo "=== Server env conda config ==="
+          conda run -n "$SERVER_ENV" --no-capture-output conda config --show channels
+          conda run -n "$SERVER_ENV" --no-capture-output conda config --show envs_dirs
+          echo ""
+          echo "=== Environment variables ==="
+          env | grep -iE "(conda|python)" | sort || true
+          echo ""
+          echo "=== .condarc files ==="
+          cat ~/.condarc 2>/dev/null || echo "No ~/.condarc"
+          echo "---"
+          cat /etc/conda/.condarc 2>/dev/null || echo "No /etc/conda/.condarc"
+
       # ── Tests ─────────────────────────────────────────────────────────────────
       - name: Run MCP tool tests
+        id: test
         env:
-          MCP_SERVER_CONDA_ENV: ${{ env.SERVER_ENV }}  # read by conftest.py
+          MCP_SERVER_CONDA_ENV: ${{ env.SERVER_ENV }}
           ANACONDA_AUTH_API_KEY: ${{ secrets.TEST_API_KEY }}
         run: |
-          EXTRA_ARGS=""
+          # Create results directory upfront so artifact upload always has something
+          mkdir -p results
+          RESULT_FILE="results/${{ matrix.runner }}.txt"
+
+          # Initialize with error state (will be overwritten on success)
+          echo "passed=0" > "$RESULT_FILE"
+          echo "failed=0" >> "$RESULT_FILE"
+          echo "skipped=0" >> "$RESULT_FILE"
+          echo "errors=1" >> "$RESULT_FILE"
+          echo "status=error" >> "$RESULT_FILE"
+
+          # Use array to preserve argument boundaries (avoids word-splitting issues)
+          EXTRA_ARGS=()
           TEST_PATH="tests/qa/mcp_tools"
-          [[ "$MCP_PROFILE" == "http-http" ]] && EXTRA_ARGS="$EXTRA_ARGS --start-server"
+          [[ "$MCP_PROFILE" == "http-http" ]] && EXTRA_ARGS+=("--start-server")
 
           # Determine test scope
           case "$TEST_SCOPE" in
             all-no-hangs)
-              EXTRA_ARGS="$EXTRA_ARGS --skip-hang-stress"
+              EXTRA_ARGS+=("--skip-hang-stress")
               ;;
             all-with-hangs)
               ;;
             hang-only)
-              EXTRA_ARGS="$EXTRA_ARGS -m hang_stress"
+              EXTRA_ARGS+=("-m" "hang_stress")
               ;;
             environments-mcp)
-              EXTRA_ARGS="$EXTRA_ARGS --skip-hang-stress -k 'not conda_meta and not search'"
+              EXTRA_ARGS+=("--skip-hang-stress" "-k" "not conda_meta and not search")
               ;;
             search-mcp)
-              EXTRA_ARGS="$EXTRA_ARGS --skip-hang-stress -k 'search'"
+              EXTRA_ARGS+=("--skip-hang-stress" "-k" "search")
               ;;
             conda-meta-mcp)
-              EXTRA_ARGS="$EXTRA_ARGS --skip-hang-stress -k 'conda_meta'"
+              EXTRA_ARGS+=("--skip-hang-stress" "-k" "conda_meta")
               ;;
           esac
 
+          echo "=== Running tests ==="
+          echo "Extra args: ${EXTRA_ARGS[*]}"
+
+          # Disable exit-on-error so we can capture exit code and parse results
+          set +e
           conda run -n "$QA_ENV" --no-capture-output python -m pytest \
             "$TEST_PATH" \
             -o addopts= \
             --mcp-profile="$MCP_PROFILE" \
             --server-conda-env="$SERVER_ENV" \
-            $EXTRA_ARGS \
+            --python-version="$PYTHON_VERSION" \
+            "${EXTRA_ARGS[@]}" \
             -v \
             --html="tests/qa/mcp_tools/reports/report.html" \
-            --self-contained-html
+            --self-contained-html \
+            --junitxml="tests/qa/mcp_tools/reports/results.xml" \
+            2>&1 | tee pytest-output.txt
+          PYTEST_EXIT=${PIPESTATUS[0]}
+
+          # Keep set +e for parsing (grep returns 1 on no match)
+          # Parse pytest summary line: "X passed, Y failed, Z skipped"
+          SUMMARY=$(grep -E "^[=]+ .* [=]+$" pytest-output.txt | tail -1 || echo "")
+          echo "Pytest summary: $SUMMARY"
+
+          # Extract counts using regex (use || true to handle no-match)
+          PASSED=$(echo "$SUMMARY" | grep -oE '[0-9]+ passed' | grep -oE '[0-9]+' || true)
+          FAILED=$(echo "$SUMMARY" | grep -oE '[0-9]+ failed' | grep -oE '[0-9]+' || true)
+          SKIPPED=$(echo "$SUMMARY" | grep -oE '[0-9]+ skipped' | grep -oE '[0-9]+' || true)
+          ERRORS=$(echo "$SUMMARY" | grep -oE '[0-9]+ error' | grep -oE '[0-9]+' || true)
+
+          # Default to 0 if empty
+          PASSED=${PASSED:-0}
+          FAILED=${FAILED:-0}
+          SKIPPED=${SKIPPED:-0}
+          ERRORS=${ERRORS:-0}
+
+          # Update results file with actual values (overwrite initial error state)
+          echo "passed=$PASSED" > "$RESULT_FILE"
+          echo "failed=$FAILED" >> "$RESULT_FILE"
+          echo "skipped=$SKIPPED" >> "$RESULT_FILE"
+          echo "errors=$ERRORS" >> "$RESULT_FILE"
+
+          # Determine actual test status from parsed results, not conda run exit code
+          # (conda run on Linux may return 1 even when pytest passes)
+          if [[ "${FAILED:-0}" -eq 0 && "${ERRORS:-0}" -eq 0 ]]; then
+            echo "status=success" >> "$RESULT_FILE"
+            FINAL_EXIT=0
+          else
+            echo "status=failed" >> "$RESULT_FILE"
+            FINAL_EXIT=1
+          fi
+
+          echo "conda run exit: $PYTEST_EXIT, final exit: $FINAL_EXIT"
+
+          # Re-enable exit-on-error only for the final exit
+          set -e
+          exit $FINAL_EXIT
 
       # ── Artifacts ─────────────────────────────────────────────────────────────
       - name: Upload HTML report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: "qa-report-${{ env.RUNNER }}-py${{ env.PYTHON_VERSION }}-${{ env.MCP_PROFILE }}"
+          name: "qa-report-${{ matrix.runner }}-py${{ env.PYTHON_VERSION }}-${{ env.MCP_PROFILE }}"
           path: tests/qa/mcp_tools/reports/report.html
           if-no-files-found: ignore
+
+      - name: Upload result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: "result-${{ matrix.runner }}"
+          path: results/
+          if-no-files-found: warn
+
+  # ── Summary ───────────────────────────────────────────────────────────────────
+  summary:
+    needs: [setup, test]
+    if: always()
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download all results
+        uses: actions/download-artifact@v4
+        with:
+          pattern: result-*
+          path: all-results
+          merge-multiple: true
+
+      - name: Debug artifact structure
+        run: |
+          echo "=== all-results directory structure ==="
+          find all-results -type f 2>/dev/null || echo "all-results not found"
+          echo ""
+          echo "=== Contents of txt files ==="
+          for f in $(find all-results -name "*.txt" 2>/dev/null); do
+            echo "--- $f ---"
+            cat "$f"
+          done
+
+      - name: Generate summary
+        run: |
+          echo "## 📊 QA Test Results Summary" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+
+          # Configuration table
+          echo "### Configuration" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Parameter | Value |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|-----------|-------|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Python | ${{ needs.setup.outputs.python-version }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| MCP Profile | ${{ needs.setup.outputs.mcp-profile }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Test Scope | ${{ needs.setup.outputs.test-scope }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| anaconda-mcp | ${{ needs.setup.outputs.anaconda-mcp-ref }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| environments-mcp | ${{ needs.setup.outputs.env-mcp-ref }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| conda-meta-mcp | ${{ needs.setup.outputs.conda-meta-ver }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| mcp-compose | ${{ needs.setup.outputs.compose-ref }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+
+          # Results table
+          echo "### Results by Runner" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Runner | Passed | Failed | Skipped | Errors | Status |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|--------|--------|--------|---------|--------|--------|" >> "$GITHUB_STEP_SUMMARY"
+
+          CONFIGS_PASSED=0
+          CONFIGS_FAILED=0
+          TOTAL_CONFIGS=0
+          TOTAL_TESTS_PASSED=0
+          TOTAL_TESTS_FAILED=0
+          TOTAL_TESTS_SKIPPED=0
+
+          shopt -s nullglob
+          # Try multiple path patterns in case directory structure varies
+          for file in all-results/*.txt all-results/*/*.txt all-results/*/*/*.txt; do
+            if [[ -f "$file" ]]; then
+              RUNNER=$(basename "$file" .txt)
+
+              # Read test counts from file
+              source "$file"  # loads passed, failed, skipped, errors, status
+
+              TOTAL_CONFIGS=$((TOTAL_CONFIGS + 1))
+              TOTAL_TESTS_PASSED=$((TOTAL_TESTS_PASSED + ${passed:-0}))
+              TOTAL_TESTS_FAILED=$((TOTAL_TESTS_FAILED + ${failed:-0}))
+              TOTAL_TESTS_SKIPPED=$((TOTAL_TESTS_SKIPPED + ${skipped:-0}))
+
+              if [[ "${failed:-0}" -eq 0 && "${errors:-0}" -eq 0 ]]; then
+                ICON="✅"
+                CONFIGS_PASSED=$((CONFIGS_PASSED + 1))
+              else
+                ICON="❌"
+                CONFIGS_FAILED=$((CONFIGS_FAILED + 1))
+              fi
+
+              echo "| $RUNNER | ${passed:-0} | ${failed:-0} | ${skipped:-0} | ${errors:-0} | $ICON |" >> "$GITHUB_STEP_SUMMARY"
+            fi
+          done
+
+          if [[ $TOTAL_CONFIGS -eq 0 ]]; then
+            echo "| (no results found) | - | - | - | - | - |" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+
+          # Overall status
+          echo "### Overall" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Tests**: $TOTAL_TESTS_PASSED passed, $TOTAL_TESTS_FAILED failed, $TOTAL_TESTS_SKIPPED skipped" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          if [[ $CONFIGS_FAILED -eq 0 && $TOTAL_CONFIGS -gt 0 ]]; then
+            echo "✅ **All $CONFIGS_PASSED configurations passed**" >> "$GITHUB_STEP_SUMMARY"
+          elif [[ $TOTAL_CONFIGS -gt 0 ]]; then
+            echo "❌ **$CONFIGS_FAILED of $TOTAL_CONFIGS configurations failed**" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "⚠️ **No test results found**" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "### Artifacts" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "HTML reports are available in the workflow artifacts for each configuration." >> "$GITHUB_STEP_SUMMARY"
