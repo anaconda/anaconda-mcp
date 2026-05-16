@@ -28,7 +28,7 @@ import httpx
 import pytest
 from common.constants.test_data import ENV_NAME
 from common.utils.auth_service import AuthState, detect_auth_state
-from common.utils.conda_utils import _conda_env_prefix
+from common.utils.conda_utils import _conda_env_prefix, _get_conda_exe
 from common.utils.mcp_client import _initialize_session
 from common.utils.stdio_client import (
     _recv,
@@ -326,14 +326,15 @@ def mcp_server(request: pytest.FixtureRequest, server_url: str):
                 f"Server start script not found: {_SCRIPT_PATH}\n"
                 "Ensure tests/qa/mcp_tools/scripts/start-http-server.sh exists."
             )
-        if not shutil.which("conda"):
+        conda_exe = _get_conda_exe()
+        if conda_exe == "conda" and not shutil.which("conda"):
             pytest.fail("conda not found in PATH; cannot auto-start the server.")
 
         log_file = tempfile.NamedTemporaryFile(mode="w", suffix="-anaconda-mcp.log", delete=False)
         log_path = Path(log_file.name)
         request.config.stash[_MCP_SERVER_LOG_PATH_KEY] = log_path
 
-        logger.info("Starting MCP server (conda env: %s, port: %s)", conda_env, port)
+        logger.info("Starting MCP server (conda env: %s, port: %s, conda: %s)", conda_env, port, conda_exe)
         env = os.environ.copy()
         # Terms acceptance required by main branch
         env["ANACONDA_MCP_ACCEPTED_TERMS"] = "true"
@@ -342,7 +343,7 @@ def mcp_server(request: pytest.FixtureRequest, server_url: str):
         if _AUTH_STATE_CACHE and _AUTH_STATE_CACHE.token:
             env["ANACONDA_AUTH_API_KEY"] = _AUTH_STATE_CACHE.token
         server_proc = subprocess.Popen(
-            ["conda", "run", "-n", conda_env, "--no-capture-output", "bash", str(_SCRIPT_PATH), port],
+            [conda_exe, "run", "-n", conda_env, "--no-capture-output", "bash", str(_SCRIPT_PATH), port],
             stdout=log_file,
             stderr=subprocess.STDOUT,
             start_new_session=True,
@@ -437,9 +438,10 @@ def _stdio_server_context(
     stderr_path = Path(stderr_log.name)
     config.stash[stash_key] = stderr_path
 
+    conda_exe = _get_conda_exe()
     proc = subprocess.Popen(
         [
-            "conda",
+            conda_exe,
             "run",
             "-n",
             conda_env,
@@ -616,9 +618,10 @@ def call_no_hang_unified(request: pytest.FixtureRequest, compose_profile):
 
 @pytest.fixture(scope="module")
 def conda_env():
-    logger.info("Creating conda environment '%s'", ENV_NAME)
+    conda_exe = _get_conda_exe()
+    logger.info("Creating conda environment '%s' (using %s)", ENV_NAME, conda_exe)
     subprocess.run(
-        ["conda", "create", "-n", ENV_NAME, "python=3.11", "-y"],
+        [conda_exe, "create", "-n", ENV_NAME, "python=3.11", "-y"],
         check=True,
     )
     prefix = _conda_env_prefix(ENV_NAME)
@@ -626,19 +629,20 @@ def conda_env():
     yield {"name": ENV_NAME, "prefix": prefix}
     logger.info("Removing conda environment '%s'", ENV_NAME)
     subprocess.run(
-        ["conda", "remove", "-n", ENV_NAME, "--all", "-y"],
+        [conda_exe, "remove", "-n", ENV_NAME, "--all", "-y"],
         check=False,
     )
 
 
 @pytest.fixture(scope="module")
 def cleanup_conda_env():
+    conda_exe = _get_conda_exe()
     registered: list[str] = []
     yield registered.append
     for name in registered:
         logger.info("Removing conda environment '%s'", name)
         subprocess.run(
-            ["conda", "env", "remove", "-n", name, "-y"],
+            [conda_exe, "env", "remove", "-n", name, "-y"],
             check=False,
             capture_output=True,
         )

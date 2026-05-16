@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import shutil
 import subprocess
 import tempfile
 import threading
@@ -20,6 +21,18 @@ import mcp_compose_profiles as _profiles
 import pytest
 
 from common.constants.config import TOOL_TIMEOUT
+
+
+def _get_conda_exe() -> str:
+    """Return the path to the conda executable (Windows-compatible)."""
+    conda_exe = os.environ.get("CONDA_EXE")
+    if conda_exe and os.path.isfile(conda_exe):
+        return conda_exe
+    which_conda = shutil.which("conda")
+    if which_conda:
+        return which_conda
+    return "conda"
+
 
 logger = logging.getLogger(__name__)
 
@@ -86,10 +99,10 @@ def _write_profile_config(
     """
     profile = _profiles.PROFILES_BY_SLUG[profile_slug]
     # Use sys.executable via conda run for cross-platform compatibility
-    # ("which python" doesn't work on Windows)
+    conda_exe = _get_conda_exe()
     python_path = (
         subprocess.run(
-            ["conda", "run", "-n", conda_env, "python", "-c", "import sys; print(sys.executable)"],
+            [conda_exe, "run", "-n", conda_env, "python", "-c", "import sys; print(sys.executable)"],
             capture_output=True,
             text=True,
         ).stdout.strip()
