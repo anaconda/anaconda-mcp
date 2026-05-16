@@ -37,7 +37,7 @@
 
 **⚠️ CRITICAL**: User Story 1 tasks cannot begin until this fixture exists
 
-- [ ] T001 Add `require_auth` fixture to tests/qa/mcp_tools/conftest.py
+- [x] T001 Add `require_auth` fixture to tests/qa/mcp_tools/conftest.py
 
 **Implementation details for T001**:
 ```python
@@ -60,8 +60,8 @@ def require_auth(auth_state: AuthState) -> None:
 
 ### Implementation for User Story 1
 
-- [ ] T002 [P] [US1] Update test_search_environments.py to use require_auth fixture (remove 2 manual skip checks)
-- [ ] T003 [P] [US1] Update test_search_collections_files.py to use require_auth fixture (remove 2 manual skip checks)
+- [x] T002 [P] [US1] Update test_search_environments.py to use require_auth fixture (remove 2 manual skip checks)
+- [x] T003 [P] [US1] Update test_search_collections_files.py to use require_auth fixture (remove 1 manual skip check)
 
 **Migration pattern for T002 and T003**:
 
@@ -92,8 +92,8 @@ def test_search_environments_basic(self, call_tool, require_auth):
 
 ### Implementation for User Story 2
 
-- [ ] T004 [US2] Verify test suite passes with ANACONDA_AUTH_API_KEY set (all tests pass)
-- [ ] T005 [US2] Verify test suite passes without ANACONDA_AUTH_API_KEY (auth-required skipped, others pass)
+- [x] T004 [US2] Verify test suite passes with ANACONDA_AUTH_API_KEY set (all tests pass)
+- [x] T005 [US2] Verify test suite passes without ANACONDA_AUTH_API_KEY (auth-required skipped, others pass)
 
 **Verification commands**:
 ```bash
@@ -116,8 +116,8 @@ pytest tests/qa/mcp_tools -o addopts= --mcp-profile=stdio-http -v
 
 ### Implementation for User Story 3
 
-- [ ] T006 [US3] Verify pytest header displays auth state on every run
-- [ ] T007 [US3] Verify HTML report metadata includes auth state
+- [x] T006 [US3] Verify pytest header displays auth state on every run
+- [x] T007 [US3] Verify HTML report metadata includes auth state
 
 **Verification**: Already implemented in conftest.py via `pytest_report_header` and `pytest_sessionstart`
 
@@ -129,8 +129,8 @@ pytest tests/qa/mcp_tools -o addopts= --mcp-profile=stdio-http -v
 
 **Purpose**: Documentation and cleanup
 
-- [ ] T008 [P] Create auth testing documentation in tests/qa/mcp_tools/_docs/auth_testing.md
-- [ ] T009 Run quickstart.md validation checklist
+- [x] T008 [P] Create auth testing documentation in tests/qa/mcp_tools/_docs/auth_testing.md
+- [x] T009 Run quickstart.md validation checklist
 
 **Documentation content for T008**:
 - Auth categories explanation (auth_independent, auth_required, auth_enhanced)

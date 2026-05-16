@@ -37,14 +37,12 @@ class TestSearchCollectionsFiles:
     Happy-path tests for search_search_collections_and_files tool.
     """
 
-    def test_search_collections_files_basic(self, call_tool, auth_state):
+    def test_search_collections_files_basic(self, call_tool, require_auth):
         """
         Searching collections and files must return isError=false.
 
         Uses 'data' which is a broad search term.
         """
-        if not auth_state.logged_in:
-            pytest.skip("Requires authentication - set ANACONDA_USER_EMAIL/PASSWORD")
 
         logger.info("Calling search_search_collections_and_files for '%s'", SEARCH_QUERY_COLLECTIONS)
         response = call_tool(

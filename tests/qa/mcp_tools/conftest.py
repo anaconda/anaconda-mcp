@@ -681,9 +681,8 @@ def auth_state() -> AuthState:
     Session-scoped fixture providing authentication state.
 
     Detection priority:
-    1. Environment credentials (ANACONDA_USER_EMAIL + ANACONDA_USER_PASSWORD)
-    2. Keyring token (from `anaconda login`)
-    3. No authentication available
+    1. ANACONDA_AUTH_API_KEY environment variable
+    2. No authentication available
 
     Usage in tests:
         def test_example(auth_state):
@@ -694,6 +693,22 @@ def auth_state() -> AuthState:
     if _AUTH_STATE_CACHE is None:
         _AUTH_STATE_CACHE = detect_auth_state()
     return _AUTH_STATE_CACHE
+
+
+@pytest.fixture
+def require_auth(auth_state: AuthState) -> None:
+    """
+    Auto-skip test if not authenticated.
+
+    Use this fixture instead of manual auth checks in test bodies.
+
+    Usage:
+        def test_auth_required_feature(self, call_tool, require_auth):
+            # No manual skip check needed - fixture handles it
+            response = call_tool(...)
+    """
+    if not auth_state.logged_in:
+        pytest.skip("Requires authentication - set ANACONDA_AUTH_API_KEY env var")
 
 
 def _port_from_url(url: str) -> str:
