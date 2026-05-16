@@ -402,13 +402,19 @@ jobs:
           echo "failed=$FAILED" >> "$RESULT_FILE"
           echo "skipped=$SKIPPED" >> "$RESULT_FILE"
           echo "errors=$ERRORS" >> "$RESULT_FILE"
-          if [[ $PYTEST_EXIT -eq 0 ]]; then
+
+          # Determine actual test status from parsed results, not conda run exit code
+          # (conda run on Linux may return 1 even when pytest passes)
+          if [[ "${FAILED:-0}" -eq 0 && "${ERRORS:-0}" -eq 0 ]]; then
             echo "status=success" >> "$RESULT_FILE"
+            FINAL_EXIT=0
           else
             echo "status=failed" >> "$RESULT_FILE"
+            FINAL_EXIT=1
           fi
 
-          exit $PYTEST_EXIT
+          echo "conda run exit: $PYTEST_EXIT, final exit: $FINAL_EXIT"
+          exit $FINAL_EXIT
 
       # ── Artifacts ─────────────────────────────────────────────────────────────
       - name: Upload HTML report
