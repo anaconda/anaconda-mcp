@@ -536,9 +536,6 @@ jobs:
           fi
 
           echo "conda run exit: $PYTEST_EXIT, final exit: $FINAL_EXIT"
-
-          # Re-enable exit-on-error only for the final exit
-          set -e
           exit $FINAL_EXIT
 
       # ── Artifacts ─────────────────────────────────────────────────────────────
