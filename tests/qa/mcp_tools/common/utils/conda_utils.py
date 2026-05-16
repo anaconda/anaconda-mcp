@@ -72,3 +72,25 @@ def _conda_env_prefix(env_name: str) -> str:
     matches = [p for p in info["envs"] if p.endswith(f"{os.sep}{env_name}")]
     assert matches, f"Conda environment '{env_name}' not found"
     return str(matches[0])
+
+
+def _get_env_python_exe(env_name: str) -> str:
+    """
+    Return the path to the Python executable in a named conda environment.
+
+    This matches how real IDE integrations launch anaconda-mcp: directly via
+    the Python executable, not through `conda run`. Using direct Python avoids
+    stdin/stdout forwarding issues that occur with `conda run` on Windows.
+
+    Platform paths:
+    - Windows: <prefix>/python.exe
+    - Unix: <prefix>/bin/python
+    """
+    prefix = _conda_env_prefix(env_name)
+    if os.name == "nt":
+        python_exe = os.path.join(prefix, "python.exe")
+    else:
+        python_exe = os.path.join(prefix, "bin", "python")
+    if not os.path.isfile(python_exe):
+        raise FileNotFoundError(f"Python executable not found at {python_exe}")
+    return python_exe

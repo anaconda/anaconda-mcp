@@ -28,7 +28,7 @@ import httpx
 import pytest
 from common.constants.test_data import ENV_NAME
 from common.utils.auth_service import AuthState, detect_auth_state
-from common.utils.conda_utils import _conda_env_prefix, _get_conda_exe
+from common.utils.conda_utils import _conda_env_prefix, _get_conda_exe, _get_env_python_exe
 from common.utils.mcp_client import _initialize_session
 from common.utils.stdio_client import (
     _recv,
@@ -411,7 +411,12 @@ def _stdio_server_context(
     label: str,
     config: pytest.Config,
 ) -> Iterator[subprocess.Popen]:
-    """Spawn, initialise and yield a STDIO MCP server process; tear it down on exit."""
+    """
+    Spawn, initialise and yield a STDIO MCP server process; tear it down on exit.
+
+    Uses direct Python executable (not `conda run`) to match real IDE integrations.
+    This avoids stdin/stdout forwarding issues that occur with `conda run` on Windows.
+    """
     config_path = _write_profile_config(
         slug,
         conda_env,
@@ -419,6 +424,10 @@ def _stdio_server_context(
         downstream_port=downstream_port,
     )
     logger.info("Starting %s STDIO MCP (profile=%s, config=%s)", label, slug, config_path)
+
+    # Get Python executable directly from conda env (matches real IDE integrations)
+    python_exe = _get_env_python_exe(conda_env)
+    logger.info("Using Python executable: %s", python_exe)
 
     env = os.environ.copy()
     env["PYTHONUNBUFFERED"] = "1"
@@ -438,9 +447,7 @@ def _stdio_server_context(
     stderr_path = Path(stderr_log.name)
     config.stash[stash_key] = stderr_path
 
-    conda_exe = _get_conda_exe()
     # start_new_session=True uses os.setsid() on Unix, CREATE_NEW_PROCESS_GROUP on Windows
-    # On Windows, this allows proper signal handling for process groups
     popen_kwargs: dict = {
         "stdin": subprocess.PIPE,
         "stdout": subprocess.PIPE,
@@ -451,17 +458,15 @@ def _stdio_server_context(
         popen_kwargs["start_new_session"] = True
     else:
         # On Windows, use CREATE_NEW_PROCESS_GROUP for proper termination
-        # The constant exists only on Windows, so we use getattr to satisfy mypy
         popen_kwargs["creationflags"] = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
 
+    # Launch anaconda-mcp directly via Python executable (not conda run)
+    # This matches how real IDE integrations work and avoids Windows pipe issues
     proc = subprocess.Popen(
         [
-            conda_exe,
-            "run",
-            "-n",
-            conda_env,
-            "--no-capture-output",
-            "anaconda-mcp",
+            python_exe,
+            "-m",
+            "anaconda_mcp",
             "serve",
             "--config",
             str(config_path),
@@ -559,24 +564,12 @@ def _stdio_server_context(
 
 @pytest.fixture(scope="module")
 def stdio_mcp_module(request: pytest.FixtureRequest, compose_profile):
-    """
-    One mcp-compose process per module for STDIO client profiles (shared across tests in file).
-
-    Note: STDIO tests are skipped on Windows because `conda run` doesn't properly
-    forward stdin/stdout pipes, causing the server to never respond to JSON-RPC messages.
-    """
+    """One mcp-compose process per module for STDIO client profiles (shared across tests in file)."""
     if compose_profile.client != ClientEdge.STDIO:
         # Must yield: this function contains ``yield`` below, so it is a generator;
         # ``return`` without yielding breaks pytest (ValueError: did not yield a value).
         yield None
         return
-
-    if os.name == "nt":
-        pytest.skip(
-            "STDIO transport tests are skipped on Windows. "
-            "`conda run` does not properly forward stdin/stdout pipes on Windows, "
-            "causing JSON-RPC communication to fail. Use http-http profile instead."
-        )
 
     with _stdio_server_context(
         conda_env=request.config.getoption("--server-conda-env"),
@@ -623,20 +616,9 @@ def fresh_session_id(mcp_server, server_url: str, compose_profile) -> str | None
 
 @pytest.fixture
 def stdio_server(request: pytest.FixtureRequest, compose_profile):
-    """
-    Function-scoped STDIO server for hang regressions (fresh process per test).
-
-    Note: STDIO tests are skipped on Windows because `conda run` doesn't properly
-    forward stdin/stdout pipes.
-    """
+    """Function-scoped STDIO server for hang regressions (fresh process per test)."""
     if compose_profile.client != ClientEdge.STDIO:
         pytest.skip("stdio_server applies only to stdio-http / stdio-stdio")
-
-    if os.name == "nt":
-        pytest.skip(
-            "STDIO transport tests are skipped on Windows. "
-            "`conda run` does not properly forward stdin/stdout pipes on Windows."
-        )
 
     with _stdio_server_context(
         conda_env=request.config.getoption("--server-conda-env"),
