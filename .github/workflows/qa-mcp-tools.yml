@@ -426,6 +426,17 @@ jobs:
           path: all-results
           merge-multiple: true
 
+      - name: Debug artifact structure
+        run: |
+          echo "=== all-results directory structure ==="
+          find all-results -type f 2>/dev/null || echo "all-results not found"
+          echo ""
+          echo "=== Contents of txt files ==="
+          for f in $(find all-results -name "*.txt" 2>/dev/null); do
+            echo "--- $f ---"
+            cat "$f"
+          done
+
       - name: Generate summary
         run: |
           echo "## 📊 QA Test Results Summary" >> "$GITHUB_STEP_SUMMARY"
@@ -459,7 +470,8 @@ jobs:
           TOTAL_TESTS_SKIPPED=0
 
           shopt -s nullglob
-          for file in all-results/*.txt; do
+          # Try multiple path patterns in case directory structure varies
+          for file in all-results/*.txt all-results/*/*.txt all-results/*/*/*.txt; do
             if [[ -f "$file" ]]; then
               RUNNER=$(basename "$file" .txt)
 
