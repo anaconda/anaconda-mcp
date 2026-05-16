@@ -87,7 +87,7 @@ The server starts automatically via mcp-compose config (`python -m conda_meta_mc
 3. Click **Generate API Key**
 4. Copy the generated key (shown only once)
 
-**Required permissions:** The API key needs access to search functionality. Standard user keys work for all tests.
+**Required permissions:** Read-only access is sufficient. Standard user keys work for all tests.
 
 #### Local Development: `.env` file (recommended)
 
