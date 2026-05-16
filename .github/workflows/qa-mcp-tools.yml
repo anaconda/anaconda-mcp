@@ -367,34 +367,36 @@ jobs:
           # Only set API key for authenticated mode
           ANACONDA_AUTH_API_KEY: ${{ matrix.auth_mode == 'authenticated' && secrets.TEST_API_KEY || '' }}
         run: |
-          EXTRA_ARGS=""
+          # Use array to preserve argument boundaries (avoids word-splitting issues)
+          EXTRA_ARGS=()
           TEST_PATH="tests/qa/mcp_tools"
-          [[ "$MCP_PROFILE" == "http-http" ]] && EXTRA_ARGS="$EXTRA_ARGS --start-server"
+          [[ "$MCP_PROFILE" == "http-http" ]] && EXTRA_ARGS+=("--start-server")
 
           # Determine test scope
           case "$TEST_SCOPE" in
             all-no-hangs)
-              EXTRA_ARGS="$EXTRA_ARGS --skip-hang-stress"
+              EXTRA_ARGS+=("--skip-hang-stress")
               ;;
             all-with-hangs)
               ;;
             hang-only)
-              EXTRA_ARGS="$EXTRA_ARGS -m hang_stress"
+              EXTRA_ARGS+=("-m" "hang_stress")
               ;;
             environments-mcp)
-              EXTRA_ARGS="$EXTRA_ARGS --skip-hang-stress -k 'not conda_meta and not search'"
+              EXTRA_ARGS+=("--skip-hang-stress" "-k" "not conda_meta and not search")
               ;;
             search-mcp)
-              EXTRA_ARGS="$EXTRA_ARGS --skip-hang-stress -k 'search'"
+              EXTRA_ARGS+=("--skip-hang-stress" "-k" "search")
               ;;
             conda-meta-mcp)
-              EXTRA_ARGS="$EXTRA_ARGS --skip-hang-stress -k 'conda_meta'"
+              EXTRA_ARGS+=("--skip-hang-stress" "-k" "conda_meta")
               ;;
           esac
 
           echo "=== Running tests ($AUTH_MODE mode) ==="
           echo "Auth mode: $AUTH_MODE"
           echo "API key set: $([[ -n \"$ANACONDA_AUTH_API_KEY\" ]] && echo 'yes' || echo 'no')"
+          echo "Extra args: ${EXTRA_ARGS[*]}"
 
           conda run -n "$QA_ENV" --no-capture-output python -m pytest \
             "$TEST_PATH" \
@@ -402,7 +404,7 @@ jobs:
             --mcp-profile="$MCP_PROFILE" \
             --server-conda-env="$SERVER_ENV" \
             --python-version="$PYTHON_VERSION" \
-            $EXTRA_ARGS \
+            "${EXTRA_ARGS[@]}" \
             -v \
             --html="tests/qa/mcp_tools/reports/report.html" \
             --self-contained-html
