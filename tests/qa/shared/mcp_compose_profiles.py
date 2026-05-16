@@ -27,6 +27,19 @@ from dataclasses import dataclass
 from enum import Enum
 
 
+def _escape_toml_string(s: str) -> str:
+    """
+    Escape a string for safe embedding in TOML.
+
+    On Windows, paths like C:\\Users\\... contain backslashes that TOML
+    interprets as escape sequences (e.g., \\U is a Unicode escape).
+    This function doubles backslashes so they're treated as literals.
+
+    Example: C:\\Users\\admin -> C:\\\\Users\\\\admin
+    """
+    return s.replace("\\", "\\\\")
+
+
 class ClientEdge(str, Enum):
     """How the automated test connects to mcp-compose."""
 
@@ -82,6 +95,7 @@ def render_http_http_toml(
     anaconda_domain = os.environ.get("ANACONDA_MCP_ANACONDA_DOMAIN", "anaconda.com")
     anaconda_token = _get_auth_token_for_tests()
     conda_meta_port = downstream_port + 1
+    python_exe = _escape_toml_string(python_executable)
 
     if anaconda_token:
         search_auth_config = f'auth_token = "{anaconda_token}"\nauth_type = "bearer"'
@@ -110,7 +124,7 @@ max_reconnect_attempts = 10
 health_check_enabled = false
 mode = "proxy"
 auto_start = true
-command = ["{python_executable}", "-m", "environments_mcp_server", "start", "--transport", "streamable-http", "--port", "{downstream_port}"]
+command = ["{python_exe}", "-m", "environments_mcp_server", "start", "--transport", "streamable-http", "--port", "{downstream_port}"]
 startup_delay = 5
 
 [[servers.proxied.streamable-http]]
@@ -134,7 +148,7 @@ max_reconnect_attempts = 10
 health_check_enabled = false
 mode = "proxy"
 auto_start = true
-command = ["{python_executable}", "-m", "conda_meta_mcp.cli", "run", "--transport", "streamable-http", "--port", "{conda_meta_port}"]
+command = ["{python_exe}", "-m", "conda_meta_mcp.cli", "run", "--transport", "streamable-http", "--port", "{conda_meta_port}"]
 startup_delay = 5
 
 [tool_manager]
@@ -199,6 +213,7 @@ def render_stdio_http_toml(
     anaconda_domain = os.environ.get("ANACONDA_MCP_ANACONDA_DOMAIN", "anaconda.com")
     anaconda_token = _get_auth_token_for_tests()
     conda_meta_port = downstream_port + 1
+    python_exe = _escape_toml_string(python_executable)
 
     # Auth config for search-mcp: only include if token available
     if anaconda_token:
@@ -227,7 +242,7 @@ max_reconnect_attempts = 10
 health_check_enabled = false
 mode = "proxy"
 auto_start = true
-command = ["{python_executable}", "-m", "environments_mcp_server", "start", "--transport", "streamable-http", "--port", "{downstream_port}"]
+command = ["{python_exe}", "-m", "environments_mcp_server", "start", "--transport", "streamable-http", "--port", "{downstream_port}"]
 startup_delay = 5
 
 [[servers.proxied.streamable-http]]
@@ -251,7 +266,7 @@ max_reconnect_attempts = 10
 health_check_enabled = false
 mode = "proxy"
 auto_start = true
-command = ["{python_executable}", "-m", "conda_meta_mcp.cli", "run", "--transport", "streamable-http", "--port", "{conda_meta_port}"]
+command = ["{python_exe}", "-m", "conda_meta_mcp.cli", "run", "--transport", "streamable-http", "--port", "{conda_meta_port}"]
 startup_delay = 5
 
 [tool_manager]
@@ -283,6 +298,7 @@ def render_stdio_stdio_toml(*, python_executable: str) -> str:
     """
     anaconda_domain = os.environ.get("ANACONDA_MCP_ANACONDA_DOMAIN", "anaconda.com")
     anaconda_token = _get_auth_token_for_tests()
+    python_exe = _escape_toml_string(python_executable)
 
     if anaconda_token:
         search_auth_config = f'auth_token = "{anaconda_token}"\nauth_type = "bearer"'
@@ -302,13 +318,13 @@ sse_enabled = false
 
 [[servers.proxied.stdio]]
 name = "conda"
-command = ["{python_executable}", "-m", "environments_mcp_server", "start", "--transport", "stdio"]
+command = ["{python_exe}", "-m", "environments_mcp_server", "start", "--transport", "stdio"]
 restart_policy = "on-failure"
 max_restarts = 3
 
 [[servers.proxied.stdio]]
 name = "conda-meta"
-command = ["{python_executable}", "-m", "conda_meta_mcp.cli", "run", "--transport", "stdio"]
+command = ["{python_exe}", "-m", "conda_meta_mcp.cli", "run", "--transport", "stdio"]
 restart_policy = "on-failure"
 max_restarts = 3
 
