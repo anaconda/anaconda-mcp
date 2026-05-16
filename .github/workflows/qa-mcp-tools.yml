@@ -16,7 +16,7 @@ on:
       anaconda_mcp_ref:
         description: 'anaconda-mcp branch or tag (empty = triggered commit)'
         required: false
-        default: 'v1.0.0'
+        default: 'v1.1.0-rc.0'
       environments_mcp_ref:
         description: 'environments-mcp branch or tag'
         required: false
@@ -36,20 +36,20 @@ on:
         # https://github.com/j-iliukhina-anaconda/mcp-compose
         default: 'https://github.com/datalayer/mcp-compose'
       mcp_compose_ref:
-        description: 'mcp-compose branch or tag (empty = use anaconda-mcp pinned version)'
+        description: 'mcp-compose branch or tag (empty = use pip-installed version)'
         required: false
-        # v0.1.12
-        default: ''
+        default: 'v0.1.12'
       python_version:
-        description: 'Python version'
+        description: 'Python version (>=3.13 required for conda-meta-mcp tests)'
         required: false
         default: '3.13'
         type: choice
         options:
-          - '3.10'
-          - '3.11'
-          - '3.12'
+          - '3.14'
           - '3.13'
+          - '3.12'
+          - '3.11'
+          - '3.10'
       mcp_profile:
         description: 'Transport profile'
         required: false
@@ -116,11 +116,11 @@ jobs:
           PYTHON_VERSION="${{ inputs.python_version        || '3.13' }}"
           MCP_PROFILE="${{ inputs.mcp_profile              || 'stdio-stdio' }}"
           SKIP_HANG_STRESS="${{ inputs.skip_hang_stress    || 'false' }}"
-          ANACONDA_MCP_REF="${{ inputs.anaconda_mcp_ref    || 'v1.0.0' }}"
+          ANACONDA_MCP_REF="${{ inputs.anaconda_mcp_ref    || 'v1.1.0-rc.0' }}"
           ENV_MCP_REF="${{ inputs.environments_mcp_ref     || 'v1.0.0' }}"
           CONNECTOR_VER="${{ inputs.anaconda_connector_ver || '0.1.11' }}"
-          COMPOSE_REPO="${{ inputs.mcp_compose_repo        || 'https://github.com/j-iliukhina-anaconda/mcp-compose' }}"
-          COMPOSE_REF="${{ inputs.mcp_compose_ref          || 'stdio-proxy-fixes' }}"
+          COMPOSE_REPO="${{ inputs.mcp_compose_repo        || 'https://github.com/datalayer/mcp-compose' }}"
+          COMPOSE_REF="${{ inputs.mcp_compose_ref          || 'v0.1.12' }}"
           CONDA_META_VER="${{ inputs.conda_meta_mcp_ver    || '' }}"
 
           {
@@ -141,10 +141,11 @@ jobs:
           printf "%-22s %s\n" "python:"           "$PYTHON_VERSION"
           printf "%-22s %s\n" "mcp-profile:"      "$MCP_PROFILE"
           printf "%-22s %s\n" "skip-hang-stress:" "$SKIP_HANG_STRESS"
+          printf "%-22s %s\n" "anaconda-mcp:"     "${ANACONDA_MCP_REF:-<triggered commit>}"
           printf "%-22s %s\n" "environments-mcp:" "$ENV_MCP_REF"
           printf "%-22s %s\n" "connector ver:"    "${CONNECTOR_VER:-<transitive dep>}"
           printf "%-22s %s\n" "mcp-compose repo:" "$COMPOSE_REPO"
-          printf "%-22s %s\n" "mcp-compose ref:"  "${COMPOSE_REF:-<pinned by anaconda-mcp>}"
+          printf "%-22s %s\n" "mcp-compose ref:"  "${COMPOSE_REF:-<pip-installed version>}"
           printf "%-22s %s\n" "conda-meta-mcp:"   "${CONDA_META_VER:-<latest from conda-forge>}"
 
   # ── Tests ─────────────────────────────────────────────────────────────────────
@@ -170,14 +171,8 @@ jobs:
       CONDA_META_VER:     ${{ needs.setup.outputs.conda-meta-ver }}
       SERVER_ENV:         anaconda-mcp-server
       QA_ENV:             anaconda-mcp-qa
-      # Long-lived API key (preferred for CI - survives full test suite)
-      ANACONDA_AUTH_API_KEY:  ${{ secrets.ANACONDA_AUTH_API_KEY }}
-      # Programmatic OAuth authentication for search-mcp tests
-      # These credentials are used to obtain fresh session tokens at runtime
-      ANACONDA_USER_EMAIL:    ${{ secrets.ANACONDA_USER_EMAIL }}
-      ANACONDA_USER_PASSWORD: ${{ secrets.ANACONDA_USER_PASSWORD }}
-      # Legacy: static token (deprecated, kept for fallback)
-      ANACONDA_TOKEN:     ${{ secrets.ANACONDA_TOKEN }}
+      # API key for authenticated tests (long-lived, survives full test suite)
+      ANACONDA_AUTH_API_KEY:  ${{ secrets.TEST_API_KEY }}
 
     steps:
       # ── Checkout ──────────────────────────────────────────────────────────────
@@ -280,13 +275,7 @@ jobs:
       - name: Run MCP tool tests
         env:
           MCP_SERVER_CONDA_ENV: ${{ env.SERVER_ENV }}  # read by conftest.py
-          # Long-lived API key (preferred - survives full test suite)
-          ANACONDA_AUTH_API_KEY: ${{ secrets.ANACONDA_AUTH_API_KEY }}
-          # Programmatic auth credentials (conftest.py loads these via detect_auth_state)
-          ANACONDA_USER_EMAIL: ${{ secrets.ANACONDA_USER_EMAIL }}
-          ANACONDA_USER_PASSWORD: ${{ secrets.ANACONDA_USER_PASSWORD }}
-          # Legacy token for server config (mcp_compose.toml template)
-          ANACONDA_MCP_ANACONDA_TOKEN: ${{ secrets.ANACONDA_TOKEN }}
+          ANACONDA_AUTH_API_KEY: ${{ secrets.TEST_API_KEY }}
         run: |
           EXTRA_ARGS=""
           [[ "$MCP_PROFILE"     == "http-http" ]] && EXTRA_ARGS="$EXTRA_ARGS --start-server"
