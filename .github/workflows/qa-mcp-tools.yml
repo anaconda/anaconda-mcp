@@ -245,6 +245,9 @@ jobs:
         with:
           auto-activate-base: true
           python-version: ${{ env.PYTHON_VERSION }}
+          # Force fresh miniconda install to avoid using pre-installed /usr/share/miniconda
+          # on ubuntu-latest, which causes path resolution issues in environments-mcp
+          miniconda-version: "latest"
 
       # ── QA runner env ─────────────────────────────────────────────────────────
       - name: Create / update QA env (pytest + dependencies)
