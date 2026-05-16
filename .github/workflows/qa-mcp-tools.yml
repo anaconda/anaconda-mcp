@@ -53,20 +53,24 @@ on:
       mcp_profile:
         description: 'Transport profile'
         required: false
-        default: 'stdio-stdio'
+        default: 'stdio-http'
         type: choice
         options:
           - 'http-http'
           - 'stdio-http'
           - 'stdio-stdio'
-      skip_hang_stress:
-        description: 'Skip hang_stress tests (slow, designed for dedicated stress runs)'
+      test_scope:
+        description: 'Which tests to run'
         required: false
-        default: 'false'
+        default: 'all-no-hangs'
         type: choice
         options:
-          - 'true'
-          - 'false'
+          - 'all-no-hangs'
+          - 'all-with-hangs'
+          - 'hang-only'
+          - 'environments-mcp'
+          - 'search-mcp'
+          - 'conda-meta-mcp'
       runner:
         description: 'Runner to use'
         required: false
@@ -100,7 +104,7 @@ jobs:
       runner:             ${{ steps.params.outputs.runner }}
       python-version:     ${{ steps.params.outputs.python-version }}
       mcp-profile:        ${{ steps.params.outputs.mcp-profile }}
-      skip-hang-stress:   ${{ steps.params.outputs.skip-hang-stress }}
+      test-scope:         ${{ steps.params.outputs.test-scope }}
       anaconda-mcp-ref:   ${{ steps.params.outputs.anaconda-mcp-ref }}
       env-mcp-ref:        ${{ steps.params.outputs.env-mcp-ref }}
       connector-ver:      ${{ steps.params.outputs.connector-ver }}
@@ -114,8 +118,8 @@ jobs:
         run: |
           RUNNER="${{ inputs.runner              || 'macos-latest' }}"
           PYTHON_VERSION="${{ inputs.python_version        || '3.13' }}"
-          MCP_PROFILE="${{ inputs.mcp_profile              || 'stdio-stdio' }}"
-          SKIP_HANG_STRESS="${{ inputs.skip_hang_stress    || 'false' }}"
+          MCP_PROFILE="${{ inputs.mcp_profile              || 'stdio-http' }}"
+          TEST_SCOPE="${{ inputs.test_scope                || 'all-no-hangs' }}"
           ANACONDA_MCP_REF="${{ inputs.anaconda_mcp_ref    || 'v1.1.0-rc.0' }}"
           ENV_MCP_REF="${{ inputs.environments_mcp_ref     || 'v1.0.0' }}"
           CONNECTOR_VER="${{ inputs.anaconda_connector_ver || '0.1.11' }}"
@@ -127,7 +131,7 @@ jobs:
             echo "runner=$RUNNER"
             echo "python-version=$PYTHON_VERSION"
             echo "mcp-profile=$MCP_PROFILE"
-            echo "skip-hang-stress=$SKIP_HANG_STRESS"
+            echo "test-scope=$TEST_SCOPE"
             echo "anaconda-mcp-ref=$ANACONDA_MCP_REF"
             echo "env-mcp-ref=$ENV_MCP_REF"
             echo "connector-ver=$CONNECTOR_VER"
@@ -140,7 +144,7 @@ jobs:
           printf "%-22s %s\n" "runner:"           "$RUNNER"
           printf "%-22s %s\n" "python:"           "$PYTHON_VERSION"
           printf "%-22s %s\n" "mcp-profile:"      "$MCP_PROFILE"
-          printf "%-22s %s\n" "skip-hang-stress:" "$SKIP_HANG_STRESS"
+          printf "%-22s %s\n" "test-scope:"       "$TEST_SCOPE"
           printf "%-22s %s\n" "anaconda-mcp:"     "${ANACONDA_MCP_REF:-<triggered commit>}"
           printf "%-22s %s\n" "environments-mcp:" "$ENV_MCP_REF"
           printf "%-22s %s\n" "connector ver:"    "${CONNECTOR_VER:-<transitive dep>}"
@@ -162,7 +166,7 @@ jobs:
       RUNNER:             ${{ needs.setup.outputs.runner }}
       PYTHON_VERSION:     ${{ needs.setup.outputs.python-version }}
       MCP_PROFILE:        ${{ needs.setup.outputs.mcp-profile }}
-      SKIP_HANG_STRESS:   ${{ needs.setup.outputs.skip-hang-stress }}
+      TEST_SCOPE:         ${{ needs.setup.outputs.test-scope }}
       ANACONDA_MCP_REF:   ${{ needs.setup.outputs.anaconda-mcp-ref }}
       ENV_MCP_REF:        ${{ needs.setup.outputs.env-mcp-ref }}
       CONNECTOR_VER:      ${{ needs.setup.outputs.connector-ver }}
@@ -278,11 +282,32 @@ jobs:
           ANACONDA_AUTH_API_KEY: ${{ secrets.TEST_API_KEY }}
         run: |
           EXTRA_ARGS=""
-          [[ "$MCP_PROFILE"     == "http-http" ]] && EXTRA_ARGS="$EXTRA_ARGS --start-server"
-          [[ "$SKIP_HANG_STRESS" == "true"      ]] && EXTRA_ARGS="$EXTRA_ARGS --skip-hang-stress"
+          TEST_PATH="tests/qa/mcp_tools"
+          [[ "$MCP_PROFILE" == "http-http" ]] && EXTRA_ARGS="$EXTRA_ARGS --start-server"
+
+          # Determine test scope
+          case "$TEST_SCOPE" in
+            all-no-hangs)
+              EXTRA_ARGS="$EXTRA_ARGS --skip-hang-stress"
+              ;;
+            all-with-hangs)
+              ;;
+            hang-only)
+              EXTRA_ARGS="$EXTRA_ARGS -m hang_stress"
+              ;;
+            environments-mcp)
+              EXTRA_ARGS="$EXTRA_ARGS --skip-hang-stress -k 'not conda_meta and not search'"
+              ;;
+            search-mcp)
+              EXTRA_ARGS="$EXTRA_ARGS --skip-hang-stress -k 'search'"
+              ;;
+            conda-meta-mcp)
+              EXTRA_ARGS="$EXTRA_ARGS --skip-hang-stress -k 'conda_meta'"
+              ;;
+          esac
 
           conda run -n "$QA_ENV" --no-capture-output python -m pytest \
-            tests/qa/mcp_tools \
+            "$TEST_PATH" \
             -o addopts= \
             --mcp-profile="$MCP_PROFILE" \
             --server-conda-env="$SERVER_ENV" \
