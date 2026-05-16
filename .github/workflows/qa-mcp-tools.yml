@@ -26,9 +26,9 @@ on:
         required: false
         default: '0.1.11'
       conda_meta_mcp_ver:
-        description: 'conda-meta-mcp conda package version (e.g. 0.3.0); empty = latest from conda-forge'
+        description: 'conda-meta-mcp conda package version (empty = latest from conda-forge)'
         required: false
-        default: ''
+        default: '0.1.1'
       mcp_compose_repo:
         description: 'mcp-compose GitHub URL (fork or canonical)'
         required: false
@@ -121,7 +121,7 @@ jobs:
           CONNECTOR_VER="${{ inputs.anaconda_connector_ver || '0.1.11' }}"
           COMPOSE_REPO="${{ inputs.mcp_compose_repo        || 'https://github.com/datalayer/mcp-compose' }}"
           COMPOSE_REF="${{ inputs.mcp_compose_ref          || 'v0.1.12' }}"
-          CONDA_META_VER="${{ inputs.conda_meta_mcp_ver    || '' }}"
+          CONDA_META_VER="${{ inputs.conda_meta_mcp_ver    || '0.1.1' }}"
 
           {
             echo "runner=$RUNNER"
