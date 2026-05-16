@@ -10,7 +10,6 @@ from __future__ import annotations
 import json
 import logging
 import os
-import shutil
 import subprocess
 import tempfile
 import threading
@@ -21,18 +20,7 @@ import mcp_compose_profiles as _profiles
 import pytest
 
 from common.constants.config import TOOL_TIMEOUT
-
-
-def _get_conda_exe() -> str:
-    """Return the path to the conda executable (Windows-compatible)."""
-    conda_exe = os.environ.get("CONDA_EXE")
-    if conda_exe and os.path.isfile(conda_exe):
-        return conda_exe
-    which_conda = shutil.which("conda")
-    if which_conda:
-        return which_conda
-    return "conda"
-
+from common.utils.conda_utils import _get_conda_exe
 
 logger = logging.getLogger(__name__)
 

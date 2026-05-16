@@ -12,15 +12,30 @@ import subprocess
 
 def _get_conda_exe() -> str:
     """
-    Return the path to the conda executable.
+    Return the path to the conda executable for cross-platform subprocess calls.
 
-    Resolution order:
-    1. CONDA_EXE environment variable (set by setup-miniconda and conda activation)
-    2. shutil.which("conda") for PATH lookup
-    3. Falls back to "conda" and lets subprocess raise the error
+    Why this is needed:
+    - On Windows, subprocess.run(["conda", ...]) fails with FileNotFoundError
+      because the shell isn't used to resolve "conda" to "conda.bat"
+    - Using shell=True is a security risk and changes quoting behavior
+    - The reliable fix is to pass the full path to the conda executable
 
-    This is necessary on Windows where bare "conda" doesn't work in subprocess
-    without shell=True.
+    Resolution order (all platforms):
+    1. CONDA_EXE env var — set automatically by:
+       - setup-miniconda GitHub Action
+       - conda activate (conda sets this in every activated environment)
+       - conda init (adds to shell profile)
+    2. shutil.which("conda") — standard PATH lookup, works on Linux/macOS
+    3. Bare "conda" — fallback that works on Linux/macOS but fails on Windows
+
+    Platform behavior:
+    - Linux/macOS: All three options typically work; CONDA_EXE is preferred
+      for consistency but which("conda") and bare "conda" work fine
+    - Windows: Only CONDA_EXE reliably works; which() may return conda.bat
+      but subprocess needs the full path to work without shell=True
+
+    Returns:
+        Full path to conda executable, or "conda" as last resort
     """
     conda_exe = os.environ.get("CONDA_EXE")
     if conda_exe and os.path.isfile(conda_exe):
