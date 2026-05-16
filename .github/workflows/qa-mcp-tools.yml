@@ -323,6 +323,33 @@ jobs:
           conda run -n "$SERVER_ENV" --no-capture-output conda list \
             | grep -E "^(python|anaconda-mcp|environments-mcp-server|anaconda-connector|mcp-compose|conda-meta-mcp) "
 
+      - name: Debug conda configuration
+        run: |
+          echo "=== System conda info ==="
+          conda info
+          echo ""
+          echo "=== System conda config ==="
+          conda config --show channels
+          conda config --show envs_dirs
+          echo ""
+          echo "=== QA env conda info ==="
+          conda run -n "$QA_ENV" --no-capture-output conda info
+          echo ""
+          echo "=== Server env conda info ==="
+          conda run -n "$SERVER_ENV" --no-capture-output conda info
+          echo ""
+          echo "=== Server env conda config ==="
+          conda run -n "$SERVER_ENV" --no-capture-output conda config --show channels
+          conda run -n "$SERVER_ENV" --no-capture-output conda config --show envs_dirs
+          echo ""
+          echo "=== Environment variables ==="
+          env | grep -iE "(conda|python)" | sort || true
+          echo ""
+          echo "=== .condarc files ==="
+          cat ~/.condarc 2>/dev/null || echo "No ~/.condarc"
+          echo "---"
+          cat /etc/conda/.condarc 2>/dev/null || echo "No /etc/conda/.condarc"
+
       # ── Tests ─────────────────────────────────────────────────────────────────
       - name: Run MCP tool tests
         id: test
