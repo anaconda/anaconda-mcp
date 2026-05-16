@@ -78,7 +78,7 @@ on:
         type: boolean
         default: true
       runner_ubuntu:
-        description: 'Runner: ubuntu-latest'
+        description: 'Runner: ubuntu-latest (2 CPU, 7GB - may OOM on http-http)'
         type: boolean
         default: false
       runner_ubuntu_arm:
@@ -87,6 +87,10 @@ on:
         default: false
       runner_windows:
         description: 'Runner: windows-latest'
+        type: boolean
+        default: false
+      runner_self_hosted_large:
+        description: 'Runner: self-hosted-amd64-large (8 CPU, 16GB - recommended for http-http)'
         type: boolean
         default: false
 
@@ -161,6 +165,7 @@ jobs:
           [[ "${{ inputs.runner_ubuntu }}" == "true" ]]             && RUNNERS+=("ubuntu-latest")
           [[ "${{ inputs.runner_ubuntu_arm }}" == "true" ]]         && RUNNERS+=("ubuntu-24.04-arm")
           [[ "${{ inputs.runner_windows }}" == "true" ]]            && RUNNERS+=("windows-latest")
+          [[ "${{ inputs.runner_self_hosted_large }}" == "true" ]]  && RUNNERS+=("self-hosted-amd64-large-privileged-on-demand")
 
           # Default to macos-latest if no runner selected
           if [[ ${#RUNNERS[@]} -eq 0 ]]; then
