@@ -78,7 +78,7 @@ on:
         type: boolean
         default: true
       runner_ubuntu:
-        description: 'Runner: ubuntu-latest (2 CPU, 7GB - may OOM on http-http)'
+        description: 'Runner: ubuntu-latest (2 CPU, 7GB)'
         type: boolean
         default: false
       runner_ubuntu_arm:
@@ -90,7 +90,7 @@ on:
         type: boolean
         default: false
       runner_self_hosted_large:
-        description: 'Runner: self-hosted-amd64-large (8 CPU, 16GB - recommended for http-http)'
+        description: 'Runner: self-hosted-amd64-large (8 CPU, 16GB - for heavy workloads)'
         type: boolean
         default: false
 
