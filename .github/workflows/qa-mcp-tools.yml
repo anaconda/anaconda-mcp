@@ -385,17 +385,23 @@ jobs:
             --junitxml="tests/qa/mcp_tools/reports/results.xml" \
             2>&1 | tee pytest-output.txt
           PYTEST_EXIT=${PIPESTATUS[0]}
-          set -e
 
+          # Keep set +e for parsing (grep returns 1 on no match)
           # Parse pytest summary line: "X passed, Y failed, Z skipped"
           SUMMARY=$(grep -E "^[=]+ .* [=]+$" pytest-output.txt | tail -1 || echo "")
           echo "Pytest summary: $SUMMARY"
 
-          # Extract counts using regex
-          PASSED=$(echo "$SUMMARY" | grep -oE '[0-9]+ passed' | grep -oE '[0-9]+' || echo "0")
-          FAILED=$(echo "$SUMMARY" | grep -oE '[0-9]+ failed' | grep -oE '[0-9]+' || echo "0")
-          SKIPPED=$(echo "$SUMMARY" | grep -oE '[0-9]+ skipped' | grep -oE '[0-9]+' || echo "0")
-          ERRORS=$(echo "$SUMMARY" | grep -oE '[0-9]+ error' | grep -oE '[0-9]+' || echo "0")
+          # Extract counts using regex (use || true to handle no-match)
+          PASSED=$(echo "$SUMMARY" | grep -oE '[0-9]+ passed' | grep -oE '[0-9]+' || true)
+          FAILED=$(echo "$SUMMARY" | grep -oE '[0-9]+ failed' | grep -oE '[0-9]+' || true)
+          SKIPPED=$(echo "$SUMMARY" | grep -oE '[0-9]+ skipped' | grep -oE '[0-9]+' || true)
+          ERRORS=$(echo "$SUMMARY" | grep -oE '[0-9]+ error' | grep -oE '[0-9]+' || true)
+
+          # Default to 0 if empty
+          PASSED=${PASSED:-0}
+          FAILED=${FAILED:-0}
+          SKIPPED=${SKIPPED:-0}
+          ERRORS=${ERRORS:-0}
 
           # Update results file with actual values (overwrite initial error state)
           echo "passed=$PASSED" > "$RESULT_FILE"
@@ -414,6 +420,9 @@ jobs:
           fi
 
           echo "conda run exit: $PYTEST_EXIT, final exit: $FINAL_EXIT"
+
+          # Re-enable exit-on-error only for the final exit
+          set -e
           exit $FINAL_EXIT
 
       # ── Artifacts ─────────────────────────────────────────────────────────────
