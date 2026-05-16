@@ -338,6 +338,9 @@ def mcp_server(request: pytest.FixtureRequest, server_url: str):
         # Terms acceptance required by main branch
         env["ANACONDA_MCP_ACCEPTED_TERMS"] = "true"
         env["ANACONDA_MCP_ACCEPTED_TERMS_VERSION"] = "2026-01-01"
+        # Ensure auth token is passed to subprocess
+        if _AUTH_STATE_CACHE and _AUTH_STATE_CACHE.token:
+            env["ANACONDA_AUTH_API_KEY"] = _AUTH_STATE_CACHE.token
         server_proc = subprocess.Popen(
             ["conda", "run", "-n", conda_env, "--no-capture-output", "bash", str(_SCRIPT_PATH), port],
             stdout=log_file,
@@ -421,6 +424,10 @@ def _stdio_server_context(
     # Terms acceptance required by main branch
     env["ANACONDA_MCP_ACCEPTED_TERMS"] = "true"
     env["ANACONDA_MCP_ACCEPTED_TERMS_VERSION"] = "2026-01-01"
+    # Ensure auth token is passed to subprocess
+    # Token should already be in os.environ from pytest_configure, but explicit is safer
+    if _AUTH_STATE_CACHE and _AUTH_STATE_CACHE.token:
+        env["ANACONDA_AUTH_API_KEY"] = _AUTH_STATE_CACHE.token
 
     stderr_log = tempfile.NamedTemporaryFile(
         prefix=log_prefix,

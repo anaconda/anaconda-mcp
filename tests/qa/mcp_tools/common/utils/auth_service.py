@@ -23,7 +23,7 @@ import httpx
 
 logger = logging.getLogger(__name__)
 
-AuthSource = Literal["env_credentials", "keyring", "no_auth", "env_credentials_failed"]
+AuthSource = Literal["env_credentials", "no_auth", "env_credentials_failed"]
 
 
 class AuthError(Exception):
@@ -136,47 +136,24 @@ class AuthService:
         self.close()
 
 
-def get_keyring_token() -> str | None:
-    """
-    Get token from keyring (fallback from `anaconda login`).
-
-    Returns:
-        Token string if available, None otherwise
-    """
-    try:
-        from anaconda_auth.token import TokenInfo
-
-        token: str = TokenInfo.load().api_key
-        if token:
-            logger.info("Found auth token in keyring")
-            return token
-        return None
-    except ImportError:
-        logger.debug("anaconda-auth not available for keyring lookup")
-        return None
-    except Exception as e:
-        logger.debug(f"Keyring token lookup failed: {e}")
-        return None
-
-
 def detect_auth_state() -> AuthState:
     """
     Detect current authentication state.
 
-    Priority order:
-    1. Keyring token (from `anaconda login`) - works locally
-    2. Environment credentials (ANACONDA_USER_EMAIL + ANACONDA_USER_PASSWORD) - for CI
-    3. No authentication available
+    Priority:
+    1. ANACONDA_AUTH_API_KEY env var (long-lived API key, preferred for CI)
+    2. ANACONDA_USER_EMAIL + ANACONDA_USER_PASSWORD (OAuth login, short-lived token)
 
     Returns:
         AuthState with logged_in status and source information
     """
-    # Priority 1: Keyring token (from `anaconda login`)
-    keyring_token = get_keyring_token()
-    if keyring_token:
-        return AuthState(logged_in=True, token=keyring_token, source="keyring")
+    # Priority 1: Direct API key (recommended for CI - long-lived, no OAuth needed)
+    api_key = os.environ.get("ANACONDA_AUTH_API_KEY")
+    if api_key:
+        logger.info("Using ANACONDA_AUTH_API_KEY from environment")
+        return AuthState(logged_in=True, token=api_key, source="env_credentials")
 
-    # Priority 2: Environment credentials (for CI with programmatic OAuth)
+    # Priority 2: OAuth login with email/password (short-lived session token)
     email = os.environ.get("ANACONDA_USER_EMAIL")
     password = os.environ.get("ANACONDA_USER_PASSWORD")
 
@@ -186,8 +163,8 @@ def detect_auth_state() -> AuthState:
                 token = auth.login(email, password)
                 return AuthState(logged_in=True, token=token, source="env_credentials")
         except AuthError as e:
-            logger.warning(f"Environment credentials failed: {e}")
-            # Fall through to no_auth
+            logger.warning(f"Login failed: {e}")
+            return AuthState(logged_in=False, source="env_credentials_failed")
 
-    logger.info("No authentication available - running in logged-out mode")
+    logger.info("No credentials in env - running in logged-out mode")
     return AuthState(logged_in=False, source="no_auth")

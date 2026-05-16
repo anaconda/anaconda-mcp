@@ -34,12 +34,12 @@ on:
         required: false
         # https://github.com/datalayer/mcp-compose
         # https://github.com/j-iliukhina-anaconda/mcp-compose
-        default: 'https://github.com/j-iliukhina-anaconda/mcp-compose'
+        default: 'https://github.com/datalayer/mcp-compose'
       mcp_compose_ref:
         description: 'mcp-compose branch or tag (empty = use anaconda-mcp pinned version)'
         required: false
         # v0.1.12
-        default: 'stdio-proxy-fixes'
+        default: ''
       python_version:
         description: 'Python version'
         required: false
@@ -78,6 +78,8 @@ on:
           - macos-latest
           - macos-15-intel
           - windows-latest
+          - ubuntu-latest
+          - ubuntu-24.04-arm
 
   push:
     branches:
@@ -168,6 +170,8 @@ jobs:
       CONDA_META_VER:     ${{ needs.setup.outputs.conda-meta-ver }}
       SERVER_ENV:         anaconda-mcp-server
       QA_ENV:             anaconda-mcp-qa
+      # Long-lived API key (preferred for CI - survives full test suite)
+      ANACONDA_AUTH_API_KEY:  ${{ secrets.ANACONDA_AUTH_API_KEY }}
       # Programmatic OAuth authentication for search-mcp tests
       # These credentials are used to obtain fresh session tokens at runtime
       ANACONDA_USER_EMAIL:    ${{ secrets.ANACONDA_USER_EMAIL }}
@@ -276,6 +280,8 @@ jobs:
       - name: Run MCP tool tests
         env:
           MCP_SERVER_CONDA_ENV: ${{ env.SERVER_ENV }}  # read by conftest.py
+          # Long-lived API key (preferred - survives full test suite)
+          ANACONDA_AUTH_API_KEY: ${{ secrets.ANACONDA_AUTH_API_KEY }}
           # Programmatic auth credentials (conftest.py loads these via detect_auth_state)
           ANACONDA_USER_EMAIL: ${{ secrets.ANACONDA_USER_EMAIL }}
           ANACONDA_USER_PASSWORD: ${{ secrets.ANACONDA_USER_PASSWORD }}
