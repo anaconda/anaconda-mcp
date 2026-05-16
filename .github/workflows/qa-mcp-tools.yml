@@ -330,6 +330,17 @@ jobs:
           MCP_SERVER_CONDA_ENV: ${{ env.SERVER_ENV }}
           ANACONDA_AUTH_API_KEY: ${{ secrets.TEST_API_KEY }}
         run: |
+          # Create results directory upfront so artifact upload always has something
+          mkdir -p results
+          RESULT_FILE="results/${{ matrix.runner }}.txt"
+
+          # Initialize with error state (will be overwritten on success)
+          echo "passed=0" > "$RESULT_FILE"
+          echo "failed=0" >> "$RESULT_FILE"
+          echo "skipped=0" >> "$RESULT_FILE"
+          echo "errors=1" >> "$RESULT_FILE"
+          echo "status=error" >> "$RESULT_FILE"
+
           # Use array to preserve argument boundaries (avoids word-splitting issues)
           EXTRA_ARGS=()
           TEST_PATH="tests/qa/mcp_tools"
@@ -385,13 +396,16 @@ jobs:
           SKIPPED=$(echo "$SUMMARY" | grep -oE '[0-9]+ skipped' | grep -oE '[0-9]+' || echo "0")
           ERRORS=$(echo "$SUMMARY" | grep -oE '[0-9]+ error' | grep -oE '[0-9]+' || echo "0")
 
-          # Save for summary job
-          mkdir -p results
-          echo "passed=$PASSED" > "results/${{ matrix.runner }}.txt"
-          echo "failed=$FAILED" >> "results/${{ matrix.runner }}.txt"
-          echo "skipped=$SKIPPED" >> "results/${{ matrix.runner }}.txt"
-          echo "errors=$ERRORS" >> "results/${{ matrix.runner }}.txt"
-          echo "status=${{ job.status }}" >> "results/${{ matrix.runner }}.txt"
+          # Update results file with actual values (overwrite initial error state)
+          echo "passed=$PASSED" > "$RESULT_FILE"
+          echo "failed=$FAILED" >> "$RESULT_FILE"
+          echo "skipped=$SKIPPED" >> "$RESULT_FILE"
+          echo "errors=$ERRORS" >> "$RESULT_FILE"
+          if [[ $PYTEST_EXIT -eq 0 ]]; then
+            echo "status=success" >> "$RESULT_FILE"
+          else
+            echo "status=failed" >> "$RESULT_FILE"
+          fi
 
           exit $PYTEST_EXIT
 
@@ -410,7 +424,7 @@ jobs:
         with:
           name: "result-${{ matrix.runner }}"
           path: results/
-          if-no-files-found: ignore
+          if-no-files-found: warn
 
   # ── Summary ───────────────────────────────────────────────────────────────────
   summary:
