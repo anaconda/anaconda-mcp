@@ -398,6 +398,41 @@ def session_id(mcp_server, server_url: str, compose_profile) -> str | None:
     return sid
 
 
+def _terminate_process_tree(proc: subprocess.Popen) -> None:
+    """
+    Terminate a process and all its children.
+
+    On Unix: uses os.killpg() to kill the process group.
+    On Windows: uses taskkill /T to kill the process tree (child processes included).
+
+    This is critical for proper cleanup of anaconda-mcp which spawns child servers
+    (environments-mcp, conda-meta-mcp) that would otherwise keep ports locked.
+    """
+    try:
+        if os.name != "nt":
+            # Unix: kill process group
+            os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
+        else:
+            # Windows: use taskkill /T to kill entire process tree
+            subprocess.run(
+                ["taskkill", "/F", "/T", "/PID", str(proc.pid)],
+                capture_output=True,
+                timeout=10,
+            )
+    except (ProcessLookupError, PermissionError, OSError, subprocess.TimeoutExpired):
+        # Fallback: just kill the main process
+        proc.kill()
+
+    try:
+        proc.wait(timeout=10)
+    except subprocess.TimeoutExpired:
+        proc.kill()
+        try:
+            proc.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            logger.warning("Process %s did not terminate after kill", proc.pid)
+
+
 @contextmanager
 def _stdio_server_context(
     *,
@@ -534,23 +569,14 @@ def _stdio_server_context(
         yield proc
     finally:
         logger.info("Tearing down STDIO %s server (pid=%s)", label, proc.pid)
-        try:
-            os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
-        except (ProcessLookupError, PermissionError, OSError):
-            # OSError on Windows: "os.killpg() not supported"
-            proc.kill()
-        try:
-            proc.wait(timeout=10)
-        except subprocess.TimeoutExpired:
-            proc.kill()
-            proc.wait(timeout=5)
+        _terminate_process_tree(proc)
         try:
             stderr_log.close()
         except OSError:
             pass
-        # Small delay on Windows to allow file handles to be released
+        # Delay on Windows to allow file handles to be released
         if os.name == "nt":
-            time.sleep(0.5)
+            time.sleep(1.0)
         try:
             stderr_path.unlink(missing_ok=True)
         except PermissionError:
