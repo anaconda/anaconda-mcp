@@ -85,9 +85,11 @@ def _write_profile_config(
     ``profile_slug`` must be ``stdio-http`` or ``stdio-stdio`` (STDIO client edge).
     """
     profile = _profiles.PROFILES_BY_SLUG[profile_slug]
+    # Use sys.executable via conda run for cross-platform compatibility
+    # ("which python" doesn't work on Windows)
     python_path = (
         subprocess.run(
-            ["conda", "run", "-n", conda_env, "which", "python"],
+            ["conda", "run", "-n", conda_env, "python", "-c", "import sys; print(sys.executable)"],
             capture_output=True,
             text=True,
         ).stdout.strip()
