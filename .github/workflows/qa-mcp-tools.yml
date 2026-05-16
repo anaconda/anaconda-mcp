@@ -383,6 +383,16 @@ jobs:
           cat /sys/fs/cgroup/memory.max 2>/dev/null || cat /sys/fs/cgroup/memory/memory.limit_in_bytes 2>/dev/null || echo "No cgroup memory limit found"
 
       # ── Tests ─────────────────────────────────────────────────────────────────
+      - name: Check for port conflicts before tests
+        if: runner.os == 'Linux'
+        continue-on-error: true
+        run: |
+          echo "=== Checking ports 9888, 5041, 5042 ==="
+          for port in 9888 5041 5042; do
+            echo "Port $port:"
+            lsof -i:$port 2>/dev/null || ss -tlnp | grep ":$port " || echo "  (not in use)"
+          done
+
       - name: Run MCP tool tests
         id: test
         env:
@@ -464,9 +474,20 @@ jobs:
             kill $MEM_MONITOR_PID 2>/dev/null || true
           fi
 
-          # Keep set +e for parsing (grep returns 1 on no match)
-          # Parse pytest summary line: "X passed, Y failed, Z skipped"
-          SUMMARY=$(grep -E "^[=]+ .* [=]+$" pytest-output.txt | tail -1 || echo "")
+          # Check for fatal crashes (SIGKILL=137, SIGSEGV=139, etc.)
+          if [[ $PYTEST_EXIT -eq 137 ]]; then
+            echo "ERROR: Process was killed (exit 137 = SIGKILL)"
+            echo "passed=0" > "$RESULT_FILE"
+            echo "failed=0" >> "$RESULT_FILE"
+            echo "skipped=0" >> "$RESULT_FILE"
+            echo "errors=1" >> "$RESULT_FILE"
+            echo "status=killed" >> "$RESULT_FILE"
+            exit 1
+          fi
+
+          # Parse pytest summary line containing "passed" or "failed" or "error"
+          # Excludes "test session starts" line which also matches === ... === pattern
+          SUMMARY=$(grep -E "^[=]+.*(passed|failed|error|skipped).*[=]+$" pytest-output.txt | tail -1 || echo "")
           echo "Pytest summary: $SUMMARY"
 
           # Extract counts using regex (use || true to handle no-match)
@@ -489,7 +510,7 @@ jobs:
 
           # Determine actual test status from parsed results, not conda run exit code
           # (conda run on Linux may return 1 even when pytest passes)
-          if [[ "${FAILED:-0}" -eq 0 && "${ERRORS:-0}" -eq 0 ]]; then
+          if [[ "${FAILED:-0}" -eq 0 && "${ERRORS:-0}" -eq 0 && -n "$SUMMARY" ]]; then
             echo "status=success" >> "$RESULT_FILE"
             FINAL_EXIT=0
           else
