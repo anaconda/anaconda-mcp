@@ -370,6 +370,8 @@ jobs:
           echo "=== Running tests ==="
           echo "Extra args: ${EXTRA_ARGS[*]}"
 
+          # Disable exit-on-error so we can capture exit code and parse results
+          set +e
           conda run -n "$QA_ENV" --no-capture-output python -m pytest \
             "$TEST_PATH" \
             -o addopts= \
@@ -382,9 +384,8 @@ jobs:
             --self-contained-html \
             --junitxml="tests/qa/mcp_tools/reports/results.xml" \
             2>&1 | tee pytest-output.txt
-
-          # Capture exit code from pytest (via PIPESTATUS)
           PYTEST_EXIT=${PIPESTATUS[0]}
+          set -e
 
           # Parse pytest summary line: "X passed, Y failed, Z skipped"
           SUMMARY=$(grep -E "^[=]+ .* [=]+$" pytest-output.txt | tail -1 || echo "")
