@@ -561,12 +561,22 @@ def _stdio_server_context(
 def stdio_mcp_module(request: pytest.FixtureRequest, compose_profile):
     """
     One mcp-compose process per module for STDIO client profiles (shared across tests in file).
+
+    Note: STDIO tests are skipped on Windows because `conda run` doesn't properly
+    forward stdin/stdout pipes, causing the server to never respond to JSON-RPC messages.
     """
     if compose_profile.client != ClientEdge.STDIO:
         # Must yield: this function contains ``yield`` below, so it is a generator;
         # ``return`` without yielding breaks pytest (ValueError: did not yield a value).
         yield None
         return
+
+    if os.name == "nt":
+        pytest.skip(
+            "STDIO transport tests are skipped on Windows. "
+            "`conda run` does not properly forward stdin/stdout pipes on Windows, "
+            "causing JSON-RPC communication to fail. Use http-http profile instead."
+        )
 
     with _stdio_server_context(
         conda_env=request.config.getoption("--server-conda-env"),
@@ -613,9 +623,20 @@ def fresh_session_id(mcp_server, server_url: str, compose_profile) -> str | None
 
 @pytest.fixture
 def stdio_server(request: pytest.FixtureRequest, compose_profile):
-    """Function-scoped STDIO server for hang regressions (fresh process per test)."""
+    """
+    Function-scoped STDIO server for hang regressions (fresh process per test).
+
+    Note: STDIO tests are skipped on Windows because `conda run` doesn't properly
+    forward stdin/stdout pipes.
+    """
     if compose_profile.client != ClientEdge.STDIO:
         pytest.skip("stdio_server applies only to stdio-http / stdio-stdio")
+
+    if os.name == "nt":
+        pytest.skip(
+            "STDIO transport tests are skipped on Windows. "
+            "`conda run` does not properly forward stdin/stdout pipes on Windows."
+        )
 
     with _stdio_server_context(
         conda_env=request.config.getoption("--server-conda-env"),
