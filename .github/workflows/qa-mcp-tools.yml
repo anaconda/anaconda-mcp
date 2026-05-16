@@ -396,7 +396,32 @@ jobs:
             "${EXTRA_ARGS[@]}" \
             -v \
             --html="tests/qa/mcp_tools/reports/report.html" \
-            --self-contained-html
+            --self-contained-html \
+            --junitxml="tests/qa/mcp_tools/reports/results.xml" \
+            2>&1 | tee pytest-output.txt
+
+          # Capture exit code from pytest (via PIPESTATUS)
+          PYTEST_EXIT=${PIPESTATUS[0]}
+
+          # Parse pytest summary line: "X passed, Y failed, Z skipped"
+          SUMMARY=$(grep -E "^[=]+ .* [=]+$" pytest-output.txt | tail -1 || echo "")
+          echo "Pytest summary: $SUMMARY"
+
+          # Extract counts using regex
+          PASSED=$(echo "$SUMMARY" | grep -oE '[0-9]+ passed' | grep -oE '[0-9]+' || echo "0")
+          FAILED=$(echo "$SUMMARY" | grep -oE '[0-9]+ failed' | grep -oE '[0-9]+' || echo "0")
+          SKIPPED=$(echo "$SUMMARY" | grep -oE '[0-9]+ skipped' | grep -oE '[0-9]+' || echo "0")
+          ERRORS=$(echo "$SUMMARY" | grep -oE '[0-9]+ error' | grep -oE '[0-9]+' || echo "0")
+
+          # Save for summary job
+          mkdir -p results
+          echo "passed=$PASSED" > "results/${{ matrix.runner }}-${{ matrix.auth_mode }}.txt"
+          echo "failed=$FAILED" >> "results/${{ matrix.runner }}-${{ matrix.auth_mode }}.txt"
+          echo "skipped=$SKIPPED" >> "results/${{ matrix.runner }}-${{ matrix.auth_mode }}.txt"
+          echo "errors=$ERRORS" >> "results/${{ matrix.runner }}-${{ matrix.auth_mode }}.txt"
+          echo "status=${{ job.status }}" >> "results/${{ matrix.runner }}-${{ matrix.auth_mode }}.txt"
+
+          exit $PYTEST_EXIT
 
       # ── Artifacts ─────────────────────────────────────────────────────────────
       - name: Upload HTML report
@@ -406,13 +431,6 @@ jobs:
           name: "qa-report-${{ matrix.runner }}-py${{ env.PYTHON_VERSION }}-${{ env.MCP_PROFILE }}-${{ matrix.auth_mode }}"
           path: tests/qa/mcp_tools/reports/report.html
           if-no-files-found: ignore
-
-      # Write result for summary job
-      - name: Record result
-        if: always()
-        run: |
-          mkdir -p results
-          echo "${{ job.status }}" > "results/${{ matrix.runner }}-${{ matrix.auth_mode }}.txt"
 
       - name: Upload result
         if: always()
@@ -458,12 +476,15 @@ jobs:
           # Results table
           echo "### Results by Configuration" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Runner | Auth Mode | Status |" >> "$GITHUB_STEP_SUMMARY"
-          echo "|--------|-----------|--------|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Runner | Auth Mode | Passed | Failed | Skipped | Errors | Status |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|--------|-----------|--------|--------|---------|--------|--------|" >> "$GITHUB_STEP_SUMMARY"
 
-          PASSED=0
-          FAILED=0
-          TOTAL=0
+          CONFIGS_PASSED=0
+          CONFIGS_FAILED=0
+          TOTAL_CONFIGS=0
+          TOTAL_TESTS_PASSED=0
+          TOTAL_TESTS_FAILED=0
+          TOTAL_TESTS_SKIPPED=0
 
           for file in all-results/*.txt 2>/dev/null; do
             if [[ -f "$file" ]]; then
@@ -471,23 +492,29 @@ jobs:
               # Parse runner and auth from filename (format: runner-auth.txt)
               AUTH_MODE="${BASENAME##*-}"
               RUNNER="${BASENAME%-*}"
-              STATUS=$(cat "$file")
-              TOTAL=$((TOTAL + 1))
 
-              if [[ "$STATUS" == "success" ]]; then
+              # Read test counts from file
+              source "$file"  # loads passed, failed, skipped, errors, status
+
+              TOTAL_CONFIGS=$((TOTAL_CONFIGS + 1))
+              TOTAL_TESTS_PASSED=$((TOTAL_TESTS_PASSED + ${passed:-0}))
+              TOTAL_TESTS_FAILED=$((TOTAL_TESTS_FAILED + ${failed:-0}))
+              TOTAL_TESTS_SKIPPED=$((TOTAL_TESTS_SKIPPED + ${skipped:-0}))
+
+              if [[ "${failed:-0}" -eq 0 && "${errors:-0}" -eq 0 ]]; then
                 ICON="✅"
-                PASSED=$((PASSED + 1))
+                CONFIGS_PASSED=$((CONFIGS_PASSED + 1))
               else
                 ICON="❌"
-                FAILED=$((FAILED + 1))
+                CONFIGS_FAILED=$((CONFIGS_FAILED + 1))
               fi
 
-              echo "| $RUNNER | $AUTH_MODE | $ICON $STATUS |" >> "$GITHUB_STEP_SUMMARY"
+              echo "| $RUNNER | $AUTH_MODE | ${passed:-0} | ${failed:-0} | ${skipped:-0} | ${errors:-0} | $ICON |" >> "$GITHUB_STEP_SUMMARY"
             fi
           done
 
-          if [[ $TOTAL -eq 0 ]]; then
-            echo "| (no results found) | - | - |" >> "$GITHUB_STEP_SUMMARY"
+          if [[ $TOTAL_CONFIGS -eq 0 ]]; then
+            echo "| (no results found) | - | - | - | - | - | - |" >> "$GITHUB_STEP_SUMMARY"
           fi
 
           echo "" >> "$GITHUB_STEP_SUMMARY"
@@ -495,10 +522,12 @@ jobs:
           # Overall status
           echo "### Overall" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
-          if [[ $FAILED -eq 0 && $TOTAL -gt 0 ]]; then
-            echo "✅ **All $PASSED test configurations passed**" >> "$GITHUB_STEP_SUMMARY"
-          elif [[ $TOTAL -gt 0 ]]; then
-            echo "❌ **$FAILED of $TOTAL configurations failed**" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Tests**: $TOTAL_TESTS_PASSED passed, $TOTAL_TESTS_FAILED failed, $TOTAL_TESTS_SKIPPED skipped" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          if [[ $CONFIGS_FAILED -eq 0 && $TOTAL_CONFIGS -gt 0 ]]; then
+            echo "✅ **All $CONFIGS_PASSED configurations passed**" >> "$GITHUB_STEP_SUMMARY"
+          elif [[ $TOTAL_CONFIGS -gt 0 ]]; then
+            echo "❌ **$CONFIGS_FAILED of $TOTAL_CONFIGS configurations failed**" >> "$GITHUB_STEP_SUMMARY"
           else
             echo "⚠️ **No test results found**" >> "$GITHUB_STEP_SUMMARY"
           fi
