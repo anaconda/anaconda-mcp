@@ -439,6 +439,21 @@ def _stdio_server_context(
     config.stash[stash_key] = stderr_path
 
     conda_exe = _get_conda_exe()
+    # start_new_session=True uses os.setsid() on Unix, CREATE_NEW_PROCESS_GROUP on Windows
+    # On Windows, this allows proper signal handling for process groups
+    popen_kwargs: dict = {
+        "stdin": subprocess.PIPE,
+        "stdout": subprocess.PIPE,
+        "stderr": stderr_log,
+        "env": env,
+    }
+    if os.name != "nt":
+        popen_kwargs["start_new_session"] = True
+    else:
+        # On Windows, use CREATE_NEW_PROCESS_GROUP for proper termination
+        # The constant exists only on Windows, so we use getattr to satisfy mypy
+        popen_kwargs["creationflags"] = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
+
     proc = subprocess.Popen(
         [
             conda_exe,
@@ -451,11 +466,7 @@ def _stdio_server_context(
             "--config",
             str(config_path),
         ],
-        stdin=subprocess.PIPE,
-        stdout=subprocess.PIPE,
-        stderr=stderr_log,
-        start_new_session=True,
-        env=env,
+        **popen_kwargs,
     )
 
     try:
@@ -483,10 +494,18 @@ def _stdio_server_context(
         _send(proc, {"jsonrpc": "2.0", "method": "notifications/initialized", "params": {}})
     except Exception as exc:
         proc.kill()
+        # Wait for process to fully terminate before accessing files (especially on Windows)
+        try:
+            proc.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            pass
         try:
             stderr_log.close()
         except OSError:
             pass
+        # Small delay on Windows to allow file handles to be released
+        if os.name == "nt":
+            time.sleep(0.5)
         # Preserve stderr log for debugging
         stderr_content = ""
         try:
@@ -494,9 +513,16 @@ def _stdio_server_context(
                 stderr_content = f.read()
         except Exception:
             pass
-        stderr_path.unlink(missing_ok=True)
+        # Try to clean up files, but don't fail if still locked (Windows)
+        try:
+            stderr_path.unlink(missing_ok=True)
+        except PermissionError:
+            logger.warning("Could not delete stderr log (file locked): %s", stderr_path)
         config.stash[stash_key] = None
-        config_path.unlink(missing_ok=True)
+        try:
+            config_path.unlink(missing_ok=True)
+        except PermissionError:
+            logger.warning("Could not delete config (file locked): %s", config_path)
         pytest.fail(f"STDIO {label} server did not become ready: {exc}\n\nServer stderr:\n{stderr_content[-4000:]}")
 
     try:
@@ -505,19 +531,30 @@ def _stdio_server_context(
         logger.info("Tearing down STDIO %s server (pid=%s)", label, proc.pid)
         try:
             os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
-        except (ProcessLookupError, PermissionError):
+        except (ProcessLookupError, PermissionError, OSError):
+            # OSError on Windows: "os.killpg() not supported"
             proc.kill()
         try:
             proc.wait(timeout=10)
         except subprocess.TimeoutExpired:
             proc.kill()
+            proc.wait(timeout=5)
         try:
             stderr_log.close()
         except OSError:
             pass
-        stderr_path.unlink(missing_ok=True)
+        # Small delay on Windows to allow file handles to be released
+        if os.name == "nt":
+            time.sleep(0.5)
+        try:
+            stderr_path.unlink(missing_ok=True)
+        except PermissionError:
+            logger.warning("Could not delete stderr log (file locked): %s", stderr_path)
         config.stash[stash_key] = None
-        config_path.unlink(missing_ok=True)
+        try:
+            config_path.unlink(missing_ok=True)
+        except PermissionError:
+            logger.warning("Could not delete config (file locked): %s", config_path)
 
 
 @pytest.fixture(scope="module")
