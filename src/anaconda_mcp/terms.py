@@ -69,7 +69,7 @@ def check_terms_accepted(ctx: click.Context) -> None:
         console = Console()
         console.print(Markdown(TERMS_OF_SERVICE))
         console.print()
-        accepted = Confirm.ask("[bold]Do you accept the Beta Terms of Service?[/bold]")
+        accepted = Confirm.ask("[bold]Do you accept the Beta Terms?[/bold]")
         persist_acceptance(accepted)
 
         if not accepted:
