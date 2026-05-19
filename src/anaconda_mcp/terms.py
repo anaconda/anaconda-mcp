@@ -22,11 +22,18 @@ class TermsError(Exception):
 
 TERMS_OF_SERVICE = dedent("""\
     # Anaconda MCP Terms of Service
-    This MCP is beta
+    Anaconda MCP is a beta product covered by Beta Terms
 
+    https://www.anaconda.com/legal/terms/mcpbeta.
+
+    By entering 'y' below, I agree to the Beta Terms. To the extent
+    these terms differ from any other agreement with Anaconda,
+    these Beta Terms control.
+
+    This product is not intended for production use.
     """)
 
-CURRENT_TOS_VERSION = "2026-01-01"
+CURRENT_TOS_VERSION = "2026-05-19"
 
 
 def is_terms_current(accepted_version: str | None) -> bool:
@@ -61,7 +68,8 @@ def check_terms_accepted(ctx: click.Context) -> None:
 
         console = Console()
         console.print(Markdown(TERMS_OF_SERVICE))
-        accepted = Confirm.ask("[bold]Do you accept the Terms of Service?[/bold]")
+        console.print()
+        accepted = Confirm.ask("[bold]Do you accept the Beta Terms of Service?[/bold]")
         persist_acceptance(accepted)
 
         if not accepted:
