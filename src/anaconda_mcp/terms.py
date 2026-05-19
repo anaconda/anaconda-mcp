@@ -24,7 +24,7 @@ TERMS_OF_SERVICE = dedent("""\
     # Anaconda MCP Terms of Service
     Anaconda MCP is a beta product covered by Beta Terms
 
-    https://www.anaconda.com/legal/terms/mcpbeta.
+    https://www.anaconda.com/legal/terms/mcpbeta
 
     By entering 'y' below, I agree to the Beta Terms. To the extent
     these terms differ from any other agreement with Anaconda,
