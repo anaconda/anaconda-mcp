@@ -75,19 +75,13 @@ anaconda mcp setup --client cursor --scope project
 
 Anaconda MCP is configured via `mcp_compose.toml.template`, which is rendered at startup. Always edit the template — not `mcp_compose.toml` directly.
 
-To use a custom config:
-
-```bash
-anaconda mcp serve --config /path/to/my_config.toml
-```
-
 See the [full configuration reference](https://www.anaconda.com/docs/cli-reference/anaconda-mcp/getting-started#configuration) for transport, server composition, tool aliases, and Python executable settings.
 
 ---
 
 ## Experimental: `ana` CLI
 
-The [`ana` CLI](https://github.com/anaconda/anaconda-cli#installation) handles installation, authentication, and TOS acceptance automatically.
+The [`ana` CLI](https://github.com/anaconda/anaconda-cli#installation) handles installation and environment setup automatically.
 
 Install `ana`:
 
@@ -101,4 +95,29 @@ Then configure your AI client to launch the MCP server with:
 ana mcp serve
 ```
 
-Everything else — environment setup, login, terms acceptance — happens automatically.
+You still need to authenticate and accept TOS. You can do this via environment variables in your client config (see below) or by running `anaconda login` and `anaconda mcp terms accept` beforehand.
+
+---
+
+## Manual Client Configuration
+
+If you prefer to configure your AI client manually (or need to pass auth via environment variables), add an entry to your client's MCP config JSON.
+
+Example for Claude Code (`.mcp.json`):
+
+```json
+{
+  "mcpServers": {
+    "anaconda-mcp": {
+      "type": "stdio",
+      "command": "/path/to/anaconda3/envs/anaconda-mcp/bin/python",
+      "args": ["-m", "anaconda_mcp", "serve"],
+      "env": {}
+    }
+  }
+}
+```
+
+API keys can be obtained from your [Anaconda account settings](https://anaconda.com/app).
+
+⚠️ **Each client has a different JSON schema.** Check your client's MCP documentation carefully when writing configuration manually — field names and structure vary between Claude Code, Cursor, VS Code, and others.
