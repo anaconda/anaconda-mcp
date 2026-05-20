@@ -118,4 +118,14 @@ Example for Claude Code (`.mcp.json`):
 }
 ```
 
+Optionally, you can pass an API key via the `env` dict instead of running `anaconda login`:
+
+```json
+"env": {
+  "ANACONDA_AUTH_API_KEY": "<your-api-key>"
+}
+```
+
+API keys can be obtained from your [Anaconda account settings](https://anaconda.com/app).
+
 ⚠️ **Each client has a different JSON schema.** Check your client's MCP documentation carefully when writing configuration manually — field names and structure vary between Claude Code, Cursor, VS Code, and others.
