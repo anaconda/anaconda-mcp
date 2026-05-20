@@ -118,11 +118,13 @@ Example for Claude Code (`.mcp.json`):
 }
 ```
 
-Optionally, you can pass an API key via the `env` dict instead of running `anaconda login`:
+Optionally, you can pass authentication and TOS acceptance via the `env` dict instead of running `anaconda login` and `anaconda mcp terms accept`:
 
 ```json
 "env": {
-  "ANACONDA_AUTH_API_KEY": "<your-api-key>"
+  "ANACONDA_AUTH_API_KEY": "<your-api-key>",
+  "ANACONDA_MCP_ACCEPTED_TERMS": "true",
+  "ANACONDA_MCP_ACCEPTED_TERMS_VERSION": "2026-05-19"
 }
 ```
 
