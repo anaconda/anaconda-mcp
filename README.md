@@ -15,7 +15,8 @@
 ## Installation
 
 ```bash
-conda install -c anaconda-connector -c datalayer anaconda-mcp
+conda create -n anaconda-mcp -c anaconda-connector -c datalayer anaconda-mcp
+conda activate anaconda-mcp
 ```
 
 ---
