@@ -12,7 +12,7 @@ import logging
 
 import pytest
 from common.constants.mcp_tools import CondaMetaTools, FilePathSearchArgs
-from common.constants.test_data import FILE_PATH_PATTERN
+from common.constants.test_data import FILE_PATH_CHANNEL, FILE_PATH_PATTERN
 from common.utils.response_validators import (
     validate_conda_meta_success,
     validate_conda_meta_text_content,
@@ -46,6 +46,7 @@ class TestCondaMetaFilePathSearch:
             CondaMetaTools.FILE_PATH_SEARCH,
             {
                 FilePathSearchArgs.PATH: FILE_PATH_PATTERN,
+                FilePathSearchArgs.CHANNEL: FILE_PATH_CHANNEL,
             },
         )
         mcp_result = _extract_mcp_response(response)

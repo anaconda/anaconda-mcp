@@ -13,7 +13,7 @@ import logging
 
 import pytest
 from common.constants.mcp_tools import CondaMetaTools, ImportMappingArgs
-from common.constants.test_data import KNOWN_IMPORT, UNKNOWN_IMPORT
+from common.constants.test_data import FILE_PATH_CHANNEL, KNOWN_IMPORT, UNKNOWN_IMPORT
 from common.utils.response_validators import (
     validate_conda_meta_success,
     validate_conda_meta_text_content,
@@ -47,6 +47,7 @@ class TestCondaMetaImportMapping:
             CondaMetaTools.IMPORT_MAPPING,
             {
                 ImportMappingArgs.IMPORT_NAME: KNOWN_IMPORT,
+                ImportMappingArgs.CHANNEL: FILE_PATH_CHANNEL,
             },
         )
         mcp_result = _extract_mcp_response(response)
@@ -66,6 +67,7 @@ class TestCondaMetaImportMapping:
             CondaMetaTools.IMPORT_MAPPING,
             {
                 ImportMappingArgs.IMPORT_NAME: UNKNOWN_IMPORT,
+                ImportMappingArgs.CHANNEL: FILE_PATH_CHANNEL,
             },
         )
         mcp_result = _extract_mcp_response(response)

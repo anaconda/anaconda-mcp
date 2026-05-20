@@ -61,8 +61,10 @@ SEARCH_PACKAGE_WITH_VERSION = "numpy>=1.20"
 REPOQUERY_SPEC = "python"
 REPOQUERY_CHANNEL = "defaults"
 
-# File path search pattern (common across conda envs).
-FILE_PATH_PATTERN = "yaml/__init__.py"
+# File path search test data.
+# Note: file_path_search requires full path as it exists in the package and only supports conda-forge.
+FILE_PATH_PATTERN = "lib/libyaml.so"
+FILE_PATH_CHANNEL = "conda-forge"
 
 # =============================================================================
 # search-mcp test data

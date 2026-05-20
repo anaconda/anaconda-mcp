@@ -12,7 +12,7 @@ import logging
 
 import pytest
 from common.constants.mcp_tools import CondaMetaTools, PypiToCondaArgs
-from common.constants.test_data import PYPI_PACKAGE
+from common.constants.test_data import FILE_PATH_CHANNEL, PYPI_PACKAGE
 from common.utils.response_validators import (
     validate_conda_meta_success,
     validate_conda_meta_text_content,
@@ -46,6 +46,7 @@ class TestCondaMetaPypiToConda:
             CondaMetaTools.PYPI_TO_CONDA,
             {
                 PypiToCondaArgs.PYPI_NAME: PYPI_PACKAGE,
+                PypiToCondaArgs.CHANNEL: FILE_PATH_CHANNEL,
             },
         )
         mcp_result = _extract_mcp_response(response)

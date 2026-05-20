@@ -92,12 +92,14 @@ class CliHelpArgs(str, Enum):
 
 class FilePathSearchArgs(str, Enum):
     PATH = "path"
+    CHANNEL = "channel"
     LIMIT = "limit"
     OFFSET = "offset"
 
 
 class ImportMappingArgs(str, Enum):
     IMPORT_NAME = "import_name"
+    CHANNEL = "channel"
     GET_KEYS = "get_keys"
 
 
@@ -120,6 +122,7 @@ class PackageSearchArgs(str, Enum):
 
 class PypiToCondaArgs(str, Enum):
     PYPI_NAME = "pypi_name"
+    CHANNEL = "channel"
 
 
 class RepoqueryArgs(str, Enum):

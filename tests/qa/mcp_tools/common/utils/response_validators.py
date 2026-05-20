@@ -176,6 +176,18 @@ def validate_remove_success(result: dict, context: str = "") -> None:
     assert not result.get(ToolResultFields.IS_ERROR), " — ".join(parts)
 
 
+def validate_create_success(result: dict, context: str = "") -> None:
+    """Assert that conda_create_environment returned success."""
+    parts = ["Expected is_error=false (successful create)"]
+    if context:
+        parts.append(context)
+    error_desc = result.get(ToolResultFields.ERROR_DESCRIPTION, "")
+    if error_desc:
+        parts.append(f"error_description: {error_desc!r}")
+    parts.append(f"got: {result!r}")
+    assert not result.get(ToolResultFields.IS_ERROR), " — ".join(parts)
+
+
 def validate_create_error(result: dict, context: str = "") -> None:
     """Assert that conda_create_environment returned an error (e.g., duplicate name)."""
     parts = ["Expected is_error=true (create should fail)"]
