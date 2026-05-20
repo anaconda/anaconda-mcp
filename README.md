@@ -1,226 +1,103 @@
 # Anaconda MCP
 
-Anaconda MCP is a unified gateway that composes multiple [Model Context Protocol (MCP)](https://modelcontextprotocol.io) servers into a single endpoint. It lets AI assistants like Claude Desktop interact with your Anaconda environments and other tools through a consistent interface.
+`anaconda mcp` is a CLI and server for exposing conda environment management tools to MCP-enabled AI coding assistants. It acts as a unified MCP endpoint, giving AI assistants like Claude, Cursor, and VS Code awareness of your conda environments, packages, and channel configurations.
 
-📖 **New to Anaconda MCP?** Start with the [User Guide](docs/USER_GUIDE.md).
+📖 **Full documentation:** [anaconda.com/docs](https://www.anaconda.com/docs/cli-reference/anaconda-mcp/getting-started) · [Development Guide](docs/DEVELOPMENT.md)
 
 ---
 
-# Development Workflow
+## Prerequisites
 
-## Setting Up The Development Environment
+- [Conda](https://docs.conda.io/en/latest/) (Miniconda or Anaconda Distribution)
 
-### Using The Makefile
+---
 
-```bash
-# Setup conda dev environment
-make setup
-
-# Install pre-commit hooks
-make pre-commit-install
-
-# Run tests
-make test
-
-# Run linting
-make lint
-
-# Auto-fix and format code
-make ruff-fix
-
-# Run type checking
-make mypy
-
-# Run all pre-commit checks
-make pre-commit-all
-```
-
-### Using Conda
+## Installation
 
 ```bash
-# Create/update development environment
-conda env create -f environment-dev.yml
-
-# Or update existing environment
-conda env update -f environment-dev.yml --prune
-
-# Activate
-conda activate anaconda-mcp-dev
-```
-
-### Using Pip and UV
-
-```bash
-# Install with dev dependencies
-pip install -e ".[dev]"
-
-# Or using uv
-uv pip install -e ".[dev]"
+conda install -c anaconda-connector -c datalayer anaconda-mcp
 ```
 
 ---
 
-## Pre-commit Workflow
+## Anaconda Login
 
-1. Install hooks:
-   ```bash
-   make pre-commit-install
-   ```
+Authentication is **required**. The server will not start and tool calls will not succeed without a valid Anaconda login.
 
-2. Hooks will run automatically on `git commit`.
+```bash
+anaconda login
+```
 
-3. Run manually on all files:
-   ```bash
-   make pre-commit-all
-   ```
-
-4. Update hooks to latest versions:
-   ```bash
-   make pre-commit-update
-   ```
+This opens a browser for OAuth login and stores the token in your system keyring. Subsequent starts use the stored token automatically.
 
 ---
 
-## Testing Workflow
+## Accept the Terms of Service
 
-1. Run all tests:
-   ```bash
-   make test
-   ```
+Anaconda MCP requires you to accept the [Beta Terms](https://www.anaconda.com/legal/terms/mcpbeta) before tool calls will succeed.
 
-2. Run with coverage:
-   ```bash
-   make test-coverage
-   ```
-
-3. Run specific test markers:
-   ```bash
-   make test-functional
-   make test-integration
-   ```
-
----
-
-## Code Quality Workflow
-
-1. Check code quality:
-   ```bash
-   make lint       # Check with Ruff
-   make mypy       # Check types
-   ```
-
-2. Auto-fix issues:
-   ```bash
-   make ruff-fix   # Fix and format
-   ```
-
-3. Format only:
-   ```bash
-   make format
-   ```
-
----
-
-# CLI Quick Reference
-
-## Running From Source
-
-### `serve`
+**Interactive (recommended):**
 
 ```bash
-PYTHONPATH=src python -m anaconda_mcp serve [--config PATH] [--host HOST] [--port PORT]
+anaconda mcp terms accept
 ```
 
-**Examples:**
-```bash
-PYTHONPATH=src python -m anaconda_mcp serve
-PYTHONPATH=src python -m anaconda_mcp serve --port 8888
-PYTHONPATH=src python -m anaconda_mcp -v serve --config custom.toml
-```
-
-### `compose`
+**Non-interactive (CI / headless):**
 
 ```bash
-PYTHONPATH=src python -m anaconda_mcp compose [OPTIONS]
-```
-
-### `discover`
-
-```bash
-PYTHONPATH=src python -m anaconda_mcp discover [OPTIONS]
+export ANACONDA_MCP_ACCEPTED_TERMS=true
+export ANACONDA_MCP_ACCEPTED_TERMS_VERSION=2026-05-19
 ```
 
 ---
 
-## Running From Installed Package
+## Setup
 
-### `serve`
-
-Start MCP servers from a configuration file.
+Configure your AI client to use Anaconda MCP:
 
 ```bash
-anaconda-mcp serve [--config PATH] [--host HOST] [--port PORT]
+anaconda mcp setup
 ```
 
-**Examples:**
-```bash
-anaconda-mcp serve
-anaconda-mcp serve --port 8888
-anaconda-mcp -v serve --config custom.toml
-```
+This launches an interactive wizard that detects supported clients and writes the appropriate config. Supported clients: Claude Desktop, Claude Code, Cursor, Windsurf, VS Code, and OpenCode.
 
-### `compose`
-
-Compose multiple MCP servers into one.
+To configure a specific client non-interactively:
 
 ```bash
-anaconda-mcp compose [OPTIONS]
-```
-
-**Options:**
-- `-p, --pyproject PATH` — Path to pyproject.toml
-- `-n, --name NAME` — Name for the composed server
-- `-c, --conflict-resolution STRATEGY` — Conflict strategy (`prefix` / `suffix` / `ignore` / `error` / `override`)
-- `--include SERVER` — Include specific servers (repeatable)
-- `--exclude SERVER` — Exclude specific servers (repeatable)
-- `-o, --output PATH` — Output file
-- `--output-format FORMAT` — Output format (`text` / `json`)
-
-**Examples:**
-```bash
-anaconda-mcp compose
-anaconda-mcp compose --name my-server
-anaconda-mcp compose --include conda_environments --include jupyter_server
-anaconda-mcp compose --exclude legacy_server
-anaconda-mcp compose --conflict-resolution prefix --output composed.json --output-format json
-```
-
-### `discover`
-
-Discover available MCP servers.
-
-```bash
-anaconda-mcp discover [--pyproject PATH] [--output-format FORMAT]
-```
-
-**Examples:**
-```bash
-anaconda-mcp discover
-anaconda-mcp discover --output-format json
-anaconda-mcp discover -p /path/to/pyproject.toml
-```
-
-### Global Options
-
-```bash
--h, --help      Show help
--v, --verbose   Enable verbose logging
+anaconda mcp setup --client claude-code
+anaconda mcp setup --client cursor --scope project
 ```
 
 ---
 
-# Custom Configurations
+## Configuration
 
-📖 See [PYTHON_EXECUTABLE_CONFIG.md](docs/PYTHON_EXECUTABLE_CONFIG.md) for Python executable configuration options.
+Anaconda MCP is configured via `mcp_compose.toml.template`, which is rendered at startup. Always edit the template — not `mcp_compose.toml` directly.
 
-📝 **Important:** To customize the server configuration, edit `mcp_compose.toml.template` — not `mcp_compose.toml`. See [SERVER_CONFIGURATION.md](docs/SERVER_CONFIGURATION.md) for details.
+To use a custom config:
+
+```bash
+anaconda mcp serve --config /path/to/my_config.toml
+```
+
+See the [full configuration reference](https://www.anaconda.com/docs/cli-reference/anaconda-mcp/getting-started#configuration) for transport, server composition, tool aliases, and Python executable settings.
+
+---
+
+## Experimental: `ana` CLI
+
+The [`ana` CLI](https://github.com/anaconda/anaconda-cli#installation) handles installation, authentication, and TOS acceptance automatically.
+
+Install `ana`:
+
+```bash
+curl -fsSL https://anaconda.sh/install.sh | sh
+```
+
+Then configure your AI client to launch the MCP server with:
+
+```
+ana mcp serve
+```
+
+Everything else — environment setup, login, terms acceptance — happens automatically.
