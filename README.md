@@ -95,13 +95,13 @@ Then configure your AI client to launch the MCP server with:
 ana mcp serve
 ```
 
-You still need to authenticate and accept TOS. You can do this via environment variables in your client config (see below) or by running `anaconda login` and `anaconda mcp terms accept` beforehand.
+You still need to authenticate and accept TOS by running `anaconda login` and `anaconda mcp terms accept` beforehand.
 
 ---
 
 ## Manual Client Configuration
 
-If you prefer to configure your AI client manually (or need to pass auth via environment variables), add an entry to your client's MCP config JSON.
+If you prefer to configure your AI client manually, add an entry to your client's MCP config JSON.
 
 Example for Claude Code (`.mcp.json`):
 
@@ -117,7 +117,5 @@ Example for Claude Code (`.mcp.json`):
   }
 }
 ```
-
-API keys can be obtained from your [Anaconda account settings](https://anaconda.com/app).
 
 ⚠️ **Each client has a different JSON schema.** Check your client's MCP documentation carefully when writing configuration manually — field names and structure vary between Claude Code, Cursor, VS Code, and others.
