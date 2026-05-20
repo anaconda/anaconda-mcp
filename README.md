@@ -15,7 +15,7 @@
 ## Installation
 
 ```bash
-conda create -n anaconda-mcp -c anaconda-connector -c datalayer anaconda-mcp
+conda create -n anaconda-mcp anaconda-mcp
 conda activate anaconda-mcp
 ```
 
@@ -71,37 +71,9 @@ anaconda mcp setup --client cursor --scope project
 
 ---
 
-## Configuration
-
-Anaconda MCP is configured via `mcp_compose.toml.template`, which is rendered at startup. Always edit the template — not `mcp_compose.toml` directly.
-
-See the [full configuration reference](https://www.anaconda.com/docs/cli-reference/anaconda-mcp/getting-started#configuration) for transport, server composition, tool aliases, and Python executable settings.
-
----
-
-## Experimental: `ana` CLI
-
-The [`ana` CLI](https://github.com/anaconda/anaconda-cli#installation) handles installation and environment setup automatically.
-
-Install `ana`:
-
-```bash
-curl -fsSL https://anaconda.sh/install.sh | sh
-```
-
-Then configure your AI client to launch the MCP server with:
-
-```
-ana mcp serve
-```
-
-You still need to authenticate and accept TOS by running `anaconda login` and `anaconda mcp terms accept` beforehand.
-
----
-
 ## Manual Client Configuration
 
-If you prefer to configure your AI client manually, add an entry to your client's MCP config JSON.
+If you prefer to configure your AI client manually, add an entry to your client's MCP config JSON. The `anaconda mcp setup` command resolves the Python path for you, but if writing by hand you'll need the full path to the environment's Python.
 
 Example for Claude Code (`.mcp.json`):
 
@@ -131,3 +103,32 @@ Optionally, you can pass authentication and TOS acceptance via the `env` dict in
 API keys can be obtained from your [Anaconda account settings](https://anaconda.com/app).
 
 ⚠️ **Each client has a different JSON schema.** Check your client's MCP documentation carefully when writing configuration manually — field names and structure vary between Claude Code, Cursor, VS Code, and others.
+
+---
+
+## Experimental: `ana` CLI
+
+The [`ana` CLI](https://github.com/anaconda/anaconda-cli#installation) handles installation and environment setup automatically, so you don't need to manage a conda environment path.
+
+Install `ana`:
+
+```bash
+curl -fsSL https://anaconda.sh/install.sh | sh
+```
+
+You still need to authenticate and accept TOS by running `anaconda login` and `anaconda mcp terms accept` beforehand.
+
+When configuring your client manually with `ana`, use:
+
+```json
+{
+  "mcpServers": {
+    "anaconda-mcp": {
+      "type": "stdio",
+      "command": "ana",
+      "args": ["mcp", "serve"],
+      "env": {}
+    }
+  }
+}
+```

@@ -2,6 +2,14 @@
 
 ## Setting Up The Development Environment
 
+### Installing pre-release packages
+
+To install package versions that are not yet on `main`, use the `anaconda-connector` and `datalayer` channels:
+
+```bash
+conda install -c anaconda-connector -c datalayer anaconda-mcp
+```
+
 ### Using The Makefile
 
 ```bash
