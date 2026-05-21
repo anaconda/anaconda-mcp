@@ -358,10 +358,13 @@ def clients(project_dir, output_json):
     type=click.Choice(["stdio", "streamable-http"]),
     default="stdio",
     show_default=True,
+    hidden=True,
     help="Transport type.",
 )
-@click.option("--host", default="localhost", show_default=True, help="Host for streamable-http transport.")
-@click.option("--port", default=8888, show_default=True, type=int, help="Port for streamable-http transport.")
+@click.option("--host", default="localhost", show_default=True, hidden=True, help="Host for streamable-http transport.")
+@click.option(
+    "--port", default=8888, show_default=True, type=int, hidden=True, help="Port for streamable-http transport."
+)
 @click.option(
     "-n",
     "--name",
