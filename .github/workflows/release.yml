@@ -38,6 +38,7 @@ jobs:
         uses: conda-incubator/setup-miniconda@v3
         with:
           python-version: ${{ matrix.python-version }}
+          conda-version: "<26.5"
           use-mamba: true
           conda-solver: libmamba
           auto-activate: true
@@ -102,6 +103,7 @@ jobs:
       - name: Setup Miniconda
         uses: conda-incubator/setup-miniconda@v3
         with:
+          conda-version: "<26.5"
           use-mamba: true
           conda-solver: libmamba
           auto-activate: true
