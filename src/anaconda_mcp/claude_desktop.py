@@ -57,25 +57,18 @@ def get_claude_desktop_config_path() -> Path:
         # macOS: ~/Library/Application Support/Claude/claude_desktop_config.json
         return Path.home() / "Library" / "Application Support" / "Claude" / CLAUDE_DESKTOP_CONFIG_FILENAME
     elif system == OSSystems.WINDOWS:
-        # Windows: %APPDATA%\Claude\claude_desktop_config.json
-        # "Real path wins" — MSIX won't virtualize if file exists at real path
-        appdata = os.environ.get("APPDATA")
-        if appdata:
-            legacy_path = Path(appdata) / "Claude" / CLAUDE_DESKTOP_CONFIG_FILENAME
-        else:
-            legacy_path = Path.home() / "AppData" / "Roaming" / "Claude" / CLAUDE_DESKTOP_CONFIG_FILENAME
-
-        # If legacy path exists, use it (MSIX won't virtualize)
-        if legacy_path.exists():
-            return legacy_path
-
-        # Try MSIX virtualized path (fresh MSIX install)
+        # Windows: Check MSIX virtualized path first (current default install),
+        # then fall back to legacy %APPDATA% path
         msix_path = _find_msix_claude_config_path()
         if msix_path is not None:
             return msix_path
 
-        # Default fallback to legacy path
-        return legacy_path
+        # Legacy path (pre-MSIX Squirrel installs)
+        appdata = os.environ.get("APPDATA")
+        if appdata:
+            return Path(appdata) / "Claude" / CLAUDE_DESKTOP_CONFIG_FILENAME
+        else:
+            return Path.home() / "AppData" / "Roaming" / "Claude" / CLAUDE_DESKTOP_CONFIG_FILENAME
     else:
         raise RuntimeError(f"Unsupported operating system: {system}")
 
