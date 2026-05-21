@@ -39,7 +39,8 @@ about:
   home: https://github.com/anaconda/anaconda-mcp
   dev_url: https://github.com/anaconda/anaconda-mcp
   doc_url: https://github.com/anaconda/anaconda-mcp
-  license: "Apache-2.0"
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
 
 extra:
   recipe-maintainers:
