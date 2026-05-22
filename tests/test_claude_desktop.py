@@ -630,3 +630,94 @@ class TestOSSpecificPaths:
         path = get_claude_desktop_config_path()
         assert "AppData" in str(path) or "APPDATA" in str(path).upper()
         assert "Claude" in str(path)
+
+
+class TestGetClaudeDesktopConfigPathMSIX:
+    """Tests for MSIX virtualized path detection on Windows."""
+
+    def test_windows_msix_fresh_install(self):
+        """MSIX path returned when no legacy config file exists."""
+        with mock.patch("platform.system", return_value="Windows"):
+            with mock.patch.dict(
+                os.environ,
+                {
+                    "APPDATA": "C:\\Users\\testuser\\AppData\\Roaming",
+                    "LOCALAPPDATA": "C:\\Users\\testuser\\AppData\\Local",
+                },
+                clear=False,
+            ):
+                with mock.patch.object(Path, "exists", return_value=False):
+                    with mock.patch.object(Path, "is_dir", return_value=True):
+                        with mock.patch(
+                            "anaconda_mcp.claude_desktop.glob.glob",
+                            return_value=["C:\\Users\\testuser\\AppData\\Local\\Packages\\Claude_pzs8sxrjxfjjc"],
+                        ):
+                            path = get_claude_desktop_config_path()
+                            assert "Packages" in str(path)
+                            assert "Claude_pzs8sxrjxfjjc" in str(path)
+                            assert path.name == "claude_desktop_config.json"
+
+    def test_windows_msix_with_legacy_file_present(self):
+        """MSIX path wins even when legacy config file exists."""
+        with mock.patch("platform.system", return_value="Windows"):
+            with mock.patch.dict(
+                os.environ,
+                {
+                    "APPDATA": "C:\\Users\\testuser\\AppData\\Roaming",
+                    "LOCALAPPDATA": "C:\\Users\\testuser\\AppData\\Local",
+                },
+                clear=False,
+            ):
+                with mock.patch.object(Path, "is_dir", return_value=True):
+                    with mock.patch(
+                        "anaconda_mcp.claude_desktop.glob.glob",
+                        return_value=["C:\\Users\\testuser\\AppData\\Local\\Packages\\Claude_pzs8sxrjxfjjc"],
+                    ):
+                        path = get_claude_desktop_config_path()
+                        assert "Packages" in str(path)
+                        assert "Claude_pzs8sxrjxfjjc" in str(path)
+
+    def test_windows_missing_localappdata(self):
+        """Graceful fallback to legacy when LOCALAPPDATA is not set."""
+        with mock.patch("platform.system", return_value="Windows"):
+            with mock.patch.dict(os.environ, {"APPDATA": "C:\\Users\\testuser\\AppData\\Roaming"}, clear=True):
+                with mock.patch.object(Path, "exists", return_value=False):
+                    # Should not raise, should return legacy path
+                    path = get_claude_desktop_config_path()
+                    assert path.name == "claude_desktop_config.json"
+                    assert "Packages" not in str(path)
+
+    def test_windows_no_packages_dir(self):
+        """Falls back to legacy when Packages directory doesn't exist."""
+        with mock.patch("platform.system", return_value="Windows"):
+            with mock.patch.dict(
+                os.environ,
+                {
+                    "APPDATA": "C:\\Users\\testuser\\AppData\\Roaming",
+                    "LOCALAPPDATA": "C:\\Users\\testuser\\AppData\\Local",
+                },
+                clear=False,
+            ):
+                with mock.patch.object(Path, "exists", return_value=False):
+                    with mock.patch.object(Path, "is_dir", return_value=False):
+                        path = get_claude_desktop_config_path()
+                        assert "Packages" not in str(path)
+                        path_str = str(path).replace("\\", "/")
+                        assert "AppData/Roaming" in path_str or "AppData\\Roaming" in str(path)
+
+    def test_windows_no_claude_package(self):
+        """Falls back to legacy when no Claude_* directory exists in Packages."""
+        with mock.patch("platform.system", return_value="Windows"):
+            with mock.patch.dict(
+                os.environ,
+                {
+                    "APPDATA": "C:\\Users\\testuser\\AppData\\Roaming",
+                    "LOCALAPPDATA": "C:\\Users\\testuser\\AppData\\Local",
+                },
+                clear=False,
+            ):
+                with mock.patch.object(Path, "exists", return_value=False):
+                    with mock.patch.object(Path, "is_dir", return_value=True):
+                        with mock.patch("anaconda_mcp.claude_desktop.glob.glob", return_value=[]):
+                            path = get_claude_desktop_config_path()
+                            assert "Packages" not in str(path)

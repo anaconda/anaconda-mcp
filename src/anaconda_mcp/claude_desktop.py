@@ -6,6 +6,7 @@ Anaconda MCP, supporting both STDIO and Streamable HTTP transports across
 Linux, macOS, and Windows.
 """
 
+import glob
 import json
 import os
 import shutil
@@ -15,6 +16,26 @@ from pathlib import Path
 from typing import Any
 
 from .consts import OSSystems, TransportTypes
+
+CLAUDE_DESKTOP_CONFIG_FILENAME = "claude_desktop_config.json"
+
+
+def _find_msix_claude_config_path() -> Path | None:
+    """Find Claude Desktop config at MSIX virtualized path on Windows.
+
+    Returns:
+        Path to MSIX Claude config if found, None otherwise
+    """
+    local_appdata = os.environ.get("LOCALAPPDATA")
+    if not local_appdata:
+        return None
+    packages_dir = Path(local_appdata) / "Packages"
+    if not packages_dir.is_dir():
+        return None
+    matches = glob.glob(str(packages_dir / "Claude_*"))
+    if not matches:
+        return None
+    return Path(matches[0]) / "LocalCache" / "Roaming" / "Claude" / CLAUDE_DESKTOP_CONFIG_FILENAME
 
 
 def get_claude_desktop_config_path() -> Path:
@@ -31,17 +52,23 @@ def get_claude_desktop_config_path() -> Path:
 
     if system == OSSystems.LINUX:
         # Linux: ~/.config/Claude/claude_desktop_config.json
-        return Path.home() / ".config" / "Claude" / "claude_desktop_config.json"
+        return Path.home() / ".config" / "Claude" / CLAUDE_DESKTOP_CONFIG_FILENAME
     elif system == OSSystems.DARWIN:
         # macOS: ~/Library/Application Support/Claude/claude_desktop_config.json
-        return Path.home() / "Library" / "Application Support" / "Claude" / "claude_desktop_config.json"
+        return Path.home() / "Library" / "Application Support" / "Claude" / CLAUDE_DESKTOP_CONFIG_FILENAME
     elif system == OSSystems.WINDOWS:
-        # Windows: %APPDATA%\Claude\claude_desktop_config.json
+        # Windows: Check MSIX virtualized path first (current default install),
+        # then fall back to legacy %APPDATA% path
+        msix_path = _find_msix_claude_config_path()
+        if msix_path is not None:
+            return msix_path
+
+        # Legacy path (pre-MSIX Squirrel installs)
         appdata = os.environ.get("APPDATA")
         if appdata:
-            return Path(appdata) / "Claude" / "claude_desktop_config.json"
+            return Path(appdata) / "Claude" / CLAUDE_DESKTOP_CONFIG_FILENAME
         else:
-            return Path.home() / "AppData" / "Roaming" / "Claude" / "claude_desktop_config.json"
+            return Path.home() / "AppData" / "Roaming" / "Claude" / CLAUDE_DESKTOP_CONFIG_FILENAME
     else:
         raise RuntimeError(f"Unsupported operating system: {system}")
 
