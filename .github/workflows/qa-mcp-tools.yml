@@ -426,6 +426,17 @@ jobs:
           echo "=== Server env conda info ==="
           conda run -n "$SERVER_ENV" --no-capture-output conda info
           echo ""
+          echo "=== Server env installed components ==="
+          conda run -n "$SERVER_ENV" --no-capture-output python --version
+          echo ""
+          echo "Pip packages:"
+          conda run -n "$SERVER_ENV" --no-capture-output pip show anaconda-mcp environments-mcp-server mcp-compose 2>/dev/null \
+            | grep -E "^(Name|Version):" || true
+          echo ""
+          echo "Conda packages:"
+          conda run -n "$SERVER_ENV" --no-capture-output conda list \
+            | grep -E "^(python|anaconda-connector|anaconda-anon-usage|conda-meta-mcp|mcp) " || true
+          echo ""
           echo "=== Server env conda config ==="
           conda run -n "$SERVER_ENV" --no-capture-output conda config --show channels
           conda run -n "$SERVER_ENV" --no-capture-output conda config --show envs_dirs
