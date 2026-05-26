@@ -337,8 +337,9 @@ def mcp_server(request: pytest.FixtureRequest, server_url: str):
         logger.info("Starting MCP server (conda env: %s, port: %s, conda: %s)", conda_env, port, conda_exe)
         env = os.environ.copy()
         # Terms acceptance required by main branch
-        env["ANACONDA_MCP_ACCEPTED_TERMS"] = "true"
-        env["ANACONDA_MCP_ACCEPTED_TERMS_VERSION"] = "2026-01-01"
+        # Use env var if set (CI), otherwise fall back to default
+        env["ANACONDA_MCP_ACCEPTED_TERMS"] = os.environ.get("ANACONDA_MCP_ACCEPTED_TERMS", "true")
+        env["ANACONDA_MCP_ACCEPTED_TERMS_VERSION"] = os.environ.get("ANACONDA_MCP_ACCEPTED_TERMS_VERSION", "2026-05-19")
         # Ensure auth token is passed to subprocess
         if _AUTH_STATE_CACHE and _AUTH_STATE_CACHE.token:
             env["ANACONDA_AUTH_API_KEY"] = _AUTH_STATE_CACHE.token
@@ -467,8 +468,9 @@ def _stdio_server_context(
     env = os.environ.copy()
     env["PYTHONUNBUFFERED"] = "1"
     # Terms acceptance required by main branch
-    env["ANACONDA_MCP_ACCEPTED_TERMS"] = "true"
-    env["ANACONDA_MCP_ACCEPTED_TERMS_VERSION"] = "2026-01-01"
+    # Use env var if set (CI), otherwise fall back to default
+    env["ANACONDA_MCP_ACCEPTED_TERMS"] = os.environ.get("ANACONDA_MCP_ACCEPTED_TERMS", "true")
+    env["ANACONDA_MCP_ACCEPTED_TERMS_VERSION"] = os.environ.get("ANACONDA_MCP_ACCEPTED_TERMS_VERSION", "2026-05-19")
     # Ensure auth token is passed to subprocess
     # Token should already be in os.environ from pytest_configure, but explicit is safer
     if _AUTH_STATE_CACHE and _AUTH_STATE_CACHE.token:

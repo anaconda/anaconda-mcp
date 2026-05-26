@@ -130,6 +130,30 @@ The workflow uses this secret as `ANACONDA_AUTH_API_KEY`.
 RuntimeError: Not authenticated with Anaconda. Run 'anaconda-auth login' or sign in when prompted.
 ```
 
+### Terms of Service Acceptance
+
+The MCP server requires Terms of Service acceptance to start.
+
+#### Local Development
+
+Set these environment variables before running tests:
+
+```bash
+export ANACONDA_MCP_ACCEPTED_TERMS=true
+export ANACONDA_MCP_ACCEPTED_TERMS_VERSION=2026-05-19
+```
+
+Or the test harness will use defaults (`true` and `2026-05-19`).
+
+#### GitHub Actions
+
+The workflow configures these automatically via the `terms_version` input (default: `2026-05-19`). Update the default when the Terms of Service version changes.
+
+**If terms not accepted:** Server startup fails with:
+```
+⚠️  Anaconda MCP cannot start: You must accept the Anaconda MCP Terms of Service.
+```
+
 ### search-mcp setup
 
 search-mcp is a remote service hosted at `anaconda.com/api/search/mcp` (no local installation required).

@@ -45,17 +45,31 @@ on:
         description: 'mcp-compose branch or tag (empty = use pip-installed version)'
         required: false
         default: 'v0.1.12'
-      python_version:
-        description: 'Python version (>=3.13 required for conda-meta-mcp tests)'
+      terms_version:
+        description: 'Terms of Service version (ANACONDA_MCP_ACCEPTED_TERMS_VERSION)'
         required: false
-        default: '3.13'
-        type: choice
-        options:
-          - '3.14'
-          - '3.13'
-          - '3.12'
-          - '3.11'
-          - '3.10'
+        default: '2026-05-19'
+
+      # ── Multi-select: Python versions ────────────────────────────────────────────
+      # Check multiple boxes to run tests across multiple Python versions
+      # Note: >=3.13 required if conda-meta-mcp is enabled
+      python_3_10:
+        description: 'Python 3.10'
+        type: boolean
+        default: false
+      python_3_11:
+        description: 'Python 3.11'
+        type: boolean
+        default: false
+      python_3_12:
+        description: 'Python 3.12'
+        type: boolean
+        default: true
+      python_3_13:
+        description: 'Python 3.13'
+        type: boolean
+        default: false
+
       test_scope:
         description: 'Which tests to run'
         required: false
@@ -122,7 +136,6 @@ jobs:
 
     outputs:
       matrix:                ${{ steps.matrix.outputs.matrix }}
-      python-version:        ${{ steps.params.outputs.python-version }}
       test-scope:            ${{ steps.params.outputs.test-scope }}
       anaconda-mcp-ref:      ${{ steps.params.outputs.anaconda-mcp-ref }}
       env-mcp-ref:           ${{ steps.params.outputs.env-mcp-ref }}
@@ -131,12 +144,12 @@ jobs:
       compose-ref:           ${{ steps.params.outputs.compose-ref }}
       conda-meta-ver:        ${{ steps.params.outputs.conda-meta-ver }}
       install-conda-meta:    ${{ steps.params.outputs.install-conda-meta }}
+      terms-version:         ${{ steps.params.outputs.terms-version }}
 
     steps:
       - name: Resolve parameters
         id: params
         run: |
-          PYTHON_VERSION="${{ inputs.python_version        || '3.13' }}"
           TEST_SCOPE="${{ inputs.test_scope                || 'all-no-hangs' }}"
           ANACONDA_MCP_REF="${{ inputs.anaconda_mcp_ref    || 'v1.1.0-rc.5' }}"
           ENV_MCP_REF="${{ inputs.environments_mcp_ref     || 'v1.0.5' }}"
@@ -145,9 +158,9 @@ jobs:
           COMPOSE_REF="${{ inputs.mcp_compose_ref          || 'v0.1.12' }}"
           CONDA_META_VER="${{ inputs.conda_meta_mcp_ver    || '0.1.2' }}"
           INSTALL_CONDA_META="${{ inputs.install_conda_meta_mcp || 'false' }}"
+          TERMS_VERSION="${{ inputs.terms_version          || '2026-05-19' }}"
 
           {
-            echo "python-version=$PYTHON_VERSION"
             echo "test-scope=$TEST_SCOPE"
             echo "anaconda-mcp-ref=$ANACONDA_MCP_REF"
             echo "env-mcp-ref=$ENV_MCP_REF"
@@ -156,10 +169,10 @@ jobs:
             echo "compose-ref=$COMPOSE_REF"
             echo "conda-meta-ver=$CONDA_META_VER"
             echo "install-conda-meta=$INSTALL_CONDA_META"
+            echo "terms-version=$TERMS_VERSION"
           } >> "$GITHUB_OUTPUT"
 
           echo "=== Resolved parameters ==="
-          printf "%-22s %s\n" "python:"           "$PYTHON_VERSION"
           printf "%-22s %s\n" "test-scope:"       "$TEST_SCOPE"
           printf "%-22s %s\n" "anaconda-mcp:"     "${ANACONDA_MCP_REF:-<triggered commit>}"
           printf "%-22s %s\n" "environments-mcp:" "$ENV_MCP_REF"
@@ -168,10 +181,23 @@ jobs:
           printf "%-22s %s\n" "mcp-compose ref:"  "${COMPOSE_REF:-<pip-installed version>}"
           printf "%-22s %s\n" "conda-meta-mcp:"   "${CONDA_META_VER:-<latest from conda-forge>}"
           printf "%-22s %s\n" "install conda-meta:" "$INSTALL_CONDA_META"
+          printf "%-22s %s\n" "terms version:"    "$TERMS_VERSION"
 
-      - name: Build runner × profile matrix
+      - name: Build runner × profile × python matrix
         id: matrix
         run: |
+          # Build Python versions array from checkboxes (default to 3.12 if none selected)
+          PYTHONS=()
+          [[ "${{ inputs.python_3_10 }}" == "true" ]]  && PYTHONS+=("3.10")
+          [[ "${{ inputs.python_3_11 }}" == "true" ]]  && PYTHONS+=("3.11")
+          [[ "${{ inputs.python_3_12 }}" == "true" ]]  && PYTHONS+=("3.12")
+          [[ "${{ inputs.python_3_13 }}" == "true" ]]  && PYTHONS+=("3.13")
+
+          # Default to 3.12 if no Python version selected
+          if [[ ${#PYTHONS[@]} -eq 0 ]]; then
+            PYTHONS=("3.12")
+          fi
+
           # Build runners array from checkboxes (default to macos-latest if none selected)
           RUNNERS=()
           [[ "${{ inputs.runner_macos }}" == "true" ]]              && RUNNERS+=("macos-latest")
@@ -196,17 +222,19 @@ jobs:
             PROFILES=("stdio-http")
           fi
 
-          # Build JSON matrix (runner × profile)
+          # Build JSON matrix (runner × profile × python)
           MATRIX_JSON='{"include":['
           FIRST=true
           for runner in "${RUNNERS[@]}"; do
             for profile in "${PROFILES[@]}"; do
-              if [[ "$FIRST" == "true" ]]; then
-                FIRST=false
-              else
-                MATRIX_JSON+=','
-              fi
-              MATRIX_JSON+="{\"runner\":\"$runner\",\"profile\":\"$profile\"}"
+              for python in "${PYTHONS[@]}"; do
+                if [[ "$FIRST" == "true" ]]; then
+                  FIRST=false
+                else
+                  MATRIX_JSON+=','
+                fi
+                MATRIX_JSON+="{\"runner\":\"$runner\",\"profile\":\"$profile\",\"python\":\"$python\"}"
+              done
             done
           done
           MATRIX_JSON+=']}'
@@ -218,20 +246,22 @@ jobs:
           # Summary
           echo "### Test Matrix" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Runner | Profile |" >> "$GITHUB_STEP_SUMMARY"
-          echo "|--------|---------|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Runner | Profile | Python |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|--------|---------|--------|" >> "$GITHUB_STEP_SUMMARY"
           for runner in "${RUNNERS[@]}"; do
             for profile in "${PROFILES[@]}"; do
-              echo "| $runner | $profile |" >> "$GITHUB_STEP_SUMMARY"
+              for python in "${PYTHONS[@]}"; do
+                echo "| $runner | $profile | $python |" >> "$GITHUB_STEP_SUMMARY"
+              done
             done
           done
           echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "**Total configurations**: $((${#RUNNERS[@]} * ${#PROFILES[@]}))" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Total configurations**: $((${#RUNNERS[@]} * ${#PROFILES[@]} * ${#PYTHONS[@]}))" >> "$GITHUB_STEP_SUMMARY"
 
-  # ── Tests (matrix: runner × profile) ──────────────────────────────────────────
+  # ── Tests (matrix: runner × profile × python) ─────────────────────────────────
   test:
     needs: setup
-    name: "[${{ matrix.runner }}] py${{ needs.setup.outputs.python-version }} / ${{ matrix.profile }}"
+    name: "[${{ matrix.runner }}] py${{ matrix.python }} / ${{ matrix.profile }}"
     runs-on: ${{ matrix.runner }}
 
     strategy:
@@ -244,7 +274,7 @@ jobs:
 
     env:
       RUNNER:             ${{ matrix.runner }}
-      PYTHON_VERSION:     ${{ needs.setup.outputs.python-version }}
+      PYTHON_VERSION:     ${{ matrix.python }}
       MCP_PROFILE:        ${{ matrix.profile }}
       TEST_SCOPE:         ${{ needs.setup.outputs.test-scope }}
       ANACONDA_MCP_REF:   ${{ needs.setup.outputs.anaconda-mcp-ref }}
@@ -254,6 +284,7 @@ jobs:
       COMPOSE_REF:        ${{ needs.setup.outputs.compose-ref }}
       CONDA_META_VER:     ${{ needs.setup.outputs.conda-meta-ver }}
       INSTALL_CONDA_META: ${{ needs.setup.outputs.install-conda-meta }}
+      TERMS_VERSION:      ${{ needs.setup.outputs.terms-version }}
       SERVER_ENV:         anaconda-mcp-server
       QA_ENV:             anaconda-mcp-qa
 
@@ -447,10 +478,12 @@ jobs:
         env:
           MCP_SERVER_CONDA_ENV: ${{ env.SERVER_ENV }}
           ANACONDA_AUTH_API_KEY: ${{ secrets.TEST_API_KEY }}
+          ANACONDA_MCP_ACCEPTED_TERMS: "true"
+          ANACONDA_MCP_ACCEPTED_TERMS_VERSION: ${{ env.TERMS_VERSION }}
         run: |
           # Create results directory upfront so artifact upload always has something
           mkdir -p results
-          RESULT_FILE="results/${{ matrix.runner }}-${{ matrix.profile }}.txt"
+          RESULT_FILE="results/${{ matrix.runner }}-${{ matrix.profile }}-py${{ matrix.python }}.txt"
 
           # Initialize with error state (will be overwritten on success)
           echo "passed=0" > "$RESULT_FILE"
@@ -594,7 +627,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: "qa-report-${{ matrix.runner }}-${{ matrix.profile }}-py${{ env.PYTHON_VERSION }}"
+          name: "qa-report-${{ matrix.runner }}-${{ matrix.profile }}-py${{ matrix.python }}"
           path: tests/qa/mcp_tools/reports/report.html
           if-no-files-found: ignore
 
@@ -602,7 +635,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: "result-${{ matrix.runner }}-${{ matrix.profile }}"
+          name: "result-${{ matrix.runner }}-${{ matrix.profile }}-py${{ matrix.python }}"
           path: results/
           if-no-files-found: warn
 
@@ -641,7 +674,6 @@ jobs:
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "| Parameter | Value |" >> "$GITHUB_STEP_SUMMARY"
           echo "|-----------|-------|" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Python | ${{ needs.setup.outputs.python-version }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Test Scope | ${{ needs.setup.outputs.test-scope }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| anaconda-mcp | ${{ needs.setup.outputs.anaconda-mcp-ref }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| environments-mcp | ${{ needs.setup.outputs.env-mcp-ref }} |" >> "$GITHUB_STEP_SUMMARY"
@@ -655,10 +687,10 @@ jobs:
           echo "" >> "$GITHUB_STEP_SUMMARY"
 
           # Results table
-          echo "### Results by Runner × Profile" >> "$GITHUB_STEP_SUMMARY"
+          echo "### Results by Runner × Profile × Python" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Runner | Profile | Passed | Failed | Skipped | Errors | Status |" >> "$GITHUB_STEP_SUMMARY"
-          echo "|--------|---------|--------|--------|---------|--------|--------|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Runner | Profile | Python | Passed | Failed | Skipped | Errors | Status |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|--------|---------|--------|--------|--------|---------|--------|--------|" >> "$GITHUB_STEP_SUMMARY"
 
           CONFIGS_PASSED=0
           CONFIGS_FAILED=0
@@ -669,18 +701,20 @@ jobs:
 
           shopt -s nullglob
           # Try multiple path patterns in case directory structure varies
-          # File names are: runner-profile.txt (e.g., macos-latest-stdio-http.txt)
+          # File names are: runner-profile-pyX.Y.txt (e.g., macos-latest-stdio-http-py3.12.txt)
           for file in all-results/*.txt all-results/*/*.txt all-results/*/*/*.txt; do
             if [[ -f "$file" ]]; then
               BASENAME=$(basename "$file" .txt)
-              # Parse runner and profile from filename (format: runner-profile)
-              # Profile is last component (stdio-http, http-http, stdio-stdio)
-              if [[ "$BASENAME" =~ ^(.+)-(stdio-http|http-http|stdio-stdio)$ ]]; then
+              # Parse runner, profile, and python from filename
+              # Format: runner-profile-pyX.Y (e.g., macos-latest-stdio-http-py3.12)
+              if [[ "$BASENAME" =~ ^(.+)-(stdio-http|http-http|stdio-stdio)-py([0-9]+\.[0-9]+)$ ]]; then
                 RUNNER="${BASH_REMATCH[1]}"
                 PROFILE="${BASH_REMATCH[2]}"
+                PYTHON="${BASH_REMATCH[3]}"
               else
                 RUNNER="$BASENAME"
                 PROFILE="unknown"
+                PYTHON="unknown"
               fi
 
               # Read test counts from file
@@ -699,12 +733,12 @@ jobs:
                 CONFIGS_FAILED=$((CONFIGS_FAILED + 1))
               fi
 
-              echo "| $RUNNER | $PROFILE | ${passed:-0} | ${failed:-0} | ${skipped:-0} | ${errors:-0} | $ICON |" >> "$GITHUB_STEP_SUMMARY"
+              echo "| $RUNNER | $PROFILE | $PYTHON | ${passed:-0} | ${failed:-0} | ${skipped:-0} | ${errors:-0} | $ICON |" >> "$GITHUB_STEP_SUMMARY"
             fi
           done
 
           if [[ $TOTAL_CONFIGS -eq 0 ]]; then
-            echo "| (no results found) | - | - | - | - | - | - |" >> "$GITHUB_STEP_SUMMARY"
+            echo "| (no results found) | - | - | - | - | - | - | - |" >> "$GITHUB_STEP_SUMMARY"
           fi
 
           echo "" >> "$GITHUB_STEP_SUMMARY"
