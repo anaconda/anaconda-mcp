@@ -17,11 +17,11 @@ on:
       anaconda_mcp_ref:
         description: 'anaconda-mcp branch or tag (empty = triggered commit)'
         required: false
-        default: 'v1.1.0-rc.0'
+        default: 'v1.1.0-rc.5'
       environments_mcp_ref:
         description: 'environments-mcp branch or tag'
         required: false
-        default: 'v1.0.0'
+        default: 'v1.0.5'
       anaconda_connector_ver:
         description: 'anaconda-connector conda package version (e.g. 0.1.11); empty = transitive dep'
         required: false
@@ -138,8 +138,8 @@ jobs:
         run: |
           PYTHON_VERSION="${{ inputs.python_version        || '3.13' }}"
           TEST_SCOPE="${{ inputs.test_scope                || 'all-no-hangs' }}"
-          ANACONDA_MCP_REF="${{ inputs.anaconda_mcp_ref    || 'v1.1.0-rc.0' }}"
-          ENV_MCP_REF="${{ inputs.environments_mcp_ref     || 'v1.0.0' }}"
+          ANACONDA_MCP_REF="${{ inputs.anaconda_mcp_ref    || 'v1.1.0-rc.5' }}"
+          ENV_MCP_REF="${{ inputs.environments_mcp_ref     || 'v1.0.5' }}"
           CONNECTOR_VER="${{ inputs.anaconda_connector_ver || '0.1.11' }}"
           COMPOSE_REPO="${{ inputs.mcp_compose_repo        || 'https://github.com/datalayer/mcp-compose' }}"
           COMPOSE_REF="${{ inputs.mcp_compose_ref          || 'v0.1.12' }}"
