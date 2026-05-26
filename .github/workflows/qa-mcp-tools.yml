@@ -29,7 +29,14 @@ on:
       conda_meta_mcp_ver:
         description: 'conda-meta-mcp conda package version (empty = latest from conda-forge)'
         required: false
-        default: '0.1.1'
+        default: '0.1.2'
+
+      # ── conda-meta-mcp install toggle ─────────────────────────────────────────────
+      install_conda_meta_mcp:
+        description: 'Install conda-meta-mcp (enables 9 additional tools)'
+        type: boolean
+        default: false
+
       mcp_compose_repo:
         description: 'mcp-compose GitHub URL (fork or canonical)'
         required: false
@@ -114,15 +121,16 @@ jobs:
         shell: bash
 
     outputs:
-      matrix:             ${{ steps.matrix.outputs.matrix }}
-      python-version:     ${{ steps.params.outputs.python-version }}
-      test-scope:         ${{ steps.params.outputs.test-scope }}
-      anaconda-mcp-ref:   ${{ steps.params.outputs.anaconda-mcp-ref }}
-      env-mcp-ref:        ${{ steps.params.outputs.env-mcp-ref }}
-      connector-ver:      ${{ steps.params.outputs.connector-ver }}
-      compose-repo:       ${{ steps.params.outputs.compose-repo }}
-      compose-ref:        ${{ steps.params.outputs.compose-ref }}
-      conda-meta-ver:     ${{ steps.params.outputs.conda-meta-ver }}
+      matrix:                ${{ steps.matrix.outputs.matrix }}
+      python-version:        ${{ steps.params.outputs.python-version }}
+      test-scope:            ${{ steps.params.outputs.test-scope }}
+      anaconda-mcp-ref:      ${{ steps.params.outputs.anaconda-mcp-ref }}
+      env-mcp-ref:           ${{ steps.params.outputs.env-mcp-ref }}
+      connector-ver:         ${{ steps.params.outputs.connector-ver }}
+      compose-repo:          ${{ steps.params.outputs.compose-repo }}
+      compose-ref:           ${{ steps.params.outputs.compose-ref }}
+      conda-meta-ver:        ${{ steps.params.outputs.conda-meta-ver }}
+      install-conda-meta:    ${{ steps.params.outputs.install-conda-meta }}
 
     steps:
       - name: Resolve parameters
@@ -135,7 +143,8 @@ jobs:
           CONNECTOR_VER="${{ inputs.anaconda_connector_ver || '0.1.11' }}"
           COMPOSE_REPO="${{ inputs.mcp_compose_repo        || 'https://github.com/datalayer/mcp-compose' }}"
           COMPOSE_REF="${{ inputs.mcp_compose_ref          || 'v0.1.12' }}"
-          CONDA_META_VER="${{ inputs.conda_meta_mcp_ver    || '0.1.1' }}"
+          CONDA_META_VER="${{ inputs.conda_meta_mcp_ver    || '0.1.2' }}"
+          INSTALL_CONDA_META="${{ inputs.install_conda_meta_mcp || 'false' }}"
 
           {
             echo "python-version=$PYTHON_VERSION"
@@ -146,6 +155,7 @@ jobs:
             echo "compose-repo=$COMPOSE_REPO"
             echo "compose-ref=$COMPOSE_REF"
             echo "conda-meta-ver=$CONDA_META_VER"
+            echo "install-conda-meta=$INSTALL_CONDA_META"
           } >> "$GITHUB_OUTPUT"
 
           echo "=== Resolved parameters ==="
@@ -157,6 +167,7 @@ jobs:
           printf "%-22s %s\n" "mcp-compose repo:" "$COMPOSE_REPO"
           printf "%-22s %s\n" "mcp-compose ref:"  "${COMPOSE_REF:-<pip-installed version>}"
           printf "%-22s %s\n" "conda-meta-mcp:"   "${CONDA_META_VER:-<latest from conda-forge>}"
+          printf "%-22s %s\n" "install conda-meta:" "$INSTALL_CONDA_META"
 
       - name: Build runner × profile matrix
         id: matrix
@@ -242,6 +253,7 @@ jobs:
       COMPOSE_REPO:       ${{ needs.setup.outputs.compose-repo }}
       COMPOSE_REF:        ${{ needs.setup.outputs.compose-ref }}
       CONDA_META_VER:     ${{ needs.setup.outputs.conda-meta-ver }}
+      INSTALL_CONDA_META: ${{ needs.setup.outputs.install-conda-meta }}
       SERVER_ENV:         anaconda-mcp-server
       QA_ENV:             anaconda-mcp-qa
 
@@ -271,6 +283,24 @@ jobs:
           # on ubuntu-latest, which causes path resolution issues in environments-mcp
           miniconda-version: "latest"
 
+      # ── Configure conda channels ──────────────────────────────────────────────
+      # Order matters (highest priority first): anaconda-cloud/label/dev, anaconda-cloud, datalayer, defaults
+      # conda-forge is only added when conda-meta-mcp is installed
+      - name: Configure conda channels
+        run: |
+          conda config --set ssl_verify true
+          conda config --add channels defaults
+          conda config --add channels datalayer
+          conda config --add channels anaconda-cloud
+          conda config --add channels anaconda-cloud/label/dev
+          # Add conda-forge only if conda-meta-mcp will be installed
+          if [[ "$INSTALL_CONDA_META" == "true" ]]; then
+            conda config --add channels conda-forge
+            echo "Added conda-forge channel for conda-meta-mcp"
+          fi
+          echo "=== Configured channels ==="
+          conda config --show channels
+
       # ── QA runner env ─────────────────────────────────────────────────────────
       - name: Create / update QA env (pytest + dependencies)
         run: |
@@ -291,7 +321,7 @@ jobs:
           conda run -n "$SERVER_ENV" --no-capture-output pip install -e "$SRC"
 
       - name: Install anaconda-anon-usage
-        run: conda install -n "$SERVER_ENV" -c defaults --yes anaconda-anon-usage
+        run: conda install -n "$SERVER_ENV" --yes anaconda-anon-usage
 
       - name: Checkout environments-mcp (${{ needs.setup.outputs.env-mcp-ref }})
         uses: actions/checkout@v4
@@ -321,11 +351,13 @@ jobs:
           fi
 
       - name: Install conda-meta-mcp
+        if: ${{ env.INSTALL_CONDA_META == 'true' }}
         run: |
+          # conda-forge channel is already configured when INSTALL_CONDA_META=true
           if [[ -n "$CONDA_META_VER" ]]; then
-            conda install -n "$SERVER_ENV" -c conda-forge --yes "conda-meta-mcp=$CONDA_META_VER"
+            conda install -n "$SERVER_ENV" --yes "conda-meta-mcp=$CONDA_META_VER"
           else
-            conda install -n "$SERVER_ENV" -c conda-forge --yes conda-meta-mcp
+            conda install -n "$SERVER_ENV" --yes conda-meta-mcp
           fi
 
       # mcp-compose pyproject.toml has a build hook that compiles a UI bundle;
@@ -433,14 +465,29 @@ jobs:
           [[ "$MCP_PROFILE" == "http-http" ]] && EXTRA_ARGS+=("--start-server")
 
           # Determine test scope
+          # When conda-meta-mcp is not installed, exclude its tests from broad scopes
+          EXCLUDE_CONDA_META=""
+          if [[ "$INSTALL_CONDA_META" != "true" ]]; then
+            EXCLUDE_CONDA_META="not conda_meta and "
+          fi
+
           case "$TEST_SCOPE" in
             all-no-hangs)
               EXTRA_ARGS+=("--skip-hang-stress")
+              if [[ -n "$EXCLUDE_CONDA_META" ]]; then
+                EXTRA_ARGS+=("-k" "${EXCLUDE_CONDA_META%and }")
+              fi
               ;;
             all-with-hangs)
+              if [[ -n "$EXCLUDE_CONDA_META" ]]; then
+                EXTRA_ARGS+=("-k" "${EXCLUDE_CONDA_META%and }")
+              fi
               ;;
             hang-only)
               EXTRA_ARGS+=("-m" "hang_stress")
+              if [[ -n "$EXCLUDE_CONDA_META" ]]; then
+                EXTRA_ARGS+=("-k" "${EXCLUDE_CONDA_META%and }")
+              fi
               ;;
             environments-mcp)
               EXTRA_ARGS+=("--skip-hang-stress" "-k" "not conda_meta and not search")
@@ -449,6 +496,10 @@ jobs:
               EXTRA_ARGS+=("--skip-hang-stress" "-k" "search")
               ;;
             conda-meta-mcp)
+              if [[ "$INSTALL_CONDA_META" != "true" ]]; then
+                echo "ERROR: conda-meta-mcp scope selected but install_conda_meta_mcp is false"
+                exit 1
+              fi
               EXTRA_ARGS+=("--skip-hang-stress" "-k" "conda_meta")
               ;;
           esac
@@ -594,7 +645,12 @@ jobs:
           echo "| Test Scope | ${{ needs.setup.outputs.test-scope }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| anaconda-mcp | ${{ needs.setup.outputs.anaconda-mcp-ref }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| environments-mcp | ${{ needs.setup.outputs.env-mcp-ref }} |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| conda-meta-mcp | ${{ needs.setup.outputs.conda-meta-ver }} |" >> "$GITHUB_STEP_SUMMARY"
+          CONDA_META_STATUS="${{ needs.setup.outputs.install-conda-meta }}"
+          if [[ "$CONDA_META_STATUS" == "true" ]]; then
+            echo "| conda-meta-mcp | ${{ needs.setup.outputs.conda-meta-ver }} ✓ |" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "| conda-meta-mcp | (not installed) |" >> "$GITHUB_STEP_SUMMARY"
+          fi
           echo "| mcp-compose | ${{ needs.setup.outputs.compose-ref }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
 
