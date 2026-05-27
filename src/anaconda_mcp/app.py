@@ -22,11 +22,9 @@ app = typer.Typer(
 @app.callback(invoke_without_command=True)
 def main(
     ctx: typer.Context,
-    verbose: bool = typer.Option(False, "-v", "--verbose", help="Enable verbose logging."),
 ):
     """Anaconda MCP — Model Context Protocol tools for AI assistants."""
     ctx.ensure_object(dict)
-    ctx.obj["verbose"] = verbose
 
     if ctx.invoked_subcommand is None:
         click_cli.main(["--help"], standalone_mode=False)

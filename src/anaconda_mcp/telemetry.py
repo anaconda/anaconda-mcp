@@ -70,7 +70,7 @@ class SnakeEyes:
             logger.debug("Metrics are OFF. Metrics will not be sent.")
             return False
 
-        logger.info(f"Sending metric: {metric_data}")
+        logger.debug(f"Sending metric: {metric_data}")
 
         try:
             is_authenticated = bearer_token is not None
