@@ -3,6 +3,8 @@ import sys
 import tempfile
 from pathlib import Path
 
+from anaconda_auth.exceptions import TokenNotFoundError
+
 from anaconda_mcp.auth import get_auth_token
 from anaconda_mcp.config import settings
 
@@ -41,7 +43,7 @@ def _render_config_template(config_path: str) -> str:
 
     anaconda_token = get_auth_token()
     if anaconda_token is None:
-        raise RuntimeError("Not authenticated with Anaconda. Run 'anaconda-auth login' or sign in when prompted.")
+        raise TokenNotFoundError("Login is required to complete this action.")
     content = content.replace("{{ANACONDA_TOKEN}}", anaconda_token)
 
     content = content.replace("{{ANACONDA_DOMAIN}}", settings.anaconda_domain or "anaconda.com")
