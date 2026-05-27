@@ -47,7 +47,7 @@ anaconda mcp terms accept
 
 ```bash
 export ANACONDA_MCP_ACCEPTED_TERMS=true
-export ANACONDA_MCP_ACCEPTED_TERMS_VERSION=2026-05-19
+export ANACONDA_MCP_ACCEPTED_TERMS_VERSION=2026-05-27
 ```
 
 ---
@@ -96,7 +96,7 @@ Optionally, you can pass authentication and TOS acceptance via the `env` dict in
 "env": {
   "ANACONDA_AUTH_API_KEY": "<your-api-key>",
   "ANACONDA_MCP_ACCEPTED_TERMS": "true",
-  "ANACONDA_MCP_ACCEPTED_TERMS_VERSION": "2026-05-19"
+  "ANACONDA_MCP_ACCEPTED_TERMS_VERSION": "2026-05-27"
 }
 ```
 

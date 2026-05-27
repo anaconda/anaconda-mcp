@@ -9,7 +9,7 @@ CONFIG_FILE="/tmp/http-config.toml"
 PYTHON_PATH=$(which python)
 
 export ANACONDA_MCP_ACCEPTED_TERMS=true
-export ANACONDA_MCP_ACCEPTED_TERMS_VERSION="2026-05-19"
+export ANACONDA_MCP_ACCEPTED_TERMS_VERSION="2026-05-27"
 
 echo "=== Cleanup ==="
 pkill -9 -f "anaconda-mcp" 2>/dev/null || true
