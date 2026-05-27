@@ -4,11 +4,15 @@ from collections.abc import Callable
 from textwrap import dedent
 
 import click
+from anaconda_auth.actions import login
 from anaconda_auth.client import BaseClient
+from anaconda_cli_base.config import anaconda_config_path
 from rich.console import Console
 from rich.markdown import Markdown
 from rich.prompt import Confirm
+from rich.syntax import Syntax
 
+from anaconda_mcp.auth import get_auth_token
 from anaconda_mcp.config import settings
 from anaconda_mcp.telemetry import MetricData, MetricNames, SnakeEyes
 
@@ -84,6 +88,8 @@ def check_terms_accepted(ctx: click.Context) -> None:
                 remediation="Run 'anaconda mcp terms accept' to accept later.",
             ) from None
 
+        _prompt_contact_consent()
+
 
 def send_contact_consent_event(token: str) -> None:
     try:
@@ -114,14 +120,51 @@ def send_contact_consent_event(token: str) -> None:
         logger.debug("Failed to send contact consent event", exc_info=True)
 
 
-def _prompt_contact_consent(token: str) -> None:
+def _prompt_contact_consent() -> None:
     console = Console()
     console.print()
     contact = Confirm.ask("[bold]I agree to be contacted directly to share feedback[/bold]")
     if not contact:
         return
 
+    token = get_auth_token()
+    if not token:
+        token = _ensure_login(console)
+    if not token:
+        return
+
     send_contact_consent_event(token)
+
+
+def _ensure_login(console: Console) -> str | None:
+    do_login = Confirm.ask("Continue with interactive login?", choices=["y", "n"])
+    if do_login:
+        login()
+        token: str | None = get_auth_token()
+        return token
+
+    console.print(
+        dedent("""
+        To configure your credentials you can run
+          [green]anaconda login --at anaconda.com[/green]
+
+        or set your API key using the [green]ANACONDA_AUTH_API_KEY[/green] env var
+
+        or set
+        """)
+    )
+    console.print(
+        Syntax(
+            dedent("""\
+                [plugin.auth]
+                api_key = "<api-key>"
+                """),
+            "toml",
+            background_color=None,
+        )
+    )
+    console.print(f"in {anaconda_config_path()}")
+    raise SystemExit(1)
 
 
 def persist_acceptance(accepted: bool) -> None:

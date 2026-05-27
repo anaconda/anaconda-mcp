@@ -96,6 +96,8 @@ def cli(ctx):
         datefmt="%Y-%m-%d %H:%M:%S",
     )
     logging.getLogger().setLevel(level)
+    logging.getLogger("httpx").setLevel(logging.WARNING)
+    logging.getLogger("httpcore").setLevel(logging.WARNING)
     if ctx.info_name == "anaconda-mcp":
         click.echo(
             "Warning: 'anaconda-mcp' is deprecated. Use 'anaconda mcp' instead.",

@@ -11,6 +11,7 @@ from anaconda_mcp.config import Settings
 from anaconda_mcp.terms import (
     CURRENT_TOS_VERSION,
     TermsError,
+    _prompt_contact_consent,
     check_terms_accepted,
     is_terms_current,
     persist_acceptance,
@@ -50,7 +51,7 @@ class TestCheckTermsAccepted:
         monkeypatch.setattr("sys.stdout.isatty", lambda: True)
         monkeypatch.setattr("anaconda_mcp.terms.Confirm.ask", lambda *a, **kw: True)
         monkeypatch.setattr("anaconda_mcp.terms.persist_acceptance", lambda v: None)
-        monkeypatch.setattr("anaconda_mcp.terms._prompt_contact_consent", lambda console: None)
+        monkeypatch.setattr("anaconda_mcp.terms._prompt_contact_consent", lambda: None)
         ctx = click.Context(click.Command("serve"))
         check_terms_accepted(ctx)
 
@@ -334,3 +335,57 @@ class TestSendContactConsentEvent:
         assert metric_data.event_params["contact"] is True
         assert "uuid" not in metric_data.event_params
         assert "email" not in metric_data.event_params
+
+
+class TestPromptContactConsent:
+    def test_consent_yes_with_existing_token_sends_event(self, monkeypatch):
+        monkeypatch.setattr("anaconda_mcp.terms.Confirm.ask", lambda *a, **kw: True)
+        monkeypatch.setattr("anaconda_mcp.terms.get_auth_token", lambda: "fake-token")
+        mock_send = MagicMock()
+        monkeypatch.setattr("anaconda_mcp.terms.SnakeEyes.send", mock_send)
+
+        mock_client_instance = MagicMock()
+        mock_client_instance.account = {"user": {"email": "user@example.com", "id": "abc-123"}}
+        monkeypatch.setattr("anaconda_mcp.terms.BaseClient", lambda **kw: mock_client_instance)
+
+        _prompt_contact_consent()
+
+        mock_send.assert_called_once()
+
+    def test_consent_no_does_not_send_event(self, monkeypatch):
+        monkeypatch.setattr("anaconda_mcp.terms.Confirm.ask", lambda *a, **kw: False)
+        mock_send = MagicMock()
+        monkeypatch.setattr("anaconda_mcp.terms.SnakeEyes.send", mock_send)
+
+        _prompt_contact_consent()
+
+        mock_send.assert_not_called()
+
+    def test_consent_yes_no_token_prompts_login_and_sends(self, monkeypatch):
+        ask_responses = iter([True, True])
+        monkeypatch.setattr("anaconda_mcp.terms.Confirm.ask", lambda *a, **kw: next(ask_responses))
+        token_responses = iter([None, "new-token"])
+        monkeypatch.setattr("anaconda_mcp.terms.get_auth_token", lambda: next(token_responses))
+        monkeypatch.setattr("anaconda_mcp.terms.login", lambda: None)
+        mock_send = MagicMock()
+        monkeypatch.setattr("anaconda_mcp.terms.SnakeEyes.send", mock_send)
+
+        mock_client_instance = MagicMock()
+        mock_client_instance.account = {"user": {"email": "user@example.com", "id": "abc-123"}}
+        monkeypatch.setattr("anaconda_mcp.terms.BaseClient", lambda **kw: mock_client_instance)
+
+        _prompt_contact_consent()
+
+        mock_send.assert_called_once()
+
+    def test_consent_yes_no_token_declines_login_exits(self, monkeypatch):
+        ask_responses = iter([True, False])
+        monkeypatch.setattr("anaconda_mcp.terms.Confirm.ask", lambda *a, **kw: next(ask_responses))
+        monkeypatch.setattr("anaconda_mcp.terms.get_auth_token", lambda: None)
+        mock_send = MagicMock()
+        monkeypatch.setattr("anaconda_mcp.terms.SnakeEyes.send", mock_send)
+
+        with pytest.raises(SystemExit):
+            _prompt_contact_consent()
+
+        mock_send.assert_not_called()
