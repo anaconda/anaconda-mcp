@@ -1,4 +1,5 @@
 import json
+from unittest.mock import MagicMock
 
 import click
 import pytest
@@ -13,6 +14,7 @@ from anaconda_mcp.terms import (
     check_terms_accepted,
     is_terms_current,
     persist_acceptance,
+    send_contact_consent_event,
 )
 
 
@@ -48,6 +50,7 @@ class TestCheckTermsAccepted:
         monkeypatch.setattr("sys.stdout.isatty", lambda: True)
         monkeypatch.setattr("anaconda_mcp.terms.Confirm.ask", lambda *a, **kw: True)
         monkeypatch.setattr("anaconda_mcp.terms.persist_acceptance", lambda v: None)
+        monkeypatch.setattr("anaconda_mcp.terms._prompt_contact_consent", lambda console: None)
         ctx = click.Context(click.Command("serve"))
         check_terms_accepted(ctx)
 
@@ -255,3 +258,79 @@ class TestTermsJsonOutput:
         data = json.loads(result.output)
         assert data["accepted"] is True
         assert data["previously_accepted"] is expected_previously
+
+
+class TestTermsAcceptConsent:
+    def test_accept_with_consent_sends_event(self, config_toml, monkeypatch):
+        monkeypatch.setattr("anaconda_mcp.config.settings.accepted_terms", None)
+        mock_send = MagicMock()
+        monkeypatch.setattr("anaconda_mcp.terms.SnakeEyes.send", mock_send)
+        monkeypatch.setattr("anaconda_mcp.cli.get_auth_token", lambda: "fake-token")
+
+        mock_client_instance = MagicMock()
+        mock_client_instance.account = {"user": {"email": "user@example.com", "id": "abc-123"}}
+        monkeypatch.setattr("anaconda_mcp.terms.BaseClient", lambda **kw: mock_client_instance)
+
+        runner = CliRunner()
+        result = runner.invoke(cli, ["terms", "accept", "--consent"])
+        assert result.exit_code == 0
+        mock_send.assert_called_once()
+        metric_data = mock_send.call_args[0][0]
+        assert metric_data.event == "anaconda_mcp_contact_consent"
+        assert metric_data.event_params["contact"] is True
+
+    def test_accept_without_consent_does_not_send_event(self, config_toml, monkeypatch):
+        monkeypatch.setattr("anaconda_mcp.config.settings.accepted_terms", None)
+        mock_send = MagicMock()
+        monkeypatch.setattr("anaconda_mcp.terms.SnakeEyes.send", mock_send)
+
+        runner = CliRunner()
+        result = runner.invoke(cli, ["terms", "accept"])
+        assert result.exit_code == 0
+        mock_send.assert_not_called()
+
+    def test_accept_with_no_consent_flag_does_not_send_event(self, config_toml, monkeypatch):
+        monkeypatch.setattr("anaconda_mcp.config.settings.accepted_terms", None)
+        mock_send = MagicMock()
+        monkeypatch.setattr("anaconda_mcp.terms.SnakeEyes.send", mock_send)
+
+        runner = CliRunner()
+        result = runner.invoke(cli, ["terms", "accept", "--no-consent"])
+        assert result.exit_code == 0
+        mock_send.assert_not_called()
+
+
+class TestSendContactConsentEvent:
+    def test_sends_telemetry_with_email_and_uuid(self, monkeypatch):
+        mock_send = MagicMock()
+        monkeypatch.setattr("anaconda_mcp.terms.SnakeEyes.send", mock_send)
+
+        mock_client_instance = MagicMock()
+        mock_client_instance.account = {"user": {"email": "user@example.com", "id": "abc-123"}}
+        monkeypatch.setattr("anaconda_mcp.terms.BaseClient", lambda **kw: mock_client_instance)
+
+        send_contact_consent_event("fake-token")
+
+        mock_send.assert_called_once()
+        metric_data = mock_send.call_args[0][0]
+        assert metric_data.event == "anaconda_mcp_contact_consent"
+        assert metric_data.event_params["contact"] is True
+        assert metric_data.event_params["email"] == "user@example.com"
+        assert metric_data.event_params["uuid"] == "abc-123"
+        assert mock_send.call_args[1]["bearer_token"] == "fake-token"
+
+    def test_handles_account_fetch_failure(self, monkeypatch):
+        mock_send = MagicMock()
+        monkeypatch.setattr("anaconda_mcp.terms.SnakeEyes.send", mock_send)
+        monkeypatch.setattr(
+            "anaconda_mcp.terms.BaseClient",
+            MagicMock(side_effect=Exception("network error")),
+        )
+
+        send_contact_consent_event("fake-token")
+
+        mock_send.assert_called_once()
+        metric_data = mock_send.call_args[0][0]
+        assert metric_data.event_params["contact"] is True
+        assert "uuid" not in metric_data.event_params
+        assert "email" not in metric_data.event_params

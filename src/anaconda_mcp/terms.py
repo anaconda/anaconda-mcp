@@ -1,13 +1,18 @@
+import logging
 import sys
 from collections.abc import Callable
 from textwrap import dedent
 
 import click
+from anaconda_auth.client import BaseClient
 from rich.console import Console
 from rich.markdown import Markdown
 from rich.prompt import Confirm
 
 from anaconda_mcp.config import settings
+from anaconda_mcp.telemetry import MetricData, MetricNames, SnakeEyes
+
+logger = logging.getLogger(__name__)
 
 
 class TermsError(Exception):
@@ -78,6 +83,45 @@ def check_terms_accepted(ctx: click.Context) -> None:
                 message="Terms of Service declined.",
                 remediation="Run 'anaconda mcp terms accept' to accept later.",
             ) from None
+
+
+def send_contact_consent_event(token: str) -> None:
+    try:
+        email = None
+        uuid = None
+        try:
+            client = BaseClient(api_key=token, domain=settings.anaconda_domain)
+            user = client.account["user"]
+            email = user.get("email")
+            uuid = user.get("id")
+        except Exception:
+            logger.debug("Could not retrieve user account for contact consent", exc_info=True)
+
+        event_params: dict[str, object] = {"contact": True}
+        if uuid:
+            event_params["uuid"] = uuid
+        if email:
+            event_params["email"] = email
+
+        SnakeEyes().send(
+            MetricData(
+                event=MetricNames.CONTACT_CONSENT.value,
+                event_params=event_params,
+            ),
+            bearer_token=token,
+        )
+    except Exception:
+        logger.debug("Failed to send contact consent event", exc_info=True)
+
+
+def _prompt_contact_consent(token: str) -> None:
+    console = Console()
+    console.print()
+    contact = Confirm.ask("[bold]I agree to be contacted directly to share feedback[/bold]")
+    if not contact:
+        return
+
+    send_contact_consent_event(token)
 
 
 def persist_acceptance(accepted: bool) -> None:

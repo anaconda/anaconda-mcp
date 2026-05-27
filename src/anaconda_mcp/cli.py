@@ -58,6 +58,7 @@ from anaconda_mcp.terms import (
     is_terms_current,
     make_terms_enforcement_hook,
     persist_acceptance,
+    send_contact_consent_event,
 )
 from anaconda_mcp.tool_hooks import patch_tool_call_hooks
 from anaconda_mcp.utils import _render_config_template
@@ -967,11 +968,17 @@ def terms_status(output_json):
 
 @terms.command(name="accept", help="Accept the Terms of Service.")
 @click.option("--json", "output_json", is_flag=True, help="Output in JSON format.")
-def terms_accept(output_json):
+@click.option("--consent/--no-consent", default=False, help="Consent to be contacted for feedback.")
+def terms_accept(output_json, consent):
     already_current = settings.accepted_terms is True and is_terms_current(settings.accepted_terms_version)
 
     if not already_current:
         persist_acceptance(True)
+
+    if consent:
+        token = get_auth_token()
+        if token:
+            send_contact_consent_event(token)
 
     if output_json:
         click.echo(

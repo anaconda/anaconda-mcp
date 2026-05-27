@@ -23,6 +23,7 @@ class MetricNames(enum.Enum):
     TOOL_COMPLETED = f"{_EVENT_PREFIX}_tool_completed"
     ACTIVE_USER_PING = f"{_EVENT_PREFIX}_active_user_ping"
     INSTALL_COMPLETED = f"{_EVENT_PREFIX}_install_completed"
+    CONTACT_CONSENT = f"{_EVENT_PREFIX}_contact_consent"
 
 
 NEW_USER_THRESHOLD_DAYS = 1
