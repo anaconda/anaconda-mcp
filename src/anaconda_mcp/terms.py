@@ -123,7 +123,10 @@ def send_contact_consent_event(token: str) -> None:
 def _prompt_contact_consent() -> None:
     console = Console()
     console.print()
-    contact = Confirm.ask("[bold]I agree to be contacted directly to share feedback[/bold]")
+    contact = Confirm.ask(
+        "[bold](Optional) By entering 'y', I give Anaconda permission to contact me about"
+        " my experience using Anaconda MCP.[/bold]"
+    )
     if not contact:
         return
 
