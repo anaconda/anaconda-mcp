@@ -20,9 +20,6 @@ from mcp_compose.cli import (
 from mcp_compose.cli import (
     serve_command as _serve,
 )
-from mcp_compose.cli import (
-    setup_logging,
-)
 from mcp_compose.composer import ConflictResolution
 from rich import print_json as rich_print_json
 from rich.console import Console
@@ -58,6 +55,7 @@ from anaconda_mcp.terms import (
     is_terms_current,
     make_terms_enforcement_hook,
     persist_acceptance,
+    send_contact_consent_event,
 )
 from anaconda_mcp.tool_hooks import patch_tool_call_hooks
 from anaconda_mcp.utils import _render_config_template
@@ -87,13 +85,19 @@ def _ns(**kwargs):
 
 
 @click.group(context_settings={"help_option_names": ["-h", "--help"]})
-@click.option("-v", "--verbose", is_flag=True, help="Enable verbose logging.")
 @click.pass_context
-def cli(ctx, verbose: bool):
+def cli(ctx):
     """Anaconda MCP wrapper — forwards to mcp-compose."""
     ctx.ensure_object(dict)
-    ctx.obj["verbose"] = verbose
-    setup_logging(verbose)
+    level = getattr(logging, settings.log_level.upper(), logging.INFO)
+    logging.basicConfig(
+        level=level,
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
+    logging.getLogger().setLevel(level)
+    logging.getLogger("httpx").setLevel(logging.WARNING)
+    logging.getLogger("httpcore").setLevel(logging.WARNING)
     if ctx.info_name == "anaconda-mcp":
         click.echo(
             "Warning: 'anaconda-mcp' is deprecated. Use 'anaconda mcp' instead.",
@@ -135,8 +139,17 @@ def cli(ctx, verbose: bool):
 @click.option("--host", default="0.0.0.0", show_default=True, help="Host to bind to.")
 @click.option("--port", default=8000, show_default=True, type=int, help="Port to bind to.")
 @click.option("--delay", default=0, show_default=True, type=int, help="Delay in seconds added before serving")
+@click.option("-v", "--verbose", is_flag=True, help="Enable verbose logging.")
 @click.pass_context
-def serve(ctx, config, host, port, delay):
+def serve(ctx, config, host, port, delay, verbose):
+    if verbose:
+        logging.basicConfig(
+            level=logging.DEBUG,
+            format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+            datefmt="%Y-%m-%d %H:%M:%S",
+        )
+        logging.getLogger().setLevel(logging.DEBUG)
+
     def _handle_sigterm(signum, frame):
         logger.info("Received SIGTERM, shutting down...")
         sys.exit(0)
@@ -214,7 +227,7 @@ def serve(ctx, config, host, port, delay):
         ]
     )
     try:
-        ns = _ns(verbose=ctx.obj["verbose"], config=rendered_config, host=host, port=port)
+        ns = _ns(verbose=verbose, config=rendered_config, host=host, port=port)
         sys.exit(_serve(ns))
     except Exception:
         logger.exception("MCP Composer returned an error. Exiting", exc_info=True)
@@ -246,7 +259,7 @@ def serve(ctx, config, host, port, delay):
 @click.pass_context
 def compose(ctx, pyproject, name, conflict_resolution, include, exclude, output, output_format):
     ns = _ns(
-        verbose=ctx.obj["verbose"],
+        verbose=ctx.obj.get("verbose", False),
         pyproject=pyproject,
         name=name,
         conflict_resolution=conflict_resolution,
@@ -272,7 +285,7 @@ def compose(ctx, pyproject, name, conflict_resolution, include, exclude, output,
 @click.pass_context
 def discover(ctx, pyproject, output_format):
     ns = _ns(
-        verbose=ctx.obj["verbose"],
+        verbose=ctx.obj.get("verbose", False),
         pyproject=pyproject,
         output_format=output_format,
     )
@@ -967,11 +980,17 @@ def terms_status(output_json):
 
 @terms.command(name="accept", help="Accept the Terms of Service.")
 @click.option("--json", "output_json", is_flag=True, help="Output in JSON format.")
-def terms_accept(output_json):
+@click.option("--consent/--no-consent", default=False, help="Consent to be contacted for feedback.")
+def terms_accept(output_json, consent):
     already_current = settings.accepted_terms is True and is_terms_current(settings.accepted_terms_version)
 
     if not already_current:
         persist_acceptance(True)
+
+    if consent:
+        token = get_auth_token()
+        if token:
+            send_contact_consent_event(token)
 
     if output_json:
         click.echo(

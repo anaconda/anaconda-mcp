@@ -156,7 +156,7 @@ jobs:
       SERVER_ENV:         anaconda-mcp-server
       QA_ENV:             anaconda-mcp-qa
       ANACONDA_MCP_ACCEPTED_TERMS: "true"
-      ANACONDA_MCP_ACCEPTED_TERMS_VERSION: "2026-05-19"
+      ANACONDA_MCP_ACCEPTED_TERMS_VERSION: "2026-05-27"
 
     steps:
       # ── Checkout ──────────────────────────────────────────────────────────────

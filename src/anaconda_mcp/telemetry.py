@@ -23,6 +23,7 @@ class MetricNames(enum.Enum):
     TOOL_COMPLETED = f"{_EVENT_PREFIX}_tool_completed"
     ACTIVE_USER_PING = f"{_EVENT_PREFIX}_active_user_ping"
     INSTALL_COMPLETED = f"{_EVENT_PREFIX}_install_completed"
+    CONTACT_CONSENT = f"{_EVENT_PREFIX}_contact_consent"
 
 
 NEW_USER_THRESHOLD_DAYS = 1
@@ -69,7 +70,7 @@ class SnakeEyes:
             logger.debug("Metrics are OFF. Metrics will not be sent.")
             return False
 
-        logger.info(f"Sending metric: {metric_data}")
+        logger.debug(f"Sending metric: {metric_data}")
 
         try:
             is_authenticated = bearer_token is not None
