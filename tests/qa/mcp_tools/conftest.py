@@ -361,6 +361,8 @@ def _stdio_server_context(
 
     env = os.environ.copy()
     env["PYTHONUNBUFFERED"] = "1"
+    env["ANACONDA_MCP_ACCEPTED_TERMS"] = "true"
+    env["ANACONDA_MCP_ACCEPTED_TERMS_VERSION"] = "2026-05-19"
 
     stderr_log = tempfile.NamedTemporaryFile(
         prefix=log_prefix,
