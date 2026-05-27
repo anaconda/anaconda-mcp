@@ -42,7 +42,7 @@ TERMS_OF_SERVICE = dedent("""\
     This product is not intended for production use.
     """)
 
-CURRENT_TOS_VERSION = "2026-05-19"
+CURRENT_TOS_VERSION = "2026-05-27"
 
 
 def is_terms_current(accepted_version: str | None) -> bool:
