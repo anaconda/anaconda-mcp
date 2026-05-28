@@ -72,6 +72,7 @@ def test_setup_emits_install_completed_event():
             metric_data = call[0][0] if call[0] else call[1].get("metric_data")
             if metric_data and metric_data.event == "anaconda_mcp_install_completed":
                 assert metric_data.event_params == {"new_install": True}
+                assert call[1].get("blocking") is True
                 found = True
                 break
         assert found, f"INSTALL_COMPLETED event not found in calls: {send_mock.call_args_list}"

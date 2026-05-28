@@ -115,14 +115,18 @@ class SnakeEyes:
             logger.warning("Error while sending snake-eyes metrics")
             return False
 
-    def send(self, metric_data: MetricData, bearer_token: str | None = None) -> None:
+    def send(self, metric_data: MetricData, bearer_token: str | None = None, blocking: bool = False) -> None:
         # TODO: Remove fire-and-forget thread once OpenTelemetry is integrated — its SDK handles async dispatch natively.
-        thread = threading.Thread(
-            target=self._send,
-            args=(metric_data, bearer_token),
-            daemon=True,
-        )
-        thread.start()
+        if blocking:
+            self._send(metric_data, bearer_token)
+            return
+        else:
+            thread = threading.Thread(
+                target=self._send,
+                args=(metric_data, bearer_token),
+                daemon=True,
+            )
+            thread.start()
 
 
 def _get_client_info(context: Any) -> tuple[str, str]:
