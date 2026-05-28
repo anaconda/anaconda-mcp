@@ -98,3 +98,14 @@ def test_snake_eyes_send_fires_on_background_thread(mock_make_request):
         mock_thread.assert_called_once()
         assert mock_thread.call_args[1]["daemon"] is True
         mock_instance.start.assert_called_once()
+
+
+def test_snake_eyes_send_blocking_calls_directly(mock_make_request):
+    metric = MetricData(
+        event=MetricNames.START_SERVER.value,
+        event_params={},
+    )
+    SnakeEyes().send(metric, bearer_token="fake-token", blocking=True)
+
+    assert mock_make_request.call_count == 1
+    assert mock_make_request.call_args[0][0] == "api/snake-eyes/record"

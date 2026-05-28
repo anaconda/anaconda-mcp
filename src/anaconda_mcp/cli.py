@@ -74,6 +74,7 @@ def _send_install_event():
                 event_params={"new_install": new_install},
             ),
             bearer_token=get_auth_token(),
+            blocking=True,
         )
     except Exception:
         logger.debug("Failed to send install event", exc_info=True)
