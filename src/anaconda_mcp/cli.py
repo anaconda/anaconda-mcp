@@ -235,7 +235,7 @@ def serve(ctx, config, host, port, delay, verbose):
         sys.exit(1)
 
 
-@cli.command(help="Compose MCP servers from dependencies.")
+@cli.command(help="Compose MCP servers from dependencies.", hidden=True)
 @click.option(
     "-p",
     "--pyproject",
@@ -273,7 +273,7 @@ def compose(ctx, pyproject, name, conflict_resolution, include, exclude, output,
     sys.exit(code)
 
 
-@cli.command(help="Discover MCP servers from dependencies.")
+@cli.command(help="Discover MCP servers from dependencies.", hidden=True)
 @click.option(
     "-p",
     "--pyproject",
