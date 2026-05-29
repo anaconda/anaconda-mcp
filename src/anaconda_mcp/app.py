@@ -26,9 +26,6 @@ def main(
     """Anaconda MCP — Model Context Protocol tools for AI assistants."""
     ctx.ensure_object(dict)
 
-    if ctx.invoked_subcommand is None:
-        click_cli.main(["--help"], standalone_mode=False)
-
 
 def _forward_to_click(args: list[str]) -> None:
     try:
