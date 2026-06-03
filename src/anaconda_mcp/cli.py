@@ -130,7 +130,7 @@ def cli(ctx):
             )
 
 
-@cli.command(help="Start MCP servers from configuration file.")
+@cli.command(help="Start MCP servers from configuration file.", hidden=True)
 @click.option(
     "-c",
     "--config",

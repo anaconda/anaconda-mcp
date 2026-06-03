@@ -37,6 +37,7 @@ def _forward_to_click(args: list[str]) -> None:
 
 @app.command(
     "serve",
+    hidden=True,
     add_help_option=False,
     context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
 )
