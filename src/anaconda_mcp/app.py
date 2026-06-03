@@ -4,13 +4,43 @@ This module provides a Typer app that wraps the existing Click CLI,
 allowing registration as an `anaconda mcp` subcommand.
 """
 
+import io
+from textwrap import dedent
+
 import typer
+from rich.console import Console
+from rich.text import Text
 
 from anaconda_mcp.cli import cli as click_cli
+
+
+def _render_rich_markup(markup: str) -> str:
+    """Pre-render Rich markup to ANSI escape sequences.
+
+    Workaround for anaconda-cli-base not propagating rich_markup_mode
+    to child Typer apps. Once anaconda-cli-base sets rich_markup_mode="rich"
+    on its root app, this can be reverted to plain markup strings.
+    """
+    buf = io.StringIO()
+    console = Console(file=buf, highlight=False, no_color=False, force_terminal=True)
+    text = Text.from_markup(markup)
+    console.print(text, end="")
+    return buf.getvalue()
+
+
+# Remove extra \n after https://github.com/fastapi/typer/pull/1405 is released
+EPILOG = _render_rich_markup(
+    dedent(
+        """\
+        Full documentation at → [bold green]https://www.anaconda.com/docs/cli-reference/anaconda-mcp/getting-started[/]
+        \nSubmit feedback at → [bold green]https://anaconda.canny.io/anaconda-mcp-beta[/]"""
+    )
+)
 
 app = typer.Typer(
     name="mcp",
     help="Anaconda MCP — Model Context Protocol tools for AI assistants.",
+    rich_markup_mode="rich",
     add_completion=False,
     no_args_is_help=True,
     context_settings={
@@ -19,7 +49,7 @@ app = typer.Typer(
 )
 
 
-@app.callback(invoke_without_command=True)
+@app.callback(invoke_without_command=True, epilog=EPILOG)
 def main(
     ctx: typer.Context,
 ):
