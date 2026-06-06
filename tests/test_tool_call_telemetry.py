@@ -1,3 +1,4 @@
+from contextlib import contextmanager
 from unittest import mock
 
 import pytest
@@ -209,3 +210,54 @@ async def test_tracked_omits_aau_client_id_when_none(mock_send):
 
     metric: MetricData = mock_send.call_args[0][0]
     assert "aau_client_id" not in metric.event_params
+
+
+@pytest.mark.asyncio
+async def test_tracked_wraps_tool_call_in_otel_span(mock_send, monkeypatch):
+    """Tool calls must be wrapped in cli-base's traced() context manager.
+
+    Pins Albert's documented pattern: with traced("mcp_tool_<name>",
+    plugin_name="mcp", attributes={"tool": <name>}) as span. If a refactor
+    accidentally removes the span, this test catches it.
+    """
+    captured: list[dict] = []
+
+    @contextmanager
+    def _fake_traced(name, *, plugin_name, attributes=None):
+        span = mock.MagicMock()
+        captured.append({"name": name, "plugin_name": plugin_name, "attributes": attributes, "span": span})
+        yield span
+
+    monkeypatch.setattr("anaconda_mcp.telemetry._otel_traced", _fake_traced)
+
+    original = mock.AsyncMock(return_value="ok")
+    tracked = make_tracked_call_tool(original)
+
+    await tracked(mock.MagicMock(), "my_tool", {})
+
+    assert len(captured) == 1
+    entry = captured[0]
+    assert entry["name"] == "mcp_tool_my_tool"
+    assert entry["plugin_name"] == "mcp"
+    assert entry["attributes"] == {"tool": "my_tool"}
+
+
+@pytest.mark.asyncio
+async def test_tracked_calls_span_add_exception_on_error(mock_send, monkeypatch):
+    """On the error path, span.add_exception(exc) must be called defensively."""
+    captured_span = mock.MagicMock()
+
+    @contextmanager
+    def _fake_traced(name, *, plugin_name, attributes=None):
+        yield captured_span
+
+    monkeypatch.setattr("anaconda_mcp.telemetry._otel_traced", _fake_traced)
+
+    boom = RuntimeError("boom")
+    original = mock.AsyncMock(side_effect=boom)
+    tracked = make_tracked_call_tool(original)
+
+    with pytest.raises(RuntimeError):
+        await tracked(mock.MagicMock(), "failing_tool", {})
+
+    captured_span.add_exception.assert_called_once_with(boom)

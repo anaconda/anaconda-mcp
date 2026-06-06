@@ -12,6 +12,7 @@ import httpx
 from anaconda_cli_base.telemetry import count as _otel_count
 from anaconda_cli_base.telemetry import histogram as _otel_histogram
 from anaconda_cli_base.telemetry import log_event
+from anaconda_cli_base.telemetry import traced as _otel_traced
 from pydantic import BaseModel
 
 from anaconda_mcp.auth import get_auth_token
@@ -229,12 +230,26 @@ def make_tracked_call_tool(
         start = time.monotonic()
         is_error = False
         error_description = ""
+        captured_exc: BaseException | None = None
+        result = None
         try:
-            return await original_call_tool(self, name, arguments, context=context, convert_result=convert_result)
-        except Exception as exc:
-            is_error = True
-            error_description = f"{type(exc).__name__}: {exc}"
-            raise
+            with _otel_traced(
+                f"mcp_tool_{name}",
+                plugin_name="mcp",
+                attributes={"tool": name},
+            ) as span:
+                try:
+                    result = await original_call_tool(
+                        self, name, arguments, context=context, convert_result=convert_result
+                    )
+                except Exception as exc:
+                    is_error = True
+                    error_description = f"{type(exc).__name__}: {exc}"
+                    try:
+                        span.add_exception(exc)
+                    except Exception:
+                        logger.debug("OTel span exception annotation failed", exc_info=True)
+                    captured_exc = exc
         finally:
             tool_call_history.append(name)
             if settings.send_metrics:
@@ -253,6 +268,9 @@ def make_tracked_call_tool(
                     event_params[PII_KEY_AAU_CLIENT_ID] = aau_client_id
                 emit_event(MetricNames.TOOL_COMPLETED.value, event_params)
                 _emit_tool_metrics(name, duration_ms, is_error=is_error)
+        if captured_exc is not None:
+            raise captured_exc
+        return result
 
     return _tracked
 
