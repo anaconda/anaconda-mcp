@@ -20,7 +20,11 @@ def _bypass_terms_gate(monkeypatch):
 
 @pytest.fixture(autouse=True)
 def mock_token_info_load():
-    """Patch get_auth_token in cli.py so CLI commands don't require real auth."""
-    with mock.patch("anaconda_mcp.cli.get_auth_token", return_value=MOCKED_TOKEN) as m:
-        with mock.patch("anaconda_mcp.cli.validate_auth_token", return_value=True):
-            yield m
+    """Patch get_auth_token in cli.py + telemetry.py so CLI commands and
+    emit_event() don't require real auth."""
+    with (
+        mock.patch("anaconda_mcp.cli.get_auth_token", return_value=MOCKED_TOKEN) as m,
+        mock.patch("anaconda_mcp.cli.validate_auth_token", return_value=True),
+        mock.patch("anaconda_mcp.telemetry.get_auth_token", return_value=MOCKED_TOKEN),
+    ):
+        yield m

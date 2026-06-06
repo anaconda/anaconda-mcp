@@ -14,7 +14,7 @@ from rich.syntax import Syntax
 
 from anaconda_mcp.auth import get_auth_token
 from anaconda_mcp.config import settings
-from anaconda_mcp.telemetry import MetricData, MetricNames, SnakeEyes
+from anaconda_mcp.telemetry import PII_KEY_EMAIL, PII_KEY_UUID, MetricNames, emit_event
 
 logger = logging.getLogger(__name__)
 
@@ -91,12 +91,12 @@ def check_terms_accepted(ctx: click.Context) -> None:
         _prompt_contact_consent()
 
 
-def send_contact_consent_event(token: str) -> None:
+def send_contact_consent_event(api_key: str) -> None:
     try:
         email = None
         uuid = None
         try:
-            client = BaseClient(api_key=token, domain=settings.anaconda_domain)
+            client = BaseClient(api_key=api_key, domain=settings.anaconda_domain)
             user = client.account["user"]
             email = user.get("email")
             uuid = user.get("id")
@@ -105,19 +105,13 @@ def send_contact_consent_event(token: str) -> None:
 
         event_params: dict[str, object] = {"contact": True}
         if uuid:
-            event_params["uuid"] = uuid
+            event_params[PII_KEY_UUID] = uuid
         if email:
-            event_params["email"] = email
+            event_params[PII_KEY_EMAIL] = email
 
-        SnakeEyes().send(
-            MetricData(
-                event=MetricNames.CONTACT_CONSENT.value,
-                event_params=event_params,
-            ),
-            bearer_token=token,
-        )
+        emit_event(MetricNames.CONTACT_CONSENT.value, event_params)
     except Exception:
-        logger.debug("Failed to send contact consent event", exc_info=True)
+        logger.exception("Failed to send contact consent event")
 
 
 def _prompt_contact_consent() -> None:

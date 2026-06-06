@@ -214,3 +214,9 @@ anaconda-mcp discover -p /path/to/pyproject.toml
 -h, --help      Show help
 -v, --verbose   Enable verbose logging
 ```
+
+---
+
+## Related Documentation
+
+- [Shutdown Fix](SHUTDOWN.md) — explains why `_shutdown.py` monkey-patches mcp-compose and how to verify the fix works.

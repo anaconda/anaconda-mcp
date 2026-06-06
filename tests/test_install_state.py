@@ -51,7 +51,7 @@ def test_setup_emits_install_completed_event():
         mock.patch("anaconda_mcp.cli.configure_client") as mock_configure,
         mock.patch("anaconda_mcp.cli.is_new_install", return_value=True),
         mock.patch("anaconda_mcp.cli.mark_installed"),
-        mock.patch("anaconda_mcp.cli.SnakeEyes") as mock_snake_eyes,
+        mock.patch("anaconda_mcp.telemetry.SnakeEyes") as mock_snake_eyes,
         mock.patch("anaconda_mcp.cli.get_auth_token", return_value="fake-token"),
     ):
         mock_configure.return_value = {

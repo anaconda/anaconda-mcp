@@ -11,6 +11,7 @@ import click
 from anaconda_anon_usage.tokens import client_token
 from anaconda_auth.client import BaseClient
 from anaconda_auth.exceptions import TokenNotFoundError
+from anaconda_cli_base.telemetry import _shutdown_telemetry, get_otel_handler
 from mcp_compose.cli import (
     compose_command as _compose,
 )
@@ -25,6 +26,7 @@ from rich import print_json as rich_print_json
 from rich.console import Console
 from rich.table import Table
 
+from anaconda_mcp._shutdown import install_shutdown_handlers
 from anaconda_mcp.auth import (
     get_auth_token,
     make_auth_enforcement_hook,
@@ -46,7 +48,13 @@ from anaconda_mcp.client_config import (
 )
 from anaconda_mcp.config import settings
 from anaconda_mcp.mcp_state import is_new_install, mark_installed
-from anaconda_mcp.telemetry import NEW_USER_THRESHOLD_DAYS, MetricData, MetricNames, SnakeEyes, make_tracking_hook
+from anaconda_mcp.telemetry import (
+    NEW_USER_THRESHOLD_DAYS,
+    PII_KEY_AAU_CLIENT_ID,
+    MetricNames,
+    emit_event,
+    make_tracking_hook,
+)
 from anaconda_mcp.terms import (
     CURRENT_TOS_VERSION,
     TERMS_OF_SERVICE,
@@ -64,20 +72,28 @@ from anaconda_mcp.wizard import setup_wizard_page
 logger = logging.getLogger(__name__)
 
 
+_APP_OTEL_HANDLER_ATTACHED = False
+
+
+def _attach_application_otel_handler() -> None:
+    global _APP_OTEL_HANDLER_ATTACHED
+    if _APP_OTEL_HANDLER_ATTACHED:
+        return
+    logging.getLogger("anaconda_mcp").addHandler(get_otel_handler())
+    _APP_OTEL_HANDLER_ATTACHED = True
+
+
 def _send_install_event():
     try:
         new_install = is_new_install()
         mark_installed()
-        SnakeEyes().send(
-            MetricData(
-                event=MetricNames.INSTALL_COMPLETED.value,
-                event_params={"new_install": new_install},
-            ),
-            bearer_token=get_auth_token(),
+        emit_event(
+            MetricNames.INSTALL_COMPLETED.value,
+            {"new_install": new_install},
             blocking=True,
         )
     except Exception:
-        logger.debug("Failed to send install event", exc_info=True)
+        logger.exception("Failed to send install event")
 
 
 def _ns(**kwargs):
@@ -99,6 +115,7 @@ def cli(ctx):
     logging.getLogger().setLevel(level)
     logging.getLogger("httpx").setLevel(logging.WARNING)
     logging.getLogger("httpcore").setLevel(logging.WARNING)
+    _attach_application_otel_handler()
     if ctx.info_name == "anaconda-mcp":
         click.echo(
             "Warning: 'anaconda-mcp' is deprecated. Use 'anaconda mcp' instead.",
@@ -196,37 +213,20 @@ def serve(ctx, config, host, port, delay, verbose):
     except Exception:
         logger.debug("Could not determine new user status", exc_info=True)
 
-    snake_eyes = SnakeEyes()
-    snake_eyes.send(
-        MetricData(event=MetricNames.LOGIN_COMPLETED.value, event_params=login_event_params),
-        bearer_token=token,
-    )
-    active_user_params: dict[str, str] = {}
+    emit_event(MetricNames.LOGIN_COMPLETED.value, login_event_params)
     aau = client_token()
     if aau:
-        active_user_params["aau_client_id"] = aau
-    snake_eyes.send(
-        MetricData(
-            event=MetricNames.ACTIVE_USER_PING.value,
-            event_params=active_user_params,
-        ),
-        bearer_token=token,
-    )
-    snake_eyes.send(
-        MetricData(
-            event=MetricNames.START_SERVER.value,
-            event_params={},
-        ),
-        bearer_token=token,
-    )
+        emit_event(MetricNames.ACTIVE_USER_PING.value, {PII_KEY_AAU_CLIENT_ID: aau})
+    emit_event(MetricNames.START_SERVER.value)
 
     patch_tool_call_hooks(
         [
             make_auth_enforcement_hook(get_auth_token),
             make_terms_enforcement_hook(),
-            make_tracking_hook(get_auth_token, aau_client_id=aau or None),
+            make_tracking_hook(aau_client_id=aau or None),
         ]
     )
+    install_shutdown_handlers()
     try:
         ns = _ns(verbose=verbose, config=rendered_config, host=host, port=port)
         sys.exit(_serve(ns))
@@ -503,6 +503,7 @@ def setup(clients, transport, host, port, server_name, scope, project_dir, no_ba
 
         if adds:
             _send_install_event()
+            _shutdown_telemetry()
         return
 
     results = {}
@@ -551,6 +552,7 @@ def setup(clients, transport, host, port, server_name, scope, project_dir, no_ba
         raise SystemExit(exit_code)
 
     _send_install_event()
+    _shutdown_telemetry()
 
 
 # ============================================================================
