@@ -44,6 +44,8 @@ class MetricData(BaseModel):
 PII_KEY_EMAIL = "email"
 PII_KEY_UUID = "uuid"
 PII_KEY_AAU_CLIENT_ID = "aau_client_id"
+# Exact-name, top-level-only filter (see emit_event): PII nested inside values or
+# placed under non-canonical keys (e.g. "user_email") is NOT scrubbed from OTel.
 _PII_KEYS = (PII_KEY_EMAIL, PII_KEY_UUID, PII_KEY_AAU_CLIENT_ID)
 
 
@@ -90,6 +92,7 @@ def emit_event(
 
     try:
         otel_attrs = {k: v for k, v in params.items() if k not in _PII_KEYS}
+        # event_name doubles as the OTLP log body (1st positional) and the event_name kwarg.
         log_event(
             event_name,
             event_name=event_name,
@@ -206,6 +209,8 @@ def _get_client_info(context: Any) -> tuple[str, str]:
 def _emit_tool_metrics(tool_name: str, duration_ms: float, *, is_error: bool) -> None:
     try:
         attrs: dict[str, object] = {"tool": tool_name}
+        # is_error is recorded only on failures to keep success a single low-cardinality
+        # series per tool; dashboards derive success as total minus is_error=true.
         if is_error:
             attrs["is_error"] = True
         _otel_count("mcp_tool_invoked", plugin_name="mcp", attributes=attrs)

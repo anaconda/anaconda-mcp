@@ -13,10 +13,10 @@ MOCKED_TOKEN = "mocked_token"
 
 
 def test_shutdown_telemetry_is_callable():
-    """Guard against cli-base private rename — will fail loudly with ImportError."""
-    from anaconda_cli_base.telemetry import _shutdown_telemetry
+    """Guard the cli-base public shutdown API mcp depends on — fails loudly with ImportError if renamed."""
+    from anaconda_cli_base.telemetry import shutdown_telemetry
 
-    _shutdown_telemetry()
+    shutdown_telemetry()
 
 
 def test_emit_event_calls_snake_eyes():
@@ -107,10 +107,10 @@ def test_emit_event_sink_failure_isolation(failing: str, asserted: str):
     mock_other.assert_called_once()
 
 
-def test_application_logger_has_otel_handler_after_cli_init(monkeypatch):
+def test_application_logger_has_otel_handler_after_cli_init():
     from anaconda_mcp.cli import _attach_application_otel_handler
 
-    monkeypatch.setattr("anaconda_mcp.cli._APP_OTEL_HANDLER_ATTACHED", False)
+    _attach_application_otel_handler.cache_clear()
 
     pkg_logger = logging.getLogger("anaconda_mcp")
     before_count = len(pkg_logger.handlers)
@@ -123,3 +123,4 @@ def test_application_logger_has_otel_handler_after_cli_init(monkeypatch):
         # Roll back the handler we just attached so other tests aren't affected.
         if len(pkg_logger.handlers) > before_count:
             pkg_logger.removeHandler(pkg_logger.handlers[-1])
+        _attach_application_otel_handler.cache_clear()

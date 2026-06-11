@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import os
-import selectors
 import threading
 import time
 
@@ -19,31 +18,44 @@ def _make_proxy_with_source() -> tuple[_InterruptibleStdin, int]:
     return proxy, src_w
 
 
-def _read_all_available(fd: int, timeout: float = 1.0) -> bytes:
-    """Read whatever is available on fd within `timeout`, then return.
+def _read_all_available(fd: int, timeout: float = 1.0, expected: int | None = None) -> bytes:
+    """Read available bytes from `fd` within `timeout`, then return.
 
-    Cross-platform: uses selectors so the test suite can run on Windows
-    under Python 3.10+ without depending on POSIX-only blocking-mode APIs.
+    Cross-platform: a daemon reader thread does blocking ``os.read``. Windows
+    ``select()`` only accepts sockets, not pipe file descriptors, so a
+    selectors-based poll raises ``OSError(WinError 10038)`` on a pipe. Blocking
+    reads on a daemon thread behave identically on POSIX and Windows (the other
+    tests in this file that block on ``os.read`` of the pipe confirm this).
+
+    If `expected` is given, returns as soon as that many bytes have arrived so
+    callers that know the payload size don't wait out the full `timeout`.
+    Otherwise reads until EOF or `timeout` elapses. A leftover blocked read
+    lives on a daemon thread and is reaped at process exit.
     """
-    sel = selectors.DefaultSelector()
-    sel.register(fd, selectors.EVENT_READ)
     chunks: list[bytes] = []
-    deadline = time.time() + timeout
-    try:
-        while time.time() < deadline:
-            remaining = max(0.0, deadline - time.time())
-            events = sel.select(timeout=min(0.05, remaining))
-            if not events:
-                if chunks:
-                    break
-                continue
-            chunk = os.read(fd, 4096)
+    lock = threading.Lock()
+    stop = threading.Event()
+
+    def _reader() -> None:
+        while not stop.is_set():
+            try:
+                chunk = os.read(fd, 4096)
+            except OSError:
+                return
             if not chunk:
-                break
-            chunks.append(chunk)
-    finally:
-        sel.close()
-    return b"".join(chunks)
+                return  # EOF
+            with lock:
+                chunks.append(chunk)
+                total = sum(len(c) for c in chunks)
+            if expected is not None and total >= expected:
+                return
+
+    reader = threading.Thread(target=_reader, daemon=True)
+    reader.start()
+    reader.join(timeout)
+    stop.set()
+    with lock:
+        return b"".join(chunks)
 
 
 def test_pump_copies_data_from_source_to_pipe():
@@ -52,7 +64,7 @@ def test_pump_copies_data_from_source_to_pipe():
     try:
         os.write(src_w, b"hello world\n")
         time.sleep(0.05)
-        data = _read_all_available(proxy._r_fd)
+        data = _read_all_available(proxy._r_fd, expected=len(b"hello world\n"))
         assert b"hello world\n" in data
     finally:
         proxy.shutdown()
@@ -65,7 +77,7 @@ def test_pump_preserves_multiple_lines():
     try:
         os.write(src_w, b"line1\nline2\nline3\n")
         time.sleep(0.05)
-        data = _read_all_available(proxy._r_fd)
+        data = _read_all_available(proxy._r_fd, expected=len(b"line1\nline2\nline3\n"))
         assert data == b"line1\nline2\nline3\n"
     finally:
         proxy.shutdown()
@@ -192,30 +204,6 @@ def test_shutdown_unblocks_pending_read():
         pass
 
 
-def test_safety_net_force_exit_does_not_hang_on_telemetry(monkeypatch):
-    """Watchdog must escape even when telemetry flush blocks indefinitely."""
-    from anaconda_mcp import _shutdown as shutdown_mod
-
-    def _hanging_flush():
-        time.sleep(60)
-
-    monkeypatch.setattr(shutdown_mod, "_shutdown_telemetry", _hanging_flush)
-
-    exit_called = threading.Event()
-
-    def _fake_exit(code):
-        exit_called.set()
-
-    monkeypatch.setattr(shutdown_mod.os, "_exit", _fake_exit)
-
-    start = time.time()
-    shutdown_mod._safety_net_force_exit()
-    elapsed = time.time() - start
-
-    assert exit_called.is_set(), "os._exit should have been called"
-    assert elapsed < 3.0, f"safety net hung for {elapsed:.2f}s; expected <3s"
-
-
 def test_shutdown_returns_fast_when_pump_holds_lock():
     """shutdown() must not block on _w_fd_lock even if the pump is mid-write.
 
@@ -310,57 +298,41 @@ def test_patch_composer_signal_handler_registers_sigint_directly():
         _shutdown.composer_mod._module_signal_handler = original_module_handler
 
 
-def test_shutdown_signal_handler_starts_watchdog_before_shutdown(monkeypatch):
-    """Watchdog timer must be created before _active_stdin_proxy.shutdown().
+def test_compose_signal_handler_delegates_to_trigger_shutdown(monkeypatch):
+    """The patched compose signal handler must delegate to
+    ``anaconda_cli_base.lifecycle.trigger_shutdown``.
 
-    If a refactor ever reverses this ordering and shutdown() then
-    deadlocks (which Issue 2A makes very unlikely but not impossible),
-    the watchdog would never start and the process would hang
-    permanently. This test pins the invariant so the ordering can't
-    silently regress.
+    The watchdog, lifecycle hooks, and bounded telemetry flush now live in
+    cli-base. The compose adapter installed by
+    ``_patch_composer_signal_handler`` is a thin bridge: when a signal
+    arrives, it must call ``trigger_shutdown(signum)`` so cli-base owns
+    the shutdown sequence. This test pins that delegation contract so it
+    cannot silently regress.
     """
     import signal as _signal
 
     from anaconda_mcp import _shutdown
 
-    call_order: list[str] = []
+    captured: list[int] = []
 
-    class _FakeTimer:
-        daemon = False
-
-        def __init__(self, *args, **kwargs):
-            call_order.append("timer_created")
-
-        def start(self):
-            pass  # do not actually start; we only care about creation order
-
-    class _FakeProxy:
-        def shutdown(self):
-            call_order.append("proxy_shutdown")
+    def _spy(signum: int) -> None:
+        captured.append(signum)
 
     original_sigint = _signal.getsignal(_signal.SIGINT)
     original_module_handler = _shutdown.composer_mod._module_signal_handler
-    original_active_proxy = _shutdown._active_stdin_proxy
 
     try:
-        monkeypatch.setattr(_shutdown.threading, "Timer", _FakeTimer)
-        _shutdown._active_stdin_proxy = _FakeProxy()
+        # Patch the module-local reference (``from ... import trigger_shutdown``
+        # binds a name in ``_shutdown``; patching the source module would not
+        # intercept the call site).
+        monkeypatch.setattr(_shutdown, "trigger_shutdown", _spy)
         _shutdown._patch_composer_signal_handler()
         handler = _shutdown.composer_mod._module_signal_handler
 
         handler(15, None)
 
-        assert "timer_created" in call_order, f"Timer was never created; call_order={call_order!r}"
-        assert "proxy_shutdown" in call_order, f"Proxy shutdown was never called; call_order={call_order!r}"
-        timer_idx = call_order.index("timer_created")
-        proxy_idx = call_order.index("proxy_shutdown")
-        assert timer_idx < proxy_idx, (
-            f"Watchdog timer was created AFTER proxy.shutdown(); "
-            f"call_order={call_order!r}. The handler must start the watchdog "
-            f"first so a deadlock in shutdown() cannot prevent the safety net."
-        )
+        assert captured == [15], f"compose signal handler must delegate to trigger_shutdown(15); captured={captured!r}"
     finally:
-        _shutdown._active_stdin_proxy = original_active_proxy
         _shutdown.composer_mod._module_signal_handler = original_module_handler
         _signal.signal(_signal.SIGINT, original_sigint)
 

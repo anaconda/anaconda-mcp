@@ -318,9 +318,9 @@ class TestSendContactConsentEvent:
         assert metric_data.event_params["contact"] is True
         assert metric_data.event_params["email"] == "user@example.com"
         assert metric_data.event_params["uuid"] == "abc-123"
-        # bearer_token now comes from the handler's bearer_token_fn (configured by
-        # conftest's autouse fixture to MOCKED_TOKEN), NOT from the function arg.
-        # The "fake-token" arg is only used for BaseClient(api_key=...).
+        # bearer_token comes from emit_event's internal get_auth_token() call
+        # (patched to MOCKED_TOKEN by conftest's autouse fixture), NOT from the
+        # function arg. The "fake-token" arg is only used for BaseClient(api_key=...).
         assert mock_send.call_args[1]["bearer_token"] == "mocked_token"
 
     def test_handles_account_fetch_failure(self, monkeypatch):

@@ -92,6 +92,12 @@ def check_terms_accepted(ctx: click.Context) -> None:
 
 
 def send_contact_consent_event(api_key: str) -> None:
+    """Record contact-consent telemetry.
+
+    ``api_key`` is used only for the BaseClient account lookup (email/uuid). The
+    telemetry auth header is sourced independently via ``get_auth_token()`` inside
+    ``emit_event`` and is NOT taken from this argument.
+    """
     try:
         email = None
         uuid = None
@@ -111,7 +117,7 @@ def send_contact_consent_event(api_key: str) -> None:
 
         emit_event(MetricNames.CONTACT_CONSENT.value, event_params)
     except Exception:
-        logger.exception("Failed to send contact consent event")
+        logger.debug("Failed to send contact consent event", exc_info=True)
 
 
 def _prompt_contact_consent() -> None:

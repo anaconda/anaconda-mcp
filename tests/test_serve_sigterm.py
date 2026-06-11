@@ -1,9 +1,9 @@
 """Tests for SIGTERM handling in the `serve` CLI command."""
 
-import logging
-import os
 import signal
-import time
+import subprocess
+import sys
+import threading
 from unittest.mock import patch
 
 import pytest
@@ -64,33 +64,34 @@ def invoke_serve(extra_args=None, env=None):
         return runner.invoke(cli, args, env=env, catch_exceptions=False)
 
 
-def test_sigterm_handler_is_registered(
+def test_serve_installs_signal_handlers_via_long_running(
     mock_path_exists, mock_render_config, mock_sleep, mock_require_auth, mock_serve_command
 ):
-    """signal.signal(SIGTERM, ...) must be called as the very first thing in serve()."""
-    registered_handlers = []
+    """Invoking serve() installs SIGTERM and SIGINT handlers via cli-base @long_running."""
+    import anaconda_cli_base.lifecycle as lifecycle
 
-    original_signal = signal.signal
+    registered = []
+    original_signal = lifecycle.signal.signal
 
     def capturing_signal(signum, handler):
-        registered_handlers.append((signum, handler))
+        registered.append(signum)
         return original_signal(signum, handler)
 
-    runner = CliRunner()
-    with patch("anaconda_mcp.cli.signal.signal", side_effect=capturing_signal):
-        runner.invoke(cli, ["serve"], catch_exceptions=False)
+    with patch("anaconda_cli_base.lifecycle.signal.signal", side_effect=capturing_signal):
+        CliRunner().invoke(cli, ["serve"], catch_exceptions=False)
 
-    sigterm_registrations = [h for sig, h in registered_handlers if sig == signal.SIGTERM]
-    assert sigterm_registrations, "signal.signal(SIGTERM, ...) was never called"
+    assert signal.SIGTERM in registered, "@long_running did not register a SIGTERM handler"
+    assert signal.SIGINT in registered, "@long_running did not register a SIGINT handler"
 
 
-def test_sigterm_handler_registered_before_sleep(
+def test_serve_installs_handlers_before_sleep(
     mock_path_exists, mock_render_config, mock_require_auth, mock_serve_command
 ):
-    """The SIGTERM handler must be registered before time.sleep() is called."""
-    call_order = []
+    """@long_running must install signal handlers before serve() reaches time.sleep()."""
+    import anaconda_cli_base.lifecycle as lifecycle
 
-    original_signal = signal.signal
+    call_order = []
+    original_signal = lifecycle.signal.signal
 
     def capturing_signal(signum, handler):
         call_order.append("signal")
@@ -99,115 +100,104 @@ def test_sigterm_handler_registered_before_sleep(
     def capturing_sleep(seconds):
         call_order.append("sleep")
 
-    runner = CliRunner()
     with (
-        patch("anaconda_mcp.cli.signal.signal", side_effect=capturing_signal),
+        patch("anaconda_cli_base.lifecycle.signal.signal", side_effect=capturing_signal),
         patch("anaconda_mcp.cli.time.sleep", side_effect=capturing_sleep),
     ):
-        runner.invoke(cli, ["serve"], catch_exceptions=False)
+        CliRunner().invoke(cli, ["serve"], catch_exceptions=False)
 
-    assert "signal" in call_order, "signal.signal was never called"
+    assert "signal" in call_order, "signal handlers were never installed"
     assert "sleep" in call_order, "time.sleep was never called"
     assert call_order.index("signal") < call_order.index("sleep"), (
-        "SIGTERM handler must be registered before time.sleep()"
+        "signal handlers must be installed before time.sleep()"
     )
 
 
-def test_sigterm_handler_calls_sys_exit_0():
-    """Calling the SIGTERM handler directly must raise SystemExit(0)."""
-    captured_handler = None
-    original_signal = signal.signal
+def test_serve_sigterm_handler_delegates_to_trigger_shutdown(
+    mock_path_exists, mock_render_config, mock_sleep, mock_require_auth, mock_serve_command
+):
+    """The installed SIGTERM handler routes to cli-base trigger_shutdown (no bespoke sys.exit)."""
+    import anaconda_cli_base.lifecycle as lifecycle
+
+    captured = {}
+    original_signal = lifecycle.signal.signal
 
     def capturing_signal(signum, handler):
-        nonlocal captured_handler
         if signum == signal.SIGTERM:
-            captured_handler = handler
+            captured["handler"] = handler
         return original_signal(signum, handler)
 
-    runner = CliRunner()
-    with (
-        patch("anaconda_mcp.cli.signal.signal", side_effect=capturing_signal),
-        patch("anaconda_mcp.cli.Path.exists", return_value=True),
-        patch("anaconda_mcp.cli._render_config_template", return_value="/fake/mcp.toml"),
-        patch("anaconda_mcp.cli.time.sleep"),
-        patch("anaconda_mcp.cli._serve", return_value=0),
-    ):
-        runner.invoke(cli, ["serve"])
+    with patch("anaconda_cli_base.lifecycle.signal.signal", side_effect=capturing_signal):
+        CliRunner().invoke(cli, ["serve"], catch_exceptions=False)
 
-    assert captured_handler is not None, "SIGTERM handler was not registered"
+    assert "handler" in captured, "SIGTERM handler was not installed"
 
-    with pytest.raises(SystemExit) as exc_info:
-        captured_handler(signal.SIGTERM, None)
+    with patch("anaconda_cli_base.lifecycle.trigger_shutdown") as mock_trigger:
+        captured["handler"](signal.SIGTERM, None)
 
-    assert exc_info.value.code == 0
+    mock_trigger.assert_called_once_with(signal.SIGTERM)
 
 
-@pytest.mark.skip(
-    reason="Broken: os.kill(os.getpid(), SIGTERM) sends the signal to the pytest process itself, "
-    "causing SystemExit to propagate to the test runner. "
-    "Fix by capturing the handler and invoking it directly, like test_sigterm_handler_logs_shutdown_message does."
-)
-def test_sigterm_during_sleep_exits_cleanly():
-    """Sending SIGTERM to the process during the sleep phase must cause a clean exit."""
-    import threading
+_REAL_SIGNAL_CHILD = """
+import os
+import sys
+import threading
 
-    exit_code = None
-    exception_raised = None
+os.environ["ANACONDA_TELEMETRY_ENABLED"] = "false"
+os.environ.pop("OTEL_SDK_DISABLED", None)
 
-    def run_serve():
-        nonlocal exit_code, exception_raised
-        runner = CliRunner()
-        with (
-            patch("anaconda_mcp.cli.Path.exists", return_value=True),
-            patch("anaconda_mcp.cli._render_config_template", return_value="/fake/mcp.toml"),
-            patch("anaconda_mcp.cli._serve", return_value=0),
-        ):
-            # Use a real short sleep so SIGTERM can interrupt it
-            result = runner.invoke(cli, ["serve", "--delay", "30"], catch_exceptions=True)
-            exit_code = result.exit_code
-
-    thread = threading.Thread(target=run_serve, daemon=True)
-    thread.start()
-
-    # Give the thread a moment to reach time.sleep()
-    time.sleep(0.2)
-
-    # Send SIGTERM to ourselves
-    os.kill(os.getpid(), signal.SIGTERM)
-
-    thread.join(timeout=3)
-    assert not thread.is_alive(), "serve did not exit after SIGTERM"
+import anaconda_cli_base.lifecycle as lc
+import anaconda_mcp._shutdown as sd
 
 
-def test_sigterm_handler_logs_shutdown_message(caplog):
-    """The SIGTERM handler must log a message at INFO level."""
-    captured_handler = None
-    original_signal = signal.signal
+@lc.long_running
+def run():
+    done = threading.Event()
+    lc.register_shutdown_hook(done.set)
+    sd.install_shutdown_handlers()
+    print("READY", flush=True)
+    done.wait()
 
-    def capturing_signal(signum, handler):
-        nonlocal captured_handler
-        if signum == signal.SIGTERM:
-            captured_handler = handler
-        return original_signal(signum, handler)
 
-    runner = CliRunner()
-    with (
-        patch("anaconda_mcp.cli.signal.signal", side_effect=capturing_signal),
-        patch("anaconda_mcp.cli.Path.exists", return_value=True),
-        patch("anaconda_mcp.cli._render_config_template", return_value="/fake/mcp.toml"),
-        patch("anaconda_mcp.cli.time.sleep"),
-        patch("anaconda_mcp.cli._serve", return_value=0),
-    ):
-        runner.invoke(cli, ["serve"])
+run()
+sys.exit(0)
+"""
 
-    assert captured_handler is not None
 
-    with caplog.at_level(logging.INFO, logger="anaconda_mcp.cli"):
-        with pytest.raises(SystemExit):
-            captured_handler(signal.SIGTERM, None)
+@pytest.mark.parametrize("signum", [signal.SIGTERM, signal.SIGINT])
+def test_real_signal_triggers_bounded_shutdown_without_hanging(signum):
+    """A real OS SIGTERM/SIGINT delivered to a serve-like process must route through
+    cli-base trigger_shutdown, run shutdown hooks to unblock the loop, and exit
+    promptly. The watchdog guarantees exit within ~10s, so a 15s wait catches a hang."""
+    proc = subprocess.Popen(
+        [sys.executable, "-c", _REAL_SIGNAL_CHILD],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+    )
+    ready = []
+    reader = threading.Thread(target=lambda: ready.append(proc.stdout.readline()), daemon=True)
+    reader.start()
+    reader.join(timeout=10)
 
-    assert any("SIGTERM" in record.message or "shutting down" in record.message.lower() for record in caplog.records), (
-        f"Expected a SIGTERM log message, got: {[r.message for r in caplog.records]}"
+    if not ready or ready[0].strip() != "READY":
+        proc.kill()
+        out = proc.communicate()[0]
+        pytest.fail(f"child never reached READY (got {ready!r}); output:\n{out}")
+
+    proc.send_signal(signum)
+    try:
+        proc.wait(timeout=15)
+    except subprocess.TimeoutExpired:
+        proc.kill()
+        proc.wait()
+        pytest.fail(
+            f"process hung after {signal.Signals(signum).name}; "
+            "trigger_shutdown/watchdog should have forced exit within ~10s"
+        )
+
+    assert proc.returncode in (0, 128 + signum), (
+        f"unexpected exit code {proc.returncode} after {signal.Signals(signum).name}"
     )
 
 

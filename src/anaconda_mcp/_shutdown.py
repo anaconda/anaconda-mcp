@@ -1,61 +1,13 @@
-"""Graceful shutdown coordination for ``anaconda mcp serve``.
+"""Graceful shutdown glue for ``anaconda mcp serve``.
 
-Why this module exists
-----------------------
-``anaconda mcp serve`` faces two compounded shutdown problems:
-
-1. **mcp-compose's stdio transport blocks an uncancellable thread.**
-   ``mcp.server.stdio.stdio_server`` runs ``stdin_reader`` which iterates
-   ``async for line in stdin``.  ``stdin`` is an ``anyio.AsyncFile`` whose
-   ``readline`` dispatches to ``anyio.to_thread.run_sync(file.readline)``.
-   ``run_sync`` (with its default ``abandon_on_cancel=False``) wraps the
-   worker thread future in a ``CancelScope(shield=True)``.  asyncio
-   cancellation never propagates into the worker thread, and the OS-level
-   ``read(0)`` syscall cannot be interrupted from the same process.  The
-   only way the reader exits is by seeing data or EOF on the underlying
-   file.  Therefore ``run_stdio_async`` never returns on SIGTERM/SIGINT
-   and ``composer.stop()`` never completes.
-
-2. **anaconda-cli-base 0.9+ leaks OTel atexit handlers on long-running
-   commands.**  ``_before_command`` calls ``_ensure_initialized`` which
-   constructs ``TracerProvider`` / ``MeterProvider`` / ``LoggerProvider``;
-   each registers an atexit handler.  Those are only unregistered by
-   ``_after_command``, which fires only on a clean ``SystemExit`` from the
-   wrapped command.  Because ``serve`` blocks in ``asyncio.run`` and never
-   returns, the atexit handlers stay registered.  When the process is
-   eventually killed, the gRPC OTel exporters block on flush and the
-   process hangs again at interpreter teardown.
-
-How this module fixes it
-------------------------
-Insert a pipe between real ``stdin`` and ``stdio_server``'s reader.  A
-daemon "pump" thread copies real stdin into the pipe; the reader sees only
-the pipe's read end.  On SIGTERM/SIGINT we close the pipe's write end,
-synthesizing EOF for the reader.  The reader exits naturally,
-``run_stdio_async`` returns, ``composer.stop()`` runs from
-``run_server``'s ``finally`` block, ``asyncio.run`` completes,
-``sys.exit(0)`` raises ``SystemExit``, ``ErrorHandledGroup.main`` catches
-it, ``_after_command`` fires, ``_shutdown_telemetry`` flushes and
-unregisters the OTel atexit handlers, and the process exits cleanly with
-no force-termination.
-
-A safety-net watchdog (``WATCHDOG_DEADLINE_SECS``) is started when a
-signal arrives.  It only fires if the clean shutdown path stalls; in
-normal operation the process exits well before it expires and the daemon
-timer dies with it.
-
-Why the patches must be installed before ``mcp_compose.cli.serve_command``
-runs:
-
-* ``FastMCP.run_stdio_async`` is replaced at the class level so the
-  ``composer.composed_server`` instance picks up our version when
-  ``await composer.composed_server.run_stdio_async()`` is called inside
-  ``mcp_compose.cli.run_server``.
-* ``mcp_compose.composer._module_signal_handler`` is replaced at the
-  module level so ``signal.signal(SIGTERM, _module_signal_handler)``
-  inside ``MCPServerComposer._register_composer`` resolves the name to
-  our patched handler at registration time.
-"""
+Watchdog, lifecycle hooks, and bounded telemetry flush live in
+``anaconda_cli_base.lifecycle``. Two patches remain, installed before
+``mcp_compose.cli.serve_command``: ``_InterruptibleStdin`` (+
+``_patch_run_stdio_async``) pipes stdin through a daemon pump to work
+around mcp/anyio's uncancellable ``stdin_reader``, registering
+``shutdown()`` as a lifecycle hook; ``_patch_composer_signal_handler``
+swaps mcp-compose's ``_module_signal_handler`` (clobbers upstream) for
+an adapter calling ``trigger_shutdown(signum)``."""
 
 from __future__ import annotations
 
@@ -67,16 +19,11 @@ from io import BufferedReader, FileIO, TextIOWrapper
 from typing import Any
 
 import mcp_compose.composer as composer_mod
-from anaconda_cli_base.telemetry import _shutdown_telemetry
+from anaconda_cli_base.lifecycle import register_shutdown_hook, trigger_shutdown
 from mcp.server.fastmcp import FastMCP
 from mcp.server.stdio import stdio_server
 
 logger = logging.getLogger(__name__)
-
-WATCHDOG_DEADLINE_SECS = 10.0
-"""Safety-net timeout. Long enough to cover composer.stop() (default 5 s
-process-termination timeout) plus telemetry flush; short enough to bound
-worst-case shutdown latency for users."""
 
 _active_stdin_proxy: _InterruptibleStdin | None = None
 _handlers_installed: bool = False
@@ -200,17 +147,25 @@ class _InterruptibleStdin:
 
 
 def install_shutdown_handlers() -> None:
-    """Install graceful-shutdown patches.
-
-    Idempotent; subsequent calls are no-ops.  Must be called from the
-    ``serve`` command before ``mcp_compose.cli.serve_command`` runs.
-    """
+    """Install graceful-shutdown patches; idempotent. Call before serve."""
     global _handlers_installed
     if _handlers_installed:
         return
     _patch_run_stdio_async()
     _patch_composer_signal_handler()
+    register_shutdown_hook(_shutdown_stdin_proxy)
     _handlers_installed = True
+    if not getattr(composer_mod._module_signal_handler, _BRIDGE_SENTINEL, False):
+        logger.warning(
+            "shutdown bridge not present on mcp_compose._module_signal_handler; "
+            "SIGTERM may bypass cli-base bounded shutdown (mcp-compose internals changed?)"
+        )
+
+
+def _shutdown_stdin_proxy() -> None:
+    """Lifecycle hook: close the stdin proxy pipe to unblock the reader."""
+    if _active_stdin_proxy is not None:
+        _active_stdin_proxy.shutdown()
 
 
 def _patch_run_stdio_async() -> None:
@@ -233,46 +188,31 @@ def _patch_run_stdio_async() -> None:
     FastMCP.run_stdio_async = _patched_run_stdio_async  # type: ignore[method-assign]
 
 
+_BRIDGE_SENTINEL = "_anaconda_shutdown_bridge"
+
+
 def _patch_composer_signal_handler() -> None:
+    """Replace mcp-compose's module signal handler with a cli-base bridge.
+
+    Idempotent: re-invocation is a no-op. The sentinel attribute prevents the
+    new bridge from wrapping a previous bridge (which would make
+    ``trigger_shutdown`` fire once per accumulated layer).
+    """
     original_handler = composer_mod._module_signal_handler
+    if getattr(original_handler, _BRIDGE_SENTINEL, False):
+        return
 
     def _shutdown_signal_handler(signum: int, frame: Any) -> None:
-        # Start the watchdog FIRST so it cannot be blocked by anything below.
-        # Without this ordering, a deadlock in shutdown() or original_handler()
-        # would prevent the watchdog from ever firing.
-        timer = threading.Timer(WATCHDOG_DEADLINE_SECS, _safety_net_force_exit)
-        timer.daemon = True
-        timer.start()
-
-        if _active_stdin_proxy is not None:
-            _active_stdin_proxy.shutdown()
-
+        # trigger_shutdown owns the watchdog + bounded telemetry flush; it does
+        # not raise (SIGINT KeyboardInterrupt is not re-raised here) so that
+        # mcp-compose's loop-scheduled composer.stop() still runs after it.
+        trigger_shutdown(signum)
         try:
             original_handler(signum, frame)
         except Exception:
             logger.debug("mcp-compose signal handler raised", exc_info=True)
 
+    setattr(_shutdown_signal_handler, _BRIDGE_SENTINEL, True)
     composer_mod._module_signal_handler = _shutdown_signal_handler
     if hasattr(signal, "SIGINT"):
         signal.signal(signal.SIGINT, _shutdown_signal_handler)
-
-
-def _safety_net_force_exit() -> None:
-    """Last-resort exit if the clean shutdown path stalls.
-
-    The telemetry flush runs on a daemon thread with a hard 2 s timeout
-    so the watchdog cannot itself hang on the same operation that
-    stalled the clean path (e.g. a gRPC OTLP exporter blocked on a
-    dropped network connection).
-    """
-    flush_thread = threading.Thread(target=_try_flush_telemetry, daemon=True)
-    flush_thread.start()
-    flush_thread.join(timeout=2.0)
-    os._exit(0)
-
-
-def _try_flush_telemetry() -> None:
-    try:
-        _shutdown_telemetry()
-    except Exception:
-        logger.debug("Failed to flush telemetry on safety-net exit", exc_info=True)

@@ -1,7 +1,7 @@
 import argparse
+import functools
 import json
 import logging
-import signal
 import sys
 import time
 from datetime import datetime, timezone
@@ -11,7 +11,8 @@ import click
 from anaconda_anon_usage.tokens import client_token
 from anaconda_auth.client import BaseClient
 from anaconda_auth.exceptions import TokenNotFoundError
-from anaconda_cli_base.telemetry import _shutdown_telemetry, get_otel_handler
+from anaconda_cli_base.lifecycle import long_running
+from anaconda_cli_base.telemetry import get_otel_handler, shutdown_telemetry
 from mcp_compose.cli import (
     compose_command as _compose,
 )
@@ -72,15 +73,24 @@ from anaconda_mcp.wizard import setup_wizard_page
 logger = logging.getLogger(__name__)
 
 
-_APP_OTEL_HANDLER_ATTACHED = False
+_LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+_LOG_DATEFMT = "%Y-%m-%d %H:%M:%S"
+_NOISY_LOGGERS = ("httpx", "httpcore")
 
 
+@functools.cache
 def _attach_application_otel_handler() -> None:
-    global _APP_OTEL_HANDLER_ATTACHED
-    if _APP_OTEL_HANDLER_ATTACHED:
-        return
+    """Attach the OTel log handler to the ``anaconda_mcp`` logger exactly once."""
     logging.getLogger("anaconda_mcp").addHandler(get_otel_handler())
-    _APP_OTEL_HANDLER_ATTACHED = True
+
+
+def _configure_logging(level: int) -> None:
+    logging.basicConfig(level=level, format=_LOG_FORMAT, datefmt=_LOG_DATEFMT)
+    # basicConfig ignores level= once the root logger has handlers, so apply it explicitly.
+    logging.getLogger().setLevel(level)
+    for name in _NOISY_LOGGERS:
+        logging.getLogger(name).setLevel(logging.WARNING)
+    _attach_application_otel_handler()
 
 
 def _send_install_event():
@@ -93,7 +103,7 @@ def _send_install_event():
             blocking=True,
         )
     except Exception:
-        logger.exception("Failed to send install event")
+        logger.debug("Failed to send install event", exc_info=True)
 
 
 def _ns(**kwargs):
@@ -106,16 +116,7 @@ def _ns(**kwargs):
 def cli(ctx):
     """Anaconda MCP wrapper — forwards to mcp-compose."""
     ctx.ensure_object(dict)
-    level = getattr(logging, settings.log_level.upper(), logging.INFO)
-    logging.basicConfig(
-        level=level,
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-    )
-    logging.getLogger().setLevel(level)
-    logging.getLogger("httpx").setLevel(logging.WARNING)
-    logging.getLogger("httpcore").setLevel(logging.WARNING)
-    _attach_application_otel_handler()
+    _configure_logging(getattr(logging, settings.log_level.upper(), logging.INFO))
     if ctx.info_name == "anaconda-mcp":
         click.echo(
             "Warning: 'anaconda-mcp' is deprecated. Use 'anaconda mcp' instead.",
@@ -159,20 +160,10 @@ def cli(ctx):
 @click.option("--delay", default=0, show_default=True, type=int, help="Delay in seconds added before serving")
 @click.option("-v", "--verbose", is_flag=True, help="Enable verbose logging.")
 @click.pass_context
+@long_running
 def serve(ctx, config, host, port, delay, verbose):
     if verbose:
-        logging.basicConfig(
-            level=logging.DEBUG,
-            format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-            datefmt="%Y-%m-%d %H:%M:%S",
-        )
         logging.getLogger().setLevel(logging.DEBUG)
-
-    def _handle_sigterm(signum, frame):
-        logger.info("Received SIGTERM, shutting down...")
-        sys.exit(0)
-
-    signal.signal(signal.SIGTERM, _handle_sigterm)
 
     if not config:
         default_path = Path(__file__).resolve().parent / "mcp_compose.toml"
@@ -503,7 +494,7 @@ def setup(clients, transport, host, port, server_name, scope, project_dir, no_ba
 
         if adds:
             _send_install_event()
-            _shutdown_telemetry()
+            shutdown_telemetry()
         return
 
     results = {}
@@ -552,7 +543,7 @@ def setup(clients, transport, host, port, server_name, scope, project_dir, no_ba
         raise SystemExit(exit_code)
 
     _send_install_event()
-    _shutdown_telemetry()
+    shutdown_telemetry()
 
 
 # ============================================================================
