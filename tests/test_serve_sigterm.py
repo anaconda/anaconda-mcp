@@ -164,6 +164,11 @@ sys.exit(0)
 """
 
 
+@pytest.mark.skipif(
+    sys.platform.startswith("win"),
+    reason="Real signal-driven shutdown is POSIX-only: on Windows SIGTERM maps to "
+    "TerminateProcess (hard kill, no handler) and Popen.send_signal(SIGINT) raises ValueError.",
+)
 @pytest.mark.parametrize("signum", [signal.SIGTERM, signal.SIGINT])
 def test_real_signal_triggers_bounded_shutdown_without_hanging(signum):
     """A real OS SIGTERM/SIGINT delivered to a serve-like process must route through
