@@ -46,7 +46,7 @@ jobs:
 
       - name: Install conda-build tooling
         run: |
-          conda install -y conda-build conda-index
+          conda install -n base -y conda-build conda-index
 
       - name: Configure private conda channels
         run: |

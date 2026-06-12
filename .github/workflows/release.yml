@@ -45,7 +45,7 @@ jobs:
           activate-environment: base
 
       - name: Install conda-build
-        run: conda install -y conda-build
+        run: conda install -n base -y conda-build
 
       - name: Configure private conda channels
         run: |

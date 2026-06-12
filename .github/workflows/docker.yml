@@ -55,7 +55,10 @@ jobs:
       - name: Smoke test - verify HTTP server starts
         run: |
           # Start container in HTTP mode
-          docker run -d --name mcp-smoke -p 4041:4041 anaconda-mcp:${{ github.sha }}
+          docker run -d --name mcp-smoke \
+            -e ANACONDA_MCP_ACCEPTED_TERMS \
+            -e ANACONDA_MCP_ACCEPTED_TERMS_VERSION \
+            -p 4041:4041 anaconda-mcp:${{ github.sha }}
 
           # Give the server time to start
           sleep 10
