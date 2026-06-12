@@ -23,7 +23,7 @@ jobs:
         python-version: ["3.10", "3.11", "3.12", "3.13"]
         config:
           - os: linux
-            runner: [self-hosted-amd64-medium-privileged-on-demand]
+            runner: ubuntu-latest
           - os: macos
             runner: macos-latest
           - os: windows
@@ -45,7 +45,7 @@ jobs:
           activate-environment: base
 
       - name: Install conda-build
-        run: conda install -y conda-build
+        run: conda install -n base -y conda-build
 
       - name: Configure private conda channels
         run: |
@@ -86,7 +86,7 @@ jobs:
   publish:
     name: Publish to Anaconda Cloud
     needs: conda-build
-    runs-on: [self-hosted-amd64-medium-privileged-on-demand]
+    runs-on: ubuntu-latest
 
     defaults:
       run:

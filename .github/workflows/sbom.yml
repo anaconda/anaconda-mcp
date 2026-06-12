@@ -13,7 +13,7 @@ on:
 jobs:
   conda-sbom-generator:
     name: Conda SBOM Generator
-    runs-on: [self-hosted-amd64-medium-privileged-on-demand]
+    runs-on: ubuntu-latest
 
     defaults:
       run:
@@ -46,7 +46,7 @@ jobs:
 
       - name: Install conda-build tooling
         run: |
-          conda install -y conda-build conda-index
+          conda install -n base -y conda-build conda-index
 
       - name: Configure private conda channels
         run: |
