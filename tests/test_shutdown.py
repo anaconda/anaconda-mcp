@@ -246,7 +246,6 @@ def test_init_does_not_leak_fds_when_thread_start_fails(monkeypatch):
     """If thread.start() raises, the pipe fds must be closed."""
     src_r, src_w = os.pipe()
     try:
-        original_start = threading.Thread.start
 
         def _failing_start(self):
             raise RuntimeError("simulated thread start failure")
@@ -255,9 +254,6 @@ def test_init_does_not_leak_fds_when_thread_start_fails(monkeypatch):
 
         with pytest.raises(RuntimeError, match="simulated thread start failure"):
             _InterruptibleStdin(source_fd=src_r)
-
-        # Restore so subsequent tests work.
-        monkeypatch.setattr(threading.Thread, "start", original_start)
 
         # Verify the fds the constructor allocated were closed by checking
         # that we can allocate a new pipe and the next available fd numbers
