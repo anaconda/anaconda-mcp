@@ -26,16 +26,16 @@ jobs:
       matrix:
         include:
           - os: linux
-            runner: [self-hosted-amd64-medium-privileged-on-demand]
+            runner: ubuntu-latest
             python-version: "3.10"
           - os: linux
-            runner: [self-hosted-amd64-medium-privileged-on-demand]
+            runner: ubuntu-latest
             python-version: "3.11"
           - os: linux
-            runner: [self-hosted-amd64-medium-privileged-on-demand]
+            runner: ubuntu-latest
             python-version: "3.12"
           - os: linux
-            runner: [self-hosted-amd64-medium-privileged-on-demand]
+            runner: ubuntu-latest
             python-version: "3.13"
           - os: macos
             runner: macos-latest
