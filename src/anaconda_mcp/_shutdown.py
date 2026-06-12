@@ -1,13 +1,86 @@
-"""Graceful shutdown glue for ``anaconda mcp serve``.
+"""Graceful shutdown for ``anaconda mcp serve``.
 
-Watchdog, lifecycle hooks, and bounded telemetry flush live in
-``anaconda_cli_base.lifecycle``. Two patches remain, installed before
-``mcp_compose.cli.serve_command``: ``_InterruptibleStdin`` (+
-``_patch_run_stdio_async``) pipes stdin through a daemon pump to work
-around mcp/anyio's uncancellable ``stdin_reader``, registering
-``shutdown()`` as a lifecycle hook; ``_patch_composer_signal_handler``
-swaps mcp-compose's ``_module_signal_handler`` (clobbers upstream) for
-an adapter calling ``trigger_shutdown(signum)``."""
+Makes a long-running ``anaconda mcp serve`` process exit promptly and cleanly on
+SIGTERM/SIGINT (and when the client closes stdin) without hanging on telemetry
+flush or on mcp/anyio's shielded, effectively uncancellable stdin reader. The
+watchdog, lifecycle hooks, and bounded telemetry flush live in
+``anaconda_cli_base.lifecycle`` (and ``serve()`` is decorated with
+``@long_running``); this module supplies two mcp-specific monkey-patches plus
+the hook that unblocks the serve loop.
+
+Byte path (stdin -> server)
+---------------------------
+``stdio_server`` normally reads real stdin directly via an anyio worker thread.
+That thread runs under a shielded cancel scope (anyio's default
+``abandon_on_cancel=False``), so cancellation is deferred until the blocking
+read returns -- and a read blocked on idle stdin never returns, so it would
+otherwise keep the process alive on shutdown. ``_InterruptibleStdin``
+interposes an OS pipe::
+
+    real stdin (fd 0)
+      --[daemon pump thread: os.read -> os.write]--> os.pipe() write end
+      --> read end wrapped as an anyio async file --> stdio_server --> server
+
+``_patch_run_stdio_async`` replaces ``FastMCP.run_stdio_async`` so the composed
+server reads from the pipe's read end instead of real stdin. The pump is a
+daemon thread: if it is still blocked in ``os.read(real_stdin)`` at exit, it
+does not block process termination.
+
+Threads vs. coroutines
+----------------------
+Exactly one extra OS thread is introduced: the pump. It *blocks* in ``os.read``
+(which releases the GIL) when stdin is idle -- no busy-spin -- and only contends
+for the GIL briefly per ~4 KB chunk, so the cost scales with stdin volume
+(negligible for bursty, low-volume MCP JSON-RPC). Everything else runs on the
+main thread's anyio event loop. Pump and loop communicate only through the pipe;
+``shutdown()`` and the close path are guarded by ``_w_fd_lock`` so the signal
+handler and the pump never corrupt the write-end state.
+
+Signal flow (shutdown)
+----------------------
+mcp-compose installs its own process-wide signal handlers during composer
+construction. ``_patch_composer_signal_handler`` swaps mcp-compose's
+``_module_signal_handler`` for a bridge that first calls ``trigger_shutdown``
+(cli-base: start the 10s watchdog, run hooks, bounded telemetry flush) and then
+the original mcp-compose handler (schedules ``composer.stop()``). Unlike
+cli-base's SIGINT handler, the bridge does not re-raise ``KeyboardInterrupt`` --
+that would unwind the stack before the loop-scheduled ``composer.stop()`` runs,
+leaking downstream processes.
+
+Three layers register handlers, and ordering matters. ``serve()``'s
+``@long_running`` installs cli-base SIGTERM/SIGINT handlers first; this patch
+then rebinds the module global and re-registers SIGINT only (not SIGTERM);
+finally composer construction registers the now-bridged
+``_module_signal_handler`` for both signals, overwriting cli-base's SIGTERM
+handler. Because the patch runs before construction, the composer picks up the
+bridged handler. A SIGTERM arriving in the gap before construction falls
+through to cli-base's handler -- correct, since no composer exists yet to stop,
+and ``trigger_shutdown`` is idempotent so the bridged path cannot double-fire
+it.
+
+On shutdown the registered hook ``_shutdown_stdin_proxy`` closes the pipe's
+write end -> the reader sees EOF -> ``run_stdio_async`` unblocks and returns (no
+longer holding the event loop open). Meanwhile the bridge also calls the
+original handler, which schedules ``composer.stop()`` -> ``asyncio.run``
+completes -> clean exit. The watchdog ``os._exit`` is only a backstop if that
+unwinding stalls.
+
+No init race
+------------
+The pump is the *only* reader of fd 0, and ``_patch_run_stdio_async`` is applied
+at the class level inside ``install_shutdown_handlers()`` -- before
+``serve_command`` runs -- so the unpatched direct-stdin reader is never used.
+Bytes arriving before the pump's first ``os.read`` are buffered by the OS and
+read once it starts; none are lost.
+
+Portability
+-----------
+The pump uses portable ``os.read``/``os.write`` (not Linux-only ``os.splice``)
+so it works on macOS and Windows. Signal-driven *graceful* shutdown is
+POSIX-only: on Windows SIGTERM maps to ``TerminateProcess`` (hard kill, no
+handler), but the stdin-EOF path above is signal-independent and works
+cross-platform -- it is the normal way an MCP client stops a stdio server.
+"""
 
 from __future__ import annotations
 
@@ -147,7 +220,11 @@ class _InterruptibleStdin:
 
 
 def install_shutdown_handlers() -> None:
-    """Install graceful-shutdown patches; idempotent. Call before serve."""
+    """Install graceful-shutdown patches; idempotent. Call before serve.
+
+    Logs a warning if the composer signal bridge is not detectable after
+    patching, signalling that mcp-compose's internals may have changed.
+    """
     global _handlers_installed
     if _handlers_installed:
         return
