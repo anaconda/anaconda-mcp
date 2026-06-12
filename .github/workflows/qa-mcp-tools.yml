@@ -65,8 +65,7 @@ on:
         default: 'macos-latest'
         type: choice
         options:
-          - self-hosted-default
-          - self-hosted-amd64-medium-privileged
+          - ubuntu-latest
           - macos-latest
           - macos-15-intel
           - windows-latest
