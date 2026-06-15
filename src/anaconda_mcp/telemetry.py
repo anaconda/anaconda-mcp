@@ -9,8 +9,13 @@ from collections.abc import Callable
 from typing import Any
 
 import httpx
+from anaconda_cli_base.telemetry import count as _otel_count
+from anaconda_cli_base.telemetry import histogram as _otel_histogram
+from anaconda_cli_base.telemetry import log_event
+from anaconda_cli_base.telemetry import traced as _otel_traced
 from pydantic import BaseModel
 
+from anaconda_mcp.auth import get_auth_token
 from anaconda_mcp.config import settings
 
 logger = logging.getLogger(__name__)
@@ -36,6 +41,68 @@ class MetricData(BaseModel):
     user_environment: str = settings.environment
 
 
+PII_KEY_EMAIL = "email"
+PII_KEY_UUID = "uuid"
+PII_KEY_AAU_CLIENT_ID = "aau_client_id"
+# Exact-name, top-level-only filter (see emit_event): PII nested inside values or
+# placed under non-canonical keys (e.g. "user_email") is NOT scrubbed from OTel.
+_PII_KEYS = (PII_KEY_EMAIL, PII_KEY_UUID, PII_KEY_AAU_CLIENT_ID)
+
+
+def emit_event(
+    event_name: str,
+    event_params: dict[str, Any] | None = None,
+    *,
+    blocking: bool = False,
+) -> None:
+    """Emit a telemetry event to snake-eyes and OTel.
+
+    Sends the full event payload to snake-eyes (preserves byte-identical
+    wire format via SnakeEyes.send) and a sanitized version to OTel via
+    log_event. PII keys defined in _PII_KEYS are stripped from the OTel
+    attributes; snake-eyes still receives them because that data flows to
+    Anaconda's own telemetry backend.
+
+    Args:
+        event_name: One of MetricNames.*.value. Used as both the event
+            name and human-readable body in OTel.
+        event_params: Per-event attributes. Passed verbatim to snake-eyes;
+            PII-filtered before reaching OTel.
+        blocking: If True, snake-eyes send is synchronous (used by
+            INSTALL_COMPLETED to ensure delivery before the setup command
+            exits). OTel's log_event is always synchronous and not affected
+            by this flag.
+
+    Returns silently if settings.send_metrics is False. Both sinks are
+    wrapped in try/except — failure of one never affects the other or the
+    caller.
+    """
+    if not settings.send_metrics:
+        return
+    params = event_params or {}
+
+    try:
+        SnakeEyes().send(
+            MetricData(event=event_name, event_params=params),
+            bearer_token=get_auth_token(),
+            blocking=blocking,
+        )
+    except Exception:
+        logger.debug("snake-eyes emission failed for %s", event_name, exc_info=True)
+
+    try:
+        otel_attrs = {k: v for k, v in params.items() if k not in _PII_KEYS}
+        # event_name doubles as the OTLP log body (1st positional) and the event_name kwarg.
+        log_event(
+            event_name,
+            event_name=event_name,
+            plugin_name="mcp",
+            attributes=otel_attrs,
+        )
+    except Exception:
+        logger.debug("OTel log_event failed for %s", event_name, exc_info=True)
+
+
 def _get_package_version() -> str:
     try:
         return importlib.metadata.version("anaconda-mcp")
@@ -43,7 +110,6 @@ def _get_package_version() -> str:
         return "unknown"
 
 
-# TODO: Introduce Anaconda OpenTelemetry when auth is compatible with api-keys or we have a solution in anaconda-auth
 class SnakeEyes:
     """Snake eyes client - Sends metrics/logs to Anaconda Snake Eyes"""
 
@@ -140,9 +206,26 @@ def _get_client_info(context: Any) -> tuple[str, str]:
     return "unknown", "unknown"
 
 
+def _emit_tool_metrics(tool_name: str, duration_ms: float, *, is_error: bool) -> None:
+    try:
+        attrs: dict[str, object] = {"tool": tool_name}
+        # is_error is recorded only on failures to keep success a single low-cardinality
+        # series per tool; dashboards derive success as total minus is_error=true.
+        if is_error:
+            attrs["is_error"] = True
+        _otel_count("mcp_tool_invoked", plugin_name="mcp", attributes=attrs)
+        _otel_histogram(
+            "mcp_tool_duration_ms",
+            plugin_name="mcp",
+            value=duration_ms,
+            attributes=attrs,
+        )
+    except Exception:
+        logger.debug("OTel tool metrics emission failed", exc_info=True)
+
+
 def make_tracked_call_tool(
     original_call_tool: Callable,
-    bearer_token_fn: Callable[[], str | None],
     max_tool_call_history: int = 20,
     aau_client_id: str | None = None,
 ) -> Callable:
@@ -152,12 +235,26 @@ def make_tracked_call_tool(
         start = time.monotonic()
         is_error = False
         error_description = ""
+        captured_exc: BaseException | None = None
+        result = None
         try:
-            return await original_call_tool(self, name, arguments, context=context, convert_result=convert_result)
-        except Exception as exc:
-            is_error = True
-            error_description = f"{type(exc).__name__}: {exc}"
-            raise
+            with _otel_traced(
+                f"mcp_tool_{name}",
+                plugin_name="mcp",
+                attributes={"tool": name},
+            ) as span:
+                try:
+                    result = await original_call_tool(
+                        self, name, arguments, context=context, convert_result=convert_result
+                    )
+                except Exception as exc:
+                    is_error = True
+                    error_description = f"{type(exc).__name__}: {exc}"
+                    try:
+                        span.add_exception(exc)
+                    except Exception:
+                        logger.debug("OTel span exception annotation failed", exc_info=True)
+                    captured_exc = exc
         finally:
             tool_call_history.append(name)
             if settings.send_metrics:
@@ -173,29 +270,26 @@ def make_tracked_call_tool(
                     "tool_call_history": ",".join(tool_call_history),
                 }
                 if aau_client_id is not None:
-                    event_params["aau_client_id"] = aau_client_id
-                SnakeEyes().send(
-                    MetricData(
-                        event=MetricNames.TOOL_COMPLETED.value,
-                        event_params=event_params,
-                    ),
-                    bearer_token=bearer_token_fn(),
-                )
+                    event_params[PII_KEY_AAU_CLIENT_ID] = aau_client_id
+                emit_event(MetricNames.TOOL_COMPLETED.value, event_params)
+                _emit_tool_metrics(name, duration_ms, is_error=is_error)
+        if captured_exc is not None:
+            raise captured_exc
+        return result
 
     return _tracked
 
 
 def make_tracking_hook(
-    bearer_token_fn: Callable[[], str | None],
     aau_client_id: str | None = None,
 ) -> Callable:
     def hook(original_call_tool: Callable) -> Callable:
-        return make_tracked_call_tool(original_call_tool, bearer_token_fn, aau_client_id=aau_client_id)
+        return make_tracked_call_tool(original_call_tool, aau_client_id=aau_client_id)
 
     return hook
 
 
-def patch_tool_call_tracking(bearer_token_fn: Callable[[], str | None], aau_client_id: str | None = None) -> None:
+def patch_tool_call_tracking(aau_client_id: str | None = None) -> None:
     from anaconda_mcp.tool_hooks import patch_tool_call_hooks
 
-    patch_tool_call_hooks([make_tracking_hook(bearer_token_fn, aau_client_id=aau_client_id)])
+    patch_tool_call_hooks([make_tracking_hook(aau_client_id=aau_client_id)])

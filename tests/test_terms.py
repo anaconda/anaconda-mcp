@@ -265,7 +265,7 @@ class TestTermsAcceptConsent:
     def test_accept_with_consent_sends_event(self, config_toml, monkeypatch):
         monkeypatch.setattr("anaconda_mcp.config.settings.accepted_terms", None)
         mock_send = MagicMock()
-        monkeypatch.setattr("anaconda_mcp.terms.SnakeEyes.send", mock_send)
+        monkeypatch.setattr("anaconda_mcp.telemetry.SnakeEyes.send", mock_send)
         monkeypatch.setattr("anaconda_mcp.cli.get_auth_token", lambda: "fake-token")
 
         mock_client_instance = MagicMock()
@@ -283,7 +283,7 @@ class TestTermsAcceptConsent:
     def test_accept_without_consent_does_not_send_event(self, config_toml, monkeypatch):
         monkeypatch.setattr("anaconda_mcp.config.settings.accepted_terms", None)
         mock_send = MagicMock()
-        monkeypatch.setattr("anaconda_mcp.terms.SnakeEyes.send", mock_send)
+        monkeypatch.setattr("anaconda_mcp.telemetry.SnakeEyes.send", mock_send)
 
         runner = CliRunner()
         result = runner.invoke(cli, ["terms", "accept"])
@@ -293,7 +293,7 @@ class TestTermsAcceptConsent:
     def test_accept_with_no_consent_flag_does_not_send_event(self, config_toml, monkeypatch):
         monkeypatch.setattr("anaconda_mcp.config.settings.accepted_terms", None)
         mock_send = MagicMock()
-        monkeypatch.setattr("anaconda_mcp.terms.SnakeEyes.send", mock_send)
+        monkeypatch.setattr("anaconda_mcp.telemetry.SnakeEyes.send", mock_send)
 
         runner = CliRunner()
         result = runner.invoke(cli, ["terms", "accept", "--no-consent"])
@@ -304,7 +304,7 @@ class TestTermsAcceptConsent:
 class TestSendContactConsentEvent:
     def test_sends_telemetry_with_email_and_uuid(self, monkeypatch):
         mock_send = MagicMock()
-        monkeypatch.setattr("anaconda_mcp.terms.SnakeEyes.send", mock_send)
+        monkeypatch.setattr("anaconda_mcp.telemetry.SnakeEyes.send", mock_send)
 
         mock_client_instance = MagicMock()
         mock_client_instance.account = {"user": {"email": "user@example.com", "id": "abc-123"}}
@@ -318,11 +318,14 @@ class TestSendContactConsentEvent:
         assert metric_data.event_params["contact"] is True
         assert metric_data.event_params["email"] == "user@example.com"
         assert metric_data.event_params["uuid"] == "abc-123"
-        assert mock_send.call_args[1]["bearer_token"] == "fake-token"
+        # bearer_token comes from emit_event's internal get_auth_token() call
+        # (patched to MOCKED_TOKEN by conftest's autouse fixture), NOT from the
+        # function arg. The "fake-token" arg is only used for BaseClient(api_key=...).
+        assert mock_send.call_args[1]["bearer_token"] == "mocked_token"
 
     def test_handles_account_fetch_failure(self, monkeypatch):
         mock_send = MagicMock()
-        monkeypatch.setattr("anaconda_mcp.terms.SnakeEyes.send", mock_send)
+        monkeypatch.setattr("anaconda_mcp.telemetry.SnakeEyes.send", mock_send)
         monkeypatch.setattr(
             "anaconda_mcp.terms.BaseClient",
             MagicMock(side_effect=Exception("network error")),
@@ -342,7 +345,7 @@ class TestPromptContactConsent:
         monkeypatch.setattr("anaconda_mcp.terms.Confirm.ask", lambda *a, **kw: True)
         monkeypatch.setattr("anaconda_mcp.terms.get_auth_token", lambda: "fake-token")
         mock_send = MagicMock()
-        monkeypatch.setattr("anaconda_mcp.terms.SnakeEyes.send", mock_send)
+        monkeypatch.setattr("anaconda_mcp.telemetry.SnakeEyes.send", mock_send)
 
         mock_client_instance = MagicMock()
         mock_client_instance.account = {"user": {"email": "user@example.com", "id": "abc-123"}}
@@ -355,7 +358,7 @@ class TestPromptContactConsent:
     def test_consent_no_does_not_send_event(self, monkeypatch):
         monkeypatch.setattr("anaconda_mcp.terms.Confirm.ask", lambda *a, **kw: False)
         mock_send = MagicMock()
-        monkeypatch.setattr("anaconda_mcp.terms.SnakeEyes.send", mock_send)
+        monkeypatch.setattr("anaconda_mcp.telemetry.SnakeEyes.send", mock_send)
 
         _prompt_contact_consent()
 
@@ -368,7 +371,7 @@ class TestPromptContactConsent:
         monkeypatch.setattr("anaconda_mcp.terms.get_auth_token", lambda: next(token_responses))
         monkeypatch.setattr("anaconda_mcp.terms.login", lambda: None)
         mock_send = MagicMock()
-        monkeypatch.setattr("anaconda_mcp.terms.SnakeEyes.send", mock_send)
+        monkeypatch.setattr("anaconda_mcp.telemetry.SnakeEyes.send", mock_send)
 
         mock_client_instance = MagicMock()
         mock_client_instance.account = {"user": {"email": "user@example.com", "id": "abc-123"}}
@@ -383,7 +386,7 @@ class TestPromptContactConsent:
         monkeypatch.setattr("anaconda_mcp.terms.Confirm.ask", lambda *a, **kw: next(ask_responses))
         monkeypatch.setattr("anaconda_mcp.terms.get_auth_token", lambda: None)
         mock_send = MagicMock()
-        monkeypatch.setattr("anaconda_mcp.terms.SnakeEyes.send", mock_send)
+        monkeypatch.setattr("anaconda_mcp.telemetry.SnakeEyes.send", mock_send)
 
         with pytest.raises(SystemExit):
             _prompt_contact_consent()

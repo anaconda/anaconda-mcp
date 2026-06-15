@@ -1,3 +1,4 @@
+from contextlib import contextmanager
 from unittest import mock
 
 import pytest
@@ -34,7 +35,7 @@ def _make_context(name="claude-desktop", version="1.2.3"):
 @pytest.mark.asyncio
 async def test_tracked_sends_metric_on_success(mock_send):
     original = mock.AsyncMock(return_value="result")
-    tracked = make_tracked_call_tool(original, bearer_token_fn=lambda: "fake-token")
+    tracked = make_tracked_call_tool(original)
 
     result = await tracked(mock.MagicMock(), "my_tool", {"arg1": "val1"})
 
@@ -53,7 +54,7 @@ async def test_tracked_sends_metric_on_success(mock_send):
 @pytest.mark.asyncio
 async def test_tracked_sends_metric_on_failure(mock_send):
     original = mock.AsyncMock(side_effect=RuntimeError("boom"))
-    tracked = make_tracked_call_tool(original, bearer_token_fn=lambda: "fake-token")
+    tracked = make_tracked_call_tool(original)
 
     with pytest.raises(RuntimeError):
         await tracked(mock.MagicMock(), "failing_tool", {})
@@ -65,9 +66,10 @@ async def test_tracked_sends_metric_on_failure(mock_send):
 
 
 @pytest.mark.asyncio
-async def test_tracked_passes_bearer_token(mock_send):
+async def test_tracked_passes_bearer_token(mock_send, monkeypatch):
+    monkeypatch.setattr("anaconda_mcp.telemetry.get_auth_token", lambda: "my-secret-token")
     original = mock.AsyncMock(return_value="ok")
-    tracked = make_tracked_call_tool(original, bearer_token_fn=lambda: "my-secret-token")
+    tracked = make_tracked_call_tool(original)
 
     await tracked(mock.MagicMock(), "a_tool", {})
 
@@ -75,9 +77,10 @@ async def test_tracked_passes_bearer_token(mock_send):
 
 
 @pytest.mark.asyncio
-async def test_tracked_anonymous_when_no_token(mock_send):
+async def test_tracked_anonymous_when_no_token(mock_send, monkeypatch):
+    monkeypatch.setattr("anaconda_mcp.telemetry.get_auth_token", lambda: None)
     original = mock.AsyncMock(return_value="ok")
-    tracked = make_tracked_call_tool(original, bearer_token_fn=lambda: None)
+    tracked = make_tracked_call_tool(original)
 
     await tracked(mock.MagicMock(), "anon_tool", {})
 
@@ -87,7 +90,7 @@ async def test_tracked_anonymous_when_no_token(mock_send):
 @pytest.mark.asyncio
 async def test_tracked_calls_original():
     original = mock.AsyncMock(return_value="original-result")
-    tracked = make_tracked_call_tool(original, bearer_token_fn=lambda: None)
+    tracked = make_tracked_call_tool(original)
     fake_self = mock.MagicMock()
 
     with mock.patch("anaconda_mcp.telemetry.SnakeEyes.send"):
@@ -100,7 +103,7 @@ async def test_tracked_calls_original():
 @pytest.mark.asyncio
 async def test_tracked_suppressed_when_metrics_off():
     original = mock.AsyncMock(return_value="ok")
-    tracked = make_tracked_call_tool(original, bearer_token_fn=lambda: "token")
+    tracked = make_tracked_call_tool(original)
 
     with mock.patch("anaconda_mcp.telemetry.settings") as mock_settings:
         mock_settings.send_metrics = False
@@ -113,7 +116,7 @@ async def test_tracked_suppressed_when_metrics_off():
 @pytest.mark.asyncio
 async def test_tracked_arguments_none_becomes_empty_dict(mock_send):
     original = mock.AsyncMock(return_value="ok")
-    tracked = make_tracked_call_tool(original, bearer_token_fn=lambda: None)
+    tracked = make_tracked_call_tool(original)
 
     await tracked(mock.MagicMock(), "my_tool", None)
 
@@ -124,7 +127,7 @@ async def test_tracked_arguments_none_becomes_empty_dict(mock_send):
 @pytest.mark.asyncio
 async def test_tracked_includes_client_info(mock_send):
     original = mock.AsyncMock(return_value="ok")
-    tracked = make_tracked_call_tool(original, bearer_token_fn=lambda: None)
+    tracked = make_tracked_call_tool(original)
     ctx = _make_context(name="cursor", version="0.48.0")
 
     await tracked(mock.MagicMock(), "my_tool", {}, context=ctx)
@@ -137,7 +140,7 @@ async def test_tracked_includes_client_info(mock_send):
 def test_patch_replaces_call_tool():
     with mock.patch.object(FastMCPToolManager, "call_tool", FastMCPToolManager.call_tool):
         original = FastMCPToolManager.call_tool
-        patch_tool_call_tracking(bearer_token_fn=lambda: None)
+        patch_tool_call_tracking()
         assert FastMCPToolManager.call_tool is not original
 
 
@@ -162,7 +165,7 @@ def test_get_client_info_returns_unknown_when_client_params_is_none():
 @pytest.mark.asyncio
 async def test_tracked_accumulates_tool_call_history(mock_send):
     original = mock.AsyncMock(return_value="result")
-    tracked = make_tracked_call_tool(original, bearer_token_fn=lambda: "fake-token")
+    tracked = make_tracked_call_tool(original)
     fake_self = mock.MagicMock()
 
     await tracked(fake_self, "tool_a", {})
@@ -176,7 +179,7 @@ async def test_tracked_accumulates_tool_call_history(mock_send):
 @pytest.mark.asyncio
 async def test_tracked_tool_call_history_evicts_oldest(mock_send):
     original = mock.AsyncMock(return_value="result")
-    tracked = make_tracked_call_tool(original, bearer_token_fn=lambda: "fake-token", max_tool_call_history=2)
+    tracked = make_tracked_call_tool(original, max_tool_call_history=2)
     fake_self = mock.MagicMock()
 
     await tracked(fake_self, "first", {})
@@ -190,7 +193,7 @@ async def test_tracked_tool_call_history_evicts_oldest(mock_send):
 @pytest.mark.asyncio
 async def test_tracked_includes_aau_client_id_when_provided(mock_send):
     original = mock.AsyncMock(return_value="ok")
-    tracked = make_tracked_call_tool(original, bearer_token_fn=lambda: None, aau_client_id="test-anon-id")
+    tracked = make_tracked_call_tool(original, aau_client_id="test-anon-id")
 
     await tracked(mock.MagicMock(), "my_tool", {})
 
@@ -201,9 +204,60 @@ async def test_tracked_includes_aau_client_id_when_provided(mock_send):
 @pytest.mark.asyncio
 async def test_tracked_omits_aau_client_id_when_none(mock_send):
     original = mock.AsyncMock(return_value="ok")
-    tracked = make_tracked_call_tool(original, bearer_token_fn=lambda: None, aau_client_id=None)
+    tracked = make_tracked_call_tool(original, aau_client_id=None)
 
     await tracked(mock.MagicMock(), "my_tool", {})
 
     metric: MetricData = mock_send.call_args[0][0]
     assert "aau_client_id" not in metric.event_params
+
+
+@pytest.mark.asyncio
+async def test_tracked_wraps_tool_call_in_otel_span(mock_send, monkeypatch):
+    """Tool calls must be wrapped in cli-base's traced() context manager.
+
+    Pins Albert's documented pattern: with traced("mcp_tool_<name>",
+    plugin_name="mcp", attributes={"tool": <name>}) as span. If a refactor
+    accidentally removes the span, this test catches it.
+    """
+    captured: list[dict] = []
+
+    @contextmanager
+    def _fake_traced(name, *, plugin_name, attributes=None):
+        span = mock.MagicMock()
+        captured.append({"name": name, "plugin_name": plugin_name, "attributes": attributes, "span": span})
+        yield span
+
+    monkeypatch.setattr("anaconda_mcp.telemetry._otel_traced", _fake_traced)
+
+    original = mock.AsyncMock(return_value="ok")
+    tracked = make_tracked_call_tool(original)
+
+    await tracked(mock.MagicMock(), "my_tool", {})
+
+    assert len(captured) == 1
+    entry = captured[0]
+    assert entry["name"] == "mcp_tool_my_tool"
+    assert entry["plugin_name"] == "mcp"
+    assert entry["attributes"] == {"tool": "my_tool"}
+
+
+@pytest.mark.asyncio
+async def test_tracked_calls_span_add_exception_on_error(mock_send, monkeypatch):
+    """On the error path, span.add_exception(exc) must be called defensively."""
+    captured_span = mock.MagicMock()
+
+    @contextmanager
+    def _fake_traced(name, *, plugin_name, attributes=None):
+        yield captured_span
+
+    monkeypatch.setattr("anaconda_mcp.telemetry._otel_traced", _fake_traced)
+
+    boom = RuntimeError("boom")
+    original = mock.AsyncMock(side_effect=boom)
+    tracked = make_tracked_call_tool(original)
+
+    with pytest.raises(RuntimeError):
+        await tracked(mock.MagicMock(), "failing_tool", {})
+
+    captured_span.add_exception.assert_called_once_with(boom)
