@@ -31,6 +31,7 @@ if (!assetName) {
 }
 
 const anaPath = path.resolve(__dirname, "..", "bin", assetName);
+const CURRENT_TOS_VERSION = "2026-05-27";
 
 if (!fs.existsSync(anaPath)) {
   fail(`bundled ana binary is missing: ${anaPath}`);
@@ -46,8 +47,23 @@ if (process.platform !== "win32") {
   }
 }
 
+const childEnv = { ...process.env };
+const apiKey = process.env.ANACONDA_MCPB_ANACONDA_API_KEY;
+
+if (apiKey && !apiKey.startsWith("${user_config.")) {
+  childEnv.ANACONDA_AUTH_API_KEY = apiKey;
+}
+
+if (process.env.ANACONDA_MCPB_ACCEPT_BETA_TERMS === "true") {
+  childEnv.ANACONDA_MCP_ACCEPTED_TERMS = "true";
+  childEnv.ANACONDA_MCP_ACCEPTED_TERMS_VERSION = CURRENT_TOS_VERSION;
+}
+
+delete childEnv.ANACONDA_MCPB_ANACONDA_API_KEY;
+delete childEnv.ANACONDA_MCPB_ACCEPT_BETA_TERMS;
+
 const child = spawn(anaPath, ["mcp", "serve"], {
-  env: process.env,
+  env: childEnv,
   stdio: "inherit",
 });
 

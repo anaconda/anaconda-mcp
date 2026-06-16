@@ -22,7 +22,10 @@
     "mcp_config": {
       "command": "node",
       "args": ["${__dirname}/src/server.js"],
-      "env": {}
+      "env": {
+        "ANACONDA_MCPB_ANACONDA_API_KEY": "${user_config.anaconda_api_key}",
+        "ANACONDA_MCPB_ACCEPT_BETA_TERMS": "${user_config.accept_beta_terms}"
+      }
     }
   },
   "tools": [
@@ -55,7 +58,21 @@
       "description": "Remove packages from a conda environment (alias for delete)"
     }
   ],
-  "user_config": {},
+  "user_config": {
+    "anaconda_api_key": {
+      "type": "string",
+      "title": "Anaconda API key",
+      "description": "Optional API key from your Anaconda account settings. Leave empty to use an existing Anaconda login.",
+      "default": "",
+      "sensitive": true
+    },
+    "accept_beta_terms": {
+      "type": "boolean",
+      "title": "Accept Anaconda MCP Beta Terms",
+      "description": "Set true only if you accept the Anaconda MCP Beta Terms at https://www.anaconda.com/legal/terms/mcpbeta.",
+      "default": false
+    }
+  },
   "compatibility": {
     "platforms": ["darwin", "win32", "linux"],
     "runtimes": {

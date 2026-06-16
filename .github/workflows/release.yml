@@ -75,7 +75,7 @@ jobs:
             conda-build
 
       - name: Show built package
-        run: find build/conda -name "*.conda" -o -name "*.tar.bz2" | xargs ls -lh
+        run: find build/conda \( -name "*.conda" -o -name "*.tar.bz2" \) -exec ls -lh {} +
 
       - name: Upload conda artifact
         uses: actions/upload-artifact@v4
@@ -115,21 +115,26 @@ jobs:
       - name: Determine channel label
         id: label
         run: |
-          if [[ "${{ github.ref_name }}" == *"-rc."* ]]; then
-            echo "label=dev" >> $GITHUB_OUTPUT
+          if [[ "${GITHUB_REF_NAME}" == *"-rc."* ]]; then
+            echo "label=dev" >> "${GITHUB_OUTPUT}"
           else
-            echo "label=main" >> $GITHUB_OUTPUT
+            echo "label=main" >> "${GITHUB_OUTPUT}"
           fi
 
       - name: Upload to Anaconda Cloud
+        env:
+          ANACONDA_UPLOAD_TOKEN: ${{ secrets.ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN }}
+          ANACONDA_LABEL: ${{ steps.label.outputs.label }}
         run: |
+          shopt -s globstar nullglob
+          packages=(build/conda/**/*.conda)
           anaconda \
-            --token ${{ secrets.ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN }} \
+            --token "${ANACONDA_UPLOAD_TOKEN}" \
             upload \
             --user anaconda-cloud \
-            --label ${{ steps.label.outputs.label }} \
+            --label "${ANACONDA_LABEL}" \
             --force \
-            build/conda/**/*.conda
+            "${packages[@]}"
 
   release:
     name: Create GitHub Release
@@ -160,10 +165,10 @@ jobs:
       - name: Determine if pre-release
         id: prerelease
         run: |
-          if [[ "${{ github.ref_name }}" == *"-rc."* ]]; then
-            echo "is_prerelease=true" >> $GITHUB_OUTPUT
+          if [[ "${GITHUB_REF_NAME}" == *"-rc."* ]]; then
+            echo "is_prerelease=true" >> "${GITHUB_OUTPUT}"
           else
-            echo "is_prerelease=false" >> $GITHUB_OUTPUT
+            echo "is_prerelease=false" >> "${GITHUB_OUTPUT}"
           fi
 
       - name: Set MCPB version
@@ -180,11 +185,11 @@ jobs:
       - name: Generate release notes
         id: release_notes
         run: |
-          TAG="${{ github.ref_name }}"
+          TAG="${GITHUB_REF_NAME}"
           if [[ "$TAG" == *"-rc."* ]]; then
             VERSION="${TAG%%-rc.*}"
             RC_NUM="${TAG##*-rc.}"
-            cat >> $GITHUB_OUTPUT << EOF
+            cat >> "${GITHUB_OUTPUT}" << EOF
           notes<<EON
           ## Release Candidate ${RC_NUM} for ${VERSION}
 
@@ -194,11 +199,11 @@ jobs:
           EON
           EOF
           else
-            cat >> $GITHUB_OUTPUT << EOF
+            cat >> "${GITHUB_OUTPUT}" << EOF
           notes<<EON
           ## What's Changed
 
-          See [CHANGELOG](https://github.com/${{ github.repository }}/commits/${{ github.ref_name }}) for full details.
+          See [CHANGELOG](https://github.com/${GITHUB_REPOSITORY}/commits/${GITHUB_REF_NAME}) for full details.
           EON
           EOF
           fi

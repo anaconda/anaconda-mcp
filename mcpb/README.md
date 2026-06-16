@@ -23,6 +23,8 @@ ana mcp serve
 - Network access on first launch so `ana` can install its managed runtime
 - An Anaconda login and accepted Anaconda MCP Beta Terms before tool calls will succeed
 
+The bundle exposes optional install-time configuration for an Anaconda API key and Beta Terms acceptance. If those fields are left unset, the server falls back to the user's existing Anaconda login and terms configuration.
+
 ## Build
 
 Install Node.js, then run:
