@@ -41,11 +41,13 @@ To use a different `ana` release while testing:
 make build ANA_CLI_VERSION=v0.2.0
 ```
 
-If the release changes, update `ana-assets.sha256` with the matching upstream asset checksums.
+If the release changes, update `ana-assets.sha256` with the matching upstream asset checksums and the `# anaconda-mcp runtime:` version installed by that `ana` release.
 
 ## Registry Publishing
 
 The root `server.json` is stamped during the release workflow after `anaconda-mcp.mcpb` is built. `write-server-json.mjs` fills in the GitHub Release URL, the server version, and the MCPB SHA-256 before `mcp-publisher publish` runs.
+
+MCP Registry publishing runs only for stable tags. Before building the MCPB, the release workflow verifies that the pinned `ana` release installs the same `anaconda-mcp` version as the tag being published. If they differ, bump the pinned `ana` release and checksums before publishing the stable registry package.
 
 ## Bundle Structure
 
@@ -58,6 +60,7 @@ mcpb/
 ├── scripts/
 │   ├── fetch-ana-assets.sh
 │   ├── set-version.mjs
+│   ├── verify-runtime-version.mjs
 │   └── write-server-json.mjs
 └── bin/                   # Generated at build time; not tracked
 ```

@@ -172,12 +172,19 @@ jobs:
           fi
 
       - name: Set MCPB version
+        if: steps.prerelease.outputs.is_prerelease == 'false'
         run: node mcpb/scripts/set-version.mjs "${GITHUB_REF_NAME}"
 
+      - name: Verify bundled runtime version
+        if: steps.prerelease.outputs.is_prerelease == 'false'
+        run: node mcpb/scripts/verify-runtime-version.mjs "${GITHUB_REF_NAME}"
+
       - name: Build MCPB bundle
+        if: steps.prerelease.outputs.is_prerelease == 'false'
         run: make -C mcpb build
 
       - name: Generate registry server.json
+        if: steps.prerelease.outputs.is_prerelease == 'false'
         run: |
           MCPB_SHA256="$(shasum -a 256 mcpb/anaconda-mcp.mcpb | awk '{print $1}')"
           node mcpb/scripts/write-server-json.mjs "${GITHUB_REF_NAME}" "${MCPB_SHA256}"
@@ -217,9 +224,13 @@ jobs:
           body: ${{ steps.release_notes.outputs.notes }}
           files: |
             build/conda/**/*.conda
-            mcpb/anaconda-mcp.mcpb
-            server.json
           generate_release_notes: true
+
+      - name: Upload MCPB release assets
+        if: steps.prerelease.outputs.is_prerelease == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${GITHUB_REF_NAME}" mcpb/anaconda-mcp.mcpb server.json --clobber
 
       - name: Install mcp-publisher
         if: steps.prerelease.outputs.is_prerelease == 'false'
