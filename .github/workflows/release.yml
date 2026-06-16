@@ -138,6 +138,7 @@ jobs:
 
     permissions:
       contents: write
+      id-token: write
 
     steps:
       - uses: actions/checkout@v4
@@ -151,6 +152,11 @@ jobs:
           path: build/conda/
           merge-multiple: true
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
       - name: Determine if pre-release
         id: prerelease
         run: |
@@ -159,6 +165,17 @@ jobs:
           else
             echo "is_prerelease=false" >> $GITHUB_OUTPUT
           fi
+
+      - name: Set MCPB version
+        run: node mcpb/scripts/set-version.mjs "${GITHUB_REF_NAME}"
+
+      - name: Build MCPB bundle
+        run: make -C mcpb build
+
+      - name: Generate registry server.json
+        run: |
+          MCPB_SHA256="$(shasum -a 256 mcpb/anaconda-mcp.mcpb | awk '{print $1}')"
+          node mcpb/scripts/write-server-json.mjs "${GITHUB_REF_NAME}" "${MCPB_SHA256}"
 
       - name: Generate release notes
         id: release_notes
@@ -193,5 +210,21 @@ jobs:
           name: ${{ github.ref_name }}
           prerelease: ${{ steps.prerelease.outputs.is_prerelease }}
           body: ${{ steps.release_notes.outputs.notes }}
-          files: build/conda/**/*.conda
+          files: |
+            build/conda/**/*.conda
+            mcpb/anaconda-mcp.mcpb
+            server.json
           generate_release_notes: true
+
+      - name: Install mcp-publisher
+        if: steps.prerelease.outputs.is_prerelease == 'false'
+        run: |
+          curl -L "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/').tar.gz" | tar xz mcp-publisher
+
+      - name: Authenticate to MCP Registry
+        if: steps.prerelease.outputs.is_prerelease == 'false'
+        run: ./mcp-publisher login github-oidc
+
+      - name: Publish to MCP Registry
+        if: steps.prerelease.outputs.is_prerelease == 'false'
+        run: ./mcp-publisher publish

@@ -1,0 +1,30 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.anaconda/anaconda-mcp",
+  "title": "Anaconda MCP",
+  "description": "Manage conda environments and packages from MCP clients",
+  "websiteUrl": "https://www.anaconda.com/docs/cli-reference/anaconda-mcp/getting-started",
+  "repository": {
+    "url": "https://github.com/anaconda/anaconda-mcp",
+    "source": "github",
+    "id": "1098842262"
+  },
+  "version": "0.0.0",
+  "packages": [
+    {
+      "registryType": "mcpb",
+      "identifier": "https://github.com/anaconda/anaconda-mcp/releases/download/v0.0.0/anaconda-mcp.mcpb",
+      "fileSha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ],
+  "_meta": {
+    "io.modelcontextprotocol.registry/publisher-provided": {
+      "tool": "github-actions",
+      "package": "mcpb",
+      "entrypoint": "ana mcp serve"
+    }
+  }
+}
