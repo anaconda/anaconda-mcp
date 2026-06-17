@@ -1,6 +1,6 @@
-# ana-cli release: v0.2.0
+# ana-cli release: v0.2.1
 # anaconda-mcp runtime: 1.1.1
-ad0645fc4943b7735e35a6d9772fa24f5c9ee5491ff3c04dedea19b1ce41e866  ana-darwin-arm64
-07b340f0d3e0192d5ec1787470f7b2b86c97b6701db69b6a74428fb3212dad40  ana-linux-x86_64
-ae3e11c51c7973af97b8522214a3abcf16546783135abbce988a85edf6108845  ana-linux-aarch64
-c8b3dcbfedaf702442099bc39d3521ced65c87f363ab74af3de52bef2215a376  ana-windows-x86_64.exe
+4e2a8cc906b547d714eaa0e878a2a7ef3b7e6cebd81b46deaa03092c0bbb21d2  ana-darwin-arm64
+e1ebc77ffeb98cc1fe2a0c97b542e7456ac7ebb6864f2339f5362024ae9dc44c  ana-linux-x86_64
+7327bbd2fde35a0ae497cf516cb9c37a1b416b0f01afe9f2ace06479a9d6ea5b  ana-linux-aarch64
+52ae2f4edbfd84d0f77d8ee5cff721cf81cc28436a1186f032c5841e6b733e8e  ana-windows-x86_64.exe

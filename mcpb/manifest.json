@@ -3,8 +3,8 @@
   "name": "anaconda-mcp",
   "display_name": "Anaconda MCP",
   "version": "0.1.0",
-  "description": "Manage conda environments and packages from Claude Desktop with natural language",
-  "long_description": "Anaconda MCP brings conda environment management to Claude Desktop. It uses the bundled `ana` CLI to install and run the Anaconda MCP server, so users do not need to pre-create an `anaconda-mcp` conda environment.\n\n**Requirements:**\n- A supported operating system: macOS Apple Silicon, Linux x86_64/aarch64, or Windows x86_64.\n- Network access on first launch so `ana` can install its managed Anaconda MCP runtime.\n- An Anaconda login and accepted Anaconda MCP Beta Terms before tool calls will succeed.\n\n**What you can do:**\n- List all conda environments\n- Create new conda environments with specific packages\n- Delete/remove conda environments\n- Install packages into environments\n- Delete/remove packages from environments",
+  "description": "Manage conda environments and packages from MCP clients",
+  "long_description": "Anaconda MCP brings conda environment management to MCP clients. It uses the bundled `ana` CLI to install and run the Anaconda MCP server, so users do not need to pre-create an `anaconda-mcp` conda environment.\n\n**Requirements:**\n- A supported operating system: macOS Apple Silicon, Linux x86_64/aarch64, or Windows x86_64.\n- Network access on first launch so `ana` can install its managed Anaconda MCP runtime.\n- An Anaconda API key configured during MCPB installation, or existing credentials from `ana login` / `anaconda login`.\n- Accepted Anaconda MCP Beta Terms before tool calls will succeed. The install-time setting can record acceptance for this bundle; otherwise run `anaconda mcp terms accept` outside the MCP server.\n\n**What you can do:**\n- List all conda environments\n- Create new conda environments with specific packages\n- Delete/remove conda environments\n- Install packages into environments\n- Delete/remove packages from environments",
   "author": {
     "name": "Anaconda, Inc.",
     "url": "https://anaconda.com"
@@ -14,8 +14,10 @@
     "url": "https://github.com/anaconda/anaconda-mcp"
   },
   "homepage": "https://anaconda.com",
+  "documentation": "https://www.anaconda.com/docs/cli-reference/anaconda-mcp/getting-started",
   "support": "https://github.com/anaconda/anaconda-mcp/issues",
   "license": "Apache-2.0",
+  "privacy_policies": ["https://www.anaconda.com/privacy-policy"],
   "server": {
     "type": "node",
     "entry_point": "src/server.js",
@@ -62,15 +64,17 @@
     "anaconda_api_key": {
       "type": "string",
       "title": "Anaconda API key",
-      "description": "Optional API key from your Anaconda account settings. Leave empty to use an existing Anaconda login.",
+      "description": "Optional API key from your Anaconda account settings. Leave empty to use existing credentials from `ana login` or `anaconda login`; MCP startup does not run interactive login.",
       "default": "",
-      "sensitive": true
+      "sensitive": true,
+      "required": false
     },
     "accept_beta_terms": {
       "type": "boolean",
       "title": "Accept Anaconda MCP Beta Terms",
-      "description": "Set true only if you accept the Anaconda MCP Beta Terms at https://www.anaconda.com/legal/terms/mcpbeta.",
-      "default": false
+      "description": "Set true only if you accept the Anaconda MCP Beta Terms at https://www.anaconda.com/legal/terms/mcpbeta. Otherwise accept terms outside the server with `anaconda mcp terms accept`.",
+      "default": false,
+      "required": false
     }
   },
   "compatibility": {

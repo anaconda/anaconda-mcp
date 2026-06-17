@@ -25,6 +25,11 @@ ana mcp serve
 
 The bundle exposes optional install-time configuration for an Anaconda API key and Beta Terms acceptance. If those fields are left unset, the server falls back to the user's existing Anaconda login and terms configuration.
 
+The MCPB server startup path is non-interactive. It does not run `ana login` for
+the user during MCP startup. Users can either provide an API key during MCPB
+installation, or authenticate outside the MCP server with `ana login` /
+`anaconda login` before launching the server.
+
 ## Build
 
 Install Node.js, then run:
@@ -38,7 +43,7 @@ The build downloads and verifies the pinned `ana` release assets listed in `ana-
 To use a different `ana` release while testing:
 
 ```bash
-make build ANA_CLI_VERSION=v0.2.0
+make build ANA_CLI_VERSION=v0.2.1
 ```
 
 If the release changes, update `ana-assets.sha256` with the matching upstream asset checksums and the `# anaconda-mcp runtime:` version installed by that `ana` release.
