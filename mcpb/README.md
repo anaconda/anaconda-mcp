@@ -16,6 +16,18 @@ ana mcp serve
 
 `ana` installs and runs its managed Anaconda MCP runtime on first launch. Users do not need to create an `anaconda-mcp` conda environment before installing the bundle.
 
+## Scope
+
+This bundle is a registry/bootstrap package for MCP clients. It bundles `ana`
+and uses `ana mcp serve` to install and run the Anaconda MCP server runtime.
+
+It does not install Miniconda, Anaconda Distribution, or a user-facing `conda`
+command, and it does not add `conda` to the user's `PATH`. Environments created
+through Anaconda MCP can be managed through the MCP tools. If users also want to
+activate or inspect those environments from a terminal, notebook, or other local
+tooling, they need a separate conda installation that is configured for that
+workflow.
+
 ## Requirements
 
 - Node.js from the host MCP client runtime
