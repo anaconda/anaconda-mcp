@@ -75,7 +75,7 @@ jobs:
             conda-build
 
       - name: Show built package
-        run: find build/conda -name "*.conda" -o -name "*.tar.bz2" | xargs ls -lh
+        run: find build/conda \( -name "*.conda" -o -name "*.tar.bz2" \) -exec ls -lh {} +
 
       - name: Upload conda artifact
         uses: actions/upload-artifact@v4
@@ -115,21 +115,26 @@ jobs:
       - name: Determine channel label
         id: label
         run: |
-          if [[ "${{ github.ref_name }}" == *"-rc."* ]]; then
-            echo "label=dev" >> $GITHUB_OUTPUT
+          if [[ "${GITHUB_REF_NAME}" == *"-rc."* ]]; then
+            echo "label=dev" >> "${GITHUB_OUTPUT}"
           else
-            echo "label=main" >> $GITHUB_OUTPUT
+            echo "label=main" >> "${GITHUB_OUTPUT}"
           fi
 
       - name: Upload to Anaconda Cloud
+        env:
+          ANACONDA_UPLOAD_TOKEN: ${{ secrets.ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN }}
+          ANACONDA_LABEL: ${{ steps.label.outputs.label }}
         run: |
+          shopt -s globstar nullglob
+          packages=(build/conda/**/*.conda)
           anaconda \
-            --token ${{ secrets.ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN }} \
+            --token "${ANACONDA_UPLOAD_TOKEN}" \
             upload \
             --user anaconda-cloud \
-            --label ${{ steps.label.outputs.label }} \
+            --label "${ANACONDA_LABEL}" \
             --force \
-            build/conda/**/*.conda
+            "${packages[@]}"
 
   release:
     name: Create GitHub Release
@@ -138,6 +143,7 @@ jobs:
 
     permissions:
       contents: write
+      id-token: write
 
     steps:
       - uses: actions/checkout@v4
@@ -151,23 +157,46 @@ jobs:
           path: build/conda/
           merge-multiple: true
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
       - name: Determine if pre-release
         id: prerelease
         run: |
-          if [[ "${{ github.ref_name }}" == *"-rc."* ]]; then
-            echo "is_prerelease=true" >> $GITHUB_OUTPUT
+          if [[ "${GITHUB_REF_NAME}" == *"-rc."* ]]; then
+            echo "is_prerelease=true" >> "${GITHUB_OUTPUT}"
           else
-            echo "is_prerelease=false" >> $GITHUB_OUTPUT
+            echo "is_prerelease=false" >> "${GITHUB_OUTPUT}"
           fi
+
+      - name: Set MCPB version
+        if: steps.prerelease.outputs.is_prerelease == 'false'
+        run: node mcpb/scripts/set-version.mjs "${GITHUB_REF_NAME}"
+
+      - name: Verify bundled runtime version
+        if: steps.prerelease.outputs.is_prerelease == 'false'
+        run: node mcpb/scripts/verify-runtime-version.mjs "${GITHUB_REF_NAME}"
+
+      - name: Build MCPB bundle
+        if: steps.prerelease.outputs.is_prerelease == 'false'
+        run: make -C mcpb build
+
+      - name: Generate registry server.json
+        if: steps.prerelease.outputs.is_prerelease == 'false'
+        run: |
+          MCPB_SHA256="$(shasum -a 256 mcpb/anaconda-mcp.mcpb | awk '{print $1}')"
+          node mcpb/scripts/write-server-json.mjs "${GITHUB_REF_NAME}" "${MCPB_SHA256}"
 
       - name: Generate release notes
         id: release_notes
         run: |
-          TAG="${{ github.ref_name }}"
+          TAG="${GITHUB_REF_NAME}"
           if [[ "$TAG" == *"-rc."* ]]; then
             VERSION="${TAG%%-rc.*}"
             RC_NUM="${TAG##*-rc.}"
-            cat >> $GITHUB_OUTPUT << EOF
+            cat >> "${GITHUB_OUTPUT}" << EOF
           notes<<EON
           ## Release Candidate ${RC_NUM} for ${VERSION}
 
@@ -177,11 +206,11 @@ jobs:
           EON
           EOF
           else
-            cat >> $GITHUB_OUTPUT << EOF
+            cat >> "${GITHUB_OUTPUT}" << EOF
           notes<<EON
           ## What's Changed
 
-          See [CHANGELOG](https://github.com/${{ github.repository }}/commits/${{ github.ref_name }}) for full details.
+          See [CHANGELOG](https://github.com/${GITHUB_REPOSITORY}/commits/${GITHUB_REF_NAME}) for full details.
           EON
           EOF
           fi
@@ -193,5 +222,25 @@ jobs:
           name: ${{ github.ref_name }}
           prerelease: ${{ steps.prerelease.outputs.is_prerelease }}
           body: ${{ steps.release_notes.outputs.notes }}
-          files: build/conda/**/*.conda
+          files: |
+            build/conda/**/*.conda
           generate_release_notes: true
+
+      - name: Upload MCPB release assets
+        if: steps.prerelease.outputs.is_prerelease == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${GITHUB_REF_NAME}" mcpb/anaconda-mcp.mcpb server.json --clobber
+
+      - name: Install mcp-publisher
+        if: steps.prerelease.outputs.is_prerelease == 'false'
+        run: |
+          curl -L "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/').tar.gz" | tar xz mcp-publisher
+
+      - name: Authenticate to MCP Registry
+        if: steps.prerelease.outputs.is_prerelease == 'false'
+        run: ./mcp-publisher login github-oidc
+
+      - name: Publish to MCP Registry
+        if: steps.prerelease.outputs.is_prerelease == 'false'
+        run: ./mcp-publisher publish

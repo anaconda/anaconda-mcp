@@ -25,6 +25,12 @@ Thumbs.db
 tests/
 *.test.*
 
+# Build-only files
+Makefile
+scripts/
+ana-assets.sha256
+*.mcpb
+
 # Documentation
 *.md
 !README.md

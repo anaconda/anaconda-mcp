@@ -6,81 +6,92 @@
 
 # Anaconda MCP - MCPB Bundle
 
-One-click installer for [Anaconda MCP](https://github.com/anaconda/anaconda-mcp) in Claude Desktop.
+This directory builds the MCPB package for installing Anaconda MCP in desktop MCP clients.
 
-## What is this?
+The bundle includes pinned `ana` CLI binaries from `anaconda/anaconda-cli`. At runtime, a small Node.js launcher selects the right binary for the current platform and runs:
 
-This directory contains the source files for building an MCPB (MCP Bundle) / DXT (Desktop Extension) package. The resulting `.mcpb` file allows users to install Anaconda MCP in Claude Desktop with a single click — no terminal or manual configuration needed.
+```bash
+ana mcp serve
+```
 
-## Prerequisites
+`ana` installs and runs its managed Anaconda MCP runtime on first launch. Users
+do not need to create an `anaconda-mcp` conda environment before installing the
+bundle, but this beta package expects conda to be installed and configured for
+the environments and packages Anaconda MCP will manage.
 
-- [Node.js](https://nodejs.org/) (for the `mcpb` CLI tool)
-- A working conda installation (Anaconda or Miniconda)
-- A conda environment named `anaconda-mcp` with the `anaconda-mcp` package installed:
+## Scope
 
-  ```bash
-  conda create -n anaconda-mcp python>=3.10
-  conda activate anaconda-mcp
-  conda install anaconda-mcp
-  ```
+This bundle is a registry/bootstrap package for MCP clients. It bundles `ana`
+and uses `ana mcp serve` to install and run the Anaconda MCP server runtime.
 
-  The bundle includes a wrapper shell script that sources the user's shell profile to initialize conda automatically. No environment variables need to be set manually.
+It does not install Miniconda, Anaconda Distribution, or a user-facing `conda`
+command, and it does not add `conda` to the user's `PATH`. For this beta
+registry package, users should install and configure conda separately before
+using the bundle. Environments created through Anaconda MCP can be managed
+through the MCP tools; activating or inspecting those environments from a
+terminal, notebook, or other local tooling also depends on the user's local conda
+installation.
 
-## Building the Bundle
+## Requirements
 
-1. Install the MCPB CLI tool:
+- Node.js from the host MCP client runtime
+- macOS Apple Silicon, Linux x86_64/aarch64, or Windows x86_64
+- Miniconda, Anaconda Distribution, or another working conda installation
+- Network access on first launch so `ana` can install its managed runtime
+- An Anaconda login and accepted Anaconda MCP Beta Terms before tool calls will succeed
 
-   ```bash
-   npm install -g @anthropic-ai/mcpb
-   ```
+The bundle exposes optional install-time configuration for an Anaconda API key and Beta Terms acceptance. If those fields are left unset, the server falls back to the user's existing Anaconda login and terms configuration.
 
-2. Build the `.mcpb` file from this directory:
+The MCPB server startup path is non-interactive. It does not run `ana login` for
+the user during MCP startup. Users can either provide an API key during MCPB
+installation, or authenticate outside the MCP server with `ana login` /
+`anaconda login` before launching the server.
 
-   ```bash
-   cd mcpb
-   make build
-   ```
+Beta feedback can be shared at <https://anaconda.canny.io/anaconda-mcp-beta>.
 
-   This creates `anaconda-mcp.mcpb` in the current directory.
+## Build
 
-## Installing in Claude Desktop
+Install Node.js, then run:
 
-1. Double-click the `.mcpb` file, or drag it into Claude Desktop Settings
-2. The extension is ready to use — the wrapper script automatically finds your conda installation
+```bash
+make build
+```
 
-## How It Works
+The build downloads and verifies the pinned `ana` release assets listed in `ana-assets.sha256`, then creates `anaconda-mcp.mcpb`.
 
-This bundle uses the **binary** server type with a shell wrapper script:
+To use a different `ana` release while testing:
 
-- The user must have a pre-existing conda environment named `anaconda-mcp` with the `anaconda-mcp` Python package installed
-- A wrapper script (`src/run.sh`) sources the user's shell profile (`~/.zshrc`, `~/.bashrc`, etc.) to initialize conda, since Claude Desktop as a GUI app does not inherit terminal environment variables
-- The script resolves `${CONDA_PREFIX}/envs/anaconda-mcp/bin/python` after conda initialization, making it robust across different installations and platforms
-- The server runs in **stdio** transport mode for direct communication with Claude Desktop
+```bash
+make build ANA_CLI_VERSION=v0.2.2
+```
 
-The server uses `mcp-compose` under the hood to compose and proxy the conda environments MCP server, giving Claude access to conda environment and package management tools.
+If the release changes, update `ana-assets.sha256` with the matching upstream asset checksums and the `# anaconda-mcp runtime:` version installed by that `ana` release.
+
+## Registry Publishing
+
+The root `server.json` is stamped during the release workflow after `anaconda-mcp.mcpb` is built. `write-server-json.mjs` fills in the GitHub Release URL, the server version, and the MCPB SHA-256 before `mcp-publisher publish` runs.
+
+MCP Registry publishing runs only for stable tags. Before building the MCPB, the release workflow verifies that the pinned `ana` release installs the same `anaconda-mcp` version as the tag being published. If they differ, bump the pinned `ana` release and checksums before publishing the stable registry package.
+
+The `Publish MCP Registry` workflow can also publish the MCPB entry manually for
+the Anaconda MCP runtime that is already bundled in the pinned `ana` release.
+This is useful when adding registry packaging for an already-released runtime.
+It creates or updates a packaging release tag such as
+`mcpb-v1.1.1-ana-v0.2.2`, uploads `anaconda-mcp.mcpb` and `server.json`, then
+publishes the generated `server.json` with `mcp-publisher`.
 
 ## Bundle Structure
 
-```
+```text
 mcpb/
-├── manifest.json      # Extension metadata, tools, and configuration
-├── pyproject.toml     # Python dependencies
-├── .mcpbignore        # Files to exclude from the bundle
-├── README.md          # This file
-└── src/
-    ├── run.sh         # Shell wrapper that initializes conda and launches Python
-    └── server.py      # MCP server entry point
+├── manifest.json          # Bundle metadata
+├── ana-assets.sha256      # Pinned ana release checksums
+├── src/
+│   └── server.js          # Platform-selecting launcher
+├── scripts/
+│   ├── fetch-ana-assets.sh
+│   ├── set-version.mjs
+│   ├── verify-runtime-version.mjs
+│   └── write-server-json.mjs
+└── bin/                   # Generated at build time; not tracked
 ```
-
-## Available Tools
-
-The extension exposes tools for managing conda environments and packages — including creating, deleting, and listing environments, as well as installing and removing packages. See [manifest.json](manifest.json) for the full list.
-
-## Future Improvements
-
-The server launch command currently requires the correct conda environment to be active. Areas for improvement include:
-
-- Add `conda` as a supported server type in MCPB (currently limited to `python`, `node`, `binary`, and `uv`).
-- Allow users to select or configure the conda environment via the Claude Desktop UI.
-- Support auto-discovery of existing conda installations and environments.
-- Automatically create and configure a dedicated conda environment during MCPB installation.

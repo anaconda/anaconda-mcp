@@ -108,7 +108,14 @@ API keys can be obtained from your [Anaconda account settings](https://anaconda.
 
 ## Experimental: `ana` CLI
 
-The [`ana` CLI](https://github.com/anaconda/anaconda-cli#installation) handles installation and environment setup automatically, so you don't need to manage a conda environment path.
+The [`ana` CLI](https://github.com/anaconda/anaconda-cli#installation) handles
+Anaconda MCP runtime installation and environment setup automatically, so you
+don't need to manage a dedicated `anaconda-mcp` conda environment path.
+
+`ana mcp serve` installs and runs the managed Anaconda MCP runtime. It does not
+install Miniconda, Anaconda Distribution, or a user-facing `conda` command. If
+you want to activate or inspect environments from a terminal, notebook, or other
+local tooling, install and configure conda separately for that workflow.
 
 Install `ana`:
 
