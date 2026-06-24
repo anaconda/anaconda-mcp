@@ -14,7 +14,10 @@ The bundle includes pinned `ana` CLI binaries from `anaconda/anaconda-cli`. At r
 ana mcp serve
 ```
 
-`ana` installs and runs its managed Anaconda MCP runtime on first launch. Users do not need to create an `anaconda-mcp` conda environment before installing the bundle.
+`ana` installs and runs its managed Anaconda MCP runtime on first launch. Users
+do not need to create an `anaconda-mcp` conda environment before installing the
+bundle, but this beta package expects conda to be installed and configured for
+the environments and packages Anaconda MCP will manage.
 
 ## Scope
 
@@ -22,16 +25,18 @@ This bundle is a registry/bootstrap package for MCP clients. It bundles `ana`
 and uses `ana mcp serve` to install and run the Anaconda MCP server runtime.
 
 It does not install Miniconda, Anaconda Distribution, or a user-facing `conda`
-command, and it does not add `conda` to the user's `PATH`. Environments created
-through Anaconda MCP can be managed through the MCP tools. If users also want to
-activate or inspect those environments from a terminal, notebook, or other local
-tooling, they need a separate conda installation that is configured for that
-workflow.
+command, and it does not add `conda` to the user's `PATH`. For this beta
+registry package, users should install and configure conda separately before
+using the bundle. Environments created through Anaconda MCP can be managed
+through the MCP tools; activating or inspecting those environments from a
+terminal, notebook, or other local tooling also depends on the user's local conda
+installation.
 
 ## Requirements
 
 - Node.js from the host MCP client runtime
 - macOS Apple Silicon, Linux x86_64/aarch64, or Windows x86_64
+- Miniconda, Anaconda Distribution, or another working conda installation
 - Network access on first launch so `ana` can install its managed runtime
 - An Anaconda login and accepted Anaconda MCP Beta Terms before tool calls will succeed
 
@@ -41,6 +46,8 @@ The MCPB server startup path is non-interactive. It does not run `ana login` for
 the user during MCP startup. Users can either provide an API key during MCPB
 installation, or authenticate outside the MCP server with `ana login` /
 `anaconda login` before launching the server.
+
+Beta feedback can be shared at <https://anaconda.canny.io/anaconda-mcp-beta>.
 
 ## Build
 
@@ -55,7 +62,7 @@ The build downloads and verifies the pinned `ana` release assets listed in `ana-
 To use a different `ana` release while testing:
 
 ```bash
-make build ANA_CLI_VERSION=v0.2.1
+make build ANA_CLI_VERSION=v0.2.2
 ```
 
 If the release changes, update `ana-assets.sha256` with the matching upstream asset checksums and the `# anaconda-mcp runtime:` version installed by that `ana` release.
