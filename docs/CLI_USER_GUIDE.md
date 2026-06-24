@@ -196,7 +196,7 @@ anaconda-mcp compose --name my-unified-server
 
 **Include only specific servers:**
 ```bash
-anaconda-mcp compose --include conda_environments --include environments-mcp-server
+anaconda-mcp compose --include conda --include search
 ```
 
 **Use suffix for conflict resolution:**
@@ -434,9 +434,9 @@ anaconda-mcp -v serve --host 127.0.0.1 --port 8000
 **Problem**: Cannot connect to remote MCP servers.
 
 **Solutions**:
-1. Verify the server URL is correct and accessible:
+1. Verify the server URL is correct and accessible (applies to streamable-http servers only):
    ```bash
-   curl http://localhost:4041/mcp
+   curl http://localhost:8888/mcp
    ```
 
 2. Check timeout settings in configuration

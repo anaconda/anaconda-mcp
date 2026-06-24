@@ -19,7 +19,7 @@ You use **two** conda environments:
 | Env | Role |
 |-----|------|
 | **`anaconda-mcp-qa`** | Runs **pytest** (this repo’s `tests/qa/environment.yml`). |
-| **`anaconda-mcp-server`** (name is up to you) | Conda env where **`anaconda-mcp`** and **`environments-mcp-server`** are installed — used for **`conda run -n … anaconda-mcp serve`** (`--server-conda-env`). |
+| **`anaconda-mcp-server`** (name is up to you) | Conda env where **`anaconda-mcp`** is installed (it vendors the conda tools) — used for **`conda run -n … anaconda-mcp serve`** (`--server-conda-env`). |
 
 Pass the server env name via **`--server-conda-env`** or **`MCP_SERVER_CONDA_ENV`**. Examples below use **`anaconda-mcp-server`** as a short, generic name.
 
@@ -35,20 +35,16 @@ Use **`python -m pytest …`** so **`httpx`** / **`pytest`** match the active en
 
 ### Server env — how we prepare it
 
-The server env must contain **installable copies** of:
+The server env must contain an **installable copy** of:
 
-1. **`anaconda-mcp`** — this repository.
-2. **`environments-mcp-server`** — `python -m environments_mcp_server` (started by mcp-compose for conda tools).
-3. **`anaconda-connector-conda`** (`anaconda_connector_conda`) — required by **environments-mcp** for conda operations; without it, tools may not register.
+1. **`anaconda-mcp`** — this repository. It **vendors** the conda MCP tools as `anaconda_mcp.conda_mcp_lite` (started by mcp-compose over STDIO) and pulls in `fastmcp`; no separate `environments-mcp-server` or `anaconda-connector` install is needed.
 
-**Default:** editable installs from local clones of **`anaconda-mcp`** and **`environments-mcp`**. `environments-mcp-server` is **not** pulled in automatically by **`anaconda-mcp`**’s `pyproject.toml`; install it explicitly.
+**Default:** an editable install from a local clone of **`anaconda-mcp`**.
 
 ```bash
 conda create -n anaconda-mcp-server python=3.13 -y
 conda activate anaconda-mcp-server
 pip install -e /path/to/anaconda-mcp
-pip install -e /path/to/environments-mcp
-conda install -c anaconda-cloud -c conda-forge -c defaults anaconda-connector-conda -y   # if import fails
 ```
 
 **Pinning `mcp-compose`** (fork / branch / git URL) in the same env overrides PyPI—important for **stdio-stdio** proxy behavior. Verify with `python -c "import mcp_compose; print(mcp_compose.__file__)"`.
@@ -58,7 +54,7 @@ conda install -c anaconda-cloud -c conda-forge -c defaults anaconda-connector-co
 **Verify the server env:**
 
 ```bash
-python -c "import anaconda_mcp; import environments_mcp_server; import anaconda_connector_conda; print('OK')"
+python -c "import anaconda_mcp; import anaconda_mcp.conda_mcp_lite; print('OK')"
 anaconda-mcp --help
 ```
 

@@ -1,23 +1,19 @@
 """
 Canonical mcp-compose TOML snippets for QA transport-matrix testing.
 
-Profiles describe two independent hops:
+The conda sub-server is the vendored, STDIO-only module ``anaconda_mcp.conda_mcp_lite``,
+so mcp-compose always reaches it over a stdio subprocess. The historical
+"streamable-http upstream" variants no longer apply; profiles now differ only by the
+*client edge* (how the test harness reaches mcp-compose):
 
-  (test harness) --client_edge--> (mcp-compose) --upstream_edge--> (conda MCP)
+  http-http     HTTP client  -> composer streamable-http  (conda stdio subprocess)
+  stdio-http    STDIO client -> composer stdio            (conda stdio subprocess)
+  stdio-stdio   STDIO client -> composer stdio            (conda stdio subprocess)
 
-- *client_edge*: how the test talks to anaconda-mcp / mcp-compose (HTTP vs STDIO).
-- *upstream_edge*: how mcp-compose talks to ``environments_mcp_server`` (streamable HTTP vs STDIO).
+``stdio-http`` and ``stdio-stdio`` are equivalent now; both slugs are retained for
+CI/report compatibility. The second slug token is historical.
 
-Named combinations used in CI and docs:
-
-  http-http     HTTP  + streamable-http proxy to conda (see start-http-server.sh)
-  stdio-http    STDIO + streamable-http proxy to conda
-  stdio-stdio   STDIO + STDIO subprocess to conda
-
-``http-stdio`` (HTTP client, STDIO upstream) is valid for mcp-compose but not a
-default QA profile; add it here if product needs explicit coverage.
-
-All generators return deterministic text given the same inputs (ports, python path).
+All generators return deterministic text given the same inputs (port, python path).
 """
 
 from __future__ import annotations
@@ -34,7 +30,7 @@ class ClientEdge(str, Enum):
 
 
 class UpstreamEdge(str, Enum):
-    """How mcp-compose reaches the conda MCP server."""
+    """How mcp-compose reaches the conda MCP server (always STDIO since the migration)."""
 
     STREAMABLE_HTTP = "streamable-http"
     STDIO = "stdio"
@@ -49,10 +45,9 @@ class ComposeTransportProfile:
     upstream: UpstreamEdge
 
 
-# --- Canonical profiles (same names as TESTS_API_TOOLS.md) ---
-
-PROFILE_HTTP_HTTP = ComposeTransportProfile("http-http", ClientEdge.HTTP, UpstreamEdge.STREAMABLE_HTTP)
-PROFILE_STDIO_HTTP = ComposeTransportProfile("stdio-http", ClientEdge.STDIO, UpstreamEdge.STREAMABLE_HTTP)
+# Slugs retained for CI/report compatibility; conda upstream is always STDIO now.
+PROFILE_HTTP_HTTP = ComposeTransportProfile("http-http", ClientEdge.HTTP, UpstreamEdge.STDIO)
+PROFILE_STDIO_HTTP = ComposeTransportProfile("stdio-http", ClientEdge.STDIO, UpstreamEdge.STDIO)
 PROFILE_STDIO_STDIO = ComposeTransportProfile("stdio-stdio", ClientEdge.STDIO, UpstreamEdge.STDIO)
 
 PROFILES_BY_SLUG: dict[str, ComposeTransportProfile] = {
@@ -62,17 +57,18 @@ PROFILES_BY_SLUG: dict[str, ComposeTransportProfile] = {
 }
 
 
-def render_http_http_toml(
-    *,
-    compose_port: int,
-    downstream_port: int,
-    python_executable: str,
-) -> str:
-    """
-    HTTP client → mcp-compose (streamable HTTP) → streamable HTTP → conda MCP.
+_CONDA_STDIO_BLOCK = """\
+[[servers.proxied.stdio]]
+name = "conda"
+command = ["{python_executable}", "-m", "anaconda_mcp.conda_mcp_lite"]
+restart_policy = "on-failure"
+max_restarts = 3
+"""
 
-    Mirrors ``start-http-server.sh`` (minus process management).
-    """
+
+def render_http_http_toml(*, compose_port: int, python_executable: str) -> str:
+    """HTTP client -> mcp-compose (streamable HTTP) -> stdio subprocess -> conda MCP."""
+    conda_block = _CONDA_STDIO_BLOCK.format(python_executable=python_executable)
     return f"""\
 [composer]
 name = "anaconda-mcp"
@@ -85,19 +81,7 @@ stdio_enabled = false
 streamable_http_enabled = true
 sse_enabled = false
 
-[[servers.proxied.streamable-http]]
-name = "conda"
-url = "http://localhost:{downstream_port}/mcp"
-timeout = 60
-keep_alive = true
-reconnect_on_failure = true
-max_reconnect_attempts = 10
-health_check_enabled = false
-mode = "proxy"
-auto_start = true
-command = ["{python_executable}", "-m", "environments_mcp_server", "start", "--transport", "streamable-http", "--port", "{downstream_port}"]
-startup_delay = 15
-
+{conda_block}
 [tool_manager]
 conflict_resolution = "prefix"
 
@@ -109,57 +93,14 @@ port = {compose_port}
 """
 
 
-def render_stdio_http_toml(
-    *,
-    downstream_port: int,
-    python_executable: str,
-) -> str:
-    """
-    STDIO client → mcp-compose (stdio MCP) → streamable HTTP → conda MCP.
-
-    Outer ``[transport]`` is STDIO-only; upstream uses the same streamable-http
-    block as ``render_http_http_toml`` (different outer port / API block omitted
-    where not needed).
-    """
-    return f"""\
-[composer]
-name = "anaconda-mcp"
-conflict_resolution = "prefix"
-log_level = "INFO"
-
-[transport]
-stdio_enabled = true
-streamable_http_enabled = false
-sse_enabled = false
-
-[[servers.proxied.streamable-http]]
-name = "conda"
-url = "http://localhost:{downstream_port}/mcp"
-timeout = 60
-keep_alive = true
-reconnect_on_failure = true
-max_reconnect_attempts = 10
-health_check_enabled = false
-mode = "proxy"
-auto_start = true
-command = ["{python_executable}", "-m", "environments_mcp_server", "start", "--transport", "streamable-http", "--port", "{downstream_port}"]
-startup_delay = 15
-
-[tool_manager]
-conflict_resolution = "prefix"
-
-[api]
-enabled = false
-"""
+def render_stdio_http_toml(*, python_executable: str) -> str:
+    """STDIO client -> mcp-compose (stdio MCP) -> stdio subprocess -> conda MCP."""
+    return render_stdio_stdio_toml(python_executable=python_executable)
 
 
 def render_stdio_stdio_toml(*, python_executable: str) -> str:
-    """
-    STDIO client → mcp-compose (stdio MCP) → STDIO → conda MCP.
-
-    Matches the historical stdio_tools suite (DESK-1409): avoids HTTP connection
-    exhaustion on the upstream hop during heavy regression tests.
-    """
+    """STDIO client -> mcp-compose (stdio MCP) -> stdio subprocess -> conda MCP."""
+    conda_block = _CONDA_STDIO_BLOCK.format(python_executable=python_executable)
     return f"""\
 [composer]
 name = "anaconda-mcp"
@@ -171,12 +112,7 @@ stdio_enabled = true
 streamable_http_enabled = false
 sse_enabled = false
 
-[[servers.proxied.stdio]]
-name = "conda"
-command = ["{python_executable}", "-m", "environments_mcp_server", "start", "--transport", "stdio"]
-restart_policy = "on-failure"
-max_restarts = 3
-
+{conda_block}
 [tool_manager]
 conflict_resolution = "prefix"
 
@@ -189,24 +125,9 @@ def render_for_profile(
     profile: ComposeTransportProfile,
     *,
     compose_port: int,
-    downstream_port: int,
     python_executable: str,
 ) -> str:
-    """
-    Dispatch by profile. ``compose_port`` / ``downstream_port`` are ignored for
-    pure-STDIO upstream (stdio-stdio).
-    """
-    if profile == PROFILE_HTTP_HTTP:
-        return render_http_http_toml(
-            compose_port=compose_port,
-            downstream_port=downstream_port,
-            python_executable=python_executable,
-        )
-    if profile == PROFILE_STDIO_HTTP:
-        return render_stdio_http_toml(
-            downstream_port=downstream_port,
-            python_executable=python_executable,
-        )
-    if profile == PROFILE_STDIO_STDIO:
-        return render_stdio_stdio_toml(python_executable=python_executable)
-    raise ValueError(f"Unsupported profile: {profile!r}")
+    """Dispatch by profile. ``compose_port`` is used only for the HTTP client edge."""
+    if profile.client == ClientEdge.HTTP:
+        return render_http_http_toml(compose_port=compose_port, python_executable=python_executable)
+    return render_stdio_stdio_toml(python_executable=python_executable)

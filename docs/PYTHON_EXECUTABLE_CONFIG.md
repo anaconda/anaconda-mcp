@@ -1,6 +1,6 @@
 # Python Executable Configuration
 
-The `anaconda-mcp` package needs to spawn subprocess MCP servers (like `environments-mcp-server`). To ensure these subprocesses use the correct Python interpreter, especially in restricted environments like Claude Desktop, we support multiple configuration methods.
+The `anaconda-mcp` package spawns the conda sub-server (`anaconda_mcp.conda_mcp_lite`) as a stdio subprocess. To ensure this subprocess uses the correct Python interpreter, especially in restricted environments like Claude Desktop, we support multiple configuration methods.
 
 ## Configuration Methods (Priority Order)
 
@@ -70,7 +70,7 @@ python -m anaconda_mcp serve
 
 ### Use Case 1: Same Environment (Most Common)
 
-Both `anaconda-mcp` and `environments-mcp-server` are in the same conda environment.
+Both `anaconda-mcp` and the conda sub-server are in the same conda environment.
 
 **Solution:** No configuration needed! Just use the Python from that environment:
 
@@ -152,7 +152,7 @@ If you're modifying the configuration:
 
 Example command in template:
 ```toml
-command = ["{{PYTHON_EXECUTABLE}}", "-m", "environments_mcp_server", "start", "--transport", "streamable-http", "--port", "4041"]
+command = ["{{PYTHON_EXECUTABLE}}", "-m", "anaconda_mcp.conda_mcp_lite"]
 ```
 
 ### Adding More Placeholders

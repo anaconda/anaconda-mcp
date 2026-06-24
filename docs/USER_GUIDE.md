@@ -400,28 +400,6 @@ This is one of the most common issues. It happens when another process is alread
    port = 8888
    ```
 
-### Downstream port collision (Environments MCP)
-
-Anaconda MCP acts as a gateway to downstream MCP servers. Even if Anaconda MCP itself starts successfully and your MCP client connects without issue, tool calls can still fail silently if a downstream server can't bind to its own port.
-
-The **Environments MCP** server, when configured to use Streamable HTTP transport, defaults to port `4041`. If something else is already using that port, Anaconda MCP will start normally and the client will connect — but any call routed to the Environments MCP will fail.
-
-1. Check whether port `4041` is in use:
-   ```bash
-   # macOS / Linux
-   lsof -i :4041
-
-   # Windows
-   netstat -ano | findstr :4041
-   ```
-
-2. If there is a conflict, update the Environments MCP port in `mcp_compose.toml.template`:
-   ```toml
-   [[servers.proxied.streamable-http]]
-   name = "environments"
-   url = "http://localhost:4042/mcp"  # changed from 4041
-   ```
-
 ### Diagnosing failures with logs
 
 When tool calls fail and the cause isn't obvious, there are two good ways to get more detail:
@@ -432,7 +410,7 @@ When tool calls fail and the cause isn't obvious, there are two good ways to get
 ```bash
 anaconda-mcp -v serve
 ```
-With verbose logging enabled you'll see each downstream server starting up, the ports they bind to, and any errors as they happen in real time.
+With verbose logging enabled you'll see each downstream server starting up and any errors as they happen in real time.
 
 ---
 

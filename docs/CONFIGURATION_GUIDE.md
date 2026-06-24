@@ -102,13 +102,14 @@ The `[servers]` section defines the downstream MCP servers that Anaconda MCP com
 
 ### STDIO Servers
 
-STDIO servers run as subprocesses, providing process isolation. This is the most common pattern.
+STDIO servers run as subprocesses, providing process isolation. This is the most common pattern. The conda sub-server is vendored and invoked directly as a Python module — no separate package install required.
 
 ```toml
 [[servers.proxied.stdio]]
-name = "environments"
-command = ["environments-mcp-server", "start", "--transport", "stdio"]
+name = "conda"
+command = ["python", "-m", "anaconda_mcp.conda_mcp_lite"]
 restart_policy = "on-failure"
+max_restarts = 3
 ```
 
 ### Streamable HTTP Servers
@@ -156,7 +157,7 @@ A typical Anaconda MCP development configuration:
 name = "anaconda-mcp"
 conflict_resolution = "prefix"
 log_level = "DEBUG"
-port = 8000
+# port applies only when streamable-http transport is enabled (opt-in)
 
 [transport]
 stdio_enabled = true
@@ -165,9 +166,10 @@ stdio_enabled = true
 enabled = false
 
 [[servers.proxied.stdio]]
-name = "environments"
-command = ["environments-mcp-server", "start", "--transport", "stdio"]
+name = "conda"
+command = ["python", "-m", "anaconda_mcp.conda_mcp_lite"]
 restart_policy = "on-failure"
+max_restarts = 3
 
 [[servers.proxied.http]]
 name = "jupyter"
@@ -179,8 +181,8 @@ timeout = 30
 conflict_resolution = "prefix"
 
 [tool_manager.aliases]
-create_env = "conda_environments_create_environment"
-list_envs = "conda_environments_list_environments"
+create_env = "conda_create_environment"
+list_envs = "conda_list_environments"
 ```
 
 ---

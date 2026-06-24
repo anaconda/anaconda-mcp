@@ -1,8 +1,8 @@
 """
 Regression tests: GUARD-001-API (KI-010)
 
-Covers the confirmed defect in
-environments_mcp_server/tools/environments/install_packages.py triggered by
+Covers the confirmed defect in the conda sub-server's install_packages tool
+(`anaconda_mcp.conda_mcp_lite`) triggered by
 GUARD-001 Step 1 ("Install nonexistent-package-xyz123 in guard-test").
 
 conda_install_packages(environment="<name>", packages=["nonexistent-pkg"])

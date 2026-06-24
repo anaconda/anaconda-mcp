@@ -14,10 +14,6 @@ import os
 # Default port 9888 avoids conflict with IDE MCP servers (Cursor, Claude Desktop use 8888).
 BASE_URL: str = os.environ.get("MCP_SERVER_URL", "http://localhost:9888/mcp")
 
-# Downstream server port (environments_mcp_server).
-# Default 5041 avoids conflict with IDE downstream servers (typically 4041).
-DOWNSTREAM_PORT: int = int(os.environ.get("MCP_DOWNSTREAM_PORT", "5041"))
-
 # Maximum seconds to wait for a single tool call response.
 # A normal error response takes <30 s; the hang bug lasted until the SSE
 # timeout (~5 min), so 60 s is enough to catch a regression reliably.

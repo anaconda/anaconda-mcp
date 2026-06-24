@@ -26,22 +26,22 @@ flowchart LR
       AM --> MC
     end
 
-    subgraph ems["Process: environments_mcp_server"]
+    subgraph ems["Subprocess: python -m anaconda_mcp.conda_mcp_lite"]
       direction TB
-      EM["environments-mcp<br/>· package version"]
-      AC["anaconda-connector<br/>· package / conda build version"]
+      EM["conda_mcp_lite<br/>· vendored in anaconda-mcp"]
+      AC["conda CLI<br/>· user's discovered conda exe"]
       EM --> AC
     end
 
-    MC <-->|"② upstream MCP<br/>streamable HTTP or STDIO"| EM
+    MC <-->|"② upstream MCP<br/>STDIO subprocess"| EM
   end
 
   CL <-->|"① outer MCP<br/>HTTP or STDIO"| AM
 ```
 
 - **①** — transport between the **MCP client** and **`anaconda-mcp`**: streamable HTTP or STDIO.
-- **②** — transport between **`mcp-compose`** and **`environments_mcp_server`**: streamable HTTP or STDIO. Independent of ①.
-- **`environments-mcp` → `anaconda-connector`** — Python API for conda operations; not a third MCP wire.
+- **②** — transport between **`mcp-compose`** and the vendored **`anaconda_mcp.conda_mcp_lite`** sub-server: **STDIO subprocess** (the vendored server is stdio-only). Independent of ①.
+- **`conda_mcp_lite` → `conda` CLI** — shells out to the user's discovered conda executable; not a third MCP wire.
 - **`mcp-compose`** ships as a dependency of `anaconda-mcp`; it can be **overridden** (fork / git) to test transport fixes without changing `anaconda-mcp` itself.
 
 ### Version options per product
@@ -60,11 +60,11 @@ flowchart LR
 Each `--mcp-profile` value fixes both **①** and **②** independently.
 Canonical TOML is generated from [`tests/qa/shared/mcp_compose_profiles.py`](../../shared/mcp_compose_profiles.py) — tests do **not** select transport by editing the packaged `mcp_compose.toml`.
 
-| Profile | ① client → anaconda-mcp | ② mcp-compose → environments-mcp | Why we care |
+| Profile | ① client → anaconda-mcp | ② mcp-compose → conda (vendored) | Why we care |
 |---------|--------------------------|--------------------------------------|-------------|
-| `http-http` | Streamable HTTP | Streamable HTTP | Standard remote / "browser-like" path; matches `start-http-server.sh` |
-| `stdio-http` | STDIO | Streamable HTTP | IDE-style outer STDIO with HTTP upstream — exercises both proxy styles |
-| `stdio-stdio` | STDIO | STDIO | All-stdio; less upstream HTTP churn; used for hang / stress regressions |
+| `http-http` | Streamable HTTP | STDIO subprocess | HTTP outer client path; matches `start-http-server.sh` |
+| `stdio-http` | STDIO | STDIO subprocess | Equivalent to `stdio-stdio` now (conda is stdio-only); kept for compatibility |
+| `stdio-stdio` | STDIO | STDIO subprocess | All-stdio; used for hang / stress regressions |
 
 **Not covered by default:** `http-stdio` (HTTP outer, STDIO upstream) is valid for mcp-compose but omitted until the product explicitly needs it — see `mcp_compose_profiles.py`.
 

@@ -81,12 +81,6 @@ def pytest_addoption(parser: pytest.Parser) -> None:
         help="Port embedded in generated http-http config / URL (default: 9888).",
     )
     parser.addoption(
-        "--downstream-port",
-        default=int(os.environ.get("MCP_DOWNSTREAM_PORT", "5041")),
-        type=int,
-        help="environments_mcp_server streamable-http port (default: 5041).",
-    )
-    parser.addoption(
         "--python-version",
         default=None,
         metavar="VERSION",
@@ -153,11 +147,6 @@ def pytest_configure(config: pytest.Config) -> None:
         slug = config.getoption("--mcp-profile")
         if slug:
             os.environ["MCP_PROFILE"] = slug
-    except ValueError:
-        pass
-    try:
-        dp = config.getoption("--downstream-port")
-        os.environ["MCP_DOWNSTREAM_PORT"] = str(dp)
     except ValueError:
         pass
 
@@ -343,7 +332,6 @@ def _stdio_server_context(
     conda_env: str,
     slug: str,
     compose_port: int,
-    downstream_port: int,
     log_prefix: str,
     stash_key: pytest.StashKey,
     client_name: str,
@@ -355,7 +343,6 @@ def _stdio_server_context(
         slug,
         conda_env,
         compose_port=compose_port,
-        downstream_port=downstream_port,
     )
     logger.info("Starting %s STDIO MCP (profile=%s, config=%s)", label, slug, config_path)
 
@@ -459,7 +446,6 @@ def stdio_mcp_module(request: pytest.FixtureRequest, compose_profile):
         conda_env=request.config.getoption("--server-conda-env"),
         slug=compose_profile.slug,
         compose_port=request.config.getoption("--compose-port"),
-        downstream_port=request.config.getoption("--downstream-port"),
         log_prefix="anaconda-mcp-stdio-module-",
         stash_key=_MCP_STDIO_MODULE_LOG_PATH_KEY,
         client_name="mcp-tools-module",
@@ -508,7 +494,6 @@ def stdio_server(request: pytest.FixtureRequest, compose_profile):
         conda_env=request.config.getoption("--server-conda-env"),
         slug=compose_profile.slug,
         compose_port=request.config.getoption("--compose-port"),
-        downstream_port=request.config.getoption("--downstream-port"),
         log_prefix="anaconda-mcp-stdio-hang-",
         stash_key=_MCP_STDIO_HANG_LOG_PATH_KEY,
         client_name="mcp-tools-hang",

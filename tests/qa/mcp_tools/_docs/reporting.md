@@ -38,4 +38,4 @@ KI-011 / hang regressions show up as **`TimeoutError: _recv: no response within 
 
 ### 4. Scope of log capture
 
-The harness captures **one log stream per fixture** (combined stdout+stderr for HTTP; stderr only for STDIO). There are **no separate pytest-managed log files per downstream subprocess** — if an issue is deep inside `environments_mcp_server` or `anaconda-connector` only, you may need to run the stack manually and inspect those process streams directly.
+The harness captures **one log stream per fixture** (combined stdout+stderr for HTTP; stderr only for STDIO). There are **no separate pytest-managed log files per downstream subprocess** — if an issue is deep inside the conda sub-server (`anaconda_mcp.conda_mcp_lite`) only, you may need to run the stack manually and inspect those process streams directly.

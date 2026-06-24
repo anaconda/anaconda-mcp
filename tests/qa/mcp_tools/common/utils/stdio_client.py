@@ -77,7 +77,6 @@ def _write_profile_config(
     conda_env: str,
     *,
     compose_port: int,
-    downstream_port: int,
 ) -> Path:
     """
     Write mcp-compose TOML for the given profile slug and return the config path.
@@ -97,7 +96,6 @@ def _write_profile_config(
     config_text = _profiles.render_for_profile(
         profile,
         compose_port=compose_port,
-        downstream_port=downstream_port,
         python_executable=python_path,
     )
     fd, path_str = tempfile.mkstemp(suffix="-mcp-config.toml", prefix="anaconda-mcp-")

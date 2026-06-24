@@ -56,11 +56,11 @@ flowchart TD
 
 Each tool has a defined contract: given a specific input, it must return a specific shape of response (`is_error`, `tool_result`, message). A single call is enough to verify that contract. Deterministic inputs (known env name, known package, nonexistent prefix) make failures unambiguous — no retries, no timing, no accumulated state.
 
-This also makes it straightforward to distinguish where a failure originates: if the same test fails on `http-http` and `stdio-stdio` alike, the problem is in `environments_mcp_server` (tool implementation or `anaconda-connector`); if it fails on one profile only, the fault is in the transport layer — mcp-compose or the outer transport framing.
+This also makes it straightforward to distinguish where a failure originates: if the same test fails on `http-http` and `stdio-stdio` alike, the problem is in the conda sub-server (`anaconda_mcp.conda_mcp_lite` tool implementation); if it fails on one profile only, the fault is in the transport layer — mcp-compose or the outer transport framing.
 
 ### Why support variability on each layer?
 
-Tool behaviour must be correct regardless of *how* the call travels to `environments_mcp_server`. A bug can live in any hop — outer transport framing, mcp-compose proxy session handling, upstream connection pooling, or the tool implementation itself. Running the same test logic across the full transport matrix and against independently-versioned packages isolates *where* a regression lives, not just *that* something broke.
+Tool behaviour must be correct regardless of *how* the call travels to the conda sub-server. A bug can live in any hop — outer transport framing, mcp-compose proxy session handling, upstream connection pooling, or the tool implementation itself. Running the same test logic across the full transport matrix and against independently-versioned packages isolates *where* a regression lives, not just *that* something broke.
 
 ---
 

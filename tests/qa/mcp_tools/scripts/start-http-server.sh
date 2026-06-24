@@ -1,10 +1,9 @@
 #!/bin/bash
 # Start anaconda-mcp HTTP server (keeps running)
-# Usage: ./start-http-server.sh [port] [downstream_port]
-# Default ports: 9888 (proxy), 5041 (downstream) - avoids conflict with IDE MCP servers (8888, 4041)
+# Usage: ./start-http-server.sh [port]
+# Default port: 9888 (proxy) - avoids conflict with IDE MCP servers (8888)
 
 PORT=${1:-9888}
-DOWNSTREAM_PORT=${2:-5041}
 CONFIG_FILE="/tmp/http-config.toml"
 PYTHON_PATH=$(which python)
 
@@ -13,9 +12,8 @@ export ANACONDA_MCP_ACCEPTED_TERMS_VERSION="2026-05-27"
 
 echo "=== Cleanup ==="
 pkill -9 -f "anaconda-mcp" 2>/dev/null || true
-pkill -9 -f "environments_mcp" 2>/dev/null || true
+pkill -9 -f "conda_mcp_lite" 2>/dev/null || true
 lsof -ti:$PORT | xargs kill -9 2>/dev/null || true
-lsof -ti:$DOWNSTREAM_PORT | xargs kill -9 2>/dev/null || true
 sleep 2
 
 echo "=== Creating HTTP config ==="
@@ -31,19 +29,11 @@ stdio_enabled = false
 streamable_http_enabled = true
 sse_enabled = false
 
-[[servers.proxied.streamable-http]]
+[[servers.proxied.stdio]]
 name = "conda"
-url = "http://localhost:$DOWNSTREAM_PORT/mcp"
-timeout = 60
-keep_alive = true
-reconnect_on_failure = true
-max_reconnect_attempts = 10
-health_check_enabled = false
-mode = "proxy"
-auto_start = true
-command = ["$PYTHON_PATH", "-m", "environments_mcp_server", "start", "--transport", "streamable-http", "--port", "$DOWNSTREAM_PORT"]
-# Give downstream time to bind and complete MCP setup before compose registers tools.
-startup_delay = 15
+command = ["$PYTHON_PATH", "-m", "anaconda_mcp.conda_mcp_lite"]
+restart_policy = "on-failure"
+max_restarts = 3
 
 [tool_manager]
 conflict_resolution = "prefix"

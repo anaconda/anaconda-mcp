@@ -17,7 +17,6 @@ Every flag has an equivalent **env var** that takes effect when the flag is not 
 | `--mcp-profile` | `MCP_PROFILE` | No | `http-http` | Transport matrix row: `http-http`, `stdio-http`, `stdio-stdio` — see [`architecture.md`](architecture.md) |
 | `--server-url` | `MCP_SERVER_URL` | No | `http://localhost:9888/mcp` | MCP endpoint — used only when **① is HTTP** (`http-http`) |
 | `--compose-port` | `MCP_COMPOSE_PORT` | No | `9888` | Outer HTTP port embedded in generated `http-http` composer config |
-| `--downstream-port` | `MCP_DOWNSTREAM_PORT` | No | `5041` | EMS streamable-http port for **②** (ignored for `stdio-stdio`) |
 | `--server-conda-env` | `MCP_SERVER_CONDA_ENV` | **Yes for STDIO profiles and `--start-server`** | `anaconda-mcp-server` | Conda env that holds all server products |
 | `--start-server` | `MCP_QA_START_SERVER` | No | `0` (set to `1` to enable) | Auto-start HTTP server via `start-http-server.sh` (`http-http` only); requires `--server-conda-env` |
 | `--skip-hang-stress` | `MCP_QA_SKIP_HANG_STRESS` | No | `0` (set to `1` to enable) | Skip `hang_stress`-marked tests; also: `-m "not hang_stress"` |

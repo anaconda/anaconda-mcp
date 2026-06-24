@@ -28,7 +28,7 @@ RUN --mount=type=secret,id=ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN \
             -c datalayer \
             -c anaconda-cloud \
             -c https://conda.anaconda.org/t/${ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN}/anaconda-cloud/label/dev \
-            environments-mcp-server mcp-compose && \
+            mcp-compose && \
         conda clean -afy; \
     fi
 
@@ -58,9 +58,6 @@ RUN --mount=type=secret,id=ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN \
 # UID 1001 is used because UID 1000 is already taken by 'ubuntu' in the base image
 RUN useradd -m -u 1001 mcp && chown -R mcp:mcp /opt/conda
 
-# Expose port for HTTP communication
-EXPOSE 4041
-
 # Run as non-root user
 USER mcp
 
@@ -69,4 +66,4 @@ USER mcp
 # Examples:
 #   Stdio mode (default): docker run -i anaconda-mcp serve
 ENTRYPOINT ["anaconda-mcp"]
-CMD ["serve", "--host", "0.0.0.0", "--port", "4041"]
+CMD ["serve"]

@@ -29,7 +29,7 @@ NONEXISTENT_ENV_PREFIX = str(Path(tempfile.gettempdir()) / "nonexistent-conda-en
 # Placeholders: {timeout} seconds, {iteration} current pass, {total} total passes.
 KI011_HANG_FAIL_MSG = (
     "mcp-compose proxy did not forward the error response from "
-    "environments_mcp_server within {timeout}s (iteration {iteration}/{total}). "
+    "the conda sub-server within {timeout}s (iteration {iteration}/{total}). "
     "The backend HTTP session to the downstream server was likely abandoned "
     "(missing 5th POST + DELETE). Matches the KI-011 hang pattern. "
     "Observed on 2026-03-05 with Streamable HTTP transport, Python 3.13."

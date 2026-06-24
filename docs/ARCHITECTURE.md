@@ -1,6 +1,6 @@
 # Anaconda MCP Architecture
 
-Anaconda MCP is a unified gateway for Anaconda-related AI tools, built on top of [MCP Compose](https://mcp-compose.datalayer.tech). It aggregates multiple downstream MCP servers—such as the Environments MCP server for conda environment management—into a single authenticated endpoint that MCP clients can connect to.
+Anaconda MCP is a unified gateway for Anaconda-related AI tools, built on top of [MCP Compose](https://mcp-compose.datalayer.tech). It aggregates multiple downstream MCP servers into a single authenticated endpoint that MCP clients can connect to. Conda environment management is provided by a vendored `anaconda_mcp.conda_mcp_lite` module composed over stdio.
 
 For the complete MCP Compose architecture reference, see the [MCP Compose Architecture Documentation](https://mcp-compose.datalayer.tech/architecture/).
 
@@ -22,8 +22,8 @@ graph LR
     end
 
     subgraph Downstream MCP Servers
-        ENV[Environments MCP<br/>conda env management]
-        JUP[Jupyter MCP<br/>notebook operations]
+        ENV[Conda MCP<br/>conda env management]
+        SEARCH[Search MCP<br/>package search]
         FUTURE[Future Servers<br/>packages, channels...]
     end
 
@@ -32,7 +32,7 @@ graph LR
     C3 --> Auth
     Auth --> Compose
     Compose --> ENV
-    Compose --> JUP
+    Compose --> SEARCH
     Compose --> FUTURE
 ```
 
@@ -96,8 +96,8 @@ graph TD
     end
 
     subgraph "Downstream Servers"
-        ENV[Environments MCP<br/>:4041]
-        JUP[Jupyter MCP<br/>:8889]
+        ENV[Conda MCP<br/>stdio subprocess]
+        SEARCH[Search MCP<br/>remote HTTP]
     end
 
     Client --> Transport
@@ -107,7 +107,7 @@ graph TD
     Transport --> AnacondaAuth
     AnacondaAuth --> ToolMgr
     ToolMgr --> ENV
-    ToolMgr --> JUP
+    ToolMgr --> SEARCH
     ProcMgr --> ENV
 ```
 
@@ -117,27 +117,29 @@ The **Anaconda Layer** handles authentication and provides CLI commands, while t
 
 ## Downstream MCP Servers
 
-### Environments MCP Server
+### Conda MCP (vendored, stdio)
 
-The primary downstream server, providing tools for conda environment management:
+The primary downstream server, providing tools for conda environment management. It runs as a vendored module (`anaconda_mcp.conda_mcp_lite`) composed over stdio — no local TCP port is bound in the default install.
 
 ```mermaid
 graph LR
-    subgraph "Environments MCP Server"
+    subgraph "Conda MCP (stdio subprocess)"
         direction TB
         T1[create_environment]
         T2[list_environments]
-        T3[delete_environment]
+        T3[list_environment_packages]
         T4[install_packages]
         T5[remove_packages]
+        T6[remove_environment]
     end
 
     subgraph "Composed Tools (prefix strategy)"
-        CT1[conda_environments_create_environment]
-        CT2[conda_environments_list_environments]
-        CT3[conda_environments_delete_environment]
-        CT4[conda_environments_install_packages]
-        CT5[conda_environments_remove_packages]
+        CT1[conda_create_environment]
+        CT2[conda_list_environments]
+        CT3[conda_list_environment_packages]
+        CT4[conda_install_packages]
+        CT5[conda_remove_packages]
+        CT6[conda_remove_environment]
     end
 
     T1 --> CT1
@@ -145,9 +147,14 @@ graph LR
     T3 --> CT3
     T4 --> CT4
     T5 --> CT5
+    T6 --> CT6
 ```
 
-The Environments MCP server runs as a standalone HTTP service on port 4041. Anaconda MCP connects to it via STDIO or Streamable HTTP transport (see details in the [CONFIGURATION_GUIDE](./CONFIGURATION_GUIDE.md) and auto-starts it if configured.
+The conda sub-server is invoked as `python -m anaconda_mcp.conda_mcp_lite` and communicates over stdin/stdout. It discovers the user's conda executable at startup — see [Conda Executable Discovery](#conda-executable-discovery) below.
+
+### Search MCP (remote HTTP)
+
+A remote Anaconda package search server proxied over Streamable HTTP. Tools are exposed under the `search_` prefix.
 
 ### Future Servers
 
@@ -155,10 +162,10 @@ The architecture supports adding additional MCP servers:
 
 | Server | Purpose | Status |
 |--------|---------|--------|
-| **Environments MCP** | Conda environment management | ✅ Available |
+| **Conda MCP** | Conda environment management | ✅ Available (vendored stdio) |
+| **Search MCP** | Package search | ✅ Available |
 | **Jupyter MCP** | Notebook operations | 🔄 Planned |
-| **Packages MCP** | Package search and info | 🔄 Planned |
-| **Channels MCP** | Channel management | 🔄 Planned |
+| **Packages MCP** | Package info | 🔄 Planned |
 
 ---
 
@@ -175,7 +182,7 @@ sequenceDiagram
     participant User
     participant Anaconda as Anaconda MCP Server
     participant Composer as MCP Composer Server
-    participant ENV as Environments MCP Server
+    participant Conda as Conda MCP (stdio)
     participant Keyring as System Keyring
     participant Browser
     participant API as Anaconda API
@@ -200,8 +207,8 @@ sequenceDiagram
     end
 
     Anaconda->>Composer: Initialize MCP Compose
-    Composer->>ENV: Start/Connect to server
-    ENV-->>Composer: Ready
+    Composer->>Conda: Spawn subprocess (stdio)
+    Conda-->>Composer: Ready
     Composer-->>Anaconda: Composition ready
     Anaconda-->>User: Server ready
 ```
@@ -217,20 +224,20 @@ sequenceDiagram
     participant Client as MCP Client
     participant Anaconda as Anaconda MCP Server
     participant Composer as MCP Composer Server
-    participant ENV as Environments MCP Server
+    participant Conda as Conda MCP (stdio)
     participant Keyring as System Keyring
 
     Client->>Anaconda: tools/call
     Anaconda->>Keyring: Get stored token
     Keyring-->>Anaconda: Token
     Anaconda->>Composer: Route tool call
-    Composer->>ENV: tools/call (no auth required)
-    ENV-->>Composer: Result
+    Composer->>Conda: tools/call (no auth required)
+    Conda-->>Composer: Result
     Composer-->>Anaconda: Result
     Anaconda-->>Client: Result
 ```
 
-Note: Downstream MCP servers (like Environments MCP) don't require authentication—they're accessed only through the Anaconda MCP gateway which has already authenticated the user at startup.
+Note: Downstream MCP servers don't require authentication — they're accessed only through the Anaconda MCP gateway which has already authenticated the user at startup.
 
 ---
 
@@ -243,7 +250,7 @@ sequenceDiagram
     participant User
     participant Anaconda as Anaconda MCP Server
     participant Composer as MCP Composer Server
-    participant ENV as Environments MCP Server
+    participant Conda as Conda MCP (stdio)
 
     User->>Anaconda: anaconda-mcp serve
     Anaconda->>Anaconda: start_login()
@@ -258,22 +265,19 @@ sequenceDiagram
     Anaconda->>Composer: serve(config)
     Composer->>Composer: Load mcp_compose.toml
 
-    loop For each server with auto_start=true
-        Composer->>ENV: Start subprocess
-        ENV-->>Composer: HTTP server ready on :4041
-    end
+    Composer->>Conda: Spawn stdio subprocess
+    Conda-->>Composer: Ready (stdio pipe open)
 
-    Composer->>ENV: Connect via Streamable HTTP
-    Composer->>ENV: Discover tools
-    ENV-->>Composer: Tool list
+    Composer->>Conda: Discover tools
+    Conda-->>Composer: Tool list
     Composer->>Composer: Apply prefix strategy
     Composer-->>Anaconda: Composition ready
     Anaconda-->>User: Server ready (N tools)
 ```
 
 Key points:
-1. Login is **non-blocking**—the server starts regardless of auth state
-2. Downstream servers with `auto_start=true` are spawned automatically
+1. Login is **non-blocking** — the server starts regardless of auth state
+2. The conda sub-server is spawned as a stdio subprocess (no TCP port bound)
 3. Tool discovery happens after subprocess initialization
 4. The prefix strategy is applied to avoid tool name collisions
 
@@ -287,7 +291,7 @@ Anaconda MCP uses the standard MCP Compose configuration format. The default con
 [composer]
 name = "anaconda-mcp"
 conflict_resolution = "prefix"
-port = 8888
+# port applies only when streamable-http transport is enabled (opt-in)
 
 [authentication]
 enabled = false
@@ -297,15 +301,55 @@ default_provider = "anaconda"
 [authentication.anaconda]
 domain = "anaconda.com"
 
-[[servers.proxied.streamable-http]]
-name = "conda_environments"
-url = "http://localhost:4041/mcp"
-auto_start = true
-command = ["environments-mcp-server", "start", "--transport", "streamable-http"]
-startup_delay = 3
+[[servers.proxied.stdio]]
+name = "conda"
+command = ["python", "-m", "anaconda_mcp.conda_mcp_lite"]
+restart_policy = "on-failure"
+max_restarts = 3
 ```
 
-For full configuration options, see the [Configuration Guide](./CONFIGURATION_GUIDE.md) and [MCP Compose Configuration](https://mcp-compose.datalayer.tech/configuration/).
+The conda sub-server is a vendored module — no separate package install or local port is required. For full configuration options, see the [Configuration Guide](./CONFIGURATION_GUIDE.md) and [MCP Compose Configuration](https://mcp-compose.datalayer.tech/configuration/).
+
+---
+
+## Conda Executable Discovery
+
+The conda sub-server (`anaconda_mcp.conda_mcp_lite`) locates the user's conda executable at startup using a multi-step strategy that handles GUI-launched clients where the shell environment isn't inherited:
+
+1. **`CONDA_EXE` env var** — set automatically by `conda activate`; most reliable when the client inherits a shell environment.
+2. **`_CONDA_ROOT/bin/conda`** — set by the conda shell hook.
+3. **`shutil.which("conda")`** — condabin on `PATH`.
+4. **Platform-specific fallback:**
+   - *Unix:* spawns `$SHELL -i -c 'echo <marker>$CONDA_EXE<marker>'` to source `.bashrc`/`.zshrc` and extract the value conda init injected there.
+   - *Windows:* reads the `HKCU\Software\Microsoft\Command Processor` AutoRun key for the conda hook path, then falls back to the installer's Uninstall registry entry.
+
+If discovery fails, the server logs a clear error to stderr and exits with a non-zero code. No stdout is written, so the stdio JSON-RPC stream stays clean.
+
+### Setting `CONDA_EXE` for GUI clients
+
+GUI clients (Claude Desktop, Cursor, VS Code) launch processes without an interactive shell, so conda's shell hook never runs and `CONDA_EXE` is not set. The shell probe (step 4) handles most cases, but the most reliable fix is to set `CONDA_EXE` explicitly in the client's `env` block:
+
+```json
+{
+  "mcpServers": {
+    "anaconda-mcp": {
+      "command": "/path/to/anaconda-mcp/env/bin/python",
+      "args": ["-m", "anaconda_mcp", "serve"],
+      "env": {
+        "CONDA_EXE": "/path/to/conda"
+      }
+    }
+  }
+}
+```
+
+On Windows, point to `conda.exe` in the `Scripts\` directory:
+
+```json
+"env": {
+  "CONDA_EXE": "C:\\Users\\me\\miniconda3\\Scripts\\conda.exe"
+}
+```
 
 ---
 
