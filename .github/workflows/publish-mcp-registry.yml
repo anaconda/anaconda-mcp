@@ -1,0 +1,109 @@
+name: Publish MCP Registry
+
+on:
+  workflow_dispatch:
+    inputs:
+      package_tag:
+        description: "GitHub Release tag that will host the MCPB artifact. Defaults to mcpb-v<runtime>-ana-<ana>."
+        required: false
+        type: string
+
+jobs:
+  publish:
+    name: Publish MCPB to MCP Registry
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Determine bundled runtime
+        id: versions
+        shell: bash
+        run: |
+          runtime_version="$(sed -n 's/^# anaconda-mcp runtime: //p' mcpb/ana-assets.sha256 | head -n 1)"
+          ana_version="$(sed -n 's/^# ana-cli release: //p' mcpb/ana-assets.sha256 | head -n 1)"
+
+          if [[ -z "${runtime_version}" || -z "${ana_version}" ]]; then
+            echo "Could not determine bundled runtime or ana version from mcpb/ana-assets.sha256" >&2
+            exit 1
+          fi
+
+          package_tag="${{ inputs.package_tag }}"
+          if [[ -z "${package_tag}" ]]; then
+            package_tag="mcpb-v${runtime_version}-ana-${ana_version}"
+          fi
+
+          {
+            echo "runtime_version=${runtime_version}"
+            echo "ana_version=${ana_version}"
+            echo "package_tag=${package_tag}"
+          } >> "${GITHUB_OUTPUT}"
+
+      - name: Set MCPB version
+        run: node mcpb/scripts/set-version.mjs "${{ steps.versions.outputs.runtime_version }}"
+
+      - name: Verify bundled runtime version
+        run: node mcpb/scripts/verify-runtime-version.mjs "${{ steps.versions.outputs.runtime_version }}"
+
+      - name: Build MCPB bundle
+        run: make -C mcpb clean build
+
+      - name: Generate registry server.json
+        run: |
+          MCPB_SHA256="$(shasum -a 256 mcpb/anaconda-mcp.mcpb | awk '{print $1}')"
+          node mcpb/scripts/write-server-json.mjs \
+            "${{ steps.versions.outputs.package_tag }}" \
+            "${MCPB_SHA256}" \
+            "${{ steps.versions.outputs.runtime_version }}"
+
+      - name: Validate server.json
+        run: |
+          curl -LfsS \
+            https://raw.githubusercontent.com/modelcontextprotocol/registry/main/docs/reference/server-json/draft/server.schema.json \
+            -o server.schema.json
+          npx --yes ajv-cli@5 validate \
+            -s server.schema.json \
+            -d server.json \
+            --spec=draft7 \
+            --strict=false
+
+      - name: Create or update MCPB release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PACKAGE_TAG: ${{ steps.versions.outputs.package_tag }}
+          RUNTIME_VERSION: ${{ steps.versions.outputs.runtime_version }}
+          ANA_VERSION: ${{ steps.versions.outputs.ana_version }}
+        run: |
+          release_notes="MCPB registry package for Anaconda MCP ${RUNTIME_VERSION}, using bundled ana ${ANA_VERSION}."
+
+          if gh release view "${PACKAGE_TAG}" >/dev/null 2>&1; then
+            gh release upload "${PACKAGE_TAG}" mcpb/anaconda-mcp.mcpb server.json --clobber
+          else
+            gh release create "${PACKAGE_TAG}" \
+              mcpb/anaconda-mcp.mcpb \
+              server.json \
+              --title "MCPB registry package for Anaconda MCP ${RUNTIME_VERSION}" \
+              --notes "${release_notes}" \
+              --latest=false
+          fi
+
+      - name: Install mcp-publisher
+        run: |
+          curl -L "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/').tar.gz" | tar xz mcp-publisher
+
+      - name: Authenticate to MCP Registry
+        run: ./mcp-publisher login github-oidc
+
+      - name: Publish to MCP Registry
+        run: ./mcp-publisher publish

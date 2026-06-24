@@ -13,6 +13,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "..", "..");
 const tag = process.argv[2] || process.env.GITHUB_REF_NAME;
 const fileSha256 = process.argv[3] || process.env.MCPB_SHA256;
+const serverVersion = process.argv[4] || process.env.MCP_SERVER_VERSION;
 
 if (!tag || !fileSha256) {
   console.error("Usage: node mcpb/scripts/write-server-json.mjs <tag> <mcpb-sha256>");
@@ -24,8 +25,8 @@ if (!/^[a-f0-9]{64}$/.test(fileSha256)) {
   process.exit(1);
 }
 
-const normalizedTag = tag.startsWith("v") ? tag : `v${tag}`;
-const version = normalizedTag.replace(/^v/, "");
+const normalizedTag = tag.startsWith("v") || !/^\d+\.\d+\.\d+/.test(tag) ? tag : `v${tag}`;
+const version = (serverVersion || normalizedTag).replace(/^v/, "");
 
 const server = {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",

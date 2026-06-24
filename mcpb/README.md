@@ -73,6 +73,13 @@ The root `server.json` is stamped during the release workflow after `anaconda-mc
 
 MCP Registry publishing runs only for stable tags. Before building the MCPB, the release workflow verifies that the pinned `ana` release installs the same `anaconda-mcp` version as the tag being published. If they differ, bump the pinned `ana` release and checksums before publishing the stable registry package.
 
+The `Publish MCP Registry` workflow can also publish the MCPB entry manually for
+the Anaconda MCP runtime that is already bundled in the pinned `ana` release.
+This is useful when adding registry packaging for an already-released runtime.
+It creates or updates a packaging release tag such as
+`mcpb-v1.1.1-ana-v0.2.2`, uploads `anaconda-mcp.mcpb` and `server.json`, then
+publishes the generated `server.json` with `mcp-publisher`.
+
 ## Bundle Structure
 
 ```text
