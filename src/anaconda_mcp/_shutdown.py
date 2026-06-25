@@ -38,32 +38,19 @@ handler and the pump never corrupt the write-end state.
 
 Signal flow (shutdown)
 ----------------------
-mcp-compose installs its own process-wide signal handlers during composer
-construction. ``_patch_composer_signal_handler`` swaps mcp-compose's
-``_module_signal_handler`` for a bridge that first calls ``trigger_shutdown``
-(cli-base: start the 10s watchdog, run hooks, bounded telemetry flush) and then
-the original mcp-compose handler (schedules ``composer.stop()``). Unlike
-cli-base's SIGINT handler, the bridge does not re-raise ``KeyboardInterrupt`` --
-that would unwind the stack before the loop-scheduled ``composer.stop()`` runs,
-leaking downstream processes.
-
-Three layers register handlers, and ordering matters. ``serve()``'s
-``@long_running`` installs cli-base SIGTERM/SIGINT handlers first; this patch
-then rebinds the module global and re-registers SIGINT only (not SIGTERM);
-finally composer construction registers the now-bridged
-``_module_signal_handler`` for both signals, overwriting cli-base's SIGTERM
-handler. Because the patch runs before construction, the composer picks up the
-bridged handler. A SIGTERM arriving in the gap before construction falls
-through to cli-base's handler -- correct, since no composer exists yet to stop,
-and ``trigger_shutdown`` is idempotent so the bridged path cannot double-fire
-it.
+``serve()`` is decorated with cli-base ``@long_running``, which installs
+SIGTERM/SIGINT handlers. Its SIGTERM handler already routes to
+``trigger_shutdown`` (start the ~10s watchdog, run shutdown hooks, bounded
+telemetry flush). Its SIGINT handler, however, re-raises ``KeyboardInterrupt``,
+which would unwind the shielded stdio reader before that path runs -- so
+``_patch_sigint_handler`` overrides SIGINT with a handler that calls
+``trigger_shutdown`` directly (no re-raise), matching the SIGTERM path.
 
 On shutdown the registered hook ``_shutdown_stdin_proxy`` closes the pipe's
-write end -> the reader sees EOF -> ``run_stdio_async`` unblocks and returns (no
-longer holding the event loop open). Meanwhile the bridge also calls the
-original handler, which schedules ``composer.stop()`` -> ``asyncio.run``
-completes -> clean exit. The watchdog ``os._exit`` is only a backstop if that
-unwinding stalls.
+write end -> the reader sees EOF -> ``run_stdio_async`` unblocks and returns ->
+``FastMCP.run(transport="stdio")`` returns -> clean exit. The watchdog
+``os._exit`` is only a backstop if that unwinding stalls. (The server now runs
+natively on FastMCP; there is no mcp-compose composer process to stop.)
 
 No init race
 ------------
@@ -91,7 +78,6 @@ import threading
 from io import BufferedReader, FileIO, TextIOWrapper
 from typing import Any
 
-import mcp_compose.composer as composer_mod
 from anaconda_cli_base.lifecycle import register_shutdown_hook, trigger_shutdown
 from mcp.server.fastmcp import FastMCP
 from mcp.server.stdio import stdio_server
@@ -222,21 +208,19 @@ class _InterruptibleStdin:
 def install_shutdown_handlers() -> None:
     """Install graceful-shutdown patches; idempotent. Call before serve.
 
-    Logs a warning if the composer signal bridge is not detectable after
-    patching, signalling that mcp-compose's internals may have changed.
+    Interposes an interruptible stdin pipe so the stdio server loop can be
+    unblocked on shutdown, and overrides SIGINT to route to bounded shutdown.
+    cli-base ``@long_running`` already handles SIGTERM gracefully, but its SIGINT
+    handler re-raises ``KeyboardInterrupt`` (which kills the shielded stdio
+    reader), so we replace it.
     """
     global _handlers_installed
     if _handlers_installed:
         return
     _patch_run_stdio_async()
-    _patch_composer_signal_handler()
+    _patch_sigint_handler()
     register_shutdown_hook(_shutdown_stdin_proxy)
     _handlers_installed = True
-    if not getattr(composer_mod._module_signal_handler, _BRIDGE_SENTINEL, False):
-        logger.warning(
-            "shutdown bridge not present on mcp_compose._module_signal_handler; "
-            "SIGTERM may bypass cli-base bounded shutdown (mcp-compose internals changed?)"
-        )
 
 
 def _shutdown_stdin_proxy() -> None:
@@ -265,31 +249,18 @@ def _patch_run_stdio_async() -> None:
     FastMCP.run_stdio_async = _patched_run_stdio_async  # type: ignore[method-assign]
 
 
-_BRIDGE_SENTINEL = "_anaconda_shutdown_bridge"
+def _patch_sigint_handler() -> None:
+    """Route SIGINT to cli-base bounded shutdown without re-raising KeyboardInterrupt.
 
-
-def _patch_composer_signal_handler() -> None:
-    """Replace mcp-compose's module signal handler with a cli-base bridge.
-
-    Idempotent: re-invocation is a no-op. The sentinel attribute prevents the
-    new bridge from wrapping a previous bridge (which would make
-    ``trigger_shutdown`` fire once per accumulated layer).
+    ``@long_running`` installs a graceful SIGTERM handler, but its SIGINT handler
+    re-raises ``KeyboardInterrupt``, which unwinds the shielded stdio reader before
+    the bounded-shutdown + stdin-EOF path runs (the process is then killed by
+    SIGINT). Override SIGINT with a handler that calls ``trigger_shutdown`` -- start
+    the watchdog, run shutdown hooks (including ``_shutdown_stdin_proxy`` -> reader
+    EOF -> clean return) and bounded telemetry flush -- mirroring the SIGTERM path.
     """
-    original_handler = composer_mod._module_signal_handler
-    if getattr(original_handler, _BRIDGE_SENTINEL, False):
-        return
 
-    def _shutdown_signal_handler(signum: int, frame: Any) -> None:
-        # trigger_shutdown owns the watchdog + bounded telemetry flush; it does
-        # not raise (SIGINT KeyboardInterrupt is not re-raised here) so that
-        # mcp-compose's loop-scheduled composer.stop() still runs after it.
+    def _handler(signum: int, frame: Any) -> None:
         trigger_shutdown(signum)
-        try:
-            original_handler(signum, frame)
-        except Exception:
-            logger.debug("mcp-compose signal handler raised", exc_info=True)
 
-    setattr(_shutdown_signal_handler, _BRIDGE_SENTINEL, True)
-    composer_mod._module_signal_handler = _shutdown_signal_handler
-    if hasattr(signal, "SIGINT"):
-        signal.signal(signal.SIGINT, _shutdown_signal_handler)
+    signal.signal(signal.SIGINT, _handler)

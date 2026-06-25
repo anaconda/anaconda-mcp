@@ -19,9 +19,6 @@ from mcp_compose.cli import (
 from mcp_compose.cli import (
     discover_command as _discover,
 )
-from mcp_compose.cli import (
-    serve_command as _serve,
-)
 from mcp_compose.composer import ConflictResolution
 from rich import print_json as rich_print_json
 from rich.console import Console
@@ -30,7 +27,6 @@ from rich.table import Table
 from anaconda_mcp._shutdown import install_shutdown_handlers
 from anaconda_mcp.auth import (
     get_auth_token,
-    make_auth_enforcement_hook,
     validate_auth_token,
 )
 from anaconda_mcp.claude_desktop import (
@@ -47,6 +43,7 @@ from anaconda_mcp.client_config import (
     is_client_installed,
     remove_client,
 )
+from anaconda_mcp.composition import build_composed_server
 from anaconda_mcp.config import settings
 from anaconda_mcp.mcp_state import is_new_install, mark_installed
 from anaconda_mcp.telemetry import (
@@ -54,7 +51,6 @@ from anaconda_mcp.telemetry import (
     PII_KEY_AAU_CLIENT_ID,
     MetricNames,
     emit_event,
-    make_tracking_hook,
 )
 from anaconda_mcp.terms import (
     CURRENT_TOS_VERSION,
@@ -62,12 +58,9 @@ from anaconda_mcp.terms import (
     TermsError,
     check_terms_accepted,
     is_terms_current,
-    make_terms_enforcement_hook,
     persist_acceptance,
     send_contact_consent_event,
 )
-from anaconda_mcp.tool_hooks import patch_tool_call_hooks
-from anaconda_mcp.utils import _render_config_template
 from anaconda_mcp.wizard import setup_wizard_page
 
 logger = logging.getLogger(__name__)
@@ -165,18 +158,6 @@ def serve(ctx, config, host, port, delay, verbose):
     if verbose:
         logging.getLogger().setLevel(logging.DEBUG)
 
-    if not config:
-        default_path = Path(__file__).resolve().parent / "mcp_compose.toml"
-        if default_path.exists():
-            config = str(default_path)
-        else:
-            click.echo(
-                f"⚠️  No configuration file found. Expected at {default_path} or provide --config.",
-                err=True,
-            )
-            sys.exit(1)
-
-    rendered_config = _render_config_template(config)
     time.sleep(delay)
     token = get_auth_token()
     if not token:
@@ -210,19 +191,11 @@ def serve(ctx, config, host, port, delay, verbose):
         emit_event(MetricNames.ACTIVE_USER_PING.value, {PII_KEY_AAU_CLIENT_ID: aau})
     emit_event(MetricNames.START_SERVER.value)
 
-    patch_tool_call_hooks(
-        [
-            make_auth_enforcement_hook(get_auth_token),
-            make_terms_enforcement_hook(),
-            make_tracking_hook(aau_client_id=aau or None),
-        ]
-    )
     install_shutdown_handlers()
     try:
-        ns = _ns(verbose=verbose, config=rendered_config, host=host, port=port)
-        sys.exit(_serve(ns))
+        build_composed_server().run(transport="stdio")
     except Exception:
-        logger.exception("MCP Composer returned an error. Exiting", exc_info=True)
+        logger.exception("MCP server returned an error. Exiting", exc_info=True)
         sys.exit(1)
 
 

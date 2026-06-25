@@ -1,4 +1,4 @@
-"""Tests for SIGTERM handling in the `serve` CLI command."""
+"""Tests for signal handling and the native-composition `serve` CLI command."""
 
 import signal
 import subprocess
@@ -21,52 +21,27 @@ def reset_signal_handler():
 
 
 @pytest.fixture
-def mock_require_auth():
-    yield
+def mock_serve_deps():
+    """Mock everything ``serve()`` touches except @long_running signal registration.
 
-
-@pytest.fixture
-def mock_serve_command():
-    with patch("anaconda_mcp.cli._serve") as m:
-        m.return_value = 0
-        yield m
-
-
-@pytest.fixture
-def mock_render_config():
-    with patch("anaconda_mcp.cli._render_config_template") as m:
-        m.return_value = "/fake/rendered/mcp_compose.toml"
-        yield m
-
-
-@pytest.fixture
-def mock_path_exists():
-    with patch("anaconda_mcp.cli.Path.exists", return_value=True):
-        yield
-
-
-@pytest.fixture
-def mock_sleep():
-    with patch("anaconda_mcp.cli.time.sleep") as m:
-        yield m
-
-
-def invoke_serve(extra_args=None, env=None):
-    runner = CliRunner()
-    args = ["serve"] + (extra_args or [])
+    Lets CliRunner drive ``anaconda-mcp serve`` without real auth, network,
+    telemetry, or actually starting the stdio server.
+    """
     with (
-        patch("anaconda_mcp.cli.Path.exists", return_value=True),
-        patch("anaconda_mcp.cli._render_config_template", return_value="/fake/mcp.toml"),
+        patch("anaconda_mcp.cli.get_auth_token", return_value="tok"),
+        patch("anaconda_mcp.cli.validate_auth_token", return_value=True),
+        patch("anaconda_mcp.cli.BaseClient"),
+        patch("anaconda_mcp.cli.emit_event"),
+        patch("anaconda_mcp.cli.client_token", return_value=None),
+        patch("anaconda_mcp.cli.install_shutdown_handlers"),
         patch("anaconda_mcp.cli.time.sleep"),
-        patch("anaconda_mcp.cli.get_auth_token", return_value=None),
-        patch("anaconda_mcp.cli._serve", return_value=0),
+        patch("anaconda_mcp.cli.build_composed_server") as mock_build,
     ):
-        return runner.invoke(cli, args, env=env, catch_exceptions=False)
+        mock_build.return_value.run.return_value = None
+        yield mock_build
 
 
-def test_serve_installs_signal_handlers_via_long_running(
-    mock_path_exists, mock_render_config, mock_sleep, mock_require_auth, mock_serve_command
-):
+def test_serve_installs_signal_handlers_via_long_running(mock_serve_deps):
     """Invoking serve() installs SIGTERM and SIGINT handlers via cli-base @long_running."""
     import anaconda_cli_base.lifecycle as lifecycle
 
@@ -84,9 +59,7 @@ def test_serve_installs_signal_handlers_via_long_running(
     assert signal.SIGINT in registered, "@long_running did not register a SIGINT handler"
 
 
-def test_serve_installs_handlers_before_sleep(
-    mock_path_exists, mock_render_config, mock_require_auth, mock_serve_command
-):
+def test_serve_installs_handlers_before_sleep(mock_serve_deps):
     """@long_running must install signal handlers before serve() reaches time.sleep()."""
     import anaconda_cli_base.lifecycle as lifecycle
 
@@ -97,12 +70,9 @@ def test_serve_installs_handlers_before_sleep(
         call_order.append("signal")
         return original_signal(signum, handler)
 
-    def capturing_sleep(seconds):
-        call_order.append("sleep")
-
     with (
         patch("anaconda_cli_base.lifecycle.signal.signal", side_effect=capturing_signal),
-        patch("anaconda_mcp.cli.time.sleep", side_effect=capturing_sleep),
+        patch("anaconda_mcp.cli.time.sleep", side_effect=lambda seconds: call_order.append("sleep")),
     ):
         CliRunner().invoke(cli, ["serve"], catch_exceptions=False)
 
@@ -113,10 +83,8 @@ def test_serve_installs_handlers_before_sleep(
     )
 
 
-def test_serve_sigterm_handler_delegates_to_trigger_shutdown(
-    mock_path_exists, mock_render_config, mock_sleep, mock_require_auth, mock_serve_command
-):
-    """The installed SIGTERM handler routes to cli-base trigger_shutdown (no bespoke sys.exit)."""
+def test_serve_sigterm_handler_delegates_to_trigger_shutdown(mock_serve_deps):
+    """The installed SIGTERM handler routes to cli-base trigger_shutdown."""
     import anaconda_cli_base.lifecycle as lifecycle
 
     captured = {}
@@ -131,11 +99,43 @@ def test_serve_sigterm_handler_delegates_to_trigger_shutdown(
         CliRunner().invoke(cli, ["serve"], catch_exceptions=False)
 
     assert "handler" in captured, "SIGTERM handler was not installed"
-
     with patch("anaconda_cli_base.lifecycle.trigger_shutdown") as mock_trigger:
         captured["handler"](signal.SIGTERM, None)
-
     mock_trigger.assert_called_once_with(signal.SIGTERM)
+
+
+def test_serve_normal_flow_runs_composed_server_over_stdio(mock_serve_deps):
+    """Without a signal, serve builds the composed server and runs it over stdio (exit 0)."""
+    result = CliRunner().invoke(cli, ["serve"], catch_exceptions=False)
+    assert result.exit_code == 0
+    mock_serve_deps.assert_called_once()
+    mock_serve_deps.return_value.run.assert_called_once_with(transport="stdio")
+
+
+def test_serve_exception_from_server_exits_with_1(mock_serve_deps):
+    """If the composed server's run() raises, serve catches it and exits with code 1."""
+    mock_serve_deps.return_value.run.side_effect = RuntimeError("server exploded")
+    result = CliRunner().invoke(cli, ["serve"], catch_exceptions=True)
+    assert result.exit_code == 1
+
+
+def test_serve_unauthenticated_exits_with_1_before_building_server():
+    """A missing token short-circuits with exit 1 before the server is built."""
+    with (
+        patch("anaconda_mcp.cli.time.sleep"),
+        patch("anaconda_mcp.cli.get_auth_token", return_value=None),
+        patch("anaconda_mcp.cli.build_composed_server") as mock_build,
+    ):
+        result = CliRunner().invoke(cli, ["serve"])
+    assert result.exit_code == 1
+    mock_build.assert_not_called()
+
+
+def test_serve_delay_option_is_respected(mock_serve_deps):
+    """The --delay flag must be passed directly to time.sleep."""
+    with patch("anaconda_mcp.cli.time.sleep") as mock_sleep:
+        CliRunner().invoke(cli, ["serve", "--delay", "11"], catch_exceptions=False)
+    mock_sleep.assert_called_once_with(11)
 
 
 _REAL_SIGNAL_CHILD = """
@@ -171,9 +171,8 @@ sys.exit(0)
 )
 @pytest.mark.parametrize("signum", [signal.SIGTERM, signal.SIGINT])
 def test_real_signal_triggers_bounded_shutdown_without_hanging(signum):
-    """A real OS SIGTERM/SIGINT delivered to a serve-like process must route through
-    cli-base trigger_shutdown, run shutdown hooks to unblock the loop, and exit
-    promptly. The watchdog guarantees exit within ~10s, so a 15s wait catches a hang."""
+    """A real OS SIGTERM/SIGINT must route through cli-base trigger_shutdown, run
+    shutdown hooks to unblock the loop, and exit promptly (watchdog forces <~10s)."""
     proc = subprocess.Popen(
         [sys.executable, "-c", _REAL_SIGNAL_CHILD],
         stdout=subprocess.PIPE,
@@ -204,40 +203,3 @@ def test_real_signal_triggers_bounded_shutdown_without_hanging(signum):
     assert proc.returncode in (0, 128 + signum), (
         f"unexpected exit code {proc.returncode} after {signal.Signals(signum).name}"
     )
-
-
-def test_serve_normal_flow_completes_successfully(
-    mock_path_exists, mock_render_config, mock_sleep, mock_require_auth, mock_serve_command
-):
-    """Without a SIGTERM, serve should run to completion and exit 0."""
-    runner = CliRunner()
-    result = runner.invoke(cli, ["serve"], catch_exceptions=False)
-    assert result.exit_code == 0
-    mock_serve_command.assert_called_once()
-
-
-def test_serve_exception_from_mcp_compose_exits_with_1(
-    mock_path_exists, mock_render_config, mock_sleep, mock_require_auth
-):
-    """If _serve() raises an exception, serve should catch it and exit with code 1."""
-    runner = CliRunner()
-    with patch("anaconda_mcp.cli._serve", side_effect=RuntimeError("mcp compose exploded")):
-        result = runner.invoke(cli, ["serve"], catch_exceptions=True)
-    assert result.exit_code == 1
-
-
-def test_serve_missing_config_exits_with_1(mock_sleep):
-    """If no config is provided and the default path doesn't exist, exit with 1."""
-    runner = CliRunner()
-    with patch("anaconda_mcp.cli.Path.exists", return_value=False):
-        result = runner.invoke(cli, ["serve"])
-    assert result.exit_code == 1
-    assert "No configuration file found" in result.output
-
-
-def test_serve_delay_option_is_respected(mock_path_exists, mock_render_config, mock_require_auth, mock_serve_command):
-    """The --delay flag must be passed directly to time.sleep."""
-    runner = CliRunner()
-    with patch("anaconda_mcp.cli.time.sleep") as mock_sleep:
-        runner.invoke(cli, ["serve", "--delay", "11"], catch_exceptions=False)
-    mock_sleep.assert_called_once_with(11)

@@ -227,11 +227,24 @@ def _find_conda_from_registry_uninstall() -> str | None:
 # ─── Conda Runner ────────────────────────────────────────────────────────────
 
 
+def _ensure_conda_exe() -> None:
+    """Lazily discover the conda executable if not already set.
+
+    The stdio entrypoint (``__init__.main``) sets ``_conda_exe`` at startup, but
+    when this server is mounted in-process (no ``main()``), it stays ``None``
+    until the first tool call. Discover it on demand so mounted tools work.
+    """
+    global _conda_exe
+    if _conda_exe is None:
+        _conda_exe = find_conda_exe()
+
+
 async def run_conda(*args: str) -> dict | list:
     """
     Run a conda command with --json, return parsed output.
     Raises RuntimeError on failure.
     """
+    _ensure_conda_exe()
     cmd = [str(_conda_exe), *args, "--json"]
     proc = await asyncio.create_subprocess_exec(
         *cmd,
@@ -261,6 +274,7 @@ async def run_conda(*args: str) -> dict | list:
 def get_conda_info() -> dict:
     """Get cached conda info (root_prefix, envs, etc). Populated at startup."""
     global _conda_info
+    _ensure_conda_exe()
     if _conda_info is None:
         result = subprocess.run(
             [str(_conda_exe), "info", "--json"],

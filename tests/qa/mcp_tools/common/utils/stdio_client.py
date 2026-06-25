@@ -1,22 +1,18 @@
 """
 STDIO MCP client utilities for the unified mcp_tools suite.
 
-Provides tool calls over newline-delimited JSON-RPC and helpers for writing
-mcp-compose config for any profile (stdio-stdio, stdio-http).
+Provides tool calls over newline-delimited JSON-RPC against a native
+``anaconda-mcp serve`` stdio process.
 """
 
 from __future__ import annotations
 
 import json
 import logging
-import os
 import subprocess
-import tempfile
 import threading
 import time
-from pathlib import Path
 
-import mcp_compose_profiles as _profiles
 import pytest
 
 from common.constants.config import TOOL_TIMEOUT
@@ -70,39 +66,6 @@ def _recv(proc: subprocess.Popen, *, timeout: float = TOOL_TIMEOUT) -> dict:
     if not isinstance(decoded, dict):
         raise ValueError(f"expected JSON object from mcp-compose, got {type(decoded)}")
     return decoded
-
-
-def _write_profile_config(
-    profile_slug: str,
-    conda_env: str,
-    *,
-    compose_port: int,
-) -> Path:
-    """
-    Write mcp-compose TOML for the given profile slug and return the config path.
-
-    ``profile_slug`` must be ``stdio-http`` or ``stdio-stdio`` (STDIO client edge).
-    """
-    profile = _profiles.PROFILES_BY_SLUG[profile_slug]
-    python_path = (
-        subprocess.run(
-            ["conda", "run", "-n", conda_env, "which", "python"],
-            capture_output=True,
-            text=True,
-        ).stdout.strip()
-        or "python"
-    )
-
-    config_text = _profiles.render_for_profile(
-        profile,
-        compose_port=compose_port,
-        python_executable=python_path,
-    )
-    fd, path_str = tempfile.mkstemp(suffix="-mcp-config.toml", prefix="anaconda-mcp-")
-    os.close(fd)
-    config_path = Path(path_str).resolve()
-    config_path.write_text(config_text, encoding="utf-8")
-    return config_path
 
 
 def _call_tool_stdio(proc: subprocess.Popen, tool_name: str, arguments: dict) -> dict:

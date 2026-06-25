@@ -27,7 +27,6 @@ from common.utils.mcp_client import _initialize_session
 from common.utils.stdio_client import (
     _recv,
     _send,
-    _write_profile_config,
 )
 from mcp_compose_profiles import PROFILES_BY_SLUG, ClientEdge
 
@@ -63,10 +62,10 @@ _MCP_SERVER_LOG_TAIL_CHARS = 48_000
 def pytest_addoption(parser: pytest.Parser) -> None:
     parser.addoption(
         "--mcp-profile",
-        default=os.environ.get("MCP_PROFILE", "http-http"),
+        default=os.environ.get("MCP_PROFILE", "stdio-stdio"),
         choices=sorted(PROFILES_BY_SLUG.keys()),
         help=(
-            "Transport profile: client→compose and compose→conda. Also reads MCP_PROFILE env var. (default: http-http)"
+            "Transport profile label (native serve is stdio-only). Also reads MCP_PROFILE env var. (default: stdio-stdio)"
         ),
     )
     parser.addoption(
@@ -338,13 +337,8 @@ def _stdio_server_context(
     label: str,
     config: pytest.Config,
 ) -> Iterator[subprocess.Popen]:
-    """Spawn, initialise and yield a STDIO MCP server process; tear it down on exit."""
-    config_path = _write_profile_config(
-        slug,
-        conda_env,
-        compose_port=compose_port,
-    )
-    logger.info("Starting %s STDIO MCP (profile=%s, config=%s)", label, slug, config_path)
+    """Spawn, initialise and yield a native stdio MCP server process; tear it down on exit."""
+    logger.info("Starting %s native STDIO MCP serve (profile=%s)", label, slug)
 
     env = os.environ.copy()
     env["PYTHONUNBUFFERED"] = "1"
@@ -368,8 +362,6 @@ def _stdio_server_context(
             "--no-capture-output",
             "anaconda-mcp",
             "serve",
-            "--config",
-            str(config_path),
         ],
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
@@ -407,7 +399,6 @@ def _stdio_server_context(
             pass
         stderr_path.unlink(missing_ok=True)
         config.stash[stash_key] = None
-        config_path.unlink(missing_ok=True)
         pytest.fail(f"STDIO {label} server did not become ready: {exc}")
 
     try:
@@ -428,7 +419,6 @@ def _stdio_server_context(
             pass
         stderr_path.unlink(missing_ok=True)
         config.stash[stash_key] = None
-        config_path.unlink(missing_ok=True)
 
 
 @pytest.fixture(scope="module")

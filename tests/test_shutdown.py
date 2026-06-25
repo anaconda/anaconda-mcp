@@ -276,61 +276,24 @@ def test_init_does_not_leak_fds_when_thread_start_fails(monkeypatch):
         os.close(src_w)
 
 
-def test_patch_composer_signal_handler_registers_sigint_directly():
-    """SIGINT must be registered explicitly, not only via mcp-compose name resolution."""
-    import signal as _signal
-
-    from anaconda_mcp import _shutdown
-
-    original_sigint = _signal.getsignal(_signal.SIGINT)
-    original_module_handler = _shutdown.composer_mod._module_signal_handler
-    try:
-        _shutdown._patch_composer_signal_handler()
-        new_handler = _signal.getsignal(_signal.SIGINT)
-        assert callable(new_handler)
-        assert new_handler is _shutdown.composer_mod._module_signal_handler
-    finally:
-        _signal.signal(_signal.SIGINT, original_sigint)
-        _shutdown.composer_mod._module_signal_handler = original_module_handler
-
-
-def test_compose_signal_handler_delegates_to_trigger_shutdown(monkeypatch):
-    """The patched compose signal handler must delegate to
-    ``anaconda_cli_base.lifecycle.trigger_shutdown``.
-
-    The watchdog, lifecycle hooks, and bounded telemetry flush now live in
-    cli-base. The compose adapter installed by
-    ``_patch_composer_signal_handler`` is a thin bridge: when a signal
-    arrives, it must call ``trigger_shutdown(signum)`` so cli-base owns
-    the shutdown sequence. This test pins that delegation contract so it
-    cannot silently regress.
-    """
+def test_install_shutdown_handlers_routes_sigint_to_trigger_shutdown(monkeypatch):
+    """SIGINT must be routed to cli-base trigger_shutdown without re-raising."""
     import signal as _signal
 
     from anaconda_mcp import _shutdown
 
     captured: list[int] = []
+    monkeypatch.setattr(_shutdown, "trigger_shutdown", lambda signum: captured.append(signum))
 
-    def _spy(signum: int) -> None:
-        captured.append(signum)
-
-    original_sigint = _signal.getsignal(_signal.SIGINT)
-    original_module_handler = _shutdown.composer_mod._module_signal_handler
-
+    original = _signal.getsignal(_signal.SIGINT)
     try:
-        # Patch the module-local reference (``from ... import trigger_shutdown``
-        # binds a name in ``_shutdown``; patching the source module would not
-        # intercept the call site).
-        monkeypatch.setattr(_shutdown, "trigger_shutdown", _spy)
-        _shutdown._patch_composer_signal_handler()
-        handler = _shutdown.composer_mod._module_signal_handler
-
-        handler(15, None)
-
-        assert captured == [15], f"compose signal handler must delegate to trigger_shutdown(15); captured={captured!r}"
+        _shutdown._patch_sigint_handler()
+        handler = _signal.getsignal(_signal.SIGINT)
+        assert callable(handler)
+        handler(_signal.SIGINT, None)
+        assert captured == [_signal.SIGINT]
     finally:
-        _shutdown.composer_mod._module_signal_handler = original_module_handler
-        _signal.signal(_signal.SIGINT, original_sigint)
+        _signal.signal(_signal.SIGINT, original)
 
 
 @pytest.fixture(autouse=True)

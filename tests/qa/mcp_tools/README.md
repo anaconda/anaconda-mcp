@@ -4,13 +4,15 @@ One suite for all transport profiles. Architecture, configuration, test design, 
 
 ## Profiles
 
-Select setup with **`--mcp-profile`**:
+`anaconda-mcp serve` composes natively on FastMCP (conda tools mounted in-process,
+the remote `search` server proxied) and is **stdio-only** — there is no mcp-compose
+config and no HTTP transport. The harness spawns `anaconda-mcp serve` directly over
+stdio (no `--config`). `--mcp-profile` is retained only as a pytest/CI report label:
 
-| Profile | Test → mcp-compose | mcp-compose → conda MCP |
-|---------|--------------------|---------------------------|
-| `http-http` | Streamable HTTP | Streamable HTTP |
-| `stdio-http` | STDIO | Streamable HTTP |
-| `stdio-stdio` | STDIO | STDIO |
+| Profile | Transport |
+|---------|-----------|
+| `stdio-stdio` (default) | STDIO → native `anaconda-mcp serve` |
+| `stdio` | alias of `stdio-stdio` |
 
 ## Requirements
 
