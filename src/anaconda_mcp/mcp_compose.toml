@@ -40,20 +40,13 @@ domain = "anaconda.com"
 # ============================================================================
 
 # ============================================================================
-# Proxied Streamable HTTP MCP Servers
+# Proxied STDIO MCP Servers
 # ============================================================================
-[[servers.proxied.streamable-http]]
+[[servers.proxied.stdio]]
 name = "conda"
-url = "http://localhost:4041/mcp"
-timeout = 30
-keep_alive = true
-reconnect_on_failure = true
-max_reconnect_attempts = 10
-health_check_enabled = false
-mode = "proxy"
-auto_start = true
-command = ["python", "-m", "environments_mcp_server", "start", "--transport", "streamable-http", "--port", "4041"]
-startup_delay = 3
+command = ["python", "-m", "environments_mcp_server", "start", "--transport", "stdio"]
+restart_policy = "on-failure"
+max_restarts = 3
 
 [[servers.proxied.streamable-http]]
 name = "search"
