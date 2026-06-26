@@ -59,31 +59,22 @@ async def test_list_environments_includes_base_with_name_and_path():
 
 
 @pytest.mark.asyncio
-async def test_list_environment_packages_by_environment_name():
-    result = await server.mcp.call_tool("list_environment_packages", {"environment": "base"})
+@pytest.mark.parametrize(
+    "args_factory",
+    [
+        pytest.param(lambda: {"environment": "base"}, id="by-name"),
+        pytest.param(lambda: {"prefix": server.get_conda_info()["root_prefix"]}, id="by-prefix"),
+    ],
+)
+async def test_list_environment_packages_returns_packages(args_factory):
+    result = await server.mcp.call_tool("list_environment_packages", args_factory())
     env = _envelope(result)
 
     assert env["is_error"] is False, env["error_description"]
     packages = env["tool_result"]["packages"]
-    assert isinstance(packages, list) and packages, "expected non-empty packages list for base"
-
-    pkg = packages[0]
-    assert set(pkg.keys()) == {"name", "version", "channel"}, (
-        f"expected exactly name/version/channel keys, got: {sorted(pkg.keys())}"
-    )
-    assert pkg["name"] and pkg["version"], "package entries must have non-empty name and version"
-
-
-@pytest.mark.asyncio
-async def test_list_environment_packages_by_prefix():
-    root_prefix = server.get_conda_info()["root_prefix"]
-    result = await server.mcp.call_tool("list_environment_packages", {"prefix": root_prefix})
-    env = _envelope(result)
-
-    assert env["is_error"] is False, env["error_description"]
-    packages = env["tool_result"]["packages"]
-    assert isinstance(packages, list) and packages, "expected non-empty packages list for root prefix"
-    assert all({"name", "version", "channel"} <= set(p.keys()) for p in packages)
+    assert isinstance(packages, list) and packages, "expected non-empty packages list"
+    assert all(set(p.keys()) == {"name", "version", "channel"} for p in packages), "unexpected package keys"
+    assert all(p["name"] and p["version"] for p in packages), "entries must have non-empty name and version"
 
 
 @pytest.mark.asyncio

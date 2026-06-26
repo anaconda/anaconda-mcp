@@ -10,7 +10,7 @@ https://github.com/microsoft/vscode/blob/d44e26a3/src/vs/platform/shell/node/she
 """
 
 # ---------------------------------------------------------------------------
-# Vendored from Anaconda-Sandbox/conda-mcp-lite (commit ba79965), BSD-3-Clause.
+# Vendored from Anaconda-Sandbox/conda-mcp-lite (commit ba79965), MIT.
 # Kept functionally identical on vendoring; production hardening (channel
 # governance, destructive annotations, stdout hygiene) is applied separately.
 # Entry point: anaconda_mcp/conda_mcp_lite/__main__.py -> __init__.main().
@@ -30,14 +30,19 @@ import shutil
 import subprocess
 import sys
 import uuid
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from pathlib import Path
 
 from fastmcp import FastMCP
 from mcp.types import ToolAnnotations
 
-logging.basicConfig(level=logging.INFO, stream=sys.stderr)
 logger = logging.getLogger(__name__)
+if not logger.handlers:
+    _handler = logging.StreamHandler(sys.stderr)
+    _handler.setFormatter(logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
+    logger.addHandler(_handler)
+    logger.setLevel(logging.INFO)
+    logger.propagate = False
 
 mcp = FastMCP("Environments MCP Server")
 
@@ -239,13 +244,19 @@ def _ensure_conda_exe() -> None:
         _conda_exe = find_conda_exe()
 
 
-async def run_conda(*args: str) -> dict | list:
+async def run_conda(*args: str, positionals: list[str] | None = None) -> dict | list:
     """
     Run a conda command with --json, return parsed output.
+
+    Any user-controlled positional specs (package names) are passed AFTER a
+    ``--`` separator so conda can never interpret them as options (option
+    injection). ``--json`` is placed BEFORE ``--`` so it stays a flag.
     Raises RuntimeError on failure.
     """
-    _ensure_conda_exe()
+    await asyncio.to_thread(_ensure_conda_exe)
     cmd = [str(_conda_exe), *args, "--json"]
+    if positionals:
+        cmd += ["--", *positionals]
     proc = await asyncio.create_subprocess_exec(
         *cmd,
         stdout=asyncio.subprocess.PIPE,
@@ -287,6 +298,14 @@ def get_conda_info() -> dict:
         _conda_info = json.loads(result.stdout)
     assert _conda_info is not None
     return _conda_info
+
+
+def _reject_option_like(values: Sequence[str | None] | None, *, kind: str) -> str | None:
+    """Return an error message if any value begins with '-' (option injection), else None."""
+    for v in values or []:
+        if isinstance(v, str) and v.startswith("-"):
+            return f"Invalid {kind}: {v!r} may not begin with '-'"
+    return None
 
 
 # ─── Tools ───────────────────────────────────────────────────────────────────
@@ -331,7 +350,7 @@ async def list_environments() -> dict:
 
     """
     try:
-        info = get_conda_info()
+        info = await asyncio.to_thread(get_conda_info)
         root_prefix = info["root_prefix"]
         env_paths = info["envs"]
 
@@ -391,6 +410,8 @@ async def list_environment_packages(
     Returns: A dictionary containing the list of installed packages with name, version,
              build string, channel, platform, and dist_name for each package
     """
+    if err := _reject_option_like([environment, prefix], kind="environment name or prefix"):
+        return {"is_error": True, "error_description": err, "tool_result": None}
     try:
         args = ["list"]
         if prefix:
@@ -448,6 +469,13 @@ async def create_environment(
     if prefix is None and environment_name is None:
         return {"is_error": True, "error_description": "Provide prefix or environment name", "tool_result": None}
 
+    if err := _reject_option_like([environment_name, prefix], kind="environment name or prefix"):
+        return {"is_error": True, "error_description": err, "tool_result": None}
+    if err := _reject_option_like(packages, kind="package spec"):
+        return {"is_error": True, "error_description": err, "tool_result": None}
+    if err := _reject_option_like(channels, kind="channel"):
+        return {"is_error": True, "error_description": err, "tool_result": None}
+
     try:
         args = ["create", "-y"]
         if prefix:
@@ -461,10 +489,7 @@ async def create_environment(
             if override_channels:
                 args.append("--override-channels")
 
-        if packages:
-            args += packages
-
-        result = await run_conda(*args)
+        result = await run_conda(*args, positionals=packages)
         prefix = result["prefix"] if isinstance(result, dict) and "prefix" in result else ""
         return {
             "is_error": False,
@@ -526,6 +551,13 @@ async def install_packages(
     if prefix is None and environment is None:
         return {"is_error": True, "error_description": "No prefix or environment specified", "tool_result": None}
 
+    if err := _reject_option_like([environment, prefix], kind="environment name or prefix"):
+        return {"is_error": True, "error_description": err, "tool_result": None}
+    if err := _reject_option_like(packages, kind="package spec"):
+        return {"is_error": True, "error_description": err, "tool_result": None}
+    if err := _reject_option_like(channels, kind="channel"):
+        return {"is_error": True, "error_description": err, "tool_result": None}
+
     try:
         args = ["install", "-y"]
         if prefix:
@@ -539,9 +571,7 @@ async def install_packages(
             if override_channels:
                 args.append("--override-channels")
 
-        args += packages
-
-        result = await run_conda(*args)
+        result = await run_conda(*args, positionals=packages)
         message = (
             result["message"]
             if isinstance(result, dict) and "message" in result
@@ -605,8 +635,7 @@ async def remove_packages(
         prefix: Full path to the environment (e.g., "/home/user/envs/myenv")
         packages: List of package names to remove (e.g., ["numpy", "pandas", "matplotlib"])
 
-    Note: Provide either environment name OR prefix, not both. All three parameters are required
-    (one of environment/prefix + packages list).
+    Note: Provide either environment name OR prefix (not both), plus the packages to remove.
 
     Returns: A dictionary containing the server response with success status and removed packages
     """
@@ -620,6 +649,11 @@ async def remove_packages(
     if prefix is None and environment is None:
         return {"is_error": True, "error_description": "No prefix or environment specified", "tool_result": None}
 
+    if err := _reject_option_like([environment, prefix], kind="environment name or prefix"):
+        return {"is_error": True, "error_description": err, "tool_result": None}
+    if err := _reject_option_like(packages, kind="package spec"):
+        return {"is_error": True, "error_description": err, "tool_result": None}
+
     try:
         args = ["remove", "-y"]
         if prefix:
@@ -627,9 +661,7 @@ async def remove_packages(
         elif environment:
             args += ["-n", environment]
 
-        args += packages
-
-        result = await run_conda(*args)
+        result = await run_conda(*args, positionals=packages)
         message = (
             result["message"]
             if isinstance(result, dict) and "message" in result
@@ -690,6 +722,9 @@ async def remove_environment(
             "error_description": "Provide either a prefix or an environment name",
             "tool_result": None,
         }
+
+    if err := _reject_option_like([environment_name, prefix], kind="environment name or prefix"):
+        return {"is_error": True, "error_description": err, "tool_result": None}
 
     try:
         args = ["remove", "--all", "-y"]

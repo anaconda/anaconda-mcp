@@ -1,77 +1,88 @@
-# Code Organization for Python Executable Configuration
+# Code Organization for Native FastMCP Composition
+
+This document maps the runtime path for `anaconda mcp serve`. The server is composed in Python code and run over stdio; there is no generated runtime config file in the serve path.
 
 ## Module Structure
 
-```
+```text
 src/anaconda_mcp/
-├── config.py                      # Configuration management
-│   └── Settings class
-│       └── ANACONDA_MCP_PYTHON_EXECUTABLE field
+├── app.py                         # Typer integration for `anaconda mcp`
+├── cli.py                         # Click commands and serve startup
+│   └── serve()                    # Validates auth/TOS, emits telemetry, runs stdio
 │
-├── utils.py                       # Utility functions
-│   └── _render_config_template()
-│       ├── Reads template or fallback config
-│       ├── Gets python_executable from settings
-│       └── Returns path to rendered temp file
+├── composition.py                 # Native FastMCP composition
+│   ├── PlatformMiddleware         # Auth, Terms, and telemetry enforcement
+│   ├── _DynamicBearerAuth         # Supplies bearer auth for proxied search
+│   └── build_composed_server()    # Mounts conda and registers search proxy
 │
-├── cli.py                         # CLI commands
-│   └── serve() command
-│       ├── Imports _render_config_template
-│       └── Calls it before starting server
+├── conda_mcp_lite/
+│   ├── __init__.py
+│   └── server.py                  # Vendored conda FastMCP server/tools
 │
-└── mcp_compose.toml.template     # Template file
-    └── Contains {{PYTHON_EXECUTABLE}} placeholder
+├── auth.py                        # Token retrieval and validation
+├── terms.py                       # Terms acceptance checks and persistence
+├── telemetry.py                   # Event names and telemetry helpers
+├── client_config.py               # General stdio client config generation
+└── claude_desktop.py              # Claude Desktop stdio config helpers
 ```
 
-## Data Flow
+## Serve Data Flow
 
-```
-1. User runs command
+```text
+1. User or MCP client launches `anaconda mcp serve`
    ↓
-2. Pydantic Settings loads ANACONDA_MCP_PYTHON_EXECUTABLE from environment
+2. cli.serve() validates authentication and Terms acceptance
    ↓
-3. cli.serve() calls _render_config_template(config_path)
+3. cli.serve() emits startup/login telemetry and installs shutdown handlers
    ↓
-4. utils._render_config_template():
-   - Checks for .toml.template file
-   - Reads settings.ANACONDA_MCP_PYTHON_EXECUTABLE or sys.executable
-   - Replaces {{PYTHON_EXECUTABLE}} placeholder
-   - Writes to temporary file
-   - Returns temp file path
+4. cli.serve() calls composition.build_composed_server()
    ↓
-5. mcp-compose uses rendered config
+5. build_composed_server():
+   - creates the top-level FastMCP server
+   - installs PlatformMiddleware
+   - mounts the vendored conda FastMCP server in-process
+   - creates an authenticated proxy for the remote search MCP
    ↓
-6. Subprocess spawns with correct Python interpreter
-```
-
-## Environment Variable Loading
-
-```python
-# config.py
-class Settings(BaseSettings):
-    model_config = SettingsConfigDict(
-        env_prefix=f"{ENV_VAR_PREFIX}_",  # "ANACONDA_MCP_"
-        env_file=".env",
-    )
-    PYTHON_EXECUTABLE: str | None = None
+6. cli.serve() runs the composed server with stdio transport
+   ↓
+7. The MCP client calls conda_* and search_* tools in one stdio session
 ```
 
-**How it works:**
-- Pydantic automatically reads `ANACONDA_MCP_PYTHON_EXECUTABLE` from environment
-- Returns `None` if not set (handled gracefully in utils.py)
+## Native Composition Responsibilities
 
-## Template Rendering
+### `composition.py`
 
-```python
-# utils.py
-def _render_config_template(config_path: str) -> str:
-    python_executable = settings.PYTHON_EXECUTABLE or sys.executable
-    # ... render template ...
-    return rendered_path
-```
+- Owns the runtime server graph for `serve`.
+- Mounts `anaconda_mcp.conda_mcp_lite.server` directly into the top-level FastMCP app.
+- Creates the remote search proxy with bearer auth.
+- Installs `PlatformMiddleware` so all tool calls share auth, Terms, and telemetry behavior.
 
-**Priority logic:**
-1. Use `settings.PYTHON_EXECUTABLE` if set
-2. Fall back to `sys.executable`
-3. Handle Windows path escaping
-4. Write to temp file (thread-safe)
+### `cli.py`
+
+- Owns command-line startup and user-facing errors.
+- Treats deprecated config/host/port inputs as ignored for `serve`.
+- Validates login and Terms before starting the stdio server.
+- Calls `build_composed_server().run(transport="stdio")`.
+
+### `client_config.py` and `claude_desktop.py`
+
+- Generate stdio client config entries.
+- Point clients at the Python executable or CLI command that can run Anaconda MCP.
+- Do not configure a host, port, or separate server transport for `serve`.
+
+## Environment Variables
+
+Runtime configuration is handled through environment variables and persisted Anaconda auth state:
+
+| Variable | Purpose |
+|----------|---------|
+| `CONDA_EXE` | Explicit conda executable path for GUI clients |
+| `ANACONDA_AUTH_API_KEY` | API-key authentication when keyring login is unavailable |
+| `ANACONDA_MCP_ACCEPTED_TERMS` | Headless Terms acceptance flag |
+| `ANACONDA_MCP_ACCEPTED_TERMS_VERSION` | Accepted Terms version |
+
+## Related Documentation
+
+- [Architecture](./ARCHITECTURE.md)
+- [Configuration Guide](./CONFIGURATION_GUIDE.md)
+- [CLI User Guide](./CLI_USER_GUIDE.md)

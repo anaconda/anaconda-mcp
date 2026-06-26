@@ -1,6 +1,8 @@
 # Anaconda MCP CLI User Guide
 
-The Anaconda MCP CLI is a command-line interface for managing and composing Model Context Protocol (MCP) servers. It provides a unified way to discover, compose, and serve multiple MCP servers through a single endpoint.
+The Anaconda MCP CLI configures and runs Anaconda's MCP server. The primary runtime command, `anaconda mcp serve`, runs a native FastMCP server over stdio: conda tools are mounted in-process from the vendored `anaconda_mcp.conda_mcp_lite` package, package search is proxied remotely with bearer auth, and `PlatformMiddleware` enforces authentication, Terms of Service, and telemetry.
+
+The `compose` and `discover` commands still exist for dependency discovery and composition workflows. They are not the startup path for `serve`.
 
 ## Table of Contents
 
@@ -8,68 +10,47 @@ The Anaconda MCP CLI is a command-line interface for managing and composing Mode
 - [Commands Overview](#commands-overview)
 - [Command Reference](#command-reference)
   - [serve](#serve-command)
+  - [setup](#setup-command)
   - [compose](#compose-command)
   - [discover](#discover-command)
-- [Configuration File](#configuration)
+- [Configuration](#configuration)
 - [Common Use Cases](#common-use-cases)
 - [Troubleshooting](#troubleshooting)
-
-
 
 ---
 
 ## Quick Start
 
-### 1. Start the MCP Server
-
-The simplest way to get started is to run the serve command:
+### 1. Authenticate and accept Terms
 
 ```bash
-# Start with default configuration
-anaconda-mcp serve
+anaconda login
+anaconda mcp terms accept
+```
 
-# Start with custom host and port
-anaconda-mcp serve --host 0.0.0.0 --port 8888
+### 2. Configure a client
+
+```bash
+anaconda mcp setup
+```
+
+The setup wizard writes a stdio MCP configuration for supported clients.
+
+### 3. Start the MCP server manually, if needed
+
+```bash
+anaconda mcp serve
 ```
 
 This will:
-- Load the default configuration from `mcp_compose.toml`
-- Start any configured MCP servers
-- Expose them through a unified API endpoint
-- Handle authentication if configured
 
-### 2. Discover Available MCP Servers
+- Validate Anaconda authentication and Terms acceptance
+- Build the native FastMCP composition in-process
+- Mount vendored conda tools
+- Proxy remote package-search tools with bearer auth
+- Serve the MCP session over stdio
 
-To see what MCP servers are available in your project dependencies:
-
-```bash
-# Discover servers in current project
-anaconda-mcp discover
-
-# Discover servers from specific pyproject.toml
-anaconda-mcp discover -p /path/to/pyproject.toml
-
-# Output as JSON
-anaconda-mcp discover --output-format json
-```
-
-### 3. Compose Multiple Servers
-
-Combine multiple MCP servers into a single unified interface:
-
-```bash
-# Compose servers from dependencies
-anaconda-mcp compose
-
-# Compose with custom name
-anaconda-mcp compose --name my-mcp-server
-
-# Include specific servers only
-anaconda-mcp compose --include server1 --include server2
-
-# Exclude specific servers
-anaconda-mcp compose --exclude server3
-```
+No host, port, or external runtime config is required for `serve`.
 
 ---
 
@@ -77,17 +58,17 @@ anaconda-mcp compose --exclude server3
 
 | Command | Description |
 |---------|-------------|
-| `serve` | Start MCP servers from a configuration file |
-| `compose` | Compose multiple MCP servers into one unified server |
+| `serve` | Run the native Anaconda MCP FastMCP server over stdio |
+| `setup` | Configure supported MCP clients with stdio transport |
+| `compose` | Compose MCP servers from project dependencies |
 | `discover` | Discover MCP servers available in project dependencies |
+| `terms` | Show or accept Anaconda MCP Terms of Service |
 
 ### Global Options
 
-All commands support these global options:
-
 ```bash
 -h, --help          Show help message
--v, --verbose       Enable verbose logging
+-v, --verbose       Enable verbose logging where supported
 ```
 
 ---
@@ -96,79 +77,100 @@ All commands support these global options:
 
 ### `serve` Command
 
-Start and manage MCP servers based on a configuration file.
+Run the Anaconda MCP server over stdio.
 
 #### Syntax
 
 ```bash
-anaconda-mcp serve [OPTIONS]
+anaconda mcp serve [OPTIONS]
 ```
 
 #### Options
 
 | Option | Description | Default |
 |--------|-------------|---------|
-| `-c, --config PATH` | Path to mcp_compose.toml configuration file | `src/anaconda_mcp/mcp_compose.toml` |
-| `--host HOST` | Host address to bind the server to | `0.0.0.0` |
-| `--port PORT` | Port number to bind the server to | `8000` |
+| `-c, --config PATH` | Deprecated and ignored; native composition is built in code | None |
+| `--delay SECONDS` | Delay in seconds before serving | `0` |
 | `-v, --verbose` | Enable verbose logging | `false` |
+
+`serve` is stdio-only. Deprecated host, port, and config inputs are not part of client setup and should not be used for normal operation.
 
 #### Examples
 
-**Start with default configuration:**
-```bash
-anaconda-mcp serve
-```
+**Start the stdio server:**
 
-**Start with custom configuration file:**
 ```bash
-anaconda-mcp serve --config /path/to/my_config.toml
-```
-
-**Start on specific host and port:**
-```bash
-anaconda-mcp serve --host 127.0.0.1 --port 8888
+anaconda mcp serve
 ```
 
 **Start with verbose logging:**
+
 ```bash
-anaconda-mcp -v serve --port 9000
+anaconda mcp -v serve
 ```
 
 #### What It Does
 
-1. **Loads Configuration**: Reads the specified `mcp_compose.toml` file
-2. **Authenticates**: Initiates the Anaconda authentication flow (if enabled)
-3. **Starts Servers**: Launches all configured MCP servers
-4. **Exposes API**: Makes tools and resources available through HTTP/SSE endpoints
-5. **Health Monitoring**: Monitors server health and handles reconnections
+1. **Validates platform requirements**: checks authentication and Terms acceptance.
+2. **Builds native composition**: calls `build_composed_server()` instead of loading an external runtime config.
+3. **Mounts conda tools**: mounts the vendored conda FastMCP server in-process.
+4. **Proxies search**: registers the remote Anaconda search proxy with bearer auth.
+5. **Applies middleware**: enforces auth, Terms, and telemetry with `PlatformMiddleware`.
+6. **Runs stdio**: serves MCP requests through stdin/stdout for the launching client.
 
-#### Configuration File
+---
 
-The `serve` command requires a `mcp_compose.toml` configuration file. See [Configuration](./CONFIGURATION_GUIDE.md) section for details.
+### `setup` Command
+
+Configure supported MCP clients to launch Anaconda MCP over stdio.
+
+#### Syntax
+
+```bash
+anaconda mcp setup [OPTIONS]
+```
+
+#### Common Options
+
+| Option | Description |
+|--------|-------------|
+| `--client CLIENT` | Configure one supported client instead of using the wizard |
+| `--scope SCOPE` | Choose a client-specific config scope, such as `global` or `project` |
+| `--name NAME` | Server entry name in the client config |
+| `--force` | Replace an existing entry |
+
+#### Examples
+
+```bash
+anaconda mcp setup
+anaconda mcp setup --client claude-code
+anaconda mcp setup --client cursor --scope project
+```
+
+Generated client entries use stdio and launch `anaconda mcp serve` or `python -m anaconda_mcp serve` directly.
 
 ---
 
 ### `compose` Command
 
-Compose multiple MCP servers from your project dependencies into a unified server.
+Compose multiple MCP servers from your project dependencies into a unified server description.
 
 #### Syntax
 
 ```bash
-anaconda-mcp compose [OPTIONS]
+anaconda mcp compose [OPTIONS]
 ```
 
 #### Options
 
 | Option | Description | Default |
 |--------|-------------|---------|
-| `-p, --pyproject PATH` | Path to pyproject.toml file | `./pyproject.toml` |
+| `-p, --pyproject PATH` | Path to `pyproject.toml` file | `./pyproject.toml` |
 | `-n, --name NAME` | Name for the composed server | `composed-mcp-server` |
-| `-c, --conflict-resolution STRATEGY` | How to handle naming conflicts | `prefix` |
-| `--include SERVER` | Include only specified servers (repeatable) | None (all) |
-| `--exclude SERVER` | Exclude specified servers (repeatable) | None |
-| `-o, --output PATH` | Write composed server metadata to file | stdout |
+| `-c, --conflict-resolution STRATEGY` | Naming conflict strategy | `prefix` |
+| `--include SERVER` | Include only specified servers, repeatable | None (all) |
+| `--exclude SERVER` | Exclude specified servers, repeatable | None |
+| `-o, --output PATH` | Write composed metadata to file | stdout |
 | `--output-format FORMAT` | Output format: `text` or `json` | `text` |
 | `-v, --verbose` | Enable verbose logging | `false` |
 
@@ -184,54 +186,21 @@ anaconda-mcp compose [OPTIONS]
 
 #### Examples
 
-**Basic composition:**
 ```bash
-anaconda-mcp compose
-```
-
-**Compose with custom name:**
-```bash
-anaconda-mcp compose --name my-unified-server
-```
-
-**Include only specific servers:**
-```bash
-anaconda-mcp compose --include conda --include search
-```
-
-**Use suffix for conflict resolution:**
-```bash
-anaconda-mcp compose --conflict-resolution suffix
-```
-
-**Save composition to JSON file:**
-```bash
-anaconda-mcp compose --output composed.json --output-format json
-```
-
-**Compose from specific pyproject.toml:**
-```bash
-anaconda-mcp compose -p /path/to/pyproject.toml
-```
-
-**Combine multiple options:**
-```bash
-anaconda-mcp -v compose \
-  --name production-mcp \
-  --include conda_environments \
-  --include jupyter_server \
-  --conflict-resolution prefix \
-  --output metadata.json \
-  --output-format json
+anaconda mcp compose
+anaconda mcp compose --name my-unified-server
+anaconda mcp compose --include conda --include search
+anaconda mcp compose --conflict-resolution suffix
+anaconda mcp compose --output composed.json --output-format json
+anaconda mcp compose -p /path/to/pyproject.toml
 ```
 
 #### What It Does
 
-1. **Scans Dependencies**: Reads your `pyproject.toml` to find MCP server packages
-2. **Discovers Tools**: Identifies all tools and resources from each server
-3. **Resolves Conflicts**: Applies naming strategy to handle duplicate tool names
-4. **Generates Metadata**: Creates a unified interface combining all servers
-5. **Outputs Result**: Displays or saves the composed server configuration
+1. **Scans dependencies**: reads your `pyproject.toml` to find MCP server packages.
+2. **Discovers tools**: identifies tools and resources from each server.
+3. **Resolves conflicts**: applies the requested naming strategy.
+4. **Outputs metadata**: displays or saves the composed server description.
 
 ---
 
@@ -242,110 +211,81 @@ Discover MCP servers available in your project's dependencies.
 #### Syntax
 
 ```bash
-anaconda-mcp discover [OPTIONS]
+anaconda mcp discover [OPTIONS]
 ```
 
 #### Options
 
 | Option | Description | Default |
 |--------|-------------|---------|
-| `-p, --pyproject PATH` | Path to pyproject.toml file | `./pyproject.toml` |
+| `-p, --pyproject PATH` | Path to `pyproject.toml` file | `./pyproject.toml` |
 | `--output-format FORMAT` | Output format: `text` or `json` | `text` |
 | `-v, --verbose` | Enable verbose logging | `false` |
 
 #### Examples
 
-**Discover servers in current project:**
 ```bash
-anaconda-mcp discover
-```
-
-**Discover with JSON output:**
-```bash
-anaconda-mcp discover --output-format json
-```
-
-**Discover from specific pyproject.toml:**
-```bash
-anaconda-mcp discover -p /workspace/myproject/pyproject.toml
-```
-
-**Pipe JSON output to file:**
-```bash
-anaconda-mcp discover --output-format json > servers.json
-```
-
-**Pretty-print JSON with jq:**
-```bash
-anaconda-mcp discover --output-format json | jq .
+anaconda mcp discover
+anaconda mcp discover --output-format json
+anaconda mcp discover -p /workspace/myproject/pyproject.toml
+anaconda mcp discover --output-format json > servers.json
 ```
 
 #### What It Does
 
-1. **Scans Dependencies**: Reads the specified `pyproject.toml` file
-2. **Identifies MCP Servers**: Finds all installed packages that expose MCP servers
-3. **Extracts Metadata**: Gathers information about each server (name, version, capabilities)
-4. **Outputs Results**: Displays the discovered servers in the requested format
-
-#### Sample Output
-
-**Text format:**
-```
-Discovered MCP Servers:
-  ✓ conda_environments (v1.0.0)
-    - Tools: list_environments, create_environment, delete_environment
-    - Resources: environment_info
-  ✓ jupyter_server (v2.1.0)
-    - Tools: create_notebook, run_cell, list_notebooks
-```
-
-**JSON format:**
-```json
-{
-  "servers": [
-    {
-      "name": "conda_environments",
-      "version": "1.0.0",
-      "tools": [
-        "list_environments",
-        "create_environment",
-        "delete_environment"
-      ],
-      "resources": ["environment_info"]
-    }
-  ]
-}
-```
+1. **Scans dependencies**: reads the specified `pyproject.toml` file.
+2. **Identifies MCP servers**: finds installed packages that expose MCP servers.
+3. **Extracts metadata**: gathers server names, versions, and capabilities.
+4. **Outputs results**: displays the discovered servers in the requested format.
 
 ---
 
 ## Configuration
-The Anaconda MCP uses a `mcp_compose.toml` file for configuration. This file defines how servers are composed, connected, and exposed.
 
-Checkout the [configuration documentation](./CONFIGURATION_GUIDE.md) for details.
+The `serve` command is configured through code and environment, not a runtime server file. It always builds the same Anaconda MCP stdio composition:
 
+- Vendored conda tools mounted in-process
+- Remote Anaconda search proxy with bearer auth
+- Shared `PlatformMiddleware` for auth, Terms, and telemetry
 
-### Configuration File Location
+Runtime environment variables that users may need:
 
-By default, the CLI looks for the configuration file at:
-```
-src/anaconda_mcp/mcp_compose.toml
-```
+| Variable | Purpose |
+|----------|---------|
+| `CONDA_EXE` | Explicit path to conda for GUI-launched clients |
+| `ANACONDA_AUTH_API_KEY` | API key alternative to stored login credentials |
+| `ANACONDA_MCP_ACCEPTED_TERMS` | Non-interactive Terms acceptance flag |
+| `ANACONDA_MCP_ACCEPTED_TERMS_VERSION` | Accepted Terms version |
 
-You can specify a custom location with the `--config` flag:
-```bash
-anaconda-mcp serve --config /path/to/custom_config.toml
-```
+See [CONFIGURATION_GUIDE.md](./CONFIGURATION_GUIDE.md) for details.
+
+---
 
 ## Common Use Cases
 
 ### Local Development
 
-Start a local MCP server for development:
+Run the server in a terminal to see logs and startup errors:
 
 ```bash
-# Start with default config and verbose logging
-anaconda-mcp -v serve --host 127.0.0.1 --port 8000
+anaconda mcp -v serve
+```
+
+### Client Setup
+
+Configure a project-scoped client entry when supported:
+
+```bash
+anaconda mcp setup --client cursor --scope project
+```
+
+### Dependency Discovery
+
+Inspect MCP servers in the current project:
+
+```bash
+anaconda mcp discover
+anaconda mcp compose --output-format json
 ```
 
 ---
@@ -354,98 +294,57 @@ anaconda-mcp -v serve --host 127.0.0.1 --port 8000
 
 ### Server Won't Start
 
-**Problem**: The serve command fails immediately.
+**Problem**: The `serve` command exits immediately.
 
 **Solutions**:
-1. Check if the configuration file exists:
-   ```bash
-   ls -la src/anaconda_mcp/mcp_compose.toml
-   ```
 
-2. Verify the configuration is valid TOML syntax
-
-3. Use verbose logging to see detailed errors:
-   ```bash
-   anaconda-mcp -v serve
-   ```
-
-4. Check if the port is already in use:
-   ```bash
-   lsof -i :8888  # or your configured port
-   ```
-
-### Authentication Fails
-
-**Problem**: Authentication with Anaconda fails.
-
-**Solutions**:
-1. Ensure you're logged into Anaconda:
+1. Check authentication:
    ```bash
    anaconda auth whoami
    ```
 
-2. Check your authentication configuration in `mcp_compose.toml`
+2. Check Terms acceptance:
+   ```bash
+   anaconda mcp terms status
+   ```
 
-3. Verify your network connection and firewall settings
+3. Use verbose logging:
+   ```bash
+   anaconda mcp -v serve
+   ```
+
+### Authentication Fails
+
+Run:
+
+```bash
+anaconda login
+```
+
+If the client runs headlessly, provide `ANACONDA_AUTH_API_KEY` in the client's environment.
+
+### Conda Is Not Found
+
+GUI clients may not inherit shell initialization. Set `CONDA_EXE` explicitly in the client config:
+
+```json
+"env": {
+  "CONDA_EXE": "/path/to/conda"
+}
+```
 
 ### No Servers Discovered
 
-**Problem**: `discover` command returns no servers.
+`discover` scans project dependencies, so it may return no results even when `serve` works. Verify your project dependencies and run:
 
-**Solutions**:
-1. Verify MCP server packages are installed:
-   ```bash
-   conda list | grep mcp
-   ```
-
-2. Check your `pyproject.toml` has the dependencies listed:
-   ```bash
-   cat pyproject.toml
-   ```
-
-3. Try with verbose logging:
-   ```bash
-   anaconda-mcp -v discover
-   ```
+```bash
+anaconda mcp -v discover
+```
 
 ### Tool Name Conflicts
 
-**Problem**: Tool names conflict between servers.
+For dependency-based composition, choose a different conflict strategy:
 
-**Solutions**:
-1. Use a different conflict resolution strategy:
-   ```bash
-   anaconda-mcp compose --conflict-resolution prefix
-   ```
-
-2. Use tool aliases in `mcp_compose.toml`:
-   ```toml
-   [tool_manager.aliases]
-   env_create = "conda_create_environment"
-   ```
-
-3. Exclude conflicting servers:
-   ```bash
-   anaconda-mcp compose --exclude conflicting_server
-   ```
-
-### Connection Issues
-
-**Problem**: Cannot connect to remote MCP servers.
-
-**Solutions**:
-1. Verify the server URL is correct and accessible (applies to streamable-http servers only):
-   ```bash
-   curl http://localhost:8888/mcp
-   ```
-
-2. Check timeout settings in configuration
-
-3. Ensure authentication tokens are set correctly
-
-4. Review health check settings:
-   ```toml
-   [[servers.proxied.streamable-http]]
-   health_check_enabled = true
-   health_check_interval = 30
-   ```
+```bash
+anaconda mcp compose --conflict-resolution prefix
+```

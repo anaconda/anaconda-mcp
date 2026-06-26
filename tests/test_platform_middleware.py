@@ -21,6 +21,19 @@ def _stub_otel(monkeypatch):
     monkeypatch.setattr(composition, "_otel_traced", _dummy)
 
 
+@pytest.fixture
+def captured_events(monkeypatch):
+    """Authenticate, accept terms, enable metrics, and capture emitted telemetry events."""
+    monkeypatch.setattr(composition, "get_auth_token", lambda: "tok")
+    monkeypatch.setattr(composition, "validate_auth_token", lambda t: True)
+    monkeypatch.setattr(composition, "verify_terms_accepted", lambda: None)
+    monkeypatch.setattr(composition.settings, "send_metrics", True)
+    events: list = []
+    monkeypatch.setattr(composition, "emit_event", lambda metric, params: events.append((metric, params)))
+    monkeypatch.setattr(composition, "_emit_tool_metrics", lambda *a, **k: None)
+    return events
+
+
 def _ctx(name: str = "conda_list_environments"):
     return types.SimpleNamespace(message=types.SimpleNamespace(name=name), fastmcp_context=None)
 
@@ -33,80 +46,80 @@ def _recording_call_next(store):
     return call_next
 
 
-async def test_auth_missing_token_raises_and_skips_call(monkeypatch):
-    monkeypatch.setattr(composition, "get_auth_token", lambda: None)
-    calls: list = []
-    mw = PlatformMiddleware()
-    with pytest.raises(AuthenticationError):
-        await mw.on_call_tool(_ctx(), _recording_call_next(calls))
-    assert calls == []  # call_next never invoked when unauthenticated
+class _TermsRejected(Exception):
+    pass
 
 
-async def test_invalid_token_raises_and_skips_call(monkeypatch):
-    monkeypatch.setattr(composition, "get_auth_token", lambda: "tok")
-    monkeypatch.setattr(composition, "validate_auth_token", lambda t: False)
+def _reject_terms() -> None:
+    raise _TermsRejected("must accept terms")
+
+
+def _cfg_no_token(mp):
+    mp.setattr(composition, "get_auth_token", lambda: None)
+
+
+def _cfg_invalid_token(mp):
+    mp.setattr(composition, "get_auth_token", lambda: "tok")
+    mp.setattr(composition, "validate_auth_token", lambda t: False)
+
+
+def _cfg_terms_rejected(mp):
+    mp.setattr(composition, "get_auth_token", lambda: "tok")
+    mp.setattr(composition, "validate_auth_token", lambda t: True)
+    mp.setattr(composition, "verify_terms_accepted", _reject_terms)
+
+
+@pytest.mark.parametrize(
+    "configure, expected_exc",
+    [
+        pytest.param(_cfg_no_token, AuthenticationError, id="missing-token"),
+        pytest.param(_cfg_invalid_token, AuthenticationError, id="invalid-token"),
+        pytest.param(_cfg_terms_rejected, _TermsRejected, id="terms-not-accepted"),
+    ],
+)
+async def test_preflight_rejection_raises_and_skips_call(monkeypatch, configure, expected_exc):
+    """Auth/TOS preflight failures raise before call_next runs — tool never executes."""
+    configure(monkeypatch)
     calls: list = []
     mw = PlatformMiddleware()
-    with pytest.raises(AuthenticationError):
+    with pytest.raises(expected_exc):
         await mw.on_call_tool(_ctx(), _recording_call_next(calls))
     assert calls == []
 
 
-async def test_terms_not_accepted_raises_and_skips_call(monkeypatch):
-    monkeypatch.setattr(composition, "get_auth_token", lambda: "tok")
-    monkeypatch.setattr(composition, "validate_auth_token", lambda t: True)
-
-    class _TermsRejected(Exception):
-        pass
-
-    def _reject() -> None:
-        raise _TermsRejected("must accept terms")
-
-    monkeypatch.setattr(composition, "verify_terms_accepted", _reject)
-    calls: list = []
-    mw = PlatformMiddleware()
-    with pytest.raises(_TermsRejected):
-        await mw.on_call_tool(_ctx(), _recording_call_next(calls))
-    assert calls == []
-
-
-async def test_happy_path_calls_next_and_emits_event(monkeypatch):
-    monkeypatch.setattr(composition, "get_auth_token", lambda: "tok")
-    monkeypatch.setattr(composition, "validate_auth_token", lambda t: True)
-    monkeypatch.setattr(composition, "verify_terms_accepted", lambda: None)
-    monkeypatch.setattr(composition.settings, "send_metrics", True)
-    events: list = []
-    monkeypatch.setattr(composition, "emit_event", lambda metric, params: events.append((metric, params)))
-    monkeypatch.setattr(composition, "_emit_tool_metrics", lambda *a, **k: None)
-
+async def test_happy_path_calls_next_and_emits_event(captured_events):
     calls: list = []
     mw = PlatformMiddleware()
     result = await mw.on_call_tool(_ctx("conda_create_environment"), _recording_call_next(calls))
 
     assert result == "RESULT"
-    assert len(calls) == 1  # call_next invoked exactly once
-    assert len(events) == 1
-    _metric, params = events[0]
+    assert len(calls) == 1
+    assert len(captured_events) == 1
+    _metric, params = captured_events[0]
     assert params["tool_name"] == "conda_create_environment"
     assert params["is_error"] is False
 
 
-async def test_error_in_call_next_emits_is_error_and_reraises(monkeypatch):
-    monkeypatch.setattr(composition, "get_auth_token", lambda: "tok")
-    monkeypatch.setattr(composition, "validate_auth_token", lambda t: True)
-    monkeypatch.setattr(composition, "verify_terms_accepted", lambda: None)
-    monkeypatch.setattr(composition.settings, "send_metrics", True)
-    events: list = []
-    monkeypatch.setattr(composition, "emit_event", lambda metric, params: events.append((metric, params)))
-    monkeypatch.setattr(composition, "_emit_tool_metrics", lambda *a, **k: None)
-
+async def test_error_path_emits_is_error_and_redacts_message(captured_events):
     async def boom(ctx):
-        raise ValueError("tool blew up")
+        raise ValueError("failed command https://x/t/SECRETTOKEN/ch")
 
     mw = PlatformMiddleware()
     with pytest.raises(ValueError):
         await mw.on_call_tool(_ctx(), boom)
-    assert len(events) == 1
-    _metric, params = events[0]
+
+    assert len(captured_events) == 1
+    _metric, params = captured_events[0]
     assert params["is_error"] is True
-    assert "ValueError" in params["error_description"]
+    assert params["error_description"] == "ValueError"
+    assert "SECRETTOKEN" not in params["error_description"]
+
+
+async def test_telemetry_failure_does_not_mask_tool_result(captured_events, monkeypatch):
+    def _boom_emit(*args, **kwargs):
+        raise RuntimeError("telemetry backend down")
+
+    monkeypatch.setattr(composition, "emit_event", _boom_emit)
+    mw = PlatformMiddleware()
+    result = await mw.on_call_tool(_ctx(), _recording_call_next([]))
+    assert result == "RESULT"

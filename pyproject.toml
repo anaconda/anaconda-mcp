@@ -46,7 +46,7 @@ artifacts = [
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/anaconda_mcp"]
-force-include = {"src/anaconda_mcp/mcp_compose.toml" = "anaconda_mcp/mcp_compose.toml", "src/anaconda_mcp/mcp_compose.toml.template" = "anaconda_mcp/mcp_compose.toml.template"}
+force-include = {"src/anaconda_mcp/mcp_compose.toml" = "anaconda_mcp/mcp_compose.toml", "src/anaconda_mcp/mcp_compose.toml.template" = "anaconda_mcp/mcp_compose.toml.template", "LICENSE-conda-mcp-lite.txt" = "anaconda_mcp/LICENSE-conda-mcp-lite.txt"}
 
 [tool.hatch.version]
 source = "vcs"

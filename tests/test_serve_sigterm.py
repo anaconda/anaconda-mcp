@@ -108,7 +108,15 @@ def test_serve_normal_flow_runs_composed_server_over_stdio(mock_serve_deps):
     """Without a signal, serve builds the composed server and runs it over stdio (exit 0)."""
     result = CliRunner().invoke(cli, ["serve"], catch_exceptions=False)
     assert result.exit_code == 0
+    assert "--config/--host/--port are ignored" not in result.stderr
     mock_serve_deps.assert_called_once()
+    mock_serve_deps.return_value.run.assert_called_once_with(transport="stdio")
+
+
+def test_serve_warns_when_ignored_config_is_provided(mock_serve_deps):
+    result = CliRunner().invoke(cli, ["serve", "--config", "x.toml"], catch_exceptions=False)
+    assert result.exit_code == 0
+    assert "Warning: --config/--host/--port are ignored; 'serve' runs stdio-only." in result.stderr
     mock_serve_deps.return_value.run.assert_called_once_with(transport="stdio")
 
 
@@ -129,13 +137,6 @@ def test_serve_unauthenticated_exits_with_1_before_building_server():
         result = CliRunner().invoke(cli, ["serve"])
     assert result.exit_code == 1
     mock_build.assert_not_called()
-
-
-def test_serve_delay_option_is_respected(mock_serve_deps):
-    """The --delay flag must be passed directly to time.sleep."""
-    with patch("anaconda_mcp.cli.time.sleep") as mock_sleep:
-        CliRunner().invoke(cli, ["serve", "--delay", "11"], catch_exceptions=False)
-    mock_sleep.assert_called_once_with(11)
 
 
 _REAL_SIGNAL_CHILD = """

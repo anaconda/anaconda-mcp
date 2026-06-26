@@ -1,6 +1,6 @@
-# mcp_tools — unified MCP tool tests
+# mcp_tools — native stdio MCP tool tests
 
-One suite for all transport profiles. Architecture, configuration, test design, and reporting details live under [`_docs/`](_docs/index.md).
+One suite for the native stdio MCP server. Architecture, configuration, test design, and reporting details live under [`_docs/`](_docs/index.md).
 
 ## Profiles
 
@@ -39,7 +39,7 @@ Use **`python -m pytest …`** so **`httpx`** / **`pytest`** match the active en
 
 The server env must contain an **installable copy** of:
 
-1. **`anaconda-mcp`** — this repository. It **vendors** the conda MCP tools as `anaconda_mcp.conda_mcp_lite` (started by mcp-compose over STDIO) and pulls in `fastmcp`; no separate `environments-mcp-server` or `anaconda-connector` install is needed.
+1. **`anaconda-mcp`** — this repository. It **vendors** the conda MCP tools as `anaconda_mcp.conda_mcp_lite` and pulls in `fastmcp`; no separate `environments-mcp-server` or `anaconda-connector` install is needed.
 
 **Default:** an editable install from a local clone of **`anaconda-mcp`**.
 
@@ -48,8 +48,6 @@ conda create -n anaconda-mcp-server python=3.13 -y
 conda activate anaconda-mcp-server
 pip install -e /path/to/anaconda-mcp
 ```
-
-**Pinning `mcp-compose`** (fork / branch / git URL) in the same env overrides PyPI—important for **stdio-stdio** proxy behavior. Verify with `python -c "import mcp_compose; print(mcp_compose.__file__)"`.
 
 **More detail:** [`tests/qa/_ai_docs/tech_details/LOCAL-DEV-SETUP.md`](../_ai_docs/tech_details/LOCAL-DEV-SETUP.md), [`INSTALL_OPTIONS.md`](../_ai_docs/tech_details/INSTALL_OPTIONS.md).
 
@@ -60,20 +58,15 @@ python -c "import anaconda_mcp; import anaconda_mcp.conda_mcp_lite; print('OK')"
 anaconda-mcp --help
 ```
 
-### Packaged `mcp_compose.toml` vs QA
+### Native stdio serve
 
-The file **`src/anaconda_mcp/mcp_compose.toml`** is a **packaged default** when users run `anaconda-mcp serve` without a custom config. **QA runs do not select transport by editing that file.** Tests generate TOML from **`tests/qa/shared/mcp_compose_profiles.py`**, write a temp file, and run `anaconda-mcp serve --config <file>`. See [`_docs/architecture.md`](_docs/architecture.md).
+QA runs start `anaconda-mcp serve` directly over stdio. There is no generated config file and no `--config` flag. See [`_docs/architecture.md`](_docs/architecture.md).
 
 ## Examples
 
 From the repo root (with `anaconda-mcp-qa` activated):
 
 ```bash
-pytest tests/qa/mcp_tools -o addopts= \
-  --mcp-profile=http-http \
-  --server-url http://localhost:9888/mcp \
-  --start-server --server-conda-env anaconda-mcp-server
-
 pytest tests/qa/mcp_tools -o addopts= \
   --mcp-profile=stdio-stdio \
   --server-conda-env anaconda-mcp-server
@@ -95,8 +88,5 @@ See [`_docs/reporting.md`](_docs/reporting.md) — default path, pytest-html ext
 
 ## Fixtures
 
-- **`call_tool`** (module): `call_tool(name, arguments)` — HTTP or STDIO from profile.
-- **`call_no_hang_unified`**: hang regressions; HTTP uses `fresh_session_id`, STDIO uses a fresh `stdio_server` per test.
-- **`session_id`**: set only for `http-http` (MCP session header); otherwise `None`.
-
-Canonical compose TOML generators: `tests/qa/shared/mcp_compose_profiles.py`.
+- **`call_tool`** (module): `call_tool(name, arguments)` — stdio JSON-RPC against a module-scoped server.
+- **`call_no_hang_unified`**: hang regressions using a fresh stdio server per test.

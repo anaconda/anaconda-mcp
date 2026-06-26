@@ -48,9 +48,8 @@ on:
         default: 'stdio-stdio'
         type: choice
         options:
-          - 'http-http'
-          - 'stdio-http'
           - 'stdio-stdio'
+          - 'stdio'
       skip_hang_stress:
         description: 'Skip hang_stress tests (slow, designed for dedicated stress runs)'
         required: false
@@ -252,7 +251,6 @@ jobs:
           MCP_SERVER_CONDA_ENV: ${{ env.SERVER_ENV }}  # read by conftest.py
         run: |
           EXTRA_ARGS=""
-          [[ "$MCP_PROFILE"     == "http-http" ]] && EXTRA_ARGS="$EXTRA_ARGS --start-server"
           [[ "$SKIP_HANG_STRESS" == "true"      ]] && EXTRA_ARGS="$EXTRA_ARGS --skip-hang-stress"
 
           conda run -n "$QA_ENV" --no-capture-output python -m pytest \

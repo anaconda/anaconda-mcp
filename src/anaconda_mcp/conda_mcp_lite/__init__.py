@@ -1,6 +1,6 @@
 """Vendored conda MCP server (stdio entry point).
 
-Source: Anaconda-Sandbox/conda-mcp-lite (commit ba79965), BSD-3-Clause.
+Source: Anaconda-Sandbox/conda-mcp-lite (commit ba79965), MIT.
 """
 
 from . import server as _server

@@ -61,7 +61,7 @@ RUN useradd -m -u 1001 mcp && chown -R mcp:mcp /opt/conda
 # Run as non-root user
 USER mcp
 
-# The serve command reads its bundled mcp_compose.toml by default.
+# 'serve' runs the native FastMCP stdio server (conda tools mounted in-process, search proxied).
 # Additional CLI args are appended to the CMD and passed through to 'serve'.
 # Examples:
 #   Stdio mode (default): docker run -i anaconda-mcp serve

@@ -85,11 +85,6 @@ jobs:
           chmod +x .github/scripts/test_cli.sh .github/scripts/verify_cli_config.sh
           .github/scripts/test_cli.sh
 
-      - name: Test streamable-http transport
-        run: |
-          chmod +x .github/scripts/test_streamable_http.sh .github/scripts/verify_streamable_http.sh
-          .github/scripts/test_streamable_http.sh
-
   integration:
     name: Integration Tests
     runs-on: ubuntu-latest

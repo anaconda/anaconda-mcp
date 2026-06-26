@@ -9,9 +9,6 @@ from __future__ import annotations
 
 import os
 
-# Full URL of the MCP server endpoint.
-# Set by conftest from --server-url / MCP_SERVER_URL before test collection.
-# Default port 9888 avoids conflict with IDE MCP servers (Cursor, Claude Desktop use 8888).
 BASE_URL: str = os.environ.get("MCP_SERVER_URL", "http://localhost:9888/mcp")
 
 # Maximum seconds to wait for a single tool call response.

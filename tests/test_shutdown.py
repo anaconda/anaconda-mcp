@@ -5,9 +5,12 @@ from __future__ import annotations
 import os
 import threading
 import time
+from contextlib import asynccontextmanager
 
+import fastmcp.server.mixins.transport as _fastmcp_transport
 import pytest
 
+from anaconda_mcp import _shutdown
 from anaconda_mcp._shutdown import _InterruptibleStdin
 
 
@@ -300,3 +303,57 @@ def test_install_shutdown_handlers_routes_sigint_to_trigger_shutdown(monkeypatch
 def _cleanup_proxies():
     """Best-effort: close any leaked file descriptors from failed tests."""
     yield
+
+
+@pytest.fixture
+def _restore_shutdown_state():
+    """Save/restore the globally-patched transport.stdio_server + install flag so the
+    module-level monkeypatch never leaks into other tests."""
+    original_stdio_server = _fastmcp_transport.stdio_server
+    original_installed = _shutdown._handlers_installed
+    _shutdown._handlers_installed = False
+    try:
+        yield
+    finally:
+        _fastmcp_transport.stdio_server = original_stdio_server
+        _shutdown._handlers_installed = original_installed
+        _shutdown._active_stdin_proxy = None
+
+
+def test_patch_stdio_server_guard_raises_when_symbol_missing(_restore_shutdown_state, monkeypatch):
+    """If fastmcp's transport.stdio_server is absent (incompatible version), fail loudly."""
+    monkeypatch.delattr(_fastmcp_transport, "stdio_server", raising=False)
+    with pytest.raises(RuntimeError, match="stdio_server not found"):
+        _shutdown._patch_stdio_server()
+
+
+def test_install_wraps_transport_stdio_server(_restore_shutdown_state):
+    """install_shutdown_handlers must wrap the symbol fastmcp.FastMCP.run_stdio_async calls."""
+    original = _fastmcp_transport.stdio_server
+    _shutdown.install_shutdown_handlers()
+    assert _fastmcp_transport.stdio_server is not original
+
+
+@pytest.mark.asyncio
+async def test_patched_stdio_server_injects_interruptible_stdin(_restore_shutdown_state, monkeypatch):
+    """The wrapper must turn a None stdin into the interruptible proxy's readable file,
+    track the proxy for shutdown, and pass through the real stdio_server's streams."""
+    captured: dict = {}
+
+    @asynccontextmanager
+    async def _fake_real_stdio_server(stdin=None, stdout=None):
+        captured["stdin"] = stdin
+        yield ("read", "write")
+
+    monkeypatch.setattr(_fastmcp_transport, "stdio_server", _fake_real_stdio_server)
+    _shutdown._patch_stdio_server()
+
+    proxy = None
+    async with _fastmcp_transport.stdio_server() as streams:
+        proxy = _shutdown._active_stdin_proxy
+        assert proxy is not None, "proxy not installed on the fastmcp stdio path"
+        assert captured["stdin"] is not None, "real stdio_server must receive the proxy file, not None"
+        assert streams == ("read", "write")
+    if proxy is not None:
+        proxy.shutdown()
+    assert _shutdown._active_stdin_proxy is None

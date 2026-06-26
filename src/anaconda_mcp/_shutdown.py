@@ -21,9 +21,9 @@ interposes an OS pipe::
       --[daemon pump thread: os.read -> os.write]--> os.pipe() write end
       --> read end wrapped as an anyio async file --> stdio_server --> server
 
-``_patch_run_stdio_async`` replaces ``FastMCP.run_stdio_async`` so the composed
-server reads from the pipe's read end instead of real stdin. The pump is a
-daemon thread: if it is still blocked in ``os.read(real_stdin)`` at exit, it
+``_patch_stdio_server`` wraps fastmcp's transport-level ``stdio_server`` so the
+composed server reads from the pipe's read end instead of real stdin. The pump is
+a daemon thread: if it is still blocked in ``os.read(real_stdin)`` at exit, it
 does not block process termination.
 
 Threads vs. coroutines
@@ -54,9 +54,9 @@ natively on FastMCP; there is no mcp-compose composer process to stop.)
 
 No init race
 ------------
-The pump is the *only* reader of fd 0, and ``_patch_run_stdio_async`` is applied
-at the class level inside ``install_shutdown_handlers()`` -- before
-``serve_command`` runs -- so the unpatched direct-stdin reader is never used.
+The pump is the *only* reader of fd 0, and ``_patch_stdio_server`` is applied
+inside ``install_shutdown_handlers()`` -- before ``serve`` runs -- so the
+unpatched direct-stdin reader is never used.
 Bytes arriving before the pump's first ``os.read`` are buffered by the OS and
 read once it starts; none are lost.
 
@@ -75,12 +75,13 @@ import logging
 import os
 import signal
 import threading
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from io import BufferedReader, FileIO, TextIOWrapper
 from typing import Any
 
+import fastmcp.server.mixins.transport as _fastmcp_transport
 from anaconda_cli_base.lifecycle import register_shutdown_hook, trigger_shutdown
-from mcp.server.fastmcp import FastMCP
-from mcp.server.stdio import stdio_server
 
 logger = logging.getLogger(__name__)
 
@@ -217,7 +218,7 @@ def install_shutdown_handlers() -> None:
     global _handlers_installed
     if _handlers_installed:
         return
-    _patch_run_stdio_async()
+    _patch_stdio_server()
     _patch_sigint_handler()
     register_shutdown_hook(_shutdown_stdin_proxy)
     _handlers_installed = True
@@ -229,24 +230,34 @@ def _shutdown_stdin_proxy() -> None:
         _active_stdin_proxy.shutdown()
 
 
-def _patch_run_stdio_async() -> None:
-    async def _patched_run_stdio_async(self: Any) -> None:
-        global _active_stdin_proxy
-        _active_stdin_proxy = _InterruptibleStdin()
-        try:
-            async with stdio_server(stdin=_active_stdin_proxy.make_async_file()) as (
-                read_stream,
-                write_stream,
-            ):
-                await self._mcp_server.run(
-                    read_stream,
-                    write_stream,
-                    self._mcp_server.create_initialization_options(),
-                )
-        finally:
-            _active_stdin_proxy = None
+def _patch_stdio_server() -> None:
+    """Wrap fastmcp's transport-level ``stdio_server`` so the composed server reads from an
+    interruptible pipe, preserving fastmcp's lifespan/notification logic (only the stdin
+    source is swapped). Targets the standalone ``fastmcp.FastMCP`` that ``serve()`` runs;
+    the MCP SDK ``FastMCP`` is a different class and was never the server here."""
+    real_stdio_server = getattr(_fastmcp_transport, "stdio_server", None)
+    if real_stdio_server is None:
+        raise RuntimeError(
+            "fastmcp.server.mixins.transport.stdio_server not found; cannot install the "
+            "graceful-shutdown stdin patch (incompatible fastmcp version)."
+        )
 
-    FastMCP.run_stdio_async = _patched_run_stdio_async  # type: ignore[method-assign]
+    @asynccontextmanager
+    async def _interruptible_stdio_server(stdin: Any = None, stdout: Any = None) -> AsyncIterator[Any]:
+        global _active_stdin_proxy
+        created = False
+        if stdin is None:
+            _active_stdin_proxy = _InterruptibleStdin()
+            stdin = _active_stdin_proxy.make_async_file()
+            created = True
+        try:
+            async with real_stdio_server(stdin=stdin, stdout=stdout) as streams:
+                yield streams
+        finally:
+            if created:
+                _active_stdin_proxy = None
+
+    _fastmcp_transport.stdio_server = _interruptible_stdio_server
 
 
 def _patch_sigint_handler() -> None:

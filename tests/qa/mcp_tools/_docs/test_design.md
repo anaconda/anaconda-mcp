@@ -2,41 +2,34 @@
 
 **Audience:** QA engineers and developers running or extending the unified MCP tool suite.
 
-**In scope:** functional MCP tool calls over each transport profile + hang / stress regressions (`hang_stress` mark).
+**In scope:** functional MCP tool calls over native stdio + hang / stress regressions (`hang_stress` mark).
 
 **Out of scope:** LLM behaviour, end-to-end user workflows through Claude Desktop UI, installation and packaging.
 
-Stack and transport matrix: [`architecture.md`](architecture.md). CLI options and CI: [`configuration.md`](configuration.md). Logs: [`reporting.md`](reporting.md).
+Stack architecture: [`architecture.md`](architecture.md). CLI options and CI: [`configuration.md`](configuration.md). Logs: [`reporting.md`](reporting.md).
 
 ---
 
 ## 1. How `--mcp-profile` works under the hood
 
-Selecting a profile triggers a chain in `conftest.py` that hides all transport detail from the tests themselves:
+Selecting a profile triggers a chain in `conftest.py` that hides stdio process management from the tests themselves:
 
 ```mermaid
 flowchart TD
-  A["pytest --mcp-profile=slug"] --> B["conftest reads slug<br/>selects ComposeTransportProfile"]
-  B --> C["render_for_profile()<br/>generates mcp-compose TOML string"]
-  C --> D["write to NamedTemporaryFile<br/>(deleted at session teardown)"]
-  D --> E["conda run -n env anaconda-mcp serve --config tmp"]
-  E --> F{client edge?}
-  F -->|HTTP| G["httpx session<br/>initialize → get session_id"]
-  F -->|STDIO| H["proc.stdin / proc.stdout<br/>JSON-RPC over newline-delimited pipes<br/>initialize handshake"]
-  G --> I["call_tool fixture ready<br/>transport hidden from test"]
-  H --> I
+  A["pytest --mcp-profile=slug"] --> B["conftest validates stdio profile label"]
+  B --> C["conda run -n env anaconda-mcp serve"]
+  C --> D["proc.stdin / proc.stdout<br/>JSON-RPC over newline-delimited pipes<br/>initialize handshake"]
+  D --> E["call_tool fixture ready<br/>process lifecycle hidden from test"]
 ```
 
-- **TOML generation** is deterministic: same profile + ports → same config. Source: [`mcp_compose_profiles.py`](../../shared/mcp_compose_profiles.py).
 - **STDIO stderr** is redirected to a `NamedTemporaryFile`; on failure, `conftest` appends the tail to the HTML report — see [`reporting.md`](reporting.md).
 
 ### Fixture scopes
 
 | Fixture | Scope | Used by |
 |---------|-------|---------|
-| `mcp_server` / `stdio_mcp_module` | `module` | `call_tool` — shared across all tests in a file |
+| `stdio_mcp_module` | `module` | `call_tool` — shared across all tests in a file |
 | `stdio_server` | `function` | `call_no_hang_unified` — fresh process per hang-stress test |
-| `session_id` | `module` | HTTP only; `None` for STDIO |
 
 ---
 
@@ -50,17 +43,13 @@ flowchart TD
 | **Fast feedback** | Seconds per test vs minutes for E2E flows through a desktop UI |
 | **CI-friendly** | Runs in GitHub Actions without a GUI or LLM API calls |
 | **Regression-focused** | Catches known issues (KI-002, KI-003, KI-010, KI-011) reliably and repeatably |
-| **Transport-agnostic logic** | Same assertions run for every profile — only the adapter changes |
+| **Process-agnostic assertions** | Tests assert tool contracts, not process management details |
 
 ### Why deterministic single-call tests for tool behaviour?
 
 Each tool has a defined contract: given a specific input, it must return a specific shape of response (`is_error`, `tool_result`, message). A single call is enough to verify that contract. Deterministic inputs (known env name, known package, nonexistent prefix) make failures unambiguous — no retries, no timing, no accumulated state.
 
-This also makes it straightforward to distinguish where a failure originates: if the same test fails on `http-http` and `stdio-stdio` alike, the problem is in the conda sub-server (`anaconda_mcp.conda_mcp_lite` tool implementation); if it fails on one profile only, the fault is in the transport layer — mcp-compose or the outer transport framing.
-
-### Why support variability on each layer?
-
-Tool behaviour must be correct regardless of *how* the call travels to the conda sub-server. A bug can live in any hop — outer transport framing, mcp-compose proxy session handling, upstream connection pooling, or the tool implementation itself. Running the same test logic across the full transport matrix and against independently-versioned packages isolates *where* a regression lives, not just *that* something broke.
+This also makes it straightforward to distinguish where a failure originates: process lifecycle and JSON-RPC framing failures surface in the stdio fixtures, while tool contract failures point at `anaconda_mcp.conda_mcp_lite` or the conda CLI interaction behind it.
 
 ---
 
