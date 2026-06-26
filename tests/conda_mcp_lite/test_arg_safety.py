@@ -1,17 +1,13 @@
-"""Hermetic option-injection safety tests for the vendored conda server.
+"""Hermetic argument-injection safety tests for the vendored conda server.
 
-Locks in the fix for the channel-governance bypass / argument-injection
-vulnerability (review blocking #3). These do NOT require a real conda install:
-``run_conda`` / ``create_subprocess_exec`` are monkeypatched, so they run
-everywhere (unlike ``test_mutating_tools.py`` which is conda-gated).
+Locks in the fix for the argument-injection vulnerability (review blocking #3).
+These do NOT require a real conda install: ``run_conda`` /
+``create_subprocess_exec`` are monkeypatched, so they run everywhere (unlike
+``test_mutating_tools.py`` which is conda-gated).
 """
 
 from __future__ import annotations
 
-import json
-import os
-import subprocess
-import sys
 from pathlib import Path
 
 import pytest
@@ -69,6 +65,22 @@ async def test_tools_reject_option_like_env_or_prefix(recorded_run_conda, tool, 
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "tool,args",
+    [
+        ("create_environment", {"environment_name": "e"}),
+        ("install_packages", {"environment": "e", "packages": ["numpy"]}),
+    ],
+)
+async def test_tools_reject_option_like_channel(recorded_run_conda, tool, args):
+    """An option-like channel value is rejected before conda runs."""
+    result = _envelope(await server.mcp.call_tool(tool, {**args, "channels": ["--use-local"]}))
+    assert result["is_error"] is True
+    assert "--use-local" in result["error_description"]
+    assert recorded_run_conda == [], f"{tool}: run_conda must NOT run on option-like channel"
+
+
+@pytest.mark.asyncio
 async def test_run_conda_places_json_before_separator(monkeypatch):
     """``--json`` must precede the ``--`` separator, else conda treats it as a package spec."""
     captured: dict = {}
@@ -99,39 +111,12 @@ async def test_install_packages_happy_path_uses_positionals(recorded_run_conda):
     assert "numpy" not in recorded_run_conda[0]["args"], "packages must not be spliced into conda args"
 
 
-_FLAG_ON_CHANNEL_REJECT_PROBE = """
-import asyncio
-import json
-
-from anaconda_mcp.conda_mcp_lite import server as s
-
-
-async def main():
-    result = await s.mcp.call_tool(
-        "install_packages",
-        {"environment": "e", "packages": ["numpy"], "channels": ["--use-local"], "override_channels": True},
-    )
-    print(json.dumps(result.structured_content))
-
-
-asyncio.run(main())
-"""
-
-
-def test_flag_on_registered_tool_rejects_option_like_channel():
-    """With ANACONDA_MCP_ALLOW_CHANNEL_OVERRIDE set, the *registered* install_packages tool
-    exposes channels AND validates them — an option-like channel is rejected before conda runs.
-    A subprocess is required because the flag is read at module import."""
-    env = os.environ.copy()
-    env["ANACONDA_MCP_ALLOW_CHANNEL_OVERRIDE"] = "true"
-    proc = subprocess.run(
-        [sys.executable, "-c", _FLAG_ON_CHANNEL_REJECT_PROBE],
-        capture_output=True,
-        text=True,
-        timeout=30,
-        env=env,
-        check=True,
-    )
-    parsed = json.loads(proc.stdout.strip().splitlines()[-1])
-    assert parsed["is_error"] is True
-    assert "--use-local" in parsed["error_description"]
+@pytest.mark.asyncio
+async def test_channel_params_always_exposed():
+    """create_environment / install_packages always advertise channels and
+    override_channels (parity with environments-mcp; no governance gating)."""
+    tools_by_name = {t.name: t for t in await server.mcp.list_tools()}
+    for tool_name in ("create_environment", "install_packages"):
+        properties = tools_by_name[tool_name].parameters["properties"]
+        assert "channels" in properties, f"{tool_name}: 'channels' not exposed"
+        assert "override_channels" in properties, f"{tool_name}: 'override_channels' not exposed"

@@ -11,16 +11,14 @@ https://github.com/microsoft/vscode/blob/d44e26a3/src/vs/platform/shell/node/she
 
 # ---------------------------------------------------------------------------
 # Vendored from Anaconda-Sandbox/conda-mcp-lite (commit ba79965), MIT.
-# Kept functionally identical on vendoring; production hardening (channel
-# governance, destructive annotations, stdout hygiene) is applied separately.
+# Kept functionally identical on vendoring; production hardening (argument-
+# injection safety, destructive annotations, stdout hygiene) is applied separately.
 # Entry point: anaconda_mcp/conda_mcp_lite/__main__.py -> __init__.main().
 # ---------------------------------------------------------------------------
 
 from __future__ import annotations
 
 import asyncio
-import functools
-import inspect
 import json
 import logging
 import os
@@ -30,7 +28,7 @@ import shutil
 import subprocess
 import sys
 import uuid
-from collections.abc import Callable, Sequence
+from collections.abc import Sequence
 from pathlib import Path
 
 from fastmcp import FastMCP
@@ -50,34 +48,6 @@ mcp = FastMCP("Environments MCP Server")
 
 _conda_exe: Path | None = None
 _conda_info: dict | None = None
-
-
-# ─── Channel Governance ──────────────────────────────────────────────────────
-
-_ALLOW_CHANNEL_OVERRIDE = os.environ.get("ANACONDA_MCP_ALLOW_CHANNEL_OVERRIDE", "").strip().lower() in {
-    "1",
-    "true",
-    "yes",
-    "on",
-}
-
-_CHANNEL_PARAMS = {"channels", "override_channels"}
-
-
-def _strip_params(fn: Callable, params_to_strip: set[str]) -> Callable:
-    # FastMCP derives the tool schema from the callable signature, so dropping
-    # parameters here hides them from the agent; the wrapper also ignores them at runtime.
-    sig = inspect.signature(fn)
-    new_params = [p for name, p in sig.parameters.items() if name not in params_to_strip]
-
-    @functools.wraps(fn)
-    async def wrapper(*args, **kwargs):
-        for param in params_to_strip:
-            kwargs.pop(param, None)
-        return await fn(*args, **kwargs)
-
-    wrapper.__dict__["__signature__"] = sig.replace(parameters=new_params)
-    return wrapper
 
 
 # ─── Conda Discovery ─────────────────────────────────────────────────────────
@@ -435,6 +405,7 @@ async def list_environment_packages(
         return {"is_error": True, "error_description": f"Failed to list installed packages: {ex}", "tool_result": None}
 
 
+@mcp.tool
 async def create_environment(
     environment_name: str | None = None,
     prefix: str | None = None,
@@ -507,6 +478,7 @@ async def create_environment(
         }
 
 
+@mcp.tool
 async def install_packages(
     packages: list[str],
     prefix: str | None = None,
@@ -749,11 +721,3 @@ async def remove_environment(
             "error_description": "There was an error while deleting the environment.",
             "tool_result": None,
         }
-
-
-# ─── Tool Registration (channel-governed) ────────────────────────────────────
-# create_environment / install_packages advertise channels/override_channels only when
-# ANACONDA_MCP_ALLOW_CHANNEL_OVERRIDE is set; otherwise those params are stripped from the
-# schema and ignored at runtime (managed-channel governance).
-for _governed in (create_environment, install_packages):
-    mcp.tool(_governed if _ALLOW_CHANNEL_OVERRIDE else _strip_params(_governed, _CHANNEL_PARAMS))

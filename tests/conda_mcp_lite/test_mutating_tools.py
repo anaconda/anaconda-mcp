@@ -1,14 +1,9 @@
-"""Mutating-tool + governance coverage for the vendored ``anaconda_mcp.conda_mcp_lite`` server.
+"""Mutating-tool coverage for the vendored ``anaconda_mcp.conda_mcp_lite`` server.
 
 Lifecycle: ``create_environment`` -> ``install_packages`` -> ``list_environment_packages``
 shows it -> ``remove_packages`` -> ``remove_environment``. Every step asserts
 ``is_error is False`` and the env is gone at the end. ``remove_packages`` is
 explicitly covered (highest-risk previously-untested tool, Metis E9).
-
-Governance: with ``ANACONDA_MCP_ALLOW_CHANNEL_OVERRIDE`` unset (the default),
-``channels`` and ``override_channels`` are stripped from the advertised schema
-of ``create_environment`` / ``install_packages``. With the flag set in a
-separate subprocess (the flag is read at module import), they reappear.
 
 Each test runs in a uuid-suffixed env with guaranteed teardown so a failure
 mid-test never leaves a conda env behind.
@@ -22,11 +17,9 @@ module-global discovery cache (``_conda_exe`` / ``_conda_info``) is populated.
 from __future__ import annotations
 
 import asyncio
-import json
 import os
 import shutil
 import subprocess
-import sys
 import uuid
 from collections.abc import Iterator
 
@@ -42,9 +35,7 @@ pytestmark = pytest.mark.skipif(CONDA_EXE is None, reason="No conda installation
 # in seconds; 120s is well above any realistic latency while still failing
 # fast on a hung subprocess.
 _TOOL_CALL_TIMEOUT_S = 120.0
-# Subprocess teardown / governance probe timeouts.
 _TEARDOWN_TIMEOUT_S = 180.0
-_GOVERNANCE_PROBE_TIMEOUT_S = 30.0
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -154,55 +145,3 @@ async def test_full_lifecycle_create_install_remove_packages_remove_environment(
     envs = _envelope(await _call("list_environments", {}))
     env_names = {e["name"] for e in envs["tool_result"]["environments"]}
     assert ephemeral_env_name not in env_names, f"env {ephemeral_env_name!r} still listed after remove_environment"
-
-
-@pytest.mark.asyncio
-async def test_governance_default_strips_channel_params() -> None:
-    """With ``ANACONDA_MCP_ALLOW_CHANNEL_OVERRIDE`` unset (default), the
-    advertised schema for ``create_environment`` and ``install_packages``
-    MUST NOT expose ``channels`` or ``override_channels``."""
-    tools_by_name = {t.name: t for t in await server.mcp.list_tools()}
-
-    for tool_name in ("create_environment", "install_packages"):
-        properties = tools_by_name[tool_name].parameters["properties"]
-        assert "channels" not in properties, f"{tool_name}: 'channels' exposed by default (governance regression)"
-        assert "override_channels" not in properties, (
-            f"{tool_name}: 'override_channels' exposed by default (governance regression)"
-        )
-
-
-# Inline probe script: runs in a fresh subprocess because the governance flag
-# is captured at module import; toggling it requires a new interpreter.
-_GOVERNANCE_FLAG_ON_PROBE = """
-import asyncio, json
-from anaconda_mcp.conda_mcp_lite import server as s
-async def main():
-    print(json.dumps({
-        t.name: sorted((t.parameters.get('properties') or {}).keys())
-        for t in await s.mcp.list_tools()
-    }))
-asyncio.run(main())
-"""
-
-
-def test_governance_flag_on_exposes_channel_params() -> None:
-    """In a separate subprocess with ``ANACONDA_MCP_ALLOW_CHANNEL_OVERRIDE=true``,
-    ``channels`` AND ``override_channels`` MUST be present in the advertised
-    schema for ``create_environment`` and ``install_packages``.
-
-    A subprocess is required because the flag is read at module import."""
-    env = os.environ.copy()
-    env["ANACONDA_MCP_ALLOW_CHANNEL_OVERRIDE"] = "true"
-    proc = subprocess.run(
-        [sys.executable, "-c", _GOVERNANCE_FLAG_ON_PROBE],
-        capture_output=True,
-        text=True,
-        timeout=_GOVERNANCE_PROBE_TIMEOUT_S,
-        env=env,
-        check=True,
-    )
-    parsed = json.loads(proc.stdout.strip().splitlines()[-1])
-    for tool_name in ("create_environment", "install_packages"):
-        props = parsed[tool_name]
-        assert "channels" in props, f"{tool_name}: 'channels' missing under flag (got {props})"
-        assert "override_channels" in props, f"{tool_name}: 'override_channels' missing under flag (got {props})"
