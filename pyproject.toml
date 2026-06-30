@@ -50,6 +50,13 @@ force-include = {"src/anaconda_mcp/mcp_compose.toml" = "anaconda_mcp/mcp_compose
 
 [tool.hatch.version]
 source = "vcs"
+fallback-version = "0.0.0"
+
+# Restrict `git describe` to valid PEP 440 versions.
+# `git describe` picks up the latest published version.
+# If an mcpb version is the latest version, this causes an error and crashes wheel-metadata builds.
+[tool.hatch.version.raw-options.scm.git]
+describe_command = ["git", "describe", "--dirty", "--tags", "--long", "--match", "v[0-9]*"]
 
 [tool.hatch.build.targets.sdist]
 include = [

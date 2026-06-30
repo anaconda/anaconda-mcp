@@ -1,0 +1,177 @@
+name: GitHub Release Download Snapshot
+
+on:
+  schedule:
+    - cron: "17 1,7,13,19 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  snapshot:
+    name: Snapshot release asset download counts
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Capture release asset downloads
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          pulled_at="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+          pulled_at_slug="$(date -u +"%Y%m%dT%H%M%SZ")"
+          out_dir="release-download-snapshot-${pulled_at_slug}"
+          mkdir -p "${out_dir}"
+
+          gh api --paginate --slurp \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "repos/${REPOSITORY}/releases?per_page=100" \
+            > "${out_dir}/raw-release-pages.json"
+
+          jq --arg pulled_at "${pulled_at}" --arg repository "${REPOSITORY}" '
+            flatten
+            | [
+                .[] as $release
+                | ($release.assets // [])[]
+                | {
+                    pulled_at: $pulled_at,
+                    repository: $repository,
+                    release_id: $release.id,
+                    release_tag: $release.tag_name,
+                    release_name: $release.name,
+                    release_created_at: $release.created_at,
+                    release_published_at: $release.published_at,
+                    release_prerelease: $release.prerelease,
+                    release_draft: $release.draft,
+                    release_html_url: $release.html_url,
+                    asset_id: .id,
+                    asset_name: .name,
+                    asset_content_type: .content_type,
+                    asset_size: .size,
+                    asset_created_at: .created_at,
+                    asset_updated_at: .updated_at,
+                    browser_download_url: .browser_download_url,
+                    digest: .digest,
+                    download_count: (.download_count // 0)
+                  }
+              ]
+          ' "${out_dir}/raw-release-pages.json" \
+            > "${out_dir}/release-asset-download-snapshot.json"
+
+          jq -r '
+            [
+              "pulled_at",
+              "repository",
+              "release_id",
+              "release_tag",
+              "release_name",
+              "release_created_at",
+              "release_published_at",
+              "release_prerelease",
+              "release_draft",
+              "release_html_url",
+              "asset_id",
+              "asset_name",
+              "asset_content_type",
+              "asset_size",
+              "asset_created_at",
+              "asset_updated_at",
+              "browser_download_url",
+              "digest",
+              "download_count"
+            ],
+            (
+              .[]
+              | [
+                  .pulled_at,
+                  .repository,
+                  .release_id,
+                  .release_tag,
+                  .release_name,
+                  .release_created_at,
+                  .release_published_at,
+                  .release_prerelease,
+                  .release_draft,
+                  .release_html_url,
+                  .asset_id,
+                  .asset_name,
+                  .asset_content_type,
+                  .asset_size,
+                  .asset_created_at,
+                  .asset_updated_at,
+                  .browser_download_url,
+                  .digest,
+                  .download_count
+                ]
+            )
+            | @csv
+          ' "${out_dir}/release-asset-download-snapshot.json" \
+            > "${out_dir}/release-asset-download-snapshot.csv"
+
+          jq '
+            [
+              .[]
+              | select((.release_tag | startswith("mcpb-")) and .asset_name == "anaconda-mcp.mcpb")
+            ]
+          ' "${out_dir}/release-asset-download-snapshot.json" \
+            > "${out_dir}/mcpb-release-download-snapshot.json"
+
+          jq -r '
+            [
+              "pulled_at",
+              "repository",
+              "release_tag",
+              "release_published_at",
+              "asset_id",
+              "asset_name",
+              "browser_download_url",
+              "digest",
+              "download_count"
+            ],
+            (
+              .[]
+              | [
+                  .pulled_at,
+                  .repository,
+                  .release_tag,
+                  .release_published_at,
+                  .asset_id,
+                  .asset_name,
+                  .browser_download_url,
+                  .digest,
+                  .download_count
+                ]
+            )
+            | @csv
+          ' "${out_dir}/mcpb-release-download-snapshot.json" \
+            > "${out_dir}/mcpb-release-download-snapshot.csv"
+
+          mcpb_asset_count="$(jq 'length' "${out_dir}/mcpb-release-download-snapshot.json")"
+          mcpb_total_downloads="$(jq 'map(.download_count) | add // 0' "${out_dir}/mcpb-release-download-snapshot.json")"
+
+          {
+            echo "### GitHub release download snapshot"
+            echo
+            echo "- Pulled at: \`${pulled_at}\`"
+            echo "- Repository: \`${REPOSITORY}\`"
+            echo "- MCPB assets: \`${mcpb_asset_count}\`"
+            echo "- Cumulative MCPB downloads: \`${mcpb_total_downloads}\`"
+            echo
+            echo "| Release tag | Asset | Download count |"
+            echo "| --- | --- | ---: |"
+            jq -r '
+              .[]
+              | "| \(.release_tag) | \(.asset_name) | \(.download_count) |"
+            ' "${out_dir}/mcpb-release-download-snapshot.json"
+          } >> "${GITHUB_STEP_SUMMARY}"
+
+      - name: Upload release download snapshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: github-release-download-snapshot-${{ github.run_id }}
+          path: release-download-snapshot-*/
+          retention-days: 90
