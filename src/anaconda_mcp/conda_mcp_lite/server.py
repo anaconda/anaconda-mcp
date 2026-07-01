@@ -236,15 +236,17 @@ async def run_conda(*args: str, positionals: list[str] | None = None) -> dict | 
     stdout, stderr = await proc.communicate()
 
     if not stdout.strip():
-        raise RuntimeError(f"conda returned no output. Command: {' '.join(cmd)}\nstderr: {stderr.decode()}")
+        raise RuntimeError(
+            f"conda returned no output. Command: {' '.join(cmd)}\nstderr: {stderr.decode(errors='replace')}"
+        )
 
     try:
         data: dict | list = json.loads(stdout)
     except json.JSONDecodeError as err:
         raise RuntimeError(
             f"conda returned invalid JSON. Command: {' '.join(cmd)}\n"
-            f"stdout: {stdout.decode()[:500]}\n"
-            f"stderr: {stderr.decode()[:500]}"
+            f"stdout: {stdout.decode(errors='replace')[:500]}\n"
+            f"stderr: {stderr.decode(errors='replace')[:500]}"
         ) from err
 
     if isinstance(data, dict) and "error" in data:
