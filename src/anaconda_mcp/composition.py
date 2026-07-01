@@ -75,6 +75,10 @@ class PlatformMiddleware(Middleware):
                     return await call_next(context)
                 except Exception as exc:
                     is_error = True
+                    # Telemetry intentionally records only the exception class, not str(exc),
+                    # which can carry PII / filesystem paths / channel tokens. Note this narrows
+                    # the pre-refactor "Type: message" contract: dashboards keyed on the message
+                    # half no longer receive it.
                     error_description = type(exc).__name__
                     try:
                         span.add_exception(exc)
@@ -105,6 +109,9 @@ class PlatformMiddleware(Middleware):
 
 
 SEARCH_READ_TIMEOUT_SECONDS = 300
+# Bounds the connect + initialize handshake so an unreachable/hanging search
+# backend can't stall tool listing for the full read timeout above.
+SEARCH_CONNECT_TIMEOUT_SECONDS = 10
 
 
 class _DynamicBearerAuth(httpx.Auth):
@@ -134,7 +141,9 @@ def build_composed_server() -> FastMCP:
     domain = settings.anaconda_domain or "anaconda.com"
     search_url = f"https://{domain}/api/search/mcp"
     search_client = Client(
-        StreamableHttpTransport(search_url, auth=_DynamicBearerAuth()), timeout=SEARCH_READ_TIMEOUT_SECONDS
+        StreamableHttpTransport(search_url, auth=_DynamicBearerAuth()),
+        timeout=SEARCH_READ_TIMEOUT_SECONDS,
+        init_timeout=SEARCH_CONNECT_TIMEOUT_SECONDS,
     )
     parent.mount(create_proxy(search_client), namespace="search")
     return parent

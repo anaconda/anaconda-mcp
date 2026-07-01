@@ -78,9 +78,10 @@ def test_build_composed_server_uses_dynamic_search_auth(monkeypatch):
             captured["auth"] = auth
 
     class _Client:
-        def __init__(self, transport: _Transport, timeout: int) -> None:
+        def __init__(self, transport: _Transport, timeout: int, init_timeout: int) -> None:
             captured["transport"] = transport
             captured["timeout"] = timeout
+            captured["init_timeout"] = init_timeout
 
     monkeypatch.setattr(composition, "client_token", lambda: None)
     monkeypatch.setattr(composition, "StreamableHttpTransport", _Transport)
@@ -91,6 +92,8 @@ def test_build_composed_server_uses_dynamic_search_auth(monkeypatch):
 
     assert isinstance(captured["auth"], httpx.Auth)
     assert not isinstance(captured["auth"], str)
+    assert captured["timeout"] == composition.SEARCH_READ_TIMEOUT_SECONDS
+    assert captured["init_timeout"] == composition.SEARCH_CONNECT_TIMEOUT_SECONDS
 
 
 async def test_middleware_enforces_auth_on_proxied_search_tool(monkeypatch):

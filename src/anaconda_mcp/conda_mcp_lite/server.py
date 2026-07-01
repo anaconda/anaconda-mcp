@@ -10,7 +10,8 @@ https://github.com/microsoft/vscode/blob/d44e26a3/src/vs/platform/shell/node/she
 """
 
 # ---------------------------------------------------------------------------
-# Vendored from Anaconda-Sandbox/conda-mcp-lite (commit ba79965), MIT.
+# Vendored from Anaconda-Sandbox/conda-mcp-lite (commit ba79965), Anaconda-owned
+# and licensed under this project's LICENSE (BSD-3-Clause).
 # Kept functionally identical on vendoring; production hardening (argument-
 # injection safety, destructive annotations, stdout hygiene) is applied separately.
 # Entry point: anaconda_mcp/conda_mcp_lite/__main__.py -> __init__.main().
