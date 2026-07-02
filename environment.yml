@@ -10,8 +10,8 @@ dependencies:
   - anaconda-auth>=0.13.0,<1.0.0
   - anaconda-cli-base>=0.9.1,<1.0.0
   - mcp-compose>=0.1.12,<2.0.0
+  - fastmcp>=2.0.0,<4.0.0
   - platformdirs>=4.0.0,<5
   - rich>=13.0.0
-  - environments-mcp-server>=1.0.2,<2.0.0
   - anaconda-anon-usage
   - anaconda-opentelemetry>=1.2.0,<2.0.0
