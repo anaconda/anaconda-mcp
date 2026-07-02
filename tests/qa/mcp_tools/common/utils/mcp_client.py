@@ -280,7 +280,7 @@ def _tool_result(response_json: dict) -> dict:
 
     MCP tool results are usually JSON in ``content[].text``. Some stacks return
     **plain text** (e.g. ``Unknown tool: …``) with ``isError: true`` on the
-    CallTool ``result`` — that must become an ``is_error``-shaped dict (KI-016).
+    CallTool ``result`` — that must become an ``is_error``-shaped dict.
     ``structuredContent.result`` may be a stringified JSON object or a dict.
 
     JSON-RPC ``error`` is mapped to an ``is_error``-shaped dict for validators.

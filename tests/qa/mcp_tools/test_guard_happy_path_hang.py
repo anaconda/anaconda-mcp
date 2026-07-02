@@ -49,7 +49,7 @@ class TestHappyPathHang:
                 f"HANG-004: conda_install_packages (happy path) hung for > {TOOL_TIMEOUT}s "
                 f"(iteration {i}/{WARM_ITERATIONS}). "
                 "mcp-compose proxy did not forward the success response from "
-                "environments_mcp_server. KI-011 happy-path variant.",
+                "the conda sub-server. KI-011 happy-path variant.",
             )
             result = _tool_result(response)
             logger.info(
