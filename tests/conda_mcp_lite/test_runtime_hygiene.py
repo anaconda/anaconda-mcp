@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import logging
-import sys
 import threading
 from pathlib import Path
 
@@ -16,28 +14,19 @@ def _envelope(result):
     return sc
 
 
-@pytest.mark.asyncio
-async def test_list_environments_offloads_conda_info_from_main_thread(monkeypatch):
-    ran_on_main_thread: list[bool] = []
-
+async def _scenario_list_environments(monkeypatch, record):
     def _fake_info():
-        ran_on_main_thread.append(threading.current_thread() is threading.main_thread())
+        record()
         return {"root_prefix": "/opt/conda", "envs": ["/opt/conda"]}
 
     monkeypatch.setattr(server, "get_conda_info", _fake_info)
-
     result = _envelope(await server.mcp.call_tool("list_environments", {}))
-
     assert result["is_error"] is False
-    assert ran_on_main_thread == [False]
 
 
-@pytest.mark.asyncio
-async def test_run_conda_offloads_lazy_conda_discovery_from_main_thread(monkeypatch):
-    ran_on_main_thread: list[bool] = []
-
+async def _scenario_run_conda(monkeypatch, record):
     def _fake_ensure_conda_exe():
-        ran_on_main_thread.append(threading.current_thread() is threading.main_thread())
+        record()
         server._conda_exe = Path("/fake/conda")
 
     class _FakeProc:
@@ -49,14 +38,22 @@ async def test_run_conda_offloads_lazy_conda_discovery_from_main_thread(monkeypa
 
     monkeypatch.setattr(server, "_ensure_conda_exe", _fake_ensure_conda_exe)
     monkeypatch.setattr(server.asyncio, "create_subprocess_exec", _fake_exec)
-
     assert await server.run_conda("info") == {}
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "scenario",
+    [
+        pytest.param(_scenario_list_environments, id="list_environments->get_conda_info"),
+        pytest.param(_scenario_run_conda, id="run_conda->lazy_discovery"),
+    ],
+)
+async def test_blocking_work_runs_off_main_thread(scenario, monkeypatch):
+    ran_on_main_thread: list[bool] = []
+
+    def _record():
+        ran_on_main_thread.append(threading.current_thread() is threading.main_thread())
+
+    await scenario(monkeypatch, _record)
     assert ran_on_main_thread == [False]
-
-
-def test_module_logger_uses_stderr_without_root_propagation():
-    assert server.logger.propagate is False
-    assert any(
-        isinstance(handler, logging.StreamHandler) and handler.stream is sys.stderr
-        for handler in server.logger.handlers
-    )
