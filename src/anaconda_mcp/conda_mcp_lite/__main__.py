@@ -1,3 +1,5 @@
-from conda_mcp_lite import main
+"""`python -m anaconda_mcp.conda_mcp_lite` entry point."""
+
+from . import main
 
 main()
