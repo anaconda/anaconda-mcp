@@ -14,7 +14,7 @@ name = "anaconda-mcp"
 prune_downstreams_on_start = true
 conflict_resolution = "prefix"  # prefix, suffix, ignore, error, override, custom
 log_level = "INFO"
-port = 2391
+port = 2391  # Note: [composer] port and [api] port apply only to streamable-http opt-in
 
 # ============================================================================
 # Transport Configuration
@@ -42,18 +42,11 @@ domain = "anaconda.com"
 # ============================================================================
 # Proxied Streamable HTTP MCP Servers
 # ============================================================================
-[[servers.proxied.streamable-http]]
+[[servers.proxied.stdio]]
 name = "conda"
-url = "http://localhost:4041/mcp"
-timeout = 30
-keep_alive = true
-reconnect_on_failure = true
-max_reconnect_attempts = 10
-health_check_enabled = false
-mode = "proxy"
-auto_start = true
-command = ["python", "-m", "environments_mcp_server", "start", "--transport", "streamable-http", "--port", "4041"]
-startup_delay = 3
+command = ["python", "-m", "anaconda_mcp.conda_mcp_lite"]
+restart_policy = "on-failure"
+max_restarts = 3
 
 [[servers.proxied.streamable-http]]
 name = "search"
@@ -84,7 +77,7 @@ version_suffix_format = "_v{version}"
 # REST API Configuration
 # ============================================================================
 [api]
-enabled = true
+enabled = false
 path_prefix = "/api/v1"
 host = "0.0.0.0"
 port = 8888

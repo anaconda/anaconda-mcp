@@ -19,9 +19,6 @@ from mcp_compose.cli import (
 from mcp_compose.cli import (
     discover_command as _discover,
 )
-from mcp_compose.cli import (
-    serve_command as _serve,
-)
 from mcp_compose.composer import ConflictResolution
 from rich import print_json as rich_print_json
 from rich.console import Console
@@ -30,7 +27,6 @@ from rich.table import Table
 from anaconda_mcp._shutdown import install_shutdown_handlers
 from anaconda_mcp.auth import (
     get_auth_token,
-    make_auth_enforcement_hook,
     validate_auth_token,
 )
 from anaconda_mcp.claude_desktop import (
@@ -47,6 +43,7 @@ from anaconda_mcp.client_config import (
     is_client_installed,
     remove_client,
 )
+from anaconda_mcp.composition import build_composed_server
 from anaconda_mcp.config import settings
 from anaconda_mcp.mcp_state import is_new_install, mark_installed
 from anaconda_mcp.telemetry import (
@@ -54,7 +51,6 @@ from anaconda_mcp.telemetry import (
     PII_KEY_AAU_CLIENT_ID,
     MetricNames,
     emit_event,
-    make_tracking_hook,
 )
 from anaconda_mcp.terms import (
     CURRENT_TOS_VERSION,
@@ -62,12 +58,9 @@ from anaconda_mcp.terms import (
     TermsError,
     check_terms_accepted,
     is_terms_current,
-    make_terms_enforcement_hook,
     persist_acceptance,
     send_contact_consent_event,
 )
-from anaconda_mcp.tool_hooks import patch_tool_call_hooks
-from anaconda_mcp.utils import _render_config_template
 from anaconda_mcp.wizard import setup_wizard_page
 
 logger = logging.getLogger(__name__)
@@ -148,12 +141,12 @@ def cli(ctx):
             )
 
 
-@cli.command(help="Start MCP servers from configuration file.", hidden=True)
+@cli.command(help="Run the Anaconda MCP server over stdio (native FastMCP composition).", hidden=True)
 @click.option(
     "-c",
     "--config",
     type=click.Path(exists=False, dir_okay=False),
-    help="Path to mcp_compose.toml file (default: src/anaconda_mcp/mcp_compose.toml)",
+    help="Deprecated; ignored. Path to mcp_compose.toml file.",
 )
 @click.option("--host", default="0.0.0.0", show_default=True, help="Host to bind to.")
 @click.option("--port", default=8000, show_default=True, type=int, help="Port to bind to.")
@@ -165,18 +158,9 @@ def serve(ctx, config, host, port, delay, verbose):
     if verbose:
         logging.getLogger().setLevel(logging.DEBUG)
 
-    if not config:
-        default_path = Path(__file__).resolve().parent / "mcp_compose.toml"
-        if default_path.exists():
-            config = str(default_path)
-        else:
-            click.echo(
-                f"⚠️  No configuration file found. Expected at {default_path} or provide --config.",
-                err=True,
-            )
-            sys.exit(1)
+    if config or host != "0.0.0.0" or port != 8000:
+        click.echo("Warning: --config/--host/--port are ignored; 'serve' runs stdio-only.", err=True)
 
-    rendered_config = _render_config_template(config)
     time.sleep(delay)
     token = get_auth_token()
     if not token:
@@ -210,19 +194,11 @@ def serve(ctx, config, host, port, delay, verbose):
         emit_event(MetricNames.ACTIVE_USER_PING.value, {PII_KEY_AAU_CLIENT_ID: aau})
     emit_event(MetricNames.START_SERVER.value)
 
-    patch_tool_call_hooks(
-        [
-            make_auth_enforcement_hook(get_auth_token),
-            make_terms_enforcement_hook(),
-            make_tracking_hook(aau_client_id=aau or None),
-        ]
-    )
     install_shutdown_handlers()
     try:
-        ns = _ns(verbose=verbose, config=rendered_config, host=host, port=port)
-        sys.exit(_serve(ns))
+        build_composed_server().run(transport="stdio")
     except Exception:
-        logger.exception("MCP Composer returned an error. Exiting", exc_info=True)
+        logger.exception("MCP server returned an error. Exiting", exc_info=True)
         sys.exit(1)
 
 
@@ -296,7 +272,7 @@ def _build_clients_data(project_dir: Path | None = None) -> dict:
         supports_project = SUPPORTED_CLIENTS[client]["supports_project_scope"]
         status = is_client_installed(client, project_dir=project_dir)
         result[client] = {
-            "transports": ["stdio", "streamable-http"],
+            "transports": ["stdio"],
             "supports_global_scope": True,
             "supports_project_scope": supports_project,
             "config_key": SUPPORTED_CLIENTS[client]["config_key"],
@@ -323,7 +299,7 @@ def _print_clients_table(project_dir: Path | None = None) -> None:
         if info["installed_project"]:
             parts.append("project")
         installed_str = ", ".join(parts) if parts else "—"
-        table.add_row(client, "stdio, streamable-http", scope_str, installed_str)
+        table.add_row(client, "stdio", scope_str, installed_str)
 
     console.print(table)
 
@@ -358,19 +334,6 @@ def clients(project_dir, output_json):
     help="Client to configure (repeatable). Run 'anaconda-mcp clients' to see options.",
 )
 @click.option(
-    "-t",
-    "--transport",
-    type=click.Choice(["stdio", "streamable-http"]),
-    default="stdio",
-    show_default=True,
-    hidden=True,
-    help="Transport type.",
-)
-@click.option("--host", default="localhost", show_default=True, hidden=True, help="Host for streamable-http transport.")
-@click.option(
-    "--port", default=8888, show_default=True, type=int, hidden=True, help="Port for streamable-http transport."
-)
-@click.option(
     "-n",
     "--name",
     "server_name",
@@ -394,7 +357,7 @@ def clients(project_dir, output_json):
 @click.option("--no-backup", is_flag=True, help="Don't create a backup of the existing config file.")
 @click.option("-f", "--force", is_flag=True, help="Overwrite existing server configuration if present.")
 @click.option("--json", "output_json", is_flag=True, help="Output result as JSON.")
-def setup(clients, transport, host, port, server_name, scope, project_dir, no_backup, force, output_json):
+def setup(clients, server_name, scope, project_dir, no_backup, force, output_json):
     if project_dir is not None and scope != SCOPE_PROJECT:
         raise click.UsageError("--project-dir requires --scope project.")
 
@@ -441,9 +404,6 @@ def setup(clients, transport, host, port, server_name, scope, project_dir, no_ba
                     scope=run_scope,
                     project_dir=project_dir,
                     server_name=server_name,
-                    transport=transport,
-                    host=host,
-                    port=port,
                     backup=not no_backup,
                     force=force,
                 )
@@ -451,7 +411,7 @@ def setup(clients, transport, host, port, server_name, scope, project_dir, no_ba
                     "config_path": str(result["config_path"]),
                     "backup_path": str(result["backup_path"]) if result["backup_path"] else None,
                     "server_name": result["server_name"],
-                    "transport": transport,
+                    "transport": "stdio",
                     "scope": result["scope"],
                     "action": "configured",
                 }
@@ -511,9 +471,6 @@ def setup(clients, transport, host, port, server_name, scope, project_dir, no_ba
                     scope=run_scope,
                     project_dir=project_dir,
                     server_name=server_name,
-                    transport=transport,
-                    host=host,
-                    port=port,
                     backup=not no_backup,
                     force=force,
                 )
@@ -521,7 +478,7 @@ def setup(clients, transport, host, port, server_name, scope, project_dir, no_ba
                     "config_path": str(result["config_path"]),
                     "backup_path": str(result["backup_path"]) if result["backup_path"] else None,
                     "server_name": result["server_name"],
-                    "transport": transport,
+                    "transport": "stdio",
                     "scope": result["scope"],
                     "created": result["created"],
                     "updated": result["updated"],
@@ -651,27 +608,6 @@ def claude_desktop():
     help="Name for the MCP server entry.",
 )
 @click.option(
-    "-t",
-    "--transport",
-    type=click.Choice(["stdio", "streamable-http"]),
-    default="stdio",
-    show_default=True,
-    help="Transport type for MCP communication.",
-)
-@click.option(
-    "--host",
-    default="localhost",
-    show_default=True,
-    help="Host for streamable-http transport.",
-)
-@click.option(
-    "--port",
-    default=8888,
-    show_default=True,
-    type=int,
-    help="Port for streamable-http transport.",
-)
-@click.option(
     "--no-backup",
     is_flag=True,
     help="Don't create a backup of the existing config file.",
@@ -688,19 +624,14 @@ def claude_desktop():
     is_flag=True,
     help="Output result as JSON.",
 )
-def claude_configure(config_path, server_name, transport, host, port, no_backup, force, output_json):
+def claude_configure(config_path, server_name, no_backup, force, output_json):
     """Add Anaconda MCP server configuration to Claude Desktop.
 
-    By default, uses STDIO transport which runs anaconda-mcp as a subprocess.
-    For Streamable HTTP, the server must be started separately with `anaconda-mcp serve`.
+    Uses stdio transport, which runs anaconda-mcp as a subprocess.
 
     \b
     Examples:
-        # Add with default STDIO transport
         anaconda-mcp claude-desktop setup-config
-
-        # Add with Streamable HTTP transport
-        anaconda-mcp claude-desktop setup-config --transport streamable-http
 
         # Use custom config path
         anaconda-mcp claude-desktop setup-config --config ~/my-claude-config.json
@@ -713,9 +644,6 @@ def claude_configure(config_path, server_name, transport, host, port, no_backup,
         result = configure_claude_desktop(
             config_path=path,
             server_name=server_name,
-            transport=transport,
-            host=host,
-            port=port,
             backup=not no_backup,
             force=force,
         )
@@ -757,11 +685,8 @@ def claude_configure(config_path, server_name, transport, host, port, no_backup,
             click.echo("\n[Complete Configuration File]")
             click.echo(json.dumps(result.get("new_config", {}), indent=2))
 
-            click.echo(f"\n[Transport] {transport}")
-            if transport == "stdio":
-                click.echo("   Claude Desktop will start anaconda-mcp automatically.")
-            else:
-                click.echo(f"   Start the server manually: anaconda-mcp serve --port {port}")
+            click.echo("\n[Transport] stdio")
+            click.echo("   Claude Desktop will start anaconda-mcp automatically.")
 
             click.echo("\n[Note] Restart Claude Desktop to apply changes.")
 
