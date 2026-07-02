@@ -52,39 +52,21 @@ jobs:
       - name: Smoke test - verify entrypoint
         run: docker run --rm anaconda-mcp:${{ github.sha }} --help
 
-      - name: Smoke test - verify HTTP server starts
+      - name: Smoke test - stdio tools/list round-trip
         env:
           ANACONDA_AUTH_API_KEY: ${{ secrets.TEST_API_KEY }}
         run: |
-          # Start container in HTTP mode
-          docker run -d --name mcp-smoke \
-            -e ANACONDA_MCP_ACCEPTED_TERMS \
-            -e ANACONDA_MCP_ACCEPTED_TERMS_VERSION \
-            -e ANACONDA_AUTH_API_KEY \
-            -p 4041:4041 anaconda-mcp:${{ github.sha }}
-
-          # Give the server time to start
-          sleep 10
-
-          # Dump logs for debugging
-          echo "=== Container logs ==="
-          docker logs mcp-smoke
-          echo "=== End logs ==="
-
-          # Check that container started successfully (exit code 0 is expected for MCP servers)
-          EXIT_CODE=$(docker inspect --format='{{.State.ExitCode}}' mcp-smoke)
-          RUNNING=$(docker inspect --format='{{.State.Running}}' mcp-smoke)
-
-          if [ "$RUNNING" = "true" ]; then
-            echo "✓ Container is running - testing HTTP endpoint"
-            # Try to make a basic HTTP request to verify server is responding
-            if curl -f --max-time 5 http://localhost:4041/ || curl -f --max-time 5 http://localhost:4041/health || echo "HTTP endpoint test completed"; then
-              echo "✓ HTTP server is responsive"
-            fi
-            docker stop mcp-smoke
-          elif [ "$EXIT_CODE" = "0" ]; then
-            echo "✓ Container started successfully and exited gracefully (expected for STDIO mode)"
+          printf '%s\n' \
+            '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"smoke","version":"0"}}}' \
+            '{"jsonrpc":"2.0","method":"notifications/initialized"}' \
+            '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}' \
+          | docker run -i --rm \
+              -e ANACONDA_MCP_ACCEPTED_TERMS -e ANACONDA_MCP_ACCEPTED_TERMS_VERSION -e ANACONDA_AUTH_API_KEY \
+              anaconda-mcp:${{ github.sha }} serve > /tmp/mcp_out.txt 2>/tmp/mcp_err.txt || true
+          echo "=== stdout ==="; cat /tmp/mcp_out.txt; echo "=== stderr ==="; cat /tmp/mcp_err.txt
+          if grep -q "list_environments" /tmp/mcp_out.txt; then
+            echo "✓ stdio tools/list returned conda tools"
           else
-            echo "::error::Container failed with exit code $EXIT_CODE"
+            echo "::error::stdio tools/list did not return conda tools (check TEST_API_KEY secret + server startup)"
             exit 1
           fi
