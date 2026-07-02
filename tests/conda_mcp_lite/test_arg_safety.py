@@ -98,7 +98,10 @@ async def test_run_conda_places_json_before_separator(monkeypatch):
 
     out = await server.run_conda("install", "-y", "-n", "e", positionals=["numpy", "pandas"])
     assert out == {"ok": True}
-    assert captured["cmd"] == ["/x/conda", "install", "-y", "-n", "e", "--json", "--", "numpy", "pandas"]
+    # cmd[0] is the platform-rendered conda path; the point of this test is the
+    # argument ordering — `--json` before the `--` separator, positionals after.
+    assert captured["cmd"][0] == str(server._conda_exe)
+    assert captured["cmd"][1:] == ["install", "-y", "-n", "e", "--json", "--", "numpy", "pandas"]
 
 
 @pytest.mark.asyncio
