@@ -4,7 +4,6 @@ from unittest import mock
 import pytest
 from click.testing import CliRunner
 
-from anaconda_mcp.auth import AuthenticationError
 from anaconda_mcp.cli import cli
 
 logger = logging.getLogger(__name__)
@@ -44,58 +43,6 @@ async def test_cli_gates_on_token_not_found(mock_token_info_load):
     result = runner.invoke(cli, ["clients"])
 
     assert result.exit_code == 1
-
-
-async def test_auth_enforcement_hook_raises_authentication_error_on_missing_token():
-    # Given - no token available
-    from anaconda_mcp.auth import make_auth_enforcement_hook
-
-    hook_fn = make_auth_enforcement_hook(lambda: None)
-
-    async def original_call_tool(self, name, arguments, context=None, convert_result=False):
-        return "success"
-
-    enforced_call = hook_fn(original_call_tool)
-
-    # When/Then - should raise AuthenticationError
-    with pytest.raises(AuthenticationError, match="Not authenticated"):
-        await enforced_call(None, "test_tool", {})
-
-
-async def test_auth_enforcement_hook_raises_authentication_error_on_invalid_token():
-    # Given - invalid token
-    from anaconda_mcp.auth import make_auth_enforcement_hook
-
-    hook_fn = make_auth_enforcement_hook(lambda: "invalid-token")
-
-    async def original_call_tool(self, name, arguments, context=None, convert_result=False):
-        return "success"
-
-    enforced_call = hook_fn(original_call_tool)
-
-    # When - mock validate_auth_token to return False
-    with mock.patch("anaconda_mcp.auth.validate_auth_token", return_value=False):
-        # Then - should raise AuthenticationError
-        with pytest.raises(AuthenticationError, match="Authentication token is invalid or expired"):
-            await enforced_call(None, "test_tool", {})
-
-
-async def test_auth_enforcement_hook_passes_with_valid_token():
-    # Given - valid token
-    from anaconda_mcp.auth import make_auth_enforcement_hook
-
-    hook_fn = make_auth_enforcement_hook(lambda: "valid-token")
-
-    async def original_call_tool(self, name, arguments, context=None, convert_result=False):
-        return "success"
-
-    enforced_call = hook_fn(original_call_tool)
-
-    # When - mock validate_auth_token to return True
-    with mock.patch("anaconda_mcp.auth.validate_auth_token", return_value=True):
-        # Then - should call the original tool and return success
-        result = await enforced_call(None, "test_tool", {})
-        assert result == "success"
 
 
 async def test_serve_exits_immediately_without_token():

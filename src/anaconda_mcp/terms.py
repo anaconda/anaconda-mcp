@@ -1,6 +1,5 @@
 import logging
 import sys
-from collections.abc import Callable
 from textwrap import dedent
 
 import click
@@ -177,14 +176,3 @@ def persist_acceptance(accepted: bool) -> None:
     else:
         settings.accepted_terms_version = None
     settings.write_config()
-
-
-def make_terms_enforcement_hook() -> Callable:
-    def hook(original_call_tool: Callable) -> Callable:
-        async def _enforced(self, name, arguments, context=None, convert_result=False):
-            verify_terms_accepted()
-            return await original_call_tool(self, name, arguments, context=context, convert_result=convert_result)
-
-        return _enforced
-
-    return hook

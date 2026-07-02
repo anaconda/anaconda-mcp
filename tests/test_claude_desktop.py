@@ -18,7 +18,6 @@ from click.testing import CliRunner
 from anaconda_mcp.claude_desktop import (
     backup_config_file,
     build_stdio_config,
-    build_streamable_http_config,
     configure_claude_desktop,
     get_anaconda_mcp_config_dir,
     get_claude_desktop_config_path,
@@ -227,25 +226,6 @@ class TestBuildStdioConfig:
         assert python_exe == sys.executable
 
 
-class TestBuildStreamableHttpConfig:
-    """Tests for build_streamable_http_config function."""
-
-    def test_builds_correct_structure(self):
-        """Test that Streamable HTTP config has correct structure."""
-        config = build_streamable_http_config()
-
-        assert "url" in config
-        assert "transport" in config
-        assert config["transport"] == "streamable-http"
-        assert "http://localhost:8888/mcp" == config["url"]
-
-    def test_custom_host_and_port(self):
-        """Test custom host and port."""
-        config = build_streamable_http_config(host="192.168.1.1", port=9000)
-
-        assert config["url"] == "http://192.168.1.1:9000/mcp"
-
-
 class TestConfigureClaudeDesktop:
     """Tests for configure_claude_desktop function."""
 
@@ -256,7 +236,6 @@ class TestConfigureClaudeDesktop:
         result = configure_claude_desktop(
             config_path=config_file,
             server_name="test-server",
-            transport="stdio",
             backup=False,
         )
 
@@ -276,7 +255,6 @@ class TestConfigureClaudeDesktop:
         result = configure_claude_desktop(
             config_path=config_file,
             server_name="test-server",
-            transport="stdio",
             backup=False,
         )
 
@@ -294,7 +272,6 @@ class TestConfigureClaudeDesktop:
             configure_claude_desktop(
                 config_path=config_file,
                 server_name="test-server",
-                transport="stdio",
                 backup=False,
             )
 
@@ -306,7 +283,6 @@ class TestConfigureClaudeDesktop:
         result = configure_claude_desktop(
             config_path=config_file,
             server_name="test-server",
-            transport="stdio",
             backup=False,
             force=True,
         )
@@ -323,22 +299,20 @@ class TestConfigureClaudeDesktop:
         result = configure_claude_desktop(
             config_path=config_file,
             server_name="test-server",
-            transport="stdio",
             backup=True,
         )
 
         assert result["backup_path"] is not None
         assert Path(result["backup_path"]).exists()
 
-    def test_invalid_transport_raises_error(self, tmp_path):
-        """Test that invalid transport raises ValueError."""
+    def test_created_config_is_stdio_only(self, tmp_path):
         config_file = tmp_path / "config.json"
 
-        with pytest.raises(ValueError, match="Invalid transport"):
-            configure_claude_desktop(
-                config_path=config_file,
-                transport="invalid",
-            )
+        configure_claude_desktop(config_path=config_file, backup=False)
+
+        config_text = config_file.read_text()
+        assert "http://" not in config_text
+        assert "streamable-http" not in config_text
 
 
 class TestRemoveClaudeDesktopConfig:
@@ -436,8 +410,7 @@ class TestCLICommands:
         assert config_file.exists()
         assert "anaconda-mcp" in config_file.read_text()
 
-    def test_claude_configure_streamable_http(self, runner, tmp_path):
-        """Test 'anaconda-mcp claude-desktop setup-config' with Streamable HTTP."""
+    def test_claude_configure_rejects_streamable_http(self, runner, tmp_path):
         config_file = tmp_path / "config.json"
 
         result = runner.invoke(
@@ -449,17 +422,13 @@ class TestCLICommands:
                 str(config_file),
                 "--transport",
                 "streamable-http",
-                "--port",
-                "9000",
                 "--no-backup",
             ],
         )
 
-        assert result.exit_code == 0
-        config = json.loads(config_file.read_text())
-        server_config = config["mcpServers"]["anaconda-mcp"]
-        assert server_config["transport"] == "streamable-http"
-        assert "9000" in server_config["url"]
+        assert result.exit_code != 0
+        assert "No such option" in result.output
+        assert not config_file.exists()
 
     def test_claude_configure_fails_without_force(self, runner, tmp_path):
         """Test 'anaconda-mcp claude configure' fails if server exists."""

@@ -32,10 +32,3 @@ class OSSystems(Enum):
             if os_system.value == system:
                 return os_system
         raise RuntimeError(f"Unsupported operating system: {system}")
-
-
-class TransportTypes(Enum):
-    """Supported MCP transport types."""
-
-    STDIO = "stdio"
-    STREAMABLE_HTTP = "streamable-http"

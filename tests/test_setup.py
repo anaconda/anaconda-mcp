@@ -164,42 +164,6 @@ class TestBuildClientConfig:
         assert "command" in config
         assert "args" in config
 
-    def test_build_http_config_windsurf_uses_server_url(self):
-        from anaconda_mcp.client_config import build_client_http_config
-
-        config = build_client_http_config("windsurf", host="localhost", port=8000)
-        assert "serverUrl" in config
-        assert "url" not in config
-        assert config["serverUrl"] == "http://localhost:8000/mcp"
-
-    def test_build_http_config_cursor_uses_url(self):
-        from anaconda_mcp.client_config import build_client_http_config
-
-        config = build_client_http_config("cursor", host="localhost", port=8000)
-        assert config["url"] == "http://localhost:8000/mcp"
-        assert "serverUrl" not in config
-
-    def test_build_http_config_vscode_uses_http_type(self):
-        from anaconda_mcp.client_config import build_client_http_config
-
-        config = build_client_http_config("vscode", host="localhost", port=8000)
-        assert config["type"] == "http"
-        assert config["url"] == "http://localhost:8000/mcp"
-
-    def test_build_http_config_opencode_uses_remote_type(self):
-        from anaconda_mcp.client_config import build_client_http_config
-
-        config = build_client_http_config("opencode", host="localhost", port=8000)
-        assert config["type"] == "remote"
-        assert "url" in config
-
-    def test_build_http_config_claude_desktop_standard_shape(self):
-        from anaconda_mcp.client_config import build_client_http_config
-
-        config = build_client_http_config("claude-desktop", host="localhost", port=8888)
-        assert config["url"] == "http://localhost:8888/mcp"
-        assert config["transport"] == "streamable-http"
-
     def test_build_stdio_config_claude_code_has_type_field(self):
         from anaconda_mcp.client_config import build_client_stdio_config
 
@@ -214,20 +178,13 @@ class TestBuildClientConfig:
         config = build_client_stdio_config("claude-code")
         assert "env" in config
 
-    def test_build_http_config_claude_code_standard_shape(self):
-        from anaconda_mcp.client_config import build_client_http_config
-
-        config = build_client_http_config("claude-code", host="localhost", port=8888)
-        assert config["url"] == "http://localhost:8888/mcp"
-        assert config["transport"] == "streamable-http"
-
 
 class TestConfigureClient:
     def test_configure_client_cursor_creates_mcp_servers_key(self, tmp_path):
         from anaconda_mcp.client_config import configure_client
 
         f = tmp_path / "mcp.json"
-        result = configure_client("cursor", config_path=f, transport="stdio", backup=False)
+        result = configure_client("cursor", config_path=f, backup=False)
         assert result["created"] is True
         config = json.loads(f.read_text())
         assert "mcpServers" in config
@@ -237,7 +194,7 @@ class TestConfigureClient:
         from anaconda_mcp.client_config import configure_client
 
         f = tmp_path / "mcp.json"
-        configure_client("vscode", config_path=f, transport="stdio", backup=False)
+        configure_client("vscode", config_path=f, backup=False)
         config = json.loads(f.read_text())
         assert "servers" in config
         assert "mcpServers" not in config
@@ -246,7 +203,7 @@ class TestConfigureClient:
         from anaconda_mcp.client_config import configure_client
 
         f = tmp_path / "opencode.json"
-        configure_client("opencode", config_path=f, transport="stdio", backup=False)
+        configure_client("opencode", config_path=f, backup=False)
         config = json.loads(f.read_text())
         assert "mcp" in config
 
@@ -255,7 +212,7 @@ class TestConfigureClient:
 
         f = tmp_path / "mcp.json"
         f.write_text('{"mcpServers": {"other": {}}}')
-        configure_client("cursor", config_path=f, transport="stdio", backup=False)
+        configure_client("cursor", config_path=f, backup=False)
         config = json.loads(f.read_text())
         assert "other" in config["mcpServers"]
         assert "anaconda-mcp" in config["mcpServers"]
@@ -266,14 +223,14 @@ class TestConfigureClient:
         f = tmp_path / "mcp.json"
         f.write_text('{"mcpServers": {"anaconda-mcp": {}}}')
         with pytest.raises(FileExistsError, match="already exists"):
-            configure_client("cursor", config_path=f, transport="stdio", backup=False)
+            configure_client("cursor", config_path=f, backup=False)
 
     def test_configure_client_force_overwrites(self, tmp_path):
         from anaconda_mcp.client_config import configure_client
 
         f = tmp_path / "mcp.json"
         f.write_text('{"mcpServers": {"anaconda-mcp": {"old": True}}}')
-        configure_client("cursor", config_path=f, transport="stdio", backup=False, force=True)
+        configure_client("cursor", config_path=f, backup=False, force=True)
         config = json.loads(f.read_text())
         assert "old" not in config["mcpServers"]["anaconda-mcp"]
 
@@ -281,7 +238,7 @@ class TestConfigureClient:
         from anaconda_mcp.client_config import configure_client
 
         f = tmp_path / "deep" / "nested" / "mcp.json"
-        configure_client("cursor", config_path=f, transport="stdio", backup=False)
+        configure_client("cursor", config_path=f, backup=False)
         assert f.exists()
 
     def test_configure_client_creates_backup(self, tmp_path):
@@ -289,21 +246,21 @@ class TestConfigureClient:
 
         f = tmp_path / "mcp.json"
         f.write_text('{"mcpServers": {}}')
-        result = configure_client("cursor", config_path=f, transport="stdio", backup=True)
+        result = configure_client("cursor", config_path=f, backup=True)
         assert result["backup_path"] is not None
         assert Path(result["backup_path"]).exists()
 
-    def test_configure_client_invalid_transport_raises(self, tmp_path):
+    def test_configure_client_rejects_transport_keyword(self, tmp_path):
         from anaconda_mcp.client_config import configure_client
 
-        with pytest.raises(ValueError, match="Invalid transport"):
+        with pytest.raises(TypeError, match="transport"):
             configure_client("cursor", config_path=tmp_path / "mcp.json", transport="invalid", backup=False)
 
     def test_configure_client_delegates_to_claude_desktop(self, tmp_path):
         from anaconda_mcp.client_config import configure_client
 
         f = tmp_path / "config.json"
-        configure_client("claude-desktop", config_path=f, transport="stdio", backup=False)
+        configure_client("claude-desktop", config_path=f, backup=False)
         config = json.loads(f.read_text())
         assert "ANACONDA_MCP_PYTHON_EXECUTABLE" in config["mcpServers"]["anaconda-mcp"]["env"]
 
@@ -311,32 +268,34 @@ class TestConfigureClient:
         from anaconda_mcp.client_config import configure_client
 
         f = tmp_path / "mcp.json"
-        result = configure_client("cursor", config_path=f, transport="stdio", backup=False)
+        result = configure_client("cursor", config_path=f, backup=False)
         assert "config_path" in result
         assert "created" in result
         assert "updated" in result
         assert "server_name" in result
         assert "client" in result
 
-    def test_configure_client_windsurf_http_uses_server_url(self, tmp_path):
+    def test_configure_client_windsurf_uses_stdio_config(self, tmp_path):
         from anaconda_mcp.client_config import configure_client
 
         f = tmp_path / "mcp_config.json"
-        configure_client("windsurf", config_path=f, transport="streamable-http", backup=False)
-        config = json.loads(f.read_text())
-        assert "serverUrl" in config["mcpServers"]["anaconda-mcp"]
+        configure_client("windsurf", config_path=f, backup=False)
+        config_text = f.read_text()
+        assert "command" in json.loads(config_text)["mcpServers"]["anaconda-mcp"]
+        assert "http://" not in config_text
+        assert "streamable-http" not in config_text
 
     def test_configure_client_unknown_client_raises(self, tmp_path):
         from anaconda_mcp.client_config import configure_client
 
         with pytest.raises(ValueError, match="Unsupported client"):
-            configure_client("notarealclient", config_path=tmp_path / "mcp.json", transport="stdio", backup=False)
+            configure_client("notarealclient", config_path=tmp_path / "mcp.json", backup=False)
 
     def test_configure_client_claude_code_creates_mcp_servers_key(self, tmp_path):
         from anaconda_mcp.client_config import configure_client
 
         f = tmp_path / ".claude.json"
-        configure_client("claude-code", config_path=f, transport="stdio", backup=False)
+        configure_client("claude-code", config_path=f, backup=False)
         config = json.loads(f.read_text())
         assert "mcpServers" in config
         assert "anaconda-mcp" in config["mcpServers"]
@@ -347,7 +306,7 @@ class TestConfigureClient:
 
         f = tmp_path / ".claude.json"
         f.write_text('{"projects": {"/some/path": {}}, "mcpServers": {"other": {}}}')
-        configure_client("claude-code", config_path=f, transport="stdio", backup=False)
+        configure_client("claude-code", config_path=f, backup=False)
         config = json.loads(f.read_text())
         assert "projects" in config
         assert "other" in config["mcpServers"]
@@ -381,13 +340,13 @@ class TestSetupCommand:
         assert result.exit_code == 0
         assert "cursor" in result.output.lower()
 
-    def test_setup_streamable_http(self, runner, patch_cursor_path):
+    def test_setup_rejects_streamable_http(self, runner, patch_cursor_path):
         result = runner.invoke(
             cli, ["setup", "--client", "cursor", "--transport", "streamable-http", "--port", "9000", "--no-backup"]
         )
-        assert result.exit_code == 0
-        config = json.loads(patch_cursor_path.read_text())
-        assert "9000" in config["mcpServers"]["anaconda-mcp"]["url"]
+        assert result.exit_code != 0
+        assert "No such option" in result.output
+        assert not patch_cursor_path.exists()
 
     def test_setup_fails_if_exists_without_force(self, runner, patch_cursor_path):
         patch_cursor_path.write_text('{"mcpServers": {"anaconda-mcp": {}}}')
@@ -680,7 +639,7 @@ class TestIsClientInstalled:
         from anaconda_mcp.client_config import configure_client, is_client_installed
 
         f = tmp_path / "mcp.json"
-        configure_client("cursor", config_path=f, transport="stdio", backup=False)
+        configure_client("cursor", config_path=f, backup=False)
         result = is_client_installed("cursor", config_path=f)
         assert result["global"] is True
 
@@ -713,7 +672,7 @@ class TestIsClientInstalled:
         from anaconda_mcp.client_config import configure_client, is_client_installed
 
         global_f = tmp_path / "global_mcp.json"
-        configure_client("cursor", config_path=global_f, transport="stdio", backup=False)
+        configure_client("cursor", config_path=global_f, backup=False)
         configure_client("cursor", scope="project", project_dir=tmp_path, backup=False)
         result = is_client_installed("cursor", config_path=global_f, project_dir=tmp_path)
         assert result["global"] is True
@@ -723,7 +682,7 @@ class TestIsClientInstalled:
         from anaconda_mcp.client_config import configure_client, is_client_installed
 
         f = tmp_path / "mcp.json"
-        configure_client("vscode", config_path=f, transport="stdio", backup=False)
+        configure_client("vscode", config_path=f, backup=False)
         result = is_client_installed("vscode", config_path=f)
         assert result["global"] is True
 
@@ -731,7 +690,7 @@ class TestIsClientInstalled:
         from anaconda_mcp.client_config import configure_client, is_client_installed
 
         f = tmp_path / "opencode.json"
-        configure_client("opencode", config_path=f, transport="stdio", backup=False)
+        configure_client("opencode", config_path=f, backup=False)
         result = is_client_installed("opencode", config_path=f)
         assert result["global"] is True
 
@@ -747,7 +706,7 @@ class TestRemoveClient:
         from anaconda_mcp.client_config import configure_client, remove_client
 
         f = tmp_path / "mcp.json"
-        configure_client("cursor", config_path=f, transport="stdio", backup=False)
+        configure_client("cursor", config_path=f, backup=False)
         result = remove_client("cursor", config_path=f, backup=False)
         assert result["removed"] is True
         config = json.loads(f.read_text())
@@ -757,7 +716,7 @@ class TestRemoveClient:
         from anaconda_mcp.client_config import configure_client, remove_client
 
         f = tmp_path / "mcp.json"
-        configure_client("cursor", config_path=f, transport="stdio", backup=False)
+        configure_client("cursor", config_path=f, backup=False)
         result = remove_client("cursor", config_path=f, backup=False)
         assert "client" in result
         assert "scope" in result
@@ -800,7 +759,7 @@ class TestRemoveClient:
         from anaconda_mcp.client_config import configure_client, remove_client
 
         f = tmp_path / "mcp.json"
-        configure_client("cursor", config_path=f, transport="stdio", backup=False)
+        configure_client("cursor", config_path=f, backup=False)
         result = remove_client("cursor", config_path=f, backup=True)
         assert result["backup_path"] is not None
         assert Path(result["backup_path"]).exists()
@@ -809,7 +768,7 @@ class TestRemoveClient:
         from anaconda_mcp.client_config import configure_client, remove_client
 
         f = tmp_path / "mcp.json"
-        configure_client("cursor", config_path=f, transport="stdio", backup=False)
+        configure_client("cursor", config_path=f, backup=False)
         result = remove_client("cursor", config_path=f, backup=False)
         assert result["backup_path"] is None
 
@@ -817,7 +776,7 @@ class TestRemoveClient:
         from anaconda_mcp.client_config import configure_client, remove_client
 
         f = tmp_path / "mcp.json"
-        configure_client("vscode", config_path=f, transport="stdio", backup=False)
+        configure_client("vscode", config_path=f, backup=False)
         result = remove_client("vscode", config_path=f, backup=False)
         assert result["removed"] is True
         config = json.loads(f.read_text())
@@ -827,7 +786,7 @@ class TestRemoveClient:
         from anaconda_mcp.client_config import configure_client, remove_client
 
         f = tmp_path / "opencode.json"
-        configure_client("opencode", config_path=f, transport="stdio", backup=False)
+        configure_client("opencode", config_path=f, backup=False)
         result = remove_client("opencode", config_path=f, backup=False)
         assert result["removed"] is True
         config = json.loads(f.read_text())
@@ -837,7 +796,7 @@ class TestRemoveClient:
         from anaconda_mcp.client_config import configure_client, remove_client
 
         f = tmp_path / "config.json"
-        configure_client("claude-desktop", config_path=f, transport="stdio", backup=False)
+        configure_client("claude-desktop", config_path=f, backup=False)
         result = remove_client("claude-desktop", config_path=f, backup=False)
         assert result["removed"] is True
         config = json.loads(f.read_text())
@@ -863,7 +822,7 @@ class TestRemoveClient:
         from anaconda_mcp.client_config import configure_client, remove_client
 
         f = tmp_path / "mcp.json"
-        configure_client("cursor", config_path=f, transport="stdio", backup=False)
+        configure_client("cursor", config_path=f, backup=False)
         result = remove_client("cursor", config_path=f, scope="global", backup=False)
         assert result["scope"] == "global"
 
@@ -877,7 +836,7 @@ class TestRemoveCommand:
         from anaconda_mcp.client_config import configure_client
 
         f = tmp_path / "mcp.json"
-        configure_client("cursor", config_path=f, transport="stdio", backup=False)
+        configure_client("cursor", config_path=f, backup=False)
 
         def _fake_path(client, scope=SCOPE_GLOBAL, project_dir=None):
             return f
@@ -893,7 +852,7 @@ class TestRemoveCommand:
         from anaconda_mcp.client_config import configure_client
 
         f = tmp_path / "mcp.json"
-        configure_client("cursor", config_path=f, transport="stdio", backup=False)
+        configure_client("cursor", config_path=f, backup=False)
 
         def _fake_path(client, scope=SCOPE_GLOBAL, project_dir=None):
             return f
@@ -909,8 +868,8 @@ class TestRemoveCommand:
 
         cursor_f = tmp_path / "cursor.json"
         vscode_f = tmp_path / "vscode.json"
-        configure_client("cursor", config_path=cursor_f, transport="stdio", backup=False)
-        configure_client("vscode", config_path=vscode_f, transport="stdio", backup=False)
+        configure_client("cursor", config_path=cursor_f, backup=False)
+        configure_client("vscode", config_path=vscode_f, backup=False)
 
         paths = {"cursor": cursor_f, "vscode": vscode_f}
 
@@ -951,7 +910,7 @@ class TestRemoveCommand:
         from anaconda_mcp.client_config import configure_client
 
         f = tmp_path / "mcp.json"
-        configure_client("cursor", config_path=f, transport="stdio", backup=False)
+        configure_client("cursor", config_path=f, backup=False)
 
         def _fake_path(client, scope=SCOPE_GLOBAL, project_dir=None):
             return f
@@ -1021,9 +980,9 @@ class TestClientsCommand:
         result = runner.invoke(cli, ["clients"])
         assert "stdio" in result.output
 
-    def test_clients_shows_streamable_http_transport(self, runner):
+    def test_clients_does_not_show_streamable_http_transport(self, runner):
         result = runner.invoke(cli, ["clients"])
-        assert "streamable-http" in result.output
+        assert "streamable-http" not in result.output
 
     def test_clients_shows_project_scope_for_supported(self, runner):
         result = runner.invoke(cli, ["clients"])
@@ -1048,7 +1007,7 @@ class TestClientsCommand:
 
         from anaconda_mcp.client_config import configure_client
 
-        configure_client("cursor", config_path=cursor_global, transport="stdio", backup=False)
+        configure_client("cursor", config_path=cursor_global, backup=False)
 
         original_get_path = __import__(
             "anaconda_mcp.client_config", fromlist=["get_client_config_path"]
@@ -1177,7 +1136,7 @@ class TestSetupWizard:
         cursor_config = tmp_path / "cursor_mcp.json"
         from anaconda_mcp.client_config import configure_client
 
-        configure_client("cursor", config_path=cursor_config, transport="stdio", backup=False)
+        configure_client("cursor", config_path=cursor_config, backup=False)
 
         def _fake_path(client, scope="global", project_dir=None):
             return cursor_config
