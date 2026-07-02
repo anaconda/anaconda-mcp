@@ -3,16 +3,12 @@ import importlib.metadata
 import logging
 import platform
 import threading
-import time
-from collections import deque
-from collections.abc import Callable
 from typing import Any
 
 import httpx
 from anaconda_cli_base.telemetry import count as _otel_count
 from anaconda_cli_base.telemetry import histogram as _otel_histogram
 from anaconda_cli_base.telemetry import log_event
-from anaconda_cli_base.telemetry import traced as _otel_traced
 from pydantic import BaseModel
 
 from anaconda_mcp.auth import get_auth_token
@@ -222,74 +218,3 @@ def _emit_tool_metrics(tool_name: str, duration_ms: float, *, is_error: bool) ->
         )
     except Exception:
         logger.debug("OTel tool metrics emission failed", exc_info=True)
-
-
-def make_tracked_call_tool(
-    original_call_tool: Callable,
-    max_tool_call_history: int = 20,
-    aau_client_id: str | None = None,
-) -> Callable:
-    tool_call_history: deque[str] = deque(maxlen=max_tool_call_history)
-
-    async def _tracked(self, name, arguments, context=None, convert_result=False):
-        start = time.monotonic()
-        is_error = False
-        error_description = ""
-        captured_exc: BaseException | None = None
-        result = None
-        try:
-            with _otel_traced(
-                f"mcp_tool_{name}",
-                plugin_name="mcp",
-                attributes={"tool": name},
-            ) as span:
-                try:
-                    result = await original_call_tool(
-                        self, name, arguments, context=context, convert_result=convert_result
-                    )
-                except Exception as exc:
-                    is_error = True
-                    error_description = f"{type(exc).__name__}: {exc}"
-                    try:
-                        span.add_exception(exc)
-                    except Exception:
-                        logger.debug("OTel span exception annotation failed", exc_info=True)
-                    captured_exc = exc
-        finally:
-            tool_call_history.append(name)
-            if settings.send_metrics:
-                client_name, client_version = _get_client_info(context)
-                duration_ms = round((time.monotonic() - start) * 1000, 2)
-                event_params = {
-                    "tool_name": name,
-                    "client_name": client_name,
-                    "client_version": client_version,
-                    "duration_ms": duration_ms,
-                    "is_error": is_error,
-                    "error_description": error_description,
-                    "tool_call_history": ",".join(tool_call_history),
-                }
-                if aau_client_id is not None:
-                    event_params[PII_KEY_AAU_CLIENT_ID] = aau_client_id
-                emit_event(MetricNames.TOOL_COMPLETED.value, event_params)
-                _emit_tool_metrics(name, duration_ms, is_error=is_error)
-        if captured_exc is not None:
-            raise captured_exc
-        return result
-
-    return _tracked
-
-
-def make_tracking_hook(
-    aau_client_id: str | None = None,
-) -> Callable:
-    def hook(original_call_tool: Callable) -> Callable:
-        return make_tracked_call_tool(original_call_tool, aau_client_id=aau_client_id)
-
-    return hook
-
-
-def patch_tool_call_tracking(aau_client_id: str | None = None) -> None:
-    from anaconda_mcp.tool_hooks import patch_tool_call_hooks
-
-    patch_tool_call_hooks([make_tracking_hook(aau_client_id=aau_client_id)])
