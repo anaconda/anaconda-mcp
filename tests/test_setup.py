@@ -18,7 +18,7 @@ class TestClientRegistry:
     def test_supported_clients_includes_expected_set(self):
         from anaconda_mcp.client_config import SUPPORTED_CLIENTS
 
-        for client in ["claude-desktop", "claude-code", "cursor", "windsurf", "vscode", "opencode"]:
+        for client in ["claude-desktop", "claude-code", "cursor", "windsurf", "vscode", "opencode", "kilo"]:
             assert client in SUPPORTED_CLIENTS
 
     def test_get_config_path_unknown_client_raises(self):
@@ -71,6 +71,17 @@ class TestClientRegistry:
 
         with mock.patch.object(Path, "home", return_value=Path("/Users/u")):
             assert get_client_config_path("opencode") == Path("/Users/u/.config/opencode/opencode.json")
+
+    def test_supported_clients_kilo_metadata(self):
+        from anaconda_mcp.client_config import SUPPORTED_CLIENTS
+
+        assert SUPPORTED_CLIENTS["kilo"] == {"config_key": "mcp", "supports_project_scope": True}
+
+    def test_get_config_path_kilo_all_platforms(self):
+        from anaconda_mcp.client_config import get_client_config_path
+
+        with mock.patch.object(Path, "home", return_value=Path("/home/u")):
+            assert get_client_config_path("kilo") == Path("/home/u/.config/kilo/kilo.json")
 
     def test_get_config_path_vscode_macos(self):
         from anaconda_mcp.client_config import get_client_config_path
@@ -149,6 +160,12 @@ class TestBuildClientConfig:
         config = build_client_stdio_config("opencode")
         assert "serve" in config["command"]
 
+    def test_build_stdio_config_kilo_matches_opencode(self):
+        from anaconda_mcp.client_config import build_client_stdio_config
+
+        assert build_client_stdio_config("kilo") == build_client_stdio_config("opencode")
+        assert "env" not in build_client_stdio_config("kilo")
+
     def test_build_stdio_config_vscode_no_type_field(self):
         from anaconda_mcp.client_config import build_client_stdio_config
 
@@ -206,6 +223,15 @@ class TestConfigureClient:
         configure_client("opencode", config_path=f, backup=False)
         config = json.loads(f.read_text())
         assert "mcp" in config
+
+    def test_configure_client_kilo_creates_mcp_key(self, tmp_path):
+        from anaconda_mcp.client_config import configure_client
+
+        f = tmp_path / "kilo.json"
+        configure_client("kilo", config_path=f, backup=False)
+        config = json.loads(f.read_text())
+        assert "mcp" in config
+        assert "anaconda-mcp" in config["mcp"]
 
     def test_configure_client_preserves_existing_entries(self, tmp_path):
         from anaconda_mcp.client_config import configure_client
@@ -412,6 +438,16 @@ class TestSetupCommand:
         assert "cursor" in output
         assert "windsurf" in output
 
+    def test_setup_kilo_client_creates_config(self, runner, tmp_path):
+        kilo_config = tmp_path / "kilo.json"
+        with mock.patch("anaconda_mcp.client_config.get_client_config_path", return_value=kilo_config):
+            result = runner.invoke(cli, ["setup", "--client", "kilo", "--no-backup"])
+        assert result.exit_code == 0
+        assert kilo_config.exists()
+        config = json.loads(kilo_config.read_text())
+        assert "mcp" in config
+        assert "anaconda-mcp" in config["mcp"]
+
 
 class TestGetClientProjectConfigPath:
     def test_cursor_project_path(self, tmp_path):
@@ -428,6 +464,11 @@ class TestGetClientProjectConfigPath:
         from anaconda_mcp.client_config import get_client_project_config_path
 
         assert get_client_project_config_path("opencode", tmp_path) == tmp_path / "opencode.json"
+
+    def test_kilo_project_path(self):
+        from anaconda_mcp.client_config import get_client_project_config_path
+
+        assert get_client_project_config_path("kilo", Path("/my/project")) == Path("/my/project/.kilo/kilo.json")
 
     def test_claude_code_project_path(self, tmp_path):
         from anaconda_mcp.client_config import get_client_project_config_path
@@ -694,6 +735,14 @@ class TestIsClientInstalled:
         result = is_client_installed("opencode", config_path=f)
         assert result["global"] is True
 
+    def test_kilo_uses_mcp_key(self, tmp_path):
+        from anaconda_mcp.client_config import configure_client, is_client_installed
+
+        f = tmp_path / "kilo.json"
+        configure_client("kilo", config_path=f, backup=False)
+        result = is_client_installed("kilo", config_path=f)
+        assert result["global"] is True
+
     def test_unknown_client_raises(self, tmp_path):
         from anaconda_mcp.client_config import is_client_installed
 
@@ -788,6 +837,16 @@ class TestRemoveClient:
         f = tmp_path / "opencode.json"
         configure_client("opencode", config_path=f, backup=False)
         result = remove_client("opencode", config_path=f, backup=False)
+        assert result["removed"] is True
+        config = json.loads(f.read_text())
+        assert "anaconda-mcp" not in config["mcp"]
+
+    def test_remove_client_kilo_uses_mcp_key(self, tmp_path):
+        from anaconda_mcp.client_config import configure_client, remove_client
+
+        f = tmp_path / "kilo.json"
+        configure_client("kilo", config_path=f, backup=False)
+        result = remove_client("kilo", config_path=f, backup=False)
         assert result["removed"] is True
         config = json.loads(f.read_text())
         assert "anaconda-mcp" not in config["mcp"]
@@ -973,7 +1032,7 @@ class TestClientsCommand:
 
     def test_clients_lists_all_supported_clients(self, runner):
         result = runner.invoke(cli, ["clients"])
-        for client in ["cursor", "claude-desktop", "claude-code", "windsurf", "vscode", "opencode"]:
+        for client in ["cursor", "claude-desktop", "claude-code", "windsurf", "vscode", "opencode", "kilo"]:
             assert client in result.output
 
     def test_clients_shows_stdio_transport(self, runner):

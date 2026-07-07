@@ -26,6 +26,7 @@ SUPPORTED_CLIENTS: dict[str, dict[str, Any]] = {
     "windsurf": {"config_key": "mcpServers", "supports_project_scope": False},
     "vscode": {"config_key": "servers", "supports_project_scope": True},
     "opencode": {"config_key": "mcp", "supports_project_scope": True},
+    "kilo": {"config_key": "mcp", "supports_project_scope": True},
 }
 
 
@@ -44,6 +45,9 @@ def get_client_project_config_path(client: str, project_dir: Path) -> Path:
 
     if client == "opencode":
         return project_dir / "opencode.json"
+
+    if client == "kilo":
+        return project_dir / ".kilo" / "kilo.json"
 
     if client == "claude-code":
         return project_dir / ".mcp.json"
@@ -81,6 +85,9 @@ def get_client_config_path(
     if client == "opencode":
         return Path.home() / ".config" / "opencode" / "opencode.json"
 
+    if client == "kilo":
+        return Path.home() / ".config" / "kilo" / "kilo.json"
+
     raise ValueError(f"Unsupported client: '{client}'")
 
 
@@ -101,7 +108,7 @@ def build_client_stdio_config(client: str) -> dict[str, Any]:
             "env": {},
         }
 
-    if client == "opencode":
+    if client in ("opencode", "kilo"):
         return {
             "type": "local",
             "command": [executable, "-m", "anaconda_mcp", "serve"],
