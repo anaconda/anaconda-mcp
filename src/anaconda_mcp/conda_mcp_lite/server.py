@@ -235,24 +235,30 @@ async def run_conda(*args: str, positionals: list[str] | None = None) -> dict | 
     )
     stdout, stderr = await proc.communicate()
 
-    if not stdout.strip():
+    # conda emits error details as JSON on stdout even when it fails, so parse any
+    # payload before checking the return code to surface conda's own message.
+    data: dict | list | None = None
+    if stdout.strip():
+        try:
+            data = json.loads(stdout)
+        except json.JSONDecodeError as err:
+            raise RuntimeError(
+                f"conda returned invalid JSON. Command: {' '.join(cmd)}\n"
+                f"stdout: {stdout.decode(errors='replace')[:500]}\n"
+                f"stderr: {stderr.decode(errors='replace')[:500]}"
+            ) from err
+        if isinstance(data, dict) and "error" in data:
+            raise RuntimeError(data.get("message", data["error"]))
+
+    if proc.returncode != 0:
         raise RuntimeError(
-            f"conda returned no output. Command: {' '.join(cmd)}\nstderr: {stderr.decode(errors='replace')}"
+            f"conda failed (exit {proc.returncode}). Command: {' '.join(cmd)}\n"
+            f"stderr: {stderr.decode(errors='replace')}"
         )
 
-    try:
-        data: dict | list = json.loads(stdout)
-    except json.JSONDecodeError as err:
-        raise RuntimeError(
-            f"conda returned invalid JSON. Command: {' '.join(cmd)}\n"
-            f"stdout: {stdout.decode(errors='replace')[:500]}\n"
-            f"stderr: {stderr.decode(errors='replace')[:500]}"
-        ) from err
-
-    if isinstance(data, dict) and "error" in data:
-        raise RuntimeError(data.get("message", data["error"]))
-
-    return data
+    # Success. Some commands (e.g. `remove --all` on a package-less env) exit 0 with
+    # no stdout — there is simply no package transaction to report.
+    return data if data is not None else {}
 
 
 def get_conda_info() -> dict:

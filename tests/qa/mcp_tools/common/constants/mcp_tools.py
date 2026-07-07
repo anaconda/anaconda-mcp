@@ -20,7 +20,6 @@ class Tools(str, Enum):
 class CreateEnvironmentArgs(str, Enum):
     ENVIRONMENT_NAME = "environment_name"
     PACKAGES = "packages"
-    ENVIRONMENT_ROOT_PATH = "environment_root_path"
 
 
 class InstallPackagesArgs(str, Enum):

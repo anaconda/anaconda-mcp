@@ -2,21 +2,15 @@ import signal as _signal
 from unittest import mock
 
 import anaconda_cli_base.lifecycle as _lifecycle
-import mcp_compose.composer as _composer_mod
 import pytest
 
 import anaconda_mcp._shutdown as _mcp_shutdown
 from anaconda_mcp.terms import CURRENT_TOS_VERSION
 
-# mcp-compose's un-patched module signal handler, captured before any test patches it.
-_PRISTINE_MODULE_SIGNAL_HANDLER = _composer_mod._module_signal_handler
-
 MOCKED_TOKEN = "mocked_token"
 
 
 def _reset_shutdown_globals() -> None:
-    _composer_mod._module_signal_handler = _PRISTINE_MODULE_SIGNAL_HANDLER
-    _composer_mod._signal_handlers_installed = False
     _mcp_shutdown._handlers_installed = False
     _lifecycle._handlers_installed = False
     _lifecycle._triggered = False
@@ -27,10 +21,10 @@ def _reset_shutdown_globals() -> None:
 def _isolate_shutdown_state():
     """Reset process-wide signal/shutdown module globals around every test.
 
-    serve()/install_shutdown_handlers() patch mcp-compose's module signal handler
-    and flip install-once guards in cli-base lifecycle and mcp _shutdown. Without
-    this reset those mutations leak across tests (e.g. a re-patched bridge wraps a
-    leaked bridge, firing trigger_shutdown twice).
+    serve()/install_shutdown_handlers() flip install-once guards in cli-base
+    lifecycle and mcp _shutdown. Without this reset those mutations leak across
+    tests (e.g. a re-patched bridge wraps a leaked bridge, firing
+    trigger_shutdown twice).
     """
     orig_sigterm = _signal.getsignal(_signal.SIGTERM)
     orig_sigint = _signal.getsignal(_signal.SIGINT)

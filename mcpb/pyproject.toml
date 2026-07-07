@@ -1,0 +1,12 @@
+# Copyright (c) Anaconda, Inc.
+#
+# Apache-2.0 License
+
+[project]
+name = "anaconda-mcp-mcpb"
+version = "0.1.0"
+description = "Anaconda MCP - MCPB bundle for one-click installation in Claude Desktop"
+requires-python = ">=3.10"
+dependencies = [
+    "anaconda-mcp>=0.1.0",
+]

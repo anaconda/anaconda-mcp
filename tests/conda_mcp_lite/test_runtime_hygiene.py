@@ -30,6 +30,8 @@ async def _scenario_run_conda(monkeypatch, record):
         server._conda_exe = Path("/fake/conda")
 
     class _FakeProc:
+        returncode = 0
+
         async def communicate(self):
             return (b"{}", b"")
 

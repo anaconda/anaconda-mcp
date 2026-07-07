@@ -1,6 +1,5 @@
 import logging
 import os
-from collections.abc import Callable
 
 from anaconda_auth.client import BaseClient
 from anaconda_auth.exceptions import TokenNotFoundError
@@ -43,20 +42,3 @@ def validate_auth_token(token: str) -> bool:
         return True
     except Exception:
         return False
-
-
-def make_auth_enforcement_hook(auth_token_fn: Callable[[], str | None]) -> Callable:
-    def hook(original_call_tool: Callable) -> Callable:
-        async def _enforced(self, name, arguments, context=None, convert_result=False):
-            token = auth_token_fn()
-            if token is None:
-                raise AuthenticationError("Not authenticated. Please run 'anaconda login' to re-authenticate.")
-            if not validate_auth_token(token):
-                raise AuthenticationError(
-                    "Authentication token is invalid or expired. Please run 'anaconda login' to re-authenticate."
-                )
-            return await original_call_tool(self, name, arguments, context=context, convert_result=convert_result)
-
-        return _enforced
-
-    return hook

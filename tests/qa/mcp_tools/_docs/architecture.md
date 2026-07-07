@@ -1,6 +1,6 @@
 # Stack architecture — `mcp_tools`
 
-What the system under test looks like: how products are wired together, what transports connect them, and what version options exist on each layer.
+What the system under test looks like: how products are wired together and what version options exist on each layer.
 
 ---
 
@@ -9,64 +9,54 @@ What the system under test looks like: how products are wired together, what tra
 The **whole server-side chain** runs inside **one conda environment** (passed as `--server-conda-env`):
 
 - **Python:** single interpreter for all imports — typically **3.10–3.13**; must match all package pins.
-- **Versions:** independently pinned `anaconda-mcp`, `mcp-compose`, `environments-mcp`, `anaconda-connector` (conda/pip/editable). Must be mutually compatible at runtime.
-- **Transports ① and ②:** configuration choices, not separate installs — see diagram below.
+- **Versions:** `anaconda-mcp` plus its transitive dependencies in the server env. Must be mutually compatible at runtime.
+- **Transport:** native stdio between the test process and `anaconda-mcp serve`.
 
 ```mermaid
 flowchart LR
   subgraph clients["MCP clients  ·  outside the conda env"]
-    CL["IDE / CLI / tests / HTTP client"]
+    CL["IDE / CLI / tests"]
   end
 
   subgraph cenv["One conda environment  ·  Python 3.10–3.13"]
     subgraph amp["Process: anaconda-mcp serve"]
       direction TB
       AM["anaconda-mcp<br/>· package version"]
-      MC["mcp-compose<br/>· package version (overridable)"]
-      AM --> MC
     end
 
-    subgraph ems["Process: environments_mcp_server"]
+    subgraph ems["Subprocess: python -m anaconda_mcp.conda_mcp_lite"]
       direction TB
-      EM["environments-mcp<br/>· package version"]
-      AC["anaconda-connector<br/>· package / conda build version"]
+      EM["conda_mcp_lite<br/>· vendored in anaconda-mcp"]
+      AC["conda CLI<br/>· user's discovered conda exe"]
       EM --> AC
     end
 
-    MC <-->|"② upstream MCP<br/>streamable HTTP or STDIO"| EM
+    AM --- EM
   end
 
-  CL <-->|"① outer MCP<br/>HTTP or STDIO"| AM
+  CL <-->|"MCP JSON-RPC<br/>STDIO"| AM
 ```
 
-- **①** — transport between the **MCP client** and **`anaconda-mcp`**: streamable HTTP or STDIO.
-- **②** — transport between **`mcp-compose`** and **`environments_mcp_server`**: streamable HTTP or STDIO. Independent of ①.
-- **`environments-mcp` → `anaconda-connector`** — Python API for conda operations; not a third MCP wire.
-- **`mcp-compose`** ships as a dependency of `anaconda-mcp`; it can be **overridden** (fork / git) to test transport fixes without changing `anaconda-mcp` itself.
+- The QA harness spawns **`anaconda-mcp serve`** directly and speaks MCP JSON-RPC over stdio.
+- The vendored **`anaconda_mcp.conda_mcp_lite`** tools are mounted in-process by the native FastMCP server.
+- **`conda_mcp_lite` → `conda` CLI** — shells out to the user's discovered conda executable; not a third MCP wire.
 
 ### Version options per product
 
 | Product | How to change the version |
 |---------|--------------------------|
 | **`anaconda-mcp`** | Release or editable checkout (`pip install -e …`) in the server env |
-| **`mcp-compose`** | Transitive dep; override with `pip install` (fork / git) — see [`README.md`](../README.md) |
-| **`environments-mcp`** | Release or editable in the **same** env as `anaconda-mcp` |
-| **`anaconda-connector-conda`** | Conda/pip pin; must be importable as `anaconda_connector_conda` or tools fail to register |
 
 ---
 
-## Two-hop transport matrix (`--mcp-profile`)
+## Native stdio profile (`--mcp-profile`)
 
-Each `--mcp-profile` value fixes both **①** and **②** independently.
-Canonical TOML is generated from [`tests/qa/shared/mcp_compose_profiles.py`](../../shared/mcp_compose_profiles.py) — tests do **not** select transport by editing the packaged `mcp_compose.toml`.
+`--mcp-profile` is now a report label only. Native serve is stdio-only, and both supported slugs use the same process path.
 
-| Profile | ① client → anaconda-mcp | ② mcp-compose → environments-mcp | Why we care |
-|---------|--------------------------|--------------------------------------|-------------|
-| `http-http` | Streamable HTTP | Streamable HTTP | Standard remote / "browser-like" path; matches `start-http-server.sh` |
-| `stdio-http` | STDIO | Streamable HTTP | IDE-style outer STDIO with HTTP upstream — exercises both proxy styles |
-| `stdio-stdio` | STDIO | STDIO | All-stdio; less upstream HTTP churn; used for hang / stress regressions |
-
-**Not covered by default:** `http-stdio` (HTTP outer, STDIO upstream) is valid for mcp-compose but omitted until the product explicitly needs it — see `mcp_compose_profiles.py`.
+| Profile | Transport | Why we keep it |
+|---------|-----------|----------------|
+| `stdio-stdio` | STDIO → native `anaconda-mcp serve` | Canonical CI/report slug |
+| `stdio` | STDIO → native `anaconda-mcp serve` | Short local alias |
 
 ---
 

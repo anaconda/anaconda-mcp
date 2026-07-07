@@ -7,7 +7,6 @@ PIP := $(PYTHON) -m pip
 PROJECT := anaconda-mcp
 DIST_DIR := dist
 BUILD_DIR := build
-MCP_SERVER_PORT   ?= 4041
 
 # Docker settings
 DOCKER_IMAGE ?= anaconda-mcp
@@ -224,9 +223,9 @@ docker-build-from-source: ## Build the Docker image from local source code
 	@echo "Building Docker image $(DOCKER_IMAGE) from source..."
 	$(MAKE) docker-build DOCKER_FROM_SRC=true
 
-docker-run: ## Run the Docker container in streamable-http mode with port mapping
-	@echo "Running $(DOCKER_IMAGE) in streamable-http mode on port 4041..."
-	docker run -it -p 4041:4041 --rm $(DOCKER_IMAGE)
+docker-run: ## Run the Docker container in stdio mode
+	@echo "Running $(DOCKER_IMAGE) in stdio mode..."
+	docker run -i --rm $(DOCKER_IMAGE)
 
 setup: ## Create or update the dev conda env from environment-dev.yml
 	@echo "Setting up Conda env: $(ENV_NAME)"
@@ -266,12 +265,6 @@ claude-desktop-setup-config: ## Configure Claude Desktop with Anaconda MCP (STDI
 	@echo "Configuring Claude Desktop with Anaconda MCP..."
 	$(PYTHON) -m anaconda_mcp.cli claude-desktop setup-config --force
 	@echo "Done. Restart Claude Desktop to apply changes."
-
-claude-desktop-setup-config-http: ## Configure Claude Desktop with Anaconda MCP (HTTP transport)
-	@echo "Configuring Claude Desktop with Anaconda MCP (HTTP transport)..."
-	$(PYTHON) -m anaconda_mcp.cli claude-desktop setup-config --transport streamable-http --force
-	@echo "Done. Restart Claude Desktop to apply changes."
-	@echo "Remember to start the server with: make serve"
 
 claude-desktop-show: ## Show current Claude Desktop configuration
 	@echo "Current Claude Desktop configuration:"

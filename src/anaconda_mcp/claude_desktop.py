@@ -2,8 +2,7 @@
 Claude Desktop configuration utilities for Anaconda MCP.
 
 This module provides functionality to configure Claude Desktop to work with
-Anaconda MCP, supporting both STDIO and Streamable HTTP transports across
-Linux, macOS, and Windows.
+Anaconda MCP over stdio across Linux, macOS, and Windows.
 """
 
 import glob
@@ -15,7 +14,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from .consts import OSSystems, TransportTypes
+from .consts import OSSystems
 
 CLAUDE_DESKTOP_CONFIG_FILENAME = "claude_desktop_config.json"
 
@@ -184,35 +183,9 @@ def build_stdio_config(server_name: str = "anaconda-mcp") -> dict[str, Any]:
     }
 
 
-def build_streamable_http_config(
-    host: str = "localhost",
-    port: int = 8888,
-) -> dict[str, Any]:
-    """
-    Build the Streamable HTTP MCP server configuration for Claude Desktop.
-
-    Note: Claude Desktop connects to an already-running HTTP server.
-    The server must be started separately with `anaconda-mcp serve`.
-
-    Args:
-        host: Host where the server is running
-        port: Port where the server is listening
-
-    Returns:
-        Server configuration dictionary
-    """
-    return {
-        "url": f"http://{host}:{port}/mcp",
-        "transport": "streamable-http",
-    }
-
-
 def configure_claude_desktop(
     config_path: Path | None = None,
     server_name: str = "anaconda-mcp",
-    transport: str = "stdio",
-    host: str = "localhost",
-    port: int = 8888,
     backup: bool = True,
     force: bool = False,
 ) -> dict[str, Any]:
@@ -222,9 +195,6 @@ def configure_claude_desktop(
     Args:
         config_path: Path to Claude Desktop config (uses default if None)
         server_name: Name for the MCP server entry
-        transport: Transport type ('stdio' or 'streamable-http')
-        host: Host for streamable-http transport
-        port: Port for streamable-http transport
         backup: Whether to backup existing config
         force: Whether to overwrite existing server configuration
 
@@ -238,13 +208,8 @@ def configure_claude_desktop(
         - updated: Whether an existing entry was updated
 
     Raises:
-        ValueError: If transport is invalid
         FileExistsError: If server already exists and force=False
     """
-    valid_transports = {t.value for t in TransportTypes}
-    if transport not in valid_transports:
-        raise ValueError(f"Invalid transport: {transport}. Must be one of {valid_transports}")
-
     if config_path is None:
         config_path = get_claude_desktop_config_path()
 
@@ -252,7 +217,7 @@ def configure_claude_desktop(
         "config_path": config_path,
         "backup_path": None,
         "server_name": server_name,
-        "transport": transport,
+        "transport": "stdio",
         "created": not config_path.exists(),
         "updated": False,
     }
@@ -278,11 +243,7 @@ def configure_claude_desktop(
     if server_name in config["mcpServers"]:
         result["updated"] = True
 
-    # Build server cTransportTypes.STDIO.valueation
-    if transport == "stdio":
-        server_config = build_stdio_config(server_name)
-    else:
-        server_config = build_streamable_http_config(host, port)
+    server_config = build_stdio_config(server_name)
 
     # Add/update server configuration
     config["mcpServers"][server_name] = server_config

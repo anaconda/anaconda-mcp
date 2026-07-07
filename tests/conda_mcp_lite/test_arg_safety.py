@@ -86,6 +86,8 @@ async def test_run_conda_places_json_before_separator(monkeypatch):
     captured: dict = {}
 
     class _FakeProc:
+        returncode = 0
+
         async def communicate(self):
             return (b'{"ok": true}', b"")
 
@@ -102,6 +104,45 @@ async def test_run_conda_places_json_before_separator(monkeypatch):
     # argument ordering — `--json` before the `--` separator, positionals after.
     assert captured["cmd"][0] == str(server._conda_exe)
     assert captured["cmd"][1:] == ["install", "-y", "-n", "e", "--json", "--", "numpy", "pandas"]
+
+
+@pytest.mark.asyncio
+async def test_run_conda_empty_stdout_with_success_returncode_returns_empty(monkeypatch):
+    """rc=0 + empty stdout (e.g. ``remove --all`` on a package-less env) is success, not an error."""
+
+    class _FakeProc:
+        returncode = 0
+
+        async def communicate(self):
+            return (b"", b"")
+
+    async def _fake_exec(*cmd, stdout=None, stderr=None):
+        return _FakeProc()
+
+    monkeypatch.setattr(server, "_conda_exe", Path("/x/conda"))
+    monkeypatch.setattr(server.asyncio, "create_subprocess_exec", _fake_exec)
+
+    assert await server.run_conda("remove", "--all", "-y", "-n", "e") == {}
+
+
+@pytest.mark.asyncio
+async def test_run_conda_empty_stdout_with_failure_returncode_raises(monkeypatch):
+    """rc!=0 + empty stdout is a real failure -> RuntimeError carrying stderr."""
+
+    class _FakeProc:
+        returncode = 1
+
+        async def communicate(self):
+            return (b"", b"boom")
+
+    async def _fake_exec(*cmd, stdout=None, stderr=None):
+        return _FakeProc()
+
+    monkeypatch.setattr(server, "_conda_exe", Path("/x/conda"))
+    monkeypatch.setattr(server.asyncio, "create_subprocess_exec", _fake_exec)
+
+    with pytest.raises(RuntimeError, match="conda failed"):
+        await server.run_conda("remove", "--all", "-y", "-n", "e")
 
 
 @pytest.mark.asyncio

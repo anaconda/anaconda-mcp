@@ -2,7 +2,7 @@
 #
 #   conda env create -f tests/qa/environment.yml
 #   conda activate anaconda-mcp-qa
-#   pytest tests/qa/mcp_tools -o addopts= --mcp-profile=http-http ...
+#   pytest tests/qa/mcp_tools -o addopts= --mcp-profile=stdio-stdio ...
 #
 # If you already had this env before dependencies changed:
 #   conda env update -f tests/qa/environment.yml --prune

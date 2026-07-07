@@ -1,190 +1,200 @@
 # Anaconda MCP Configuration Guide
 
-Anaconda MCP is built on [MCP Compose](https://mcp-compose.datalayer.tech), a unified control plane for composing multiple MCP servers. This guide provides an overview of the configuration options. For the complete reference, see the [MCP Compose Configuration Documentation](https://mcp-compose.datalayer.tech/configuration/).
+`anaconda mcp serve` uses native FastMCP composition and stdio transport. There is no runtime server-composition file to edit for the default server. The `serve` command builds the Anaconda MCP server in code by mounting the vendored conda tools, proxying the remote package-search server with bearer authentication, and installing `PlatformMiddleware` for authentication, Terms of Service, and telemetry.
+
+This guide covers the configuration that still applies to the native stdio runtime: authentication, Terms acceptance, conda executable discovery, and client environment variables.
 
 ## Table of Contents
 
-- [Configuration File Overview](#configuration-file-overview)
-- [Composer Settings](#composer-settings)
-- [Transport Configuration](#transport-configuration)
+- [Runtime Model](#runtime-model)
 - [Authentication](#authentication)
-- [Server Configuration](#server-configuration)
-- [Tool Manager](#tool-manager)
-- [Example Configuration](#example-configuration)
+- [Terms of Service](#terms-of-service)
+- [Conda Executable Discovery](#conda-executable-discovery)
+- [Client Environment Variables](#client-environment-variables)
+- [Manual Client Configuration](#manual-client-configuration)
+- [Compose and Discover](#compose-and-discover)
+- [Troubleshooting](#troubleshooting)
 
 ---
 
-## Configuration File Overview
+## Runtime Model
 
-Anaconda MCP uses a TOML configuration file (`mcp_compose.toml`) to define server composition, transport protocols, authentication, and tool management.
+The default server is fixed by code, not by a user-edited composition file:
 
-**Default location:** `src/anaconda_mcp/mcp_compose.toml`
+1. `anaconda mcp serve` validates Anaconda authentication and Terms acceptance.
+2. `build_composed_server()` creates a FastMCP server.
+3. The vendored `anaconda_mcp.conda_mcp_lite` FastMCP server is mounted in-process.
+4. The remote Anaconda search MCP is registered as an authenticated proxy.
+5. `PlatformMiddleware` enforces auth, Terms, and telemetry.
+6. The server runs over stdio for the launching MCP client.
 
-**Custom location:**
-```bash
-anaconda-mcp serve --config /path/to/custom_config.toml
-```
-
-📖 **Reference:** [Configuration File Location](https://mcp-compose.datalayer.tech/configuration/#configuration-file-location)
-
----
-
-## Composer Settings
-
-The `[composer]` section defines the identity and behavior of your unified MCP server. Set the server name, choose how to handle tool name conflicts when multiple servers expose tools with the same name, and configure logging verbosity.
-
-```toml
-[composer]
-name = "anaconda-mcp"
-conflict_resolution = "prefix"
-log_level = "INFO"
-port = 8080
-```
-
-The `prefix` conflict resolution strategy is recommended—it prefixes tool names with the server name (e.g., `conda_create_environment`) to avoid collisions.
-
-📖 **Reference:** [Composer Section](https://mcp-compose.datalayer.tech/configuration/#composer-section)
-
----
-
-## Transport Configuration
-
-The `[transport]` section configures how MCP clients connect to your server. Choose between STDIO (subprocess communication) and Streamable HTTP (network-based). SSE is deprecated.
-
-```toml
-[transport]
-stdio_enabled = true
-streamable_http_enabled = true
-streamable_http_path = "/mcp"
-```
-
-Use STDIO for local development with Claude Desktop or VS Code. Use Streamable HTTP when running as a shared network service.
-
-📖 **Reference:** [Transport Section](https://mcp-compose.datalayer.tech/configuration/#transport-section)
+Deprecated config, host, and port inputs are ignored by `serve`; they are not needed for stdio client setup.
 
 ---
 
 ## Authentication
 
-The `[authentication]` section protects your MCP endpoint. Anaconda MCP supports Anaconda token authentication out of the box, validating bearer tokens against the Anaconda API.
+Authentication is required before `serve` can run successfully.
 
-```toml
-[authentication]
-enabled = true
-providers = ["anaconda"]
-default_provider = "anaconda"
+Interactive login:
 
-[authentication.anaconda]
-domain = "anaconda.com"
+```bash
+anaconda login
 ```
 
-When the authentication is turned ON (`enabled = true), the tool calls will fail unless the two points are satisfied:
+This stores credentials in the user's system keyring. Anaconda MCP retrieves and validates those credentials at startup and uses them for proxied Anaconda search requests.
 
-- User is authenticated
-- MCP_COMPOSE_ANACONDA_TOKEN env var is set to "fallback"
+Headless or CI-style client configuration can pass an API key through the client's environment:
 
-Clients authenticate by including their Anaconda token in the Authorization header:
+```json
+"env": {
+  "ANACONDA_AUTH_API_KEY": "<your-api-key>"
+}
 ```
-Authorization: Bearer <your_anaconda_token>
-```
 
-> Implementation Notes: At the moment, we are not passing the token in the header but instead relying on the keyring to fetch the token. For now, we turn off the authentication by default so users are not forced to log in to use the Anaconda MCP Server.
-
-For local development, set `MCP_COMPOSE_ANACONDA_TOKEN="fallback"` to use your locally stored Anaconda credentials from `anaconda login`.
-
-📖 **Reference:** [Authentication Section](https://mcp-compose.datalayer.tech/configuration/#authentication-section) and [Anaconda Authentication](https://mcp-compose.datalayer.tech/configuration/#anaconda-authentication)
+API keys can be obtained from your Anaconda account settings.
 
 ---
 
-## Server Configuration
+## Terms of Service
 
-The `[servers]` section defines the downstream MCP servers that Anaconda MCP composes. Each server's tools become available through the single unified endpoint.
+Anaconda MCP requires acceptance of the current MCP Terms of Service.
 
-### STDIO Servers
+Interactive acceptance:
 
-STDIO servers run as subprocesses, providing process isolation. This is the most common pattern.
-
-```toml
-[[servers.proxied.stdio]]
-name = "environments"
-command = ["environments-mcp-server", "start", "--transport", "stdio"]
-restart_policy = "on-failure"
+```bash
+anaconda mcp terms accept
 ```
 
-### Streamable HTTP Servers
+Check status:
 
-Connect to MCP servers running as standalone HTTP services.
-
-```toml
-[[servers.proxied.http]]
-name = "jupyter"
-url = "http://localhost:8888/mcp"
-protocol = "streamable-http"
-timeout = 30
-reconnect_on_failure = true
+```bash
+anaconda mcp terms status
 ```
 
-📖 **Reference:** [Servers Section](https://mcp-compose.datalayer.tech/configuration/#servers-section)
+Non-interactive acceptance:
+
+```json
+"env": {
+  "ANACONDA_MCP_ACCEPTED_TERMS": "true",
+  "ANACONDA_MCP_ACCEPTED_TERMS_VERSION": "2026-05-27"
+}
+```
+
+Both variables are required for headless clients.
 
 ---
 
-## Tool Manager
+## Conda Executable Discovery
 
-The `[tool_manager]` section fine-tunes how tools are named and organized. Create aliases for friendlier tool names or customize the naming template.
+The vendored conda tools need a user-facing conda executable. Discovery tries, in order:
 
-```toml
-[tool_manager]
-conflict_resolution = "prefix"
+1. `CONDA_EXE` from the client environment.
+2. `_CONDA_ROOT/bin/conda` from conda shell-hook state.
+3. `conda` on `PATH`.
+4. Platform-specific fallbacks for shell or registry discovery.
 
-[tool_manager.aliases]
-create_env = "conda_environments_create_environment"
-list_envs = "conda_environments_list_environments"
+GUI applications often launch without shell initialization, so setting `CONDA_EXE` explicitly is the most reliable configuration:
+
+```json
+"env": {
+  "CONDA_EXE": "/path/to/conda"
+}
 ```
 
-Aliases let you expose tools under shorter, more intuitive names without modifying the underlying servers.
+On Windows, point to `conda.exe` in the `Scripts` directory:
 
-📖 **Reference:** [Tool Manager Section](https://mcp-compose.datalayer.tech/configuration/#tool-manager-section)
-
----
-
-## Example Configuration
-
-A typical Anaconda MCP development configuration:
-
-```toml
-[composer]
-name = "anaconda-mcp"
-conflict_resolution = "prefix"
-log_level = "DEBUG"
-port = 8000
-
-[transport]
-stdio_enabled = true
-
-[authentication]
-enabled = false
-
-[[servers.proxied.stdio]]
-name = "environments"
-command = ["environments-mcp-server", "start", "--transport", "stdio"]
-restart_policy = "on-failure"
-
-[[servers.proxied.http]]
-name = "jupyter"
-url = "http://localhost:8888/mcp"
-protocol = "streamable-http"
-timeout = 30
-
-[tool_manager]
-conflict_resolution = "prefix"
-
-[tool_manager.aliases]
-create_env = "conda_environments_create_environment"
-list_envs = "conda_environments_list_environments"
+```json
+"env": {
+  "CONDA_EXE": "C:\\Users\\me\\miniconda3\\Scripts\\conda.exe"
+}
 ```
 
 ---
 
-## Further Reading
+## Client Environment Variables
 
-For complete configuration options including authorization, monitoring, REST API, and Web UI settings, see the [MCP Compose Configuration Documentation](https://mcp-compose.datalayer.tech/configuration/).
+| Variable | Required? | Purpose |
+|----------|-----------|---------|
+| `CONDA_EXE` | Optional, recommended for GUI clients | Explicit conda executable path |
+| `ANACONDA_AUTH_API_KEY` | Optional | API-key authentication when keyring login is unavailable |
+| `ANACONDA_MCP_ACCEPTED_TERMS` | Required for headless Terms acceptance | Must be `true` |
+| `ANACONDA_MCP_ACCEPTED_TERMS_VERSION` | Required for headless Terms acceptance | Current accepted Terms version |
+
+Use the smallest env block possible. For a typical desktop setup, running `anaconda login` and `anaconda mcp terms accept` is enough; add `CONDA_EXE` only if the client cannot find conda.
+
+---
+
+## Manual Client Configuration
+
+Most users should run:
+
+```bash
+anaconda mcp setup
+```
+
+If configuring manually, use a stdio MCP entry that launches the Python environment containing Anaconda MCP:
+
+```json
+{
+  "mcpServers": {
+    "anaconda-mcp": {
+      "type": "stdio",
+      "command": "/path/to/anaconda-mcp/env/bin/python",
+      "args": ["-m", "anaconda_mcp", "serve"],
+      "env": {
+        "CONDA_EXE": "/path/to/conda"
+      }
+    }
+  }
+}
+```
+
+Client JSON schemas vary. Some clients omit the `type` field or use a different top-level key, but the command, args, and env values remain the same.
+
+---
+
+## Compose and Discover
+
+The `compose` and `discover` subcommands still exist:
+
+```bash
+anaconda mcp discover
+anaconda mcp compose --output-format json
+```
+
+They are dependency-inspection helpers and are separate from `serve`. Running `serve` does not consume output from these commands.
+
+---
+
+## Troubleshooting
+
+### Authentication errors
+
+Run:
+
+```bash
+anaconda login
+anaconda auth whoami
+```
+
+For headless clients, set `ANACONDA_AUTH_API_KEY` in the client env block.
+
+### Terms errors
+
+Run:
+
+```bash
+anaconda mcp terms accept
+anaconda mcp terms status
+```
+
+For headless clients, set both Terms environment variables.
+
+### Conda executable not found
+
+Set `CONDA_EXE` in the client config. This is especially common for GUI-launched clients that do not inherit shell startup files.
+
+### Config, host, or port changes have no effect
+
+This is expected for the native stdio server. `serve` ignores deprecated config, host, and port inputs because it builds the FastMCP composition in code and communicates over stdin/stdout.
