@@ -60,14 +60,19 @@ Configure your AI client to use Anaconda MCP:
 anaconda mcp setup
 ```
 
-This launches an interactive wizard that detects supported clients and writes the appropriate config. Supported clients: Claude Desktop, Claude Code, Cursor, Windsurf, VS Code, and OpenCode.
+This launches an interactive wizard that detects supported clients and writes the appropriate config. Supported clients: Claude Desktop, Claude Code, Cursor, Windsurf, VS Code, OpenCode, and Kilo Code.
 
 To configure a specific client non-interactively:
 
 ```bash
 anaconda mcp setup --client claude-code
 anaconda mcp setup --client cursor --scope project
+anaconda mcp setup --client kilo
 ```
+
+### Kilo Code Configuration
+
+Anaconda MCP writes a plain `kilo.json` file (global `~/.config/kilo/kilo.json` or project `.kilo/kilo.json`) which Kilo Code deep-merges with any existing `kilo.jsonc`. This means hand-written comments in `kilo.jsonc` are preserved across `anaconda mcp setup` runs. **Important:** if you hand-edit `kilo.json` itself with comments, `anaconda mcp setup` cannot parse it — it treats the file as empty and silently overwrites it, discarding your changes. Keep comments in `kilo.jsonc` instead.
 
 ---
 
