@@ -204,6 +204,11 @@ def _get_client_info(context: Any) -> tuple[str, str]:
     return "unknown", "unknown"
 
 
+# NOTE: sibling services set user.id centrally via ResourceAttributes.user_id, but
+# anaconda-cli-base builds the OTel Resource at init and exposes no post-init API to
+# set it, so we inject user.id per-signal (here + the span + _UserContextLogFilter).
+# Kept OFF tool metrics deliberately: a per-account UUID would explode metric-series
+# cardinality (see security review); attribution lives on events/spans/logs instead.
 def _otel_user_attrs() -> dict[str, str]:
     """OTel attributes for the authenticated user. Empty dict when unauthenticated
     (schema-conforming: user.id is omitted, never a sentinel; no status field)."""
@@ -237,7 +242,6 @@ def _emit_tool_metrics(tool_name: str, duration_ms: float, *, is_error: bool) ->
         # series per tool; dashboards derive success as total minus is_error=true.
         if is_error:
             attrs["is_error"] = True
-        attrs.update(_otel_user_attrs())
         _otel_count("mcp_tool_invoked", plugin_name="mcp", attributes=attrs)
         _otel_histogram(
             "mcp_tool_duration_ms",

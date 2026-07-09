@@ -88,6 +88,8 @@ _OTHER_UUID = "11111111-2222-3333-4444-555555555555"
         (_build_jwt_raw_payload({"sub": None}), None),
         (_build_jwt_raw_payload({"not_sub": "x"}), None),
         (_build_jwt_raw_payload(["not", "an", "object"]), None),
+        (_build_jwt("not-a-uuid"), None),
+        (_build_jwt(""), None),
     ],
 )
 def test_resolve_user_id_branches(token, expected):

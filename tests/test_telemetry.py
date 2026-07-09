@@ -130,7 +130,9 @@ def test_otel_user_attrs_backstop_on_exception():
         assert _otel_user_attrs() == {}
 
 
-def test_emit_tool_metrics_injects_user_id_on_both_metrics():
+def test_emit_tool_metrics_omits_user_id():
+    """Authenticated → user.id is deliberately OMITTED from both metrics to avoid
+    per-account cardinality explosion; tool label remains."""
     with (
         mock.patch("anaconda_mcp.telemetry._otel_count") as mock_count,
         mock.patch("anaconda_mcp.telemetry._otel_histogram") as mock_hist,
@@ -144,9 +146,10 @@ def test_emit_tool_metrics_injects_user_id_on_both_metrics():
     hist_attrs = mock_hist.call_args.kwargs["attributes"]
 
     for attrs in (count_attrs, hist_attrs):
-        assert attrs["user.id"] == TEST_USER_ID
+        assert "user.id" not in attrs
         assert "user.id.status" not in attrs
         assert attrs["tool"] == "mytool"
+        assert "is_error" not in attrs
 
 
 def test_emit_tool_metrics_omits_user_id_when_anonymous():
