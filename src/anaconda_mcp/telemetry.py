@@ -11,7 +11,7 @@ from anaconda_cli_base.telemetry import histogram as _otel_histogram
 from anaconda_cli_base.telemetry import log_event
 from pydantic import BaseModel
 
-from anaconda_mcp.auth import get_auth_token
+from anaconda_mcp.auth import ANONYMOUS_USER_ID, USER_ID_STATUS_BAD_TOKEN, get_auth_token, resolve_user_id
 from anaconda_mcp.config import settings
 
 logger = logging.getLogger(__name__)
@@ -39,10 +39,9 @@ class MetricData(BaseModel):
 
 PII_KEY_EMAIL = "email"
 PII_KEY_UUID = "uuid"
-PII_KEY_AAU_CLIENT_ID = "aau_client_id"
 # Exact-name, top-level-only filter (see emit_event): PII nested inside values or
 # placed under non-canonical keys (e.g. "user_email") is NOT scrubbed from OTel.
-_PII_KEYS = (PII_KEY_EMAIL, PII_KEY_UUID, PII_KEY_AAU_CLIENT_ID)
+_PII_KEYS = (PII_KEY_EMAIL, PII_KEY_UUID)
 
 
 def emit_event(
@@ -88,6 +87,9 @@ def emit_event(
 
     try:
         otel_attrs = {k: v for k, v in params.items() if k not in _PII_KEYS}
+        # user.id is merged AFTER the PII filter so it always survives, and is
+        # OTel-only — the snake-eyes params/MetricData path above is untouched.
+        otel_attrs.update(_otel_user_attrs())
         # event_name doubles as the OTLP log body (1st positional) and the event_name kwarg.
         log_event(
             event_name,
@@ -202,6 +204,28 @@ def _get_client_info(context: Any) -> tuple[str, str]:
     return "unknown", "unknown"
 
 
+def _otel_user_attrs() -> dict[str, str]:
+    try:
+        user_id, status = resolve_user_id()
+        return {"user.id": user_id or ANONYMOUS_USER_ID, "user.id.status": status}
+    except Exception:
+        return {"user.id": ANONYMOUS_USER_ID, "user.id.status": USER_ID_STATUS_BAD_TOKEN}
+
+
+class _UserContextLogFilter(logging.Filter):
+    """Stamp user.id/user.id.status onto every OTel-exported log record.
+
+    The OTel LoggingHandler copies non-reserved record.__dict__ keys to the
+    exported log attributes verbatim (dotted keys included). Setting via
+    record.__dict__[...] is required — "user.id" is not a valid attribute
+    identifier for setattr.
+    """
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        record.__dict__.update(_otel_user_attrs())
+        return True
+
+
 def _emit_tool_metrics(tool_name: str, duration_ms: float, *, is_error: bool) -> None:
     try:
         attrs: dict[str, object] = {"tool": tool_name}
@@ -209,6 +233,7 @@ def _emit_tool_metrics(tool_name: str, duration_ms: float, *, is_error: bool) ->
         # series per tool; dashboards derive success as total minus is_error=true.
         if is_error:
             attrs["is_error"] = True
+        attrs.update(_otel_user_attrs())
         _otel_count("mcp_tool_invoked", plugin_name="mcp", attributes=attrs)
         _otel_histogram(
             "mcp_tool_duration_ms",

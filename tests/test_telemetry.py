@@ -3,7 +3,8 @@ from unittest import mock
 import httpx
 import pytest
 
-from anaconda_mcp.telemetry import MetricData, MetricNames, SnakeEyes
+from anaconda_mcp.telemetry import MetricData, MetricNames, SnakeEyes, _emit_tool_metrics, _otel_user_attrs
+from conftest import TEST_USER_ID
 
 
 @pytest.fixture
@@ -109,3 +110,56 @@ def test_snake_eyes_send_blocking_calls_directly(mock_make_request):
 
     assert mock_make_request.call_count == 1
     assert mock_make_request.call_args[0][0] == "api/snake-eyes/record"
+
+
+def test_otel_user_attrs_authenticated():
+    assert _otel_user_attrs() == {"user.id": TEST_USER_ID, "user.id.status": "authenticated"}
+
+
+def test_otel_user_attrs_no_token():
+    with mock.patch("anaconda_mcp.auth.get_auth_token", return_value=None):
+        assert _otel_user_attrs() == {"user.id": "<anonymous-user>", "user.id.status": "no-local-token"}
+
+
+def test_otel_user_attrs_backstop_on_exception():
+    with mock.patch("anaconda_mcp.telemetry.resolve_user_id", side_effect=RuntimeError("boom")):
+        assert _otel_user_attrs() == {"user.id": "<anonymous-user>", "user.id.status": "bad-token"}
+
+
+def test_emit_tool_metrics_injects_user_id_on_both_metrics():
+    with (
+        mock.patch("anaconda_mcp.telemetry._otel_count") as mock_count,
+        mock.patch("anaconda_mcp.telemetry._otel_histogram") as mock_hist,
+    ):
+        _emit_tool_metrics("mytool", 12.5, is_error=False)
+
+    assert mock_count.call_count == 1
+    assert mock_hist.call_count == 1
+
+    count_attrs = mock_count.call_args.kwargs["attributes"]
+    hist_attrs = mock_hist.call_args.kwargs["attributes"]
+
+    for attrs in (count_attrs, hist_attrs):
+        assert attrs["user.id"] == TEST_USER_ID
+        assert "user.id.status" in attrs
+        assert attrs["tool"] == "mytool"
+
+
+def test_emit_tool_metrics_injects_anonymous_user_id_on_error_when_no_token():
+    with (
+        mock.patch("anaconda_mcp.auth.get_auth_token", return_value=None),
+        mock.patch("anaconda_mcp.telemetry._otel_count") as mock_count,
+        mock.patch("anaconda_mcp.telemetry._otel_histogram") as mock_hist,
+    ):
+        _emit_tool_metrics("mytool", 5.0, is_error=True)
+
+    assert mock_count.call_count == 1
+    assert mock_hist.call_count == 1
+
+    count_attrs = mock_count.call_args.kwargs["attributes"]
+    hist_attrs = mock_hist.call_args.kwargs["attributes"]
+
+    for attrs in (count_attrs, hist_attrs):
+        assert attrs["user.id"] == "<anonymous-user>"
+        assert attrs["user.id.status"] == "no-local-token"
+        assert attrs["is_error"] is True

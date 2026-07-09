@@ -7,7 +7,8 @@ from unittest.mock import patch
 
 import pytest
 
-from anaconda_mcp.telemetry import MetricData, emit_event
+from anaconda_mcp.telemetry import MetricData, _UserContextLogFilter, emit_event
+from conftest import TEST_USER_ID
 
 MOCKED_TOKEN = "mocked_token"
 
@@ -42,7 +43,10 @@ def test_emit_event_calls_log_event():
     assert args[0] == "anaconda_mcp_start_server"
     assert kwargs["event_name"] == "anaconda_mcp_start_server"
     assert kwargs["plugin_name"] == "mcp"
-    assert kwargs["attributes"] == {"x": 1}
+    attributes = kwargs["attributes"]
+    assert attributes["x"] == 1
+    assert attributes["user.id"] == TEST_USER_ID
+    assert attributes["user.id.status"] == "authenticated"
 
 
 def test_emit_event_filters_pii_for_otel_only():
@@ -52,7 +56,7 @@ def test_emit_event_filters_pii_for_otel_only():
     ):
         emit_event(
             "anaconda_mcp_contact_consent",
-            {"contact": True, "email": "a@b", "uuid": "1", "aau_client_id": "anon-xyz"},
+            {"contact": True, "email": "a@b", "uuid": "1"},
         )
 
     mock_send.assert_called_once()
@@ -61,11 +65,27 @@ def test_emit_event_filters_pii_for_otel_only():
         "contact": True,
         "email": "a@b",
         "uuid": "1",
-        "aau_client_id": "anon-xyz",
     }
 
     mock_log_event.assert_called_once()
-    assert mock_log_event.call_args.kwargs["attributes"] == {"contact": True}
+    attributes = mock_log_event.call_args.kwargs["attributes"]
+    assert attributes["contact"] is True
+    assert "email" not in attributes
+    assert "uuid" not in attributes
+    assert attributes["user.id"] == TEST_USER_ID
+    assert attributes["user.id.status"] == "authenticated"
+
+
+def test_emit_event_pii_stripped_but_user_id_present():
+    """PII filter removes email but user.id survives (merged AFTER the filter)."""
+    with patch("anaconda_mcp.telemetry.log_event") as mock_log_event:
+        emit_event("x", {"email": "a@b"})
+
+    mock_log_event.assert_called_once()
+    attributes = mock_log_event.call_args.kwargs["attributes"]
+    assert "email" not in attributes
+    assert attributes["user.id"] == TEST_USER_ID
+    assert "user.id.status" in attributes
 
 
 def test_emit_event_blocking_passes_through():
@@ -119,8 +139,35 @@ def test_application_logger_has_otel_handler_after_cli_init():
         after_count = len(pkg_logger.handlers)
         assert after_count == before_count + 1
         assert isinstance(pkg_logger.handlers[-1], logging.Handler)
+        assert any(isinstance(f, _UserContextLogFilter) for f in pkg_logger.handlers[-1].filters)
     finally:
         # Roll back the handler we just attached so other tests aren't affected.
         if len(pkg_logger.handlers) > before_count:
             pkg_logger.removeHandler(pkg_logger.handlers[-1])
         _attach_application_otel_handler.cache_clear()
+
+
+def _make_record() -> logging.LogRecord:
+    return logging.getLogger("anaconda_mcp").makeRecord("anaconda_mcp", logging.WARNING, "f", 1, "msg", (), None)
+
+
+def test_user_context_log_filter_stamps_user_attrs_on_record():
+    """Filter must return True and set dotted user.id/user.id.status via record.__dict__."""
+    record = _make_record()
+
+    result = _UserContextLogFilter().filter(record)
+
+    assert result is True
+    assert record.__dict__["user.id"] == TEST_USER_ID
+    assert record.__dict__["user.id.status"] == "authenticated"
+
+
+def test_user_context_log_filter_backstops_on_resolve_user_id_failure():
+    """If resolve_user_id raises, filter still returns True and stamps anonymous user.id."""
+    record = _make_record()
+
+    with patch("anaconda_mcp.telemetry.resolve_user_id", side_effect=RuntimeError("boom")):
+        result = _UserContextLogFilter().filter(record)
+
+    assert result is True
+    assert record.__dict__["user.id"] == "<anonymous-user>"
