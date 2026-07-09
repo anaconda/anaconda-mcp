@@ -190,7 +190,6 @@ def serve(ctx, config, host, port, delay, verbose):
         logger.debug("Could not determine new user status", exc_info=True)
 
     emit_event(MetricNames.LOGIN_COMPLETED.value, login_event_params)
-    emit_event(MetricNames.ACTIVE_USER_PING.value)
     emit_event(MetricNames.START_SERVER.value)
 
     install_shutdown_handlers()
