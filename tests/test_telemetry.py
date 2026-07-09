@@ -113,17 +113,21 @@ def test_snake_eyes_send_blocking_calls_directly(mock_make_request):
 
 
 def test_otel_user_attrs_authenticated():
-    assert _otel_user_attrs() == {"user.id": TEST_USER_ID, "user.id.status": "authenticated"}
+    assert _otel_user_attrs() == {"user.id": TEST_USER_ID}
 
 
 def test_otel_user_attrs_no_token():
+    import anaconda_mcp.auth
+
+    anaconda_mcp.auth._reset_user_id_cache()
     with mock.patch("anaconda_mcp.auth.get_auth_token", return_value=None):
-        assert _otel_user_attrs() == {"user.id": "<anonymous-user>", "user.id.status": "no-local-token"}
+        assert _otel_user_attrs() == {}
 
 
 def test_otel_user_attrs_backstop_on_exception():
+    """Backstop: if resolve_user_id raises, _otel_user_attrs returns {} (no user.id key)."""
     with mock.patch("anaconda_mcp.telemetry.resolve_user_id", side_effect=RuntimeError("boom")):
-        assert _otel_user_attrs() == {"user.id": "<anonymous-user>", "user.id.status": "bad-token"}
+        assert _otel_user_attrs() == {}
 
 
 def test_emit_tool_metrics_injects_user_id_on_both_metrics():
@@ -141,11 +145,15 @@ def test_emit_tool_metrics_injects_user_id_on_both_metrics():
 
     for attrs in (count_attrs, hist_attrs):
         assert attrs["user.id"] == TEST_USER_ID
-        assert "user.id.status" in attrs
+        assert "user.id.status" not in attrs
         assert attrs["tool"] == "mytool"
 
 
-def test_emit_tool_metrics_injects_anonymous_user_id_on_error_when_no_token():
+def test_emit_tool_metrics_omits_user_id_when_anonymous():
+    """Anonymous (no token) → user.id key ABSENT from both metrics; tool/is_error still present."""
+    import anaconda_mcp.auth
+
+    anaconda_mcp.auth._reset_user_id_cache()
     with (
         mock.patch("anaconda_mcp.auth.get_auth_token", return_value=None),
         mock.patch("anaconda_mcp.telemetry._otel_count") as mock_count,
@@ -160,6 +168,7 @@ def test_emit_tool_metrics_injects_anonymous_user_id_on_error_when_no_token():
     hist_attrs = mock_hist.call_args.kwargs["attributes"]
 
     for attrs in (count_attrs, hist_attrs):
-        assert attrs["user.id"] == "<anonymous-user>"
-        assert attrs["user.id.status"] == "no-local-token"
+        assert "user.id" not in attrs
+        assert "user.id.status" not in attrs
+        assert attrs["tool"] == "mytool"
         assert attrs["is_error"] is True

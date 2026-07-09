@@ -46,7 +46,7 @@ def test_emit_event_calls_log_event():
     attributes = kwargs["attributes"]
     assert attributes["x"] == 1
     assert attributes["user.id"] == TEST_USER_ID
-    assert attributes["user.id.status"] == "authenticated"
+    assert "user.id.status" not in attributes
 
 
 def test_emit_event_filters_pii_for_otel_only():
@@ -73,7 +73,7 @@ def test_emit_event_filters_pii_for_otel_only():
     assert "email" not in attributes
     assert "uuid" not in attributes
     assert attributes["user.id"] == TEST_USER_ID
-    assert attributes["user.id.status"] == "authenticated"
+    assert "user.id.status" not in attributes
 
 
 def test_emit_event_pii_stripped_but_user_id_present():
@@ -85,7 +85,7 @@ def test_emit_event_pii_stripped_but_user_id_present():
     attributes = mock_log_event.call_args.kwargs["attributes"]
     assert "email" not in attributes
     assert attributes["user.id"] == TEST_USER_ID
-    assert "user.id.status" in attributes
+    assert "user.id.status" not in attributes
 
 
 def test_emit_event_blocking_passes_through():
@@ -151,23 +151,39 @@ def _make_record() -> logging.LogRecord:
     return logging.getLogger("anaconda_mcp").makeRecord("anaconda_mcp", logging.WARNING, "f", 1, "msg", (), None)
 
 
-def test_user_context_log_filter_stamps_user_attrs_on_record():
-    """Filter must return True and set dotted user.id/user.id.status via record.__dict__."""
+def test_user_context_log_filter_stamps_user_id_when_authed():
+    """Authed: filter returns True and sets record.__dict__["user.id"] with NO status key."""
     record = _make_record()
 
     result = _UserContextLogFilter().filter(record)
 
     assert result is True
     assert record.__dict__["user.id"] == TEST_USER_ID
-    assert record.__dict__["user.id.status"] == "authenticated"
+    assert "user.id.status" not in record.__dict__
+
+
+def test_user_context_log_filter_omits_user_id_when_anonymous():
+    """Anonymous: filter returns True and does NOT set user.id on the record (schema-conforming omission)."""
+    import anaconda_mcp.auth
+
+    anaconda_mcp.auth._reset_user_id_cache()
+    record = _make_record()
+
+    with patch("anaconda_mcp.auth.get_auth_token", return_value=None):
+        result = _UserContextLogFilter().filter(record)
+
+    assert result is True
+    assert "user.id" not in record.__dict__
+    assert "user.id.status" not in record.__dict__
 
 
 def test_user_context_log_filter_backstops_on_resolve_user_id_failure():
-    """If resolve_user_id raises, filter still returns True and stamps anonymous user.id."""
+    """If resolve_user_id raises, filter still returns True and stamps nothing (empty merge)."""
     record = _make_record()
 
     with patch("anaconda_mcp.telemetry.resolve_user_id", side_effect=RuntimeError("boom")):
         result = _UserContextLogFilter().filter(record)
 
     assert result is True
-    assert record.__dict__["user.id"] == "<anonymous-user>"
+    assert "user.id" not in record.__dict__
+    assert "user.id.status" not in record.__dict__

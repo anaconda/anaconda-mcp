@@ -11,7 +11,7 @@ from anaconda_cli_base.telemetry import histogram as _otel_histogram
 from anaconda_cli_base.telemetry import log_event
 from pydantic import BaseModel
 
-from anaconda_mcp.auth import ANONYMOUS_USER_ID, USER_ID_STATUS_BAD_TOKEN, get_auth_token, resolve_user_id
+from anaconda_mcp.auth import get_auth_token, resolve_user_id
 from anaconda_mcp.config import settings
 
 logger = logging.getLogger(__name__)
@@ -205,20 +205,24 @@ def _get_client_info(context: Any) -> tuple[str, str]:
 
 
 def _otel_user_attrs() -> dict[str, str]:
+    """OTel attributes for the authenticated user. Empty dict when unauthenticated
+    (schema-conforming: user.id is omitted, never a sentinel; no status field)."""
     try:
-        user_id, status = resolve_user_id()
-        return {"user.id": user_id or ANONYMOUS_USER_ID, "user.id.status": status}
+        user_id = resolve_user_id()
     except Exception:
-        return {"user.id": ANONYMOUS_USER_ID, "user.id.status": USER_ID_STATUS_BAD_TOKEN}
+        return {}
+    return {"user.id": user_id} if user_id else {}
 
 
 class _UserContextLogFilter(logging.Filter):
-    """Stamp user.id/user.id.status onto every OTel-exported log record.
+    """Stamp user.id onto every OTel-exported log record when authenticated.
 
     The OTel LoggingHandler copies non-reserved record.__dict__ keys to the
     exported log attributes verbatim (dotted keys included). Setting via
     record.__dict__[...] is required — "user.id" is not a valid attribute
-    identifier for setattr.
+    identifier for setattr. When unauthenticated, ``_otel_user_attrs()``
+    returns ``{}`` and the merge is a no-op (schema-conforming: user.id is
+    omitted, never a sentinel).
     """
 
     def filter(self, record: logging.LogRecord) -> bool:

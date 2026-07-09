@@ -77,36 +77,37 @@ _OTHER_UUID = "11111111-2222-3333-4444-555555555555"
 @pytest.mark.parametrize(
     "token, expected",
     [
-        (VALID_TEST_JWT, (TEST_USER_ID, "authenticated")),
-        (_build_jwt(_OTHER_UUID), (_OTHER_UUID, "authenticated")),
-        (None, (None, "no-local-token")),
-        ("", (None, "no-local-token")),
-        ("garbage", (None, "bad-token")),
-        ("a.b", (None, "bad-token")),
-        ("....", (None, "bad-token")),
-        (_build_jwt_raw_payload({"sub": 123}), (None, "bad-token")),
-        (_build_jwt_raw_payload({"sub": None}), (None, "bad-token")),
-        (_build_jwt_raw_payload({"not_sub": "x"}), (None, "bad-token")),
-        (_build_jwt_raw_payload(["not", "an", "object"]), (None, "bad-token")),
+        (VALID_TEST_JWT, TEST_USER_ID),
+        (_build_jwt(_OTHER_UUID), _OTHER_UUID),
+        (None, None),
+        ("", None),
+        ("garbage", None),
+        ("a.b", None),
+        ("....", None),
+        (_build_jwt_raw_payload({"sub": 123}), None),
+        (_build_jwt_raw_payload({"sub": None}), None),
+        (_build_jwt_raw_payload({"not_sub": "x"}), None),
+        (_build_jwt_raw_payload(["not", "an", "object"]), None),
     ],
 )
 def test_resolve_user_id_branches(token, expected):
+    import anaconda_mcp.auth
     from anaconda_mcp.auth import resolve_user_id
 
+    anaconda_mcp.auth._reset_user_id_cache()
     with mock.patch("anaconda_mcp.auth.get_auth_token", return_value=token):
         assert resolve_user_id() == expected
 
 
 @pytest.mark.parametrize("token", ["", "a.b", "....", "garbage", "a.!!!.b", "a." + "A" * 5 + ".b"])
 def test_resolve_user_id_never_raises(token):
+    import anaconda_mcp.auth
     from anaconda_mcp.auth import resolve_user_id
 
+    anaconda_mcp.auth._reset_user_id_cache()
     with mock.patch("anaconda_mcp.auth.get_auth_token", return_value=token):
         result = resolve_user_id()
-        assert isinstance(result, tuple)
-        assert len(result) == 2
-        assert result[0] is None or isinstance(result[0], str)
-        assert result[1] in {"authenticated", "no-local-token", "bad-token"}
+        assert result is None or isinstance(result, str)
 
 
 def test_resolve_user_id_caches_authenticated_result():
@@ -119,12 +120,13 @@ def test_resolve_user_id_caches_authenticated_result():
         first = resolve_user_id()
         second = resolve_user_id()
 
-    assert first == (TEST_USER_ID, "authenticated")
-    assert second == (TEST_USER_ID, "authenticated")
+    assert first == TEST_USER_ID
+    assert second == TEST_USER_ID
     assert fake.call_count == 1
 
 
-def test_resolve_user_id_does_not_cache_no_local_token():
+def test_resolve_user_id_caches_anonymous_result_no_token():
+    """Anonymous (None) result is now cached too — eliminates per-log-record keyring reads."""
     import anaconda_mcp.auth
     from anaconda_mcp.auth import resolve_user_id
 
@@ -134,12 +136,13 @@ def test_resolve_user_id_does_not_cache_no_local_token():
         first = resolve_user_id()
         second = resolve_user_id()
 
-    assert first == (None, "no-local-token")
-    assert second == (None, "no-local-token")
-    assert fake.call_count == 2
+    assert first is None
+    assert second is None
+    assert fake.call_count == 1
 
 
-def test_resolve_user_id_does_not_cache_bad_token():
+def test_resolve_user_id_caches_anonymous_result_bad_token():
+    """Bad-token (undecodable) result is also cached as None."""
     import anaconda_mcp.auth
     from anaconda_mcp.auth import resolve_user_id
 
@@ -149,6 +152,18 @@ def test_resolve_user_id_does_not_cache_bad_token():
         first = resolve_user_id()
         second = resolve_user_id()
 
-    assert first == (None, "bad-token")
-    assert second == (None, "bad-token")
-    assert fake.call_count == 2
+    assert first is None
+    assert second is None
+    assert fake.call_count == 1
+
+
+def test_resolve_user_id_is_total_when_get_auth_token_raises():
+    """Totality: any exception from get_auth_token is swallowed; returns None."""
+    import anaconda_mcp.auth
+    from anaconda_mcp.auth import resolve_user_id
+
+    anaconda_mcp.auth._reset_user_id_cache()
+    with mock.patch("anaconda_mcp.auth.get_auth_token", side_effect=RuntimeError("keyring boom")):
+        result = resolve_user_id()
+
+    assert result is None

@@ -7,7 +7,7 @@ from unittest import mock
 import pytest
 
 from anaconda_mcp import composition
-from anaconda_mcp.auth import ANONYMOUS_USER_ID, AuthenticationError
+from anaconda_mcp.auth import AuthenticationError
 from anaconda_mcp.composition import PlatformMiddleware
 from conftest import TEST_USER_ID
 
@@ -128,7 +128,7 @@ async def test_telemetry_failure_does_not_mask_tool_result(captured_events, monk
 
 
 async def test_otel_span_attributes_include_user_id(captured_events):
-    """Todo 5: on_call_tool opens the OTel span with user.id + user.id.status.
+    """Todo 5: on_call_tool opens the OTel span with user.id (no status field).
 
     The autouse conftest fixture patches ``anaconda_mcp.auth.get_auth_token`` to
     return ``VALID_TEST_JWT`` (sub=TEST_USER_ID), so ``resolve_user_id()`` --
@@ -150,18 +150,14 @@ async def test_otel_span_attributes_include_user_id(captured_events):
     attrs = captured_kwargs["attributes"]
     assert attrs["tool"] == "conda_list_environments"
     assert attrs["user.id"] == TEST_USER_ID
-    assert "user.id.status" in attrs
+    assert "user.id.status" not in attrs
 
 
 async def test_otel_span_backstop_when_resolve_user_id_raises(captured_events):
-    """Todo 5 (+ Todo 2 backstop): if resolve_user_id blows up, the span still
-    opens with ``user.id == ANONYMOUS_USER_ID`` and the tool call completes.
-
-    The outer block around ``_otel_traced`` in ``on_call_tool`` is ``try/finally``
-    with NO ``except``, so any exception raised while *building* attributes
-    would kill the call. ``_otel_user_attrs`` has an internal try/except that
-    guarantees a dict; this test locks that contract from the middleware's
-    perspective.
+    """Backstop: if resolve_user_id raises, the span still opens and the tool call
+    completes. ``user.id`` is OMITTED from the attributes (schema-conforming: no
+    sentinel, no status field). ``_otel_user_attrs`` catches the exception and
+    returns ``{}``, which the ``**`` merge folds into a no-op.
     """
     captured_kwargs: dict = {}
 
@@ -183,5 +179,5 @@ async def test_otel_span_backstop_when_resolve_user_id_raises(captured_events):
     assert result == "RESULT"
     attrs = captured_kwargs["attributes"]
     assert attrs["tool"] == "conda_list_environments"
-    assert attrs["user.id"] == ANONYMOUS_USER_ID
-    assert "user.id.status" in attrs
+    assert "user.id" not in attrs
+    assert "user.id.status" not in attrs

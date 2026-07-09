@@ -11,11 +11,6 @@ from anaconda_mcp.config import settings
 
 logger = logging.getLogger(__name__)
 
-ANONYMOUS_USER_ID = "<anonymous-user>"
-USER_ID_STATUS_AUTHENTICATED = "authenticated"
-USER_ID_STATUS_NO_TOKEN = "no-local-token"
-USER_ID_STATUS_BAD_TOKEN = "bad-token"
-
 
 class AuthenticationError(Exception):
     pass
@@ -59,27 +54,38 @@ def _decode_jwt_sub(token: str) -> str | None:
         sub = claims.get("sub")
         return sub if isinstance(sub, str) else None
     except Exception:
+        logger.debug("failed to decode JWT sub", exc_info=True)
         return None
 
 
-_resolved_user_id: tuple[str, str] | None = None
+_resolved_user_id: str | None = None
+_user_id_resolved: bool = False  # lockless racy-init is benign under the GIL; worst case is a redundant recompute
 
 
 def _reset_user_id_cache() -> None:
-    """Test/lifecycle hook: clear the memoized authenticated user id."""
-    global _resolved_user_id
+    """Test/lifecycle hook: clear the memoized user id."""
+    global _resolved_user_id, _user_id_resolved
     _resolved_user_id = None
+    _user_id_resolved = False
 
 
-def resolve_user_id() -> tuple[str | None, str]:
-    global _resolved_user_id
-    if _resolved_user_id is not None:
+def resolve_user_id() -> str | None:
+    """Return the authenticated account UUID (JWT ``sub``), or None if unauthenticated/undecodable.
+
+    Total: never raises. Memoized for the process lifetime (call
+    ``_reset_user_id_cache()`` to clear). The anonymous (None) result is cached
+    too — this eliminates per-log-record keyring reads. ``serve`` authenticates
+    before any telemetry fires, so it never caches a stale None; short-lived
+    unauthenticated processes (e.g. ``setup``) exit before it matters.
+    """
+    global _resolved_user_id, _user_id_resolved
+    if _user_id_resolved:
         return _resolved_user_id
-    token = get_auth_token()
-    if not token:
-        return (None, USER_ID_STATUS_NO_TOKEN)
-    sub = _decode_jwt_sub(token)
-    if sub:
-        _resolved_user_id = (sub, USER_ID_STATUS_AUTHENTICATED)
-        return _resolved_user_id
-    return (None, USER_ID_STATUS_BAD_TOKEN)
+    try:
+        token = get_auth_token()
+    except Exception:
+        logger.debug("get_auth_token failed while resolving user id", exc_info=True)
+        token = None
+    _resolved_user_id = _decode_jwt_sub(token) if token else None
+    _user_id_resolved = True
+    return _resolved_user_id
