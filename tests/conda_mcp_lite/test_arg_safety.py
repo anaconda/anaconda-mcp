@@ -91,7 +91,7 @@ async def test_run_conda_places_json_before_separator(monkeypatch):
         async def communicate(self):
             return (b'{"ok": true}', b"")
 
-    async def _fake_exec(*cmd, stdout=None, stderr=None):
+    async def _fake_exec(*cmd, stdin=None, stdout=None, stderr=None):
         captured["cmd"] = list(cmd)
         return _FakeProc()
 
@@ -116,7 +116,7 @@ async def test_run_conda_empty_stdout_with_success_returncode_returns_empty(monk
         async def communicate(self):
             return (b"", b"")
 
-    async def _fake_exec(*cmd, stdout=None, stderr=None):
+    async def _fake_exec(*cmd, stdin=None, stdout=None, stderr=None):
         return _FakeProc()
 
     monkeypatch.setattr(server, "_conda_exe", Path("/x/conda"))
@@ -135,7 +135,7 @@ async def test_run_conda_empty_stdout_with_failure_returncode_raises(monkeypatch
         async def communicate(self):
             return (b"", b"boom")
 
-    async def _fake_exec(*cmd, stdout=None, stderr=None):
+    async def _fake_exec(*cmd, stdin=None, stdout=None, stderr=None):
         return _FakeProc()
 
     monkeypatch.setattr(server, "_conda_exe", Path("/x/conda"))

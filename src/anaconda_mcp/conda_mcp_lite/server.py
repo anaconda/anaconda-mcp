@@ -124,6 +124,7 @@ def _probe_conda_from_shell(timeout: float = 5.0) -> str | None:
             args,
             capture_output=True,
             text=True,
+            stdin=subprocess.DEVNULL,
             timeout=timeout,
         )
         match = re.search(f"{mark}(.+?){mark}", result.stdout)
@@ -230,6 +231,7 @@ async def run_conda(*args: str, positionals: list[str] | None = None) -> dict | 
         cmd += ["--", *positionals]
     proc = await asyncio.create_subprocess_exec(
         *cmd,
+        stdin=subprocess.DEVNULL,
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
     )
@@ -270,6 +272,7 @@ def get_conda_info() -> dict:
             [str(_conda_exe), "info", "--json"],
             capture_output=True,
             text=True,
+            stdin=subprocess.DEVNULL,
             timeout=30,
         )
         if result.returncode != 0:
