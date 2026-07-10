@@ -90,4 +90,4 @@ jobs:
 
       - name: Run unit tests
         run: |
-          pytest tests/ --ignore=tests/qa -v --tb=short ${{ matrix.python-version == '3.13' && matrix.os == 'linux' && '--cov=anaconda_mcp --cov-report=xml --cov-report=term' || '' }}
+          pytest tests/ -v --tb=short ${{ matrix.python-version == '3.13' && matrix.os == 'linux' && '--cov=anaconda_mcp --cov-report=xml --cov-report=term' || '' }}
