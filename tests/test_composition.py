@@ -10,7 +10,6 @@ from anaconda_mcp.composition import PlatformMiddleware, build_composed_server
 
 async def test_build_composed_server_mounts_conda_prefixed_with_annotations(monkeypatch):
     monkeypatch.setattr(composition, "get_auth_token", lambda: "tok")
-    monkeypatch.setattr(composition, "client_token", lambda: None)
     # Avoid real network for the remote search proxy: stub create_proxy with an empty server.
     monkeypatch.setattr(composition, "create_proxy", lambda client: FastMCP("search-stub"))
 
@@ -83,7 +82,6 @@ def test_build_composed_server_uses_dynamic_search_auth(monkeypatch):
             captured["timeout"] = timeout
             captured["init_timeout"] = init_timeout
 
-    monkeypatch.setattr(composition, "client_token", lambda: None)
     monkeypatch.setattr(composition, "StreamableHttpTransport", _Transport)
     monkeypatch.setattr(composition, "Client", _Client)
     monkeypatch.setattr(composition, "create_proxy", lambda client: FastMCP("search-stub"))
@@ -107,7 +105,6 @@ async def test_middleware_enforces_auth_on_proxied_search_tool(monkeypatch):
         return None
 
     monkeypatch.setattr(composition, "get_auth_token", _unauthenticated)
-    monkeypatch.setattr(composition, "client_token", lambda: None)
 
     search_stub = FastMCP("search-stub")
 

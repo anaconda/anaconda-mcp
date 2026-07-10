@@ -33,7 +33,6 @@ requirements:
     - httpx >=0.24,<1.0
     - platformdirs >=4.0.0,<5
     - rich >=13.0.0
-    - anaconda-anon-usage
     - anaconda-opentelemetry >=1.2.0,<2.0.0
 
 about:

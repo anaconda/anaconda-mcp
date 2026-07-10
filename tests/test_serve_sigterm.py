@@ -32,7 +32,6 @@ def mock_serve_deps():
         patch("anaconda_mcp.cli.validate_auth_token", return_value=True),
         patch("anaconda_mcp.cli.BaseClient"),
         patch("anaconda_mcp.cli.emit_event"),
-        patch("anaconda_mcp.cli.client_token", return_value=None),
         patch("anaconda_mcp.cli.install_shutdown_handlers"),
         patch("anaconda_mcp.cli.time.sleep"),
         patch("anaconda_mcp.cli.build_composed_server") as mock_build,

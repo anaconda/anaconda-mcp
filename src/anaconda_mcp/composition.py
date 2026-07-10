@@ -16,7 +16,6 @@ from collections.abc import Generator
 
 import httpx
 import mcp.types as mt
-from anaconda_anon_usage.tokens import client_token
 from anaconda_cli_base.telemetry import traced as _otel_traced
 from fastmcp import Client, FastMCP
 from fastmcp.client.transports import StreamableHttpTransport
@@ -27,10 +26,10 @@ from fastmcp.tools.tool import ToolResult
 from anaconda_mcp.auth import AuthenticationError, get_auth_token, validate_auth_token
 from anaconda_mcp.config import settings
 from anaconda_mcp.telemetry import (
-    PII_KEY_AAU_CLIENT_ID,
     MetricNames,
     _emit_tool_metrics,
     _get_client_info,
+    _otel_user_attrs,
     emit_event,
 )
 from anaconda_mcp.terms import verify_terms_accepted
@@ -45,8 +44,7 @@ class PlatformMiddleware(Middleware):
     the parent server's middleware runs before tool resolution/dispatch.
     """
 
-    def __init__(self, aau_client_id: str | None = None, max_tool_call_history: int = 20) -> None:
-        self._aau_client_id = aau_client_id
+    def __init__(self, max_tool_call_history: int = 20) -> None:
         self._tool_call_history: deque[str] = deque(maxlen=max_tool_call_history)
 
     async def on_call_tool(
@@ -70,7 +68,9 @@ class PlatformMiddleware(Middleware):
         is_error = False
         error_description = ""
         try:
-            with _otel_traced(f"mcp_tool_{name}", plugin_name="mcp", attributes={"tool": name}) as span:
+            with _otel_traced(
+                f"mcp_tool_{name}", plugin_name="mcp", attributes={"tool": name, **_otel_user_attrs()}
+            ) as span:
                 try:
                     return await call_next(context)
                 except Exception as exc:
@@ -100,8 +100,6 @@ class PlatformMiddleware(Middleware):
                         "error_description": error_description,
                         "tool_call_history": ",".join(self._tool_call_history),
                     }
-                    if self._aau_client_id is not None:
-                        event_params[PII_KEY_AAU_CLIENT_ID] = self._aau_client_id
                     emit_event(MetricNames.TOOL_COMPLETED.value, event_params)
                     _emit_tool_metrics(name, duration_ms, is_error=is_error)
                 except Exception:
@@ -134,7 +132,7 @@ def build_composed_server() -> FastMCP:
 
     parent = FastMCP(
         "anaconda-mcp",
-        middleware=[PlatformMiddleware(aau_client_id=client_token() or None)],
+        middleware=[PlatformMiddleware()],
     )
     parent.mount(conda_server.mcp, namespace="conda")
 
