@@ -104,12 +104,25 @@ def _ns(**kwargs):
     return argparse.Namespace(**kwargs)
 
 
-@click.group(context_settings={"help_option_names": ["-h", "--help"]})
+@click.group(invoke_without_command=True, context_settings={"help_option_names": ["-h", "--help"]})
 @click.pass_context
 def cli(ctx):
     """Anaconda MCP wrapper — forwards to mcp-compose."""
     ctx.ensure_object(dict)
     _configure_logging(getattr(logging, settings.log_level.upper(), logging.INFO))
+
+    if ctx.invoked_subcommand is None:
+        if not sys.stdin.isatty():
+            ctx.invoke(serve)
+        else:
+            if ctx.info_name == "anaconda-mcp":
+                click.echo(
+                    "Warning: 'anaconda-mcp' is deprecated for interactive use. Use 'anaconda mcp' instead.\n",
+                    err=True,
+                )
+            click.echo(ctx.get_help())
+        return
+
     if ctx.info_name == "anaconda-mcp":
         click.echo(
             "Warning: 'anaconda-mcp' is deprecated. Use 'anaconda mcp' instead.",
