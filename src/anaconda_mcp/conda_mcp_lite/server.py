@@ -124,6 +124,7 @@ def _probe_conda_from_shell(timeout: float = 5.0) -> str | None:
             args,
             capture_output=True,
             text=True,
+            stdin=subprocess.DEVNULL,
             timeout=timeout,
         )
         match = re.search(f"{mark}(.+?){mark}", result.stdout)
@@ -170,6 +171,10 @@ def _find_conda_from_registry_uninstall() -> str | None:
     Windows: find conda from the installer's Uninstall registry entry.
     Always written by the Anaconda/Miniconda installer, does NOT require
     'conda init' to have been run.
+
+    Tries InstallLocation first; falls back to deriving the root from
+    UninstallString (present even when InstallLocation is absent, e.g.
+    recent Miniconda installers).
     """
     if sys.platform != "win32":
         return None
@@ -184,9 +189,21 @@ def _find_conda_from_registry_uninstall() -> str | None:
                         subkey_name = winreg.EnumKey(uninstall, i)
                         if "conda" in subkey_name.lower() or "anaconda" in subkey_name.lower():
                             with winreg.OpenKey(uninstall, subkey_name) as subkey:
+                                # Strategy A: InstallLocation (present in older installers)
                                 try:
                                     location, _ = winreg.QueryValueEx(subkey, "InstallLocation")
                                     conda_exe = Path(location) / "Scripts" / "conda.exe"
+                                    if conda_exe.is_file():
+                                        return str(conda_exe)
+                                except OSError:
+                                    pass
+
+                                # Strategy B: derive root from UninstallString
+                                # e.g. '"C:\...\miniconda3\Uninstall-Miniconda3.exe"'
+                                try:
+                                    uninstall_str, _ = winreg.QueryValueEx(subkey, "UninstallString")
+                                    uninstall_exe = Path(uninstall_str.strip('"').split('"')[0])
+                                    conda_exe = uninstall_exe.parent / "Scripts" / "conda.exe"
                                     if conda_exe.is_file():
                                         return str(conda_exe)
                                 except OSError:
@@ -230,6 +247,7 @@ async def run_conda(*args: str, positionals: list[str] | None = None) -> dict | 
         cmd += ["--", *positionals]
     proc = await asyncio.create_subprocess_exec(
         *cmd,
+        stdin=subprocess.DEVNULL,
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
     )
@@ -270,6 +288,7 @@ def get_conda_info() -> dict:
             [str(_conda_exe), "info", "--json"],
             capture_output=True,
             text=True,
+            stdin=subprocess.DEVNULL,
             timeout=30,
         )
         if result.returncode != 0:

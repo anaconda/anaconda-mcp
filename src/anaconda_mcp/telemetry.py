@@ -11,7 +11,7 @@ from anaconda_cli_base.telemetry import histogram as _otel_histogram
 from anaconda_cli_base.telemetry import log_event
 from pydantic import BaseModel
 
-from anaconda_mcp.auth import get_auth_token
+from anaconda_mcp.auth import get_auth_token, resolve_user_id
 from anaconda_mcp.config import settings
 
 logger = logging.getLogger(__name__)
@@ -22,7 +22,6 @@ class MetricNames(enum.Enum):
     START_SERVER = f"{_EVENT_PREFIX}_start_server"
     LOGIN_COMPLETED = f"{_EVENT_PREFIX}_login_completed"
     TOOL_COMPLETED = f"{_EVENT_PREFIX}_tool_completed"
-    ACTIVE_USER_PING = f"{_EVENT_PREFIX}_active_user_ping"
     INSTALL_COMPLETED = f"{_EVENT_PREFIX}_install_completed"
     CONTACT_CONSENT = f"{_EVENT_PREFIX}_contact_consent"
 
@@ -39,10 +38,9 @@ class MetricData(BaseModel):
 
 PII_KEY_EMAIL = "email"
 PII_KEY_UUID = "uuid"
-PII_KEY_AAU_CLIENT_ID = "aau_client_id"
 # Exact-name, top-level-only filter (see emit_event): PII nested inside values or
 # placed under non-canonical keys (e.g. "user_email") is NOT scrubbed from OTel.
-_PII_KEYS = (PII_KEY_EMAIL, PII_KEY_UUID, PII_KEY_AAU_CLIENT_ID)
+_PII_KEYS = (PII_KEY_EMAIL, PII_KEY_UUID)
 
 
 def emit_event(
@@ -88,6 +86,9 @@ def emit_event(
 
     try:
         otel_attrs = {k: v for k, v in params.items() if k not in _PII_KEYS}
+        # user.id is merged AFTER the PII filter so it always survives, and is
+        # OTel-only — the snake-eyes params/MetricData path above is untouched.
+        otel_attrs.update(_otel_user_attrs())
         # event_name doubles as the OTLP log body (1st positional) and the event_name kwarg.
         log_event(
             event_name,
@@ -200,6 +201,37 @@ def _get_client_info(context: Any) -> tuple[str, str]:
     except Exception:
         pass
     return "unknown", "unknown"
+
+
+# NOTE: sibling services set user.id centrally via ResourceAttributes.user_id, but
+# anaconda-cli-base builds the OTel Resource at init and exposes no post-init API to
+# set it, so we inject user.id per-signal (here + the span + _UserContextLogFilter).
+# Kept OFF tool metrics deliberately: a per-account UUID would explode metric-series
+# cardinality (see security review); attribution lives on events/spans/logs instead.
+def _otel_user_attrs() -> dict[str, str]:
+    """OTel attributes for the authenticated user. Empty dict when unauthenticated
+    (schema-conforming: user.id is omitted, never a sentinel; no status field)."""
+    try:
+        user_id = resolve_user_id()
+    except Exception:
+        return {}
+    return {"user.id": user_id} if user_id else {}
+
+
+class _UserContextLogFilter(logging.Filter):
+    """Stamp user.id onto every OTel-exported log record when authenticated.
+
+    The OTel LoggingHandler copies non-reserved record.__dict__ keys to the
+    exported log attributes verbatim (dotted keys included). Setting via
+    record.__dict__[...] is required — "user.id" is not a valid attribute
+    identifier for setattr. When unauthenticated, ``_otel_user_attrs()``
+    returns ``{}`` and the merge is a no-op (schema-conforming: user.id is
+    omitted, never a sentinel).
+    """
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        record.__dict__.update(_otel_user_attrs())
+        return True
 
 
 def _emit_tool_metrics(tool_name: str, duration_ms: float, *, is_error: bool) -> None:

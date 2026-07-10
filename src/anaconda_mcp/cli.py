@@ -8,7 +8,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import click
-from anaconda_anon_usage.tokens import client_token
 from anaconda_auth.client import BaseClient
 from anaconda_auth.exceptions import TokenNotFoundError
 from anaconda_cli_base.lifecycle import long_running
@@ -48,8 +47,8 @@ from anaconda_mcp.config import settings
 from anaconda_mcp.mcp_state import is_new_install, mark_installed
 from anaconda_mcp.telemetry import (
     NEW_USER_THRESHOLD_DAYS,
-    PII_KEY_AAU_CLIENT_ID,
     MetricNames,
+    _UserContextLogFilter,
     emit_event,
 )
 from anaconda_mcp.terms import (
@@ -75,7 +74,9 @@ _NOISY_LOGGERS = ("httpx", "httpcore")
 @functools.cache
 def _attach_application_otel_handler() -> None:
     """Attach the OTel log handler to the ``anaconda_mcp`` logger exactly once."""
-    logging.getLogger("anaconda_mcp").addHandler(get_otel_handler())
+    handler = get_otel_handler()
+    handler.addFilter(_UserContextLogFilter())
+    logging.getLogger("anaconda_mcp").addHandler(handler)
 
 
 def _configure_logging(level: int) -> None:
@@ -216,9 +217,6 @@ def serve(ctx, config, host, port, delay, verbose):
         logger.debug("Could not determine new user status", exc_info=True)
 
     emit_event(MetricNames.LOGIN_COMPLETED.value, login_event_params)
-    aau = client_token()
-    if aau:
-        emit_event(MetricNames.ACTIVE_USER_PING.value, {PII_KEY_AAU_CLIENT_ID: aau})
     emit_event(MetricNames.START_SERVER.value)
 
     install_shutdown_handlers()

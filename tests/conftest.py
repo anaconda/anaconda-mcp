@@ -1,3 +1,5 @@
+import base64
+import json
 import signal as _signal
 from unittest import mock
 
@@ -5,9 +7,14 @@ import anaconda_cli_base.lifecycle as _lifecycle
 import pytest
 
 import anaconda_mcp._shutdown as _mcp_shutdown
+import anaconda_mcp.auth as _mcp_auth
 from anaconda_mcp.terms import CURRENT_TOS_VERSION
 
 MOCKED_TOKEN = "mocked_token"
+
+TEST_USER_ID = "00000000-0000-0000-0000-000000000001"
+_payload = base64.urlsafe_b64encode(json.dumps({"sub": TEST_USER_ID}).encode()).rstrip(b"=").decode()
+VALID_TEST_JWT = f"h.{_payload}.s"
 
 
 def _reset_shutdown_globals() -> None:
@@ -50,9 +57,12 @@ def _bypass_terms_gate(monkeypatch):
 def mock_token_info_load():
     """Patch get_auth_token in cli.py + telemetry.py so CLI commands and
     emit_event() don't require real auth."""
+    _mcp_auth._reset_user_id_cache()
     with (
         mock.patch("anaconda_mcp.cli.get_auth_token", return_value=MOCKED_TOKEN) as m,
         mock.patch("anaconda_mcp.cli.validate_auth_token", return_value=True),
         mock.patch("anaconda_mcp.telemetry.get_auth_token", return_value=MOCKED_TOKEN),
+        mock.patch("anaconda_mcp.auth.get_auth_token", return_value=VALID_TEST_JWT),
     ):
         yield m
+    _mcp_auth._reset_user_id_cache()
