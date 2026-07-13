@@ -21,6 +21,24 @@ conda activate anaconda-mcp
 
 ---
 
+## Installation via pip or uvx
+
+**Requires Python 3.10–3.14.**
+
+```bash
+pip install anaconda-mcp
+```
+
+```bash
+uvx anaconda-mcp@latest
+```
+
+**Prerequisite:** `conda` must be installed separately and discoverable on your `PATH`. pip and uvx do not provide conda. Without a working conda installation, the conda tools this server exposes will fail. Install [Miniconda or Anaconda Distribution](https://docs.conda.io/en/latest/) first, then follow the `anaconda login` and `anaconda mcp terms accept` steps below.
+
+> **Important:** The Anaconda MCP Server connects your conda environments to MCP-compatible AI assistants, enabling them to create, modify, and delete environments and packages on your machine. Install only if you trust the AI assistant you intend to connect and understand it can take real actions on your machine. By installing you acknowledge: (1) The AI assistant you connect to this MCP server is an independent third-party model, not a product or service of Anaconda. (2) Anaconda is NOT responsible for the actions the AI assistant directs within your environment, including unintended changes or deletions.
+
+---
+
 ## Anaconda Login
 
 Authentication is **required**. The server will not start and tool calls will not succeed without a valid Anaconda login.
