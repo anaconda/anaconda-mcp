@@ -37,6 +37,9 @@ jobs:
           - os: linux
             runner: ubuntu-latest
             python-version: "3.13"
+          - os: linux
+            runner: ubuntu-latest
+            python-version: "3.14"
           - os: macos
             runner: macos-latest
             python-version: "3.10"
@@ -49,6 +52,9 @@ jobs:
           - os: macos
             runner: macos-latest
             python-version: "3.13"
+          - os: macos
+            runner: macos-latest
+            python-version: "3.14"
           - os: windows
             runner: windows-latest
             python-version: "3.10"
@@ -61,6 +67,9 @@ jobs:
           - os: windows
             runner: windows-latest
             python-version: "3.13"
+          - os: windows
+            runner: windows-latest
+            python-version: "3.14"
 
     steps:
       - uses: actions/checkout@v4
@@ -72,16 +81,6 @@ jobs:
           python-version: ${{ matrix.python-version }}
           use-mamba: true
           conda-solver: libmamba
-
-      - name: Configure private conda channels
-        run: |
-          conda config --add channels conda-forge
-          conda config --add channels https://conda.anaconda.org/t/${{ secrets.ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN }}/anaconda-cloud
-          conda config --add channels https://conda.anaconda.org/t/${{ secrets.ANACONDA_ORG_ANACONDA_CLOUD_CHANNEL_TOKEN }}/anaconda-cloud/label/dev
-
-      - name: Install conda dependencies
-        run: |
-          conda install -y mcp-compose
 
       - name: Install package and test dependencies
         run: |

@@ -7,9 +7,11 @@ on:
       - "v[0-9]+.[0-9]+.[0-9]+"              # full release: v1.0.0
     branches-ignore:
       - "**"
+  workflow_dispatch: {}
 
 jobs:
   conda-build:
+    if: github.event_name == 'push'
     name: Build conda package (${{ matrix.config.os }}, py${{ matrix.python-version }})
     runs-on: ${{ matrix.config.runner }}
 
@@ -244,3 +246,62 @@ jobs:
       - name: Publish to MCP Registry
         if: steps.prerelease.outputs.is_prerelease == 'false'
         run: ./mcp-publisher publish
+
+  build-dist:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      !contains(github.ref_name, '-rc.')
+    name: Build PyPI distributions
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build wheel and sdist
+        run: pipx run build
+
+      - name: Refuse off-tag (dev/local) build
+        run: |
+          if ls dist/ | grep -Eq '\.dev|\+'; then
+            echo "::error::Refusing to publish an off-tag build (dev/local version):"
+            ls dist/
+            exit 1
+          fi
+
+      - name: Verify distributions
+        run: pipx run twine check dist/*
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pypi-dist
+          path: dist/
+          if-no-files-found: error
+
+  publish-pypi:
+    name: Publish to PyPI
+    needs: [build-dist]
+    runs-on: ubuntu-latest
+
+    environment:
+      name: pypi
+      url: https://pypi.org/p/anaconda-mcp
+
+    permissions:
+      id-token: write
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: pypi-dist
+          path: dist/
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
