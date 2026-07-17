@@ -59,6 +59,7 @@ from anaconda_mcp.terms import (
     is_terms_current,
     persist_acceptance,
     send_contact_consent_event,
+    verify_terms_accepted,
 )
 from anaconda_mcp.wizard import setup_wizard_page
 
@@ -105,12 +106,25 @@ def _ns(**kwargs):
     return argparse.Namespace(**kwargs)
 
 
-@click.group(context_settings={"help_option_names": ["-h", "--help"]})
+@click.group(invoke_without_command=True, context_settings={"help_option_names": ["-h", "--help"]})
 @click.pass_context
 def cli(ctx):
     """Anaconda MCP wrapper — forwards to mcp-compose."""
     ctx.ensure_object(dict)
     _configure_logging(getattr(logging, settings.log_level.upper(), logging.INFO))
+
+    if ctx.invoked_subcommand is None:
+        if not sys.stdin.isatty():
+            ctx.invoke(serve)
+        else:
+            if ctx.info_name == "anaconda-mcp":
+                click.echo(
+                    "Warning: 'anaconda-mcp' is deprecated for interactive use. Use 'anaconda mcp' instead.\n",
+                    err=True,
+                )
+            click.echo(ctx.get_help())
+        return
+
     if ctx.info_name == "anaconda-mcp":
         click.echo(
             "Warning: 'anaconda-mcp' is deprecated. Use 'anaconda mcp' instead.",
@@ -174,6 +188,19 @@ def serve(ctx, config, host, port, delay, verbose):
             "[red]❌ Token is invalid or expired. Run [green]anaconda login[/green] to re-authenticate.[/red]"
         )
         sys.exit(1)
+
+    try:
+        verify_terms_accepted()
+    except TermsError as e:
+        click.echo(
+            f"⚠️  Anaconda MCP cannot start: {e.message}\n\n"
+            f"To resolve, run one of:\n"
+            f"  anaconda mcp terms accept          (interactive)\n"
+            f"  ANACONDA_MCP_ACCEPTED_TERMS=true ANACONDA_MCP_ACCEPTED_TERMS_VERSION={CURRENT_TOS_VERSION}   (environment variables)\n\n"
+            f"For more information: anaconda mcp terms status",
+            err=True,
+        )
+        sys.exit(78)
 
     login_event_params: dict[str, object] = {}
     try:
