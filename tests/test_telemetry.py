@@ -16,6 +16,7 @@ from anaconda_mcp.telemetry import (
     _detect_distribution_surface,
     _emit_tool_metrics,
     _get_conda_meta_version,
+    _get_package_version,
     _otel_user_attrs,
     _read_installer,
     emit_event,
@@ -368,6 +369,30 @@ def test_detect_distribution_surface_unknown_when_installer_metadata_raises():
     _detect_distribution_surface.cache_clear()
 
 
+def test_get_package_version_returns_unknown_on_unexpected_exception():
+    """Totality backstop: _get_package_version must not depend on any caller's
+    own try/except - it is independently total against any metadata-layer
+    failure, not just PackageNotFoundError (e.g. corrupt dist-info raising a
+    different exception type)."""
+    with mock.patch("importlib.metadata.version", side_effect=RuntimeError("boom")):
+        assert _get_package_version() == "unknown"
+
+
+def test_detect_distribution_surface_unknown_when_version_metadata_raises():
+    """End-to-end totality proof: with a conda-meta record present, a
+    non-PackageNotFoundError exception from _get_package_version() (called to
+    compare against the recorded conda-meta version) must not propagate out of
+    _detect_distribution_surface - the ambiguous "can't verify" case falls back
+    to trusting conda-meta rather than raising."""
+    _detect_distribution_surface.cache_clear()
+    with (
+        mock.patch("anaconda_mcp.telemetry._get_conda_meta_version", return_value="1.0.0"),
+        mock.patch("importlib.metadata.version", side_effect=RuntimeError("boom")),
+    ):
+        assert _detect_distribution_surface() == "conda"
+    _detect_distribution_surface.cache_clear()
+
+
 def test_detect_distribution_surface_conda_precedence_over_pip_installer(monkeypatch):
     """The critical precedence test: when BOTH a conda-meta record AND a pip
     INSTALLER are present with MATCHING versions (this repo's own conda recipe
@@ -504,7 +529,7 @@ def test_smoke_emit_event_workflow_with_conda_surface(fake_conda_environment, mo
     # detection chain (fake conda-meta record), not a mocked resolver.
     assert mock_log_event.call_count == 1
     otel_attrs = mock_log_event.call_args.kwargs["attributes"]
-    assert otel_attrs["distribution_surface"] == "conda"
+    assert otel_attrs["distribution.surface"] == "conda"
     assert otel_attrs["schema_version"] == "1"
 
 
@@ -538,8 +563,8 @@ def test_base_dimensions_fault_isolation_on_single_resolver_failure():
     with mock.patch("anaconda_mcp.telemetry.get_or_create_install_id", side_effect=RuntimeError("boom")):
         result = _base_dimensions()
 
-    assert "install_id" not in result
-    assert set(result.keys()) == BASE_DIMENSION_KEYS - {"install_id"}
+    assert "install.id" not in result
+    assert set(result.keys()) == BASE_DIMENSION_KEYS - {"install.id"}
 
 
 def test_base_dimensions_keys_do_not_collide_with_reserved_names():
@@ -547,3 +572,21 @@ def test_base_dimensions_keys_do_not_collide_with_reserved_names():
     result = _base_dimensions()
 
     assert not ({"source", "plugin", "user.id"} & set(result.keys()))
+
+
+def test_emit_event_base_dimensions_are_not_overridable_by_caller_params(mock_make_request):
+    """Base dimensions are authoritative: a caller-supplied event_params key
+    that collides with a base-dimension name is ignored on the OTel path, not
+    silently allowed to override the trusted value (closes a footgun where a
+    future caller forwarding untrusted keys could bypass e.g. the closed
+    KNOWN_DISTRIBUTION_SURFACES enum via distribution.surface)."""
+    with mock.patch("anaconda_mcp.telemetry.log_event") as mock_log_event:
+        emit_event(
+            MetricNames.START_SERVER.value,
+            {"distribution.surface": "totally-untrusted-value"},
+            blocking=True,
+        )
+
+    otel_attrs = mock_log_event.call_args.kwargs["attributes"]
+    assert otel_attrs["distribution.surface"] in KNOWN_DISTRIBUTION_SURFACES
+    assert otel_attrs["distribution.surface"] != "totally-untrusted-value"

@@ -68,8 +68,10 @@ def get_or_create_install_id() -> str:
     """Return a stable per-install UUID, read once per process then cached.
 
     Best-effort telemetry join key: no locking, so racing cold starts may pick
-    different ids (last write wins). Never raises. No re-entrancy guard needed —
-    _UserContextLogFilter carries only user.id, so nothing re-enters this.
+    different ids (last write wins) - accepted, since `anaconda mcp setup`
+    establishes this id first in the common (non-concurrent) case. Never
+    raises. No re-entrancy guard needed — _UserContextLogFilter carries only
+    user.id, so nothing re-enters this.
     """
     global _install_id
     if _install_id is not None:

@@ -44,7 +44,7 @@ from anaconda_mcp.client_config import (
 )
 from anaconda_mcp.composition import build_composed_server
 from anaconda_mcp.config import settings
-from anaconda_mcp.mcp_state import is_new_install, mark_installed
+from anaconda_mcp.mcp_state import get_or_create_install_id, is_new_install, mark_installed
 from anaconda_mcp.telemetry import (
     NEW_USER_THRESHOLD_DAYS,
     MetricNames,
@@ -91,6 +91,7 @@ def _send_install_event():
     try:
         new_install = is_new_install()
         mark_installed()
+        get_or_create_install_id()
         emit_event(
             MetricNames.INSTALL_COMPLETED.value,
             {"new_install": new_install},

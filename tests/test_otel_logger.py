@@ -73,13 +73,16 @@ def test_emit_event_snake_eyes_payload_excludes_base_dimensions():
     assert metric_data.event_params == {"x": 1}
 
 
-def test_emit_event_base_dimensions_do_not_clobber_event_param_collision():
-    """A caller-supplied event param wins over a same-named base dimension."""
+def test_emit_event_base_dimensions_win_over_event_param_collision():
+    """Base dimensions are authoritative: a caller-supplied event param with
+    the same name as a base dimension is overridden, not the other way around
+    (closes a footgun where a future caller forwarding untrusted keys could
+    bypass a trusted dimension's value on the OTel path)."""
     with patch("anaconda_mcp.telemetry.log_event") as mock_log_event:
         emit_event("some_event", {"python_version": "caller-supplied-value"})
 
     attributes = mock_log_event.call_args.kwargs["attributes"]
-    assert attributes["python_version"] == "caller-supplied-value"
+    assert attributes["python_version"] != "caller-supplied-value"
 
 
 def test_emit_event_filters_pii_for_otel_only():
