@@ -1,10 +1,27 @@
+import importlib.metadata
+import json as _json
+import logging
+import os
 from unittest import mock
 
 import httpx
 import pytest
 
-from anaconda_mcp.telemetry import MetricData, MetricNames, SnakeEyes, _emit_tool_metrics, _otel_user_attrs
-from conftest import TEST_USER_ID
+from anaconda_mcp.telemetry import (
+    KNOWN_DISTRIBUTION_SURFACES,
+    MetricData,
+    MetricNames,
+    SnakeEyes,
+    _base_dimensions,
+    _detect_distribution_surface,
+    _emit_tool_metrics,
+    _has_conda_meta_record,
+    _otel_user_attrs,
+    _read_installer,
+    emit_event,
+    resolve_distribution_surface,
+)
+from conftest import BASE_DIMENSION_KEYS, TEST_USER_ID
 
 
 @pytest.fixture
@@ -17,6 +34,12 @@ def mock_make_request(mocked_response):
     with mock.patch("anaconda_mcp.telemetry.SnakeEyes._make_request") as m:
         m.return_value = mocked_response
         yield m
+
+
+def test_known_distribution_surfaces_is_exactly_the_supported_set():
+    """The enum is exactly the 6 supported surfaces - no more, no less. Guards
+    against silently re-adding distro/miniconda or any other unsupported value."""
+    assert KNOWN_DISTRIBUTION_SURFACES == frozenset({"pip", "uvx", "conda", "ana", "mcpb", "unknown"})
 
 
 def test_snake_eyes_send_metric(mock_make_request):
@@ -175,3 +198,293 @@ def test_emit_tool_metrics_omits_user_id_when_anonymous():
         assert "user.id.status" not in attrs
         assert attrs["tool"] == "mytool"
         assert attrs["is_error"] is True
+
+
+def test_emit_tool_metrics_includes_distribution_surface():
+    """distribution_surface is present on both metrics and is always a member of the
+    closed KNOWN_DISTRIBUTION_SURFACES enum (never an arbitrary/un-coerced string).
+    install_id/user_id remain absent - the metric label set stays limited to
+    tool/is_error/distribution_surface."""
+    with (
+        mock.patch("anaconda_mcp.telemetry._otel_count") as mock_count,
+        mock.patch("anaconda_mcp.telemetry._otel_histogram") as mock_hist,
+    ):
+        _emit_tool_metrics("mytool", 12.5, is_error=False)
+
+    count_attrs = mock_count.call_args.kwargs["attributes"]
+    hist_attrs = mock_hist.call_args.kwargs["attributes"]
+
+    for attrs in (count_attrs, hist_attrs):
+        assert attrs["distribution_surface"] in KNOWN_DISTRIBUTION_SURFACES
+        assert "install_id" not in attrs
+        assert "user_id" not in attrs
+        assert "user.id" not in attrs
+
+
+def test_emit_tool_metrics_distribution_surface_is_coerced_never_raw(monkeypatch):
+    """An unrecognized ANACONDA_MCP_DISTRIBUTION_SURFACE value never reaches the metric
+    label as-is — only the resolver's already-coerced "unknown" fallback does."""
+    monkeypatch.setenv("ANACONDA_MCP_DISTRIBUTION_SURFACE", "bogus-surface-xyz")
+    with (
+        mock.patch("anaconda_mcp.telemetry._otel_count") as mock_count,
+        mock.patch("anaconda_mcp.telemetry._otel_histogram") as mock_hist,
+    ):
+        _emit_tool_metrics("mytool", 12.5, is_error=False)
+
+    count_attrs = mock_count.call_args.kwargs["attributes"]
+    hist_attrs = mock_hist.call_args.kwargs["attributes"]
+
+    for attrs in (count_attrs, hist_attrs):
+        assert attrs["distribution_surface"] == "unknown"
+
+
+def test_resolve_distribution_surface_recognized_env_wins(monkeypatch):
+    """A recognized env value is returned verbatim; the detector is never invoked
+    (short-circuit regression guard)."""
+    monkeypatch.setenv("ANACONDA_MCP_DISTRIBUTION_SURFACE", "conda")
+    with mock.patch("anaconda_mcp.telemetry._detect_distribution_surface") as mock_detect:
+        assert resolve_distribution_surface() == "conda"
+        mock_detect.assert_not_called()
+
+
+def test_resolve_distribution_surface_bogus_env_coerces_to_unknown(monkeypatch):
+    """A non-empty, unrecognized env value coerces to 'unknown' without auto-detecting."""
+    monkeypatch.setenv("ANACONDA_MCP_DISTRIBUTION_SURFACE", "bogus-surface")
+    with mock.patch("anaconda_mcp.telemetry._detect_distribution_surface") as mock_detect:
+        assert resolve_distribution_surface() == "unknown"
+        mock_detect.assert_not_called()
+
+
+def test_resolve_distribution_surface_unset_env_falls_through_to_detector(monkeypatch):
+    """An unset/empty env value falls through to the (mocked) auto-detector."""
+    monkeypatch.delenv("ANACONDA_MCP_DISTRIBUTION_SURFACE", raising=False)
+    with mock.patch("anaconda_mcp.telemetry._detect_distribution_surface", return_value="uvx") as mock_detect:
+        assert resolve_distribution_surface() == "uvx"
+        mock_detect.assert_called_once()
+
+
+def test_resolve_distribution_surface_debug_logs_rejected_value(monkeypatch, caplog):
+    """An unrecognized override is debug-logged with the rejected value before coercion."""
+    monkeypatch.setenv("ANACONDA_MCP_DISTRIBUTION_SURFACE", "bogus-surface")
+    caplog.set_level(logging.DEBUG)
+
+    resolve_distribution_surface()
+
+    assert "bogus-surface" in caplog.text
+
+
+def test_surface_env_isolation_fixture_clears_ambient_env():
+    """Deterministic proof the autouse fixture clears the ambient env var.
+
+    The autouse `_isolate_distribution_surface` fixture runs its delenv BEFORE this
+    test body executes, so ANACONDA_MCP_DISTRIBUTION_SURFACE must already be absent
+    here even if the host shell exported a recognized value (e.g. "mcpb") before
+    pytest started. We assert directly on os.environ (not monkeypatch, which would
+    only prove the test itself can clear it) and then confirm the resolver reaches
+    the (patched) detector rather than short-circuiting.
+    """
+    assert "ANACONDA_MCP_DISTRIBUTION_SURFACE" not in os.environ
+    with mock.patch("anaconda_mcp.telemetry._detect_distribution_surface", return_value="conda"):
+        assert resolve_distribution_surface() == "conda"
+
+
+def test_has_conda_meta_record_true_when_record_present(monkeypatch, tmp_path):
+    conda_meta = tmp_path / "conda-meta"
+    conda_meta.mkdir()
+    (conda_meta / "anaconda-mcp-1.0-0.json").write_text(_json.dumps({"name": "anaconda-mcp"}))
+    monkeypatch.setattr("sys.prefix", str(tmp_path))
+    assert _has_conda_meta_record("anaconda-mcp") is True
+
+
+def test_has_conda_meta_record_false_when_dir_absent(monkeypatch, tmp_path):
+    monkeypatch.setattr("sys.prefix", str(tmp_path))
+    assert _has_conda_meta_record("anaconda-mcp") is False
+
+
+def test_has_conda_meta_record_exact_name_rejects_extras_and_matches_real(monkeypatch, tmp_path):
+    """conda-meta filename prefix match alone is NOT enough - the record's own
+    JSON "name" field must equal the target exactly. A hyphen-ambiguous sibling
+    package (anaconda-mcp-extras) must not false-match "anaconda-mcp"."""
+    conda_meta = tmp_path / "conda-meta"
+    conda_meta.mkdir()
+    (conda_meta / "anaconda-mcp-extras-1.0-0.json").write_text(_json.dumps({"name": "anaconda-mcp-extras"}))
+    monkeypatch.setattr("sys.prefix", str(tmp_path))
+    assert _has_conda_meta_record("anaconda-mcp") is False
+
+    (conda_meta / "anaconda-mcp-9.9-0.json").write_text(_json.dumps({"name": "anaconda-mcp"}))
+    assert _has_conda_meta_record("anaconda-mcp") is True
+
+
+def test_has_conda_meta_record_false_on_non_dict_json(monkeypatch, tmp_path):
+    """A valid-but-non-dict JSON payload (e.g. a JSON array) is a miss, not a crash."""
+    conda_meta = tmp_path / "conda-meta"
+    conda_meta.mkdir()
+    (conda_meta / "anaconda-mcp-1.0-0.json").write_text(_json.dumps(["not", "a", "dict"]))
+    monkeypatch.setattr("sys.prefix", str(tmp_path))
+    assert _has_conda_meta_record("anaconda-mcp") is False
+
+
+def test_read_installer_pip():
+    with mock.patch("importlib.metadata.distribution") as mock_dist:
+        mock_dist.return_value.read_text.return_value = "pip\n"
+        assert _read_installer("anaconda-mcp") == "pip"
+
+
+def test_read_installer_uv():
+    with mock.patch("importlib.metadata.distribution") as mock_dist:
+        mock_dist.return_value.read_text.return_value = "uv\n"
+        assert _read_installer("anaconda-mcp") == "uv"
+
+
+def test_read_installer_returns_none_on_package_not_found():
+    with mock.patch(
+        "importlib.metadata.distribution",
+        side_effect=importlib.metadata.PackageNotFoundError("anaconda-mcp"),
+    ):
+        assert _read_installer("anaconda-mcp") is None
+
+
+def test_read_installer_returns_none_on_unexpected_exception():
+    """Totality backstop: _read_installer must not depend on the outer
+    resolve_distribution_surface() try/except - it is independently total."""
+    with mock.patch("importlib.metadata.distribution", side_effect=RuntimeError("boom")):
+        assert _read_installer("anaconda-mcp") is None
+
+
+def test_detect_distribution_surface_unknown_when_installer_metadata_raises():
+    """End-to-end totality proof: a non-PackageNotFoundError exception from the
+    metadata layer propagates through _read_installer (returns None) and through
+    _detect_distribution_surface (returns "unknown"), never raising at either
+    layer. This closes the gap where _read_installer's totality was tested in
+    isolation but not proven through the full detection chain."""
+    _detect_distribution_surface.cache_clear()
+    with (
+        mock.patch("anaconda_mcp.telemetry._has_conda_meta_record", return_value=False),
+        mock.patch("importlib.metadata.distribution", side_effect=RuntimeError("boom")),
+    ):
+        assert _detect_distribution_surface() == "unknown"
+    _detect_distribution_surface.cache_clear()
+
+
+def test_detect_distribution_surface_conda_precedence_over_pip_installer(monkeypatch):
+    """The critical precedence test: when BOTH a conda-meta record AND a pip
+    INSTALLER are present (this repo's own conda recipe pip-installs internally,
+    see conda-build/meta.yaml), conda-meta MUST win or conda installs get
+    misreported as pip."""
+    _detect_distribution_surface.cache_clear()
+    with (
+        mock.patch("anaconda_mcp.telemetry._has_conda_meta_record", return_value=True),
+        mock.patch("anaconda_mcp.telemetry._read_installer", return_value="pip"),
+    ):
+        assert _detect_distribution_surface() == "conda"
+    _detect_distribution_surface.cache_clear()
+
+
+def test_detect_distribution_surface_falls_back_to_unknown(monkeypatch):
+    _detect_distribution_surface.cache_clear()
+    with (
+        mock.patch("anaconda_mcp.telemetry._has_conda_meta_record", return_value=False),
+        mock.patch("anaconda_mcp.telemetry._read_installer", return_value=None),
+    ):
+        assert _detect_distribution_surface() == "unknown"
+    _detect_distribution_surface.cache_clear()
+
+
+def test_detect_distribution_surface_pip_installer_maps_to_pip():
+    _detect_distribution_surface.cache_clear()
+    with (
+        mock.patch("anaconda_mcp.telemetry._has_conda_meta_record", return_value=False),
+        mock.patch("anaconda_mcp.telemetry._read_installer", return_value="pip"),
+    ):
+        assert _detect_distribution_surface() == "pip"
+    _detect_distribution_surface.cache_clear()
+
+
+def test_detect_distribution_surface_uv_installer_maps_to_uvx():
+    _detect_distribution_surface.cache_clear()
+    with (
+        mock.patch("anaconda_mcp.telemetry._has_conda_meta_record", return_value=False),
+        mock.patch("anaconda_mcp.telemetry._read_installer", return_value="uv"),
+    ):
+        assert _detect_distribution_surface() == "uvx"
+    _detect_distribution_surface.cache_clear()
+
+
+@pytest.fixture
+def fake_conda_environment(monkeypatch, tmp_path):
+    """Fakes a real conda install of anaconda-mcp: creates a conda-meta record
+    under a fresh sys.prefix so the REAL detection chain (_has_conda_meta_record
+    -> _detect_distribution_surface -> resolve_distribution_surface) resolves to
+    "conda" without mocking any detection internals directly."""
+    conda_meta = tmp_path / "conda-meta"
+    conda_meta.mkdir()
+    (conda_meta / "anaconda-mcp-9.9.9-0.json").write_text(_json.dumps({"name": "anaconda-mcp", "version": "9.9.9"}))
+    monkeypatch.setattr("sys.prefix", str(tmp_path))
+    _detect_distribution_surface.cache_clear()
+    yield
+    _detect_distribution_surface.cache_clear()
+
+
+def test_smoke_emit_event_workflow_with_conda_surface(fake_conda_environment, mock_make_request):
+    """End-to-end smoke test: a real fake-conda environment flows through the
+    genuine detection chain into both emit_event() sinks, with only the network
+    boundaries (SnakeEyes._make_request, log_event) stubbed out - no mocking of
+    detection internals, no real network calls."""
+    with mock.patch("anaconda_mcp.telemetry.log_event") as mock_log_event:
+        emit_event(MetricNames.START_SERVER.value, {"smoke": "test"}, blocking=True)
+
+    # snake-eyes sink: sent, authenticated, event_params present, but NO
+    # distribution_surface (by design - that dimension is OTel-only).
+    assert mock_make_request.call_count == 1
+    snake_eyes_endpoint, snake_eyes_payload, _ = mock_make_request.call_args[0]
+    assert snake_eyes_endpoint == "api/snake-eyes/record"
+    assert snake_eyes_payload["event_params"]["smoke"] == "test"
+    assert "distribution_surface" not in snake_eyes_payload["event_params"]
+
+    # OTel sink: distribution_surface == "conda", derived from the REAL
+    # detection chain (fake conda-meta record), not a mocked resolver.
+    assert mock_log_event.call_count == 1
+    otel_attrs = mock_log_event.call_args.kwargs["attributes"]
+    assert otel_attrs["distribution_surface"] == "conda"
+    assert otel_attrs["schema_version"] == "1"
+
+
+def test_smoke_emit_tool_metrics_workflow_with_conda_surface(fake_conda_environment):
+    """End-to-end smoke test: fake-conda environment flows through the real
+    detection chain into the tool-metrics OTel sink, network boundary stubbed."""
+    with (
+        mock.patch("anaconda_mcp.telemetry._otel_count") as mock_count,
+        mock.patch("anaconda_mcp.telemetry._otel_histogram") as mock_hist,
+    ):
+        _emit_tool_metrics("smoke_tool", 42.0, is_error=False)
+
+    assert mock_count.call_count == 1
+    assert mock_hist.call_count == 1
+    for call in (mock_count, mock_hist):
+        attrs = call.call_args.kwargs["attributes"]
+        assert attrs["distribution_surface"] == "conda"
+        assert attrs["tool"] == "smoke_tool"
+
+
+def test_base_dimensions_happy_path_has_exactly_six_keys():
+    """On the happy path, exactly the 6 documented keys are present."""
+    result = _base_dimensions()
+
+    assert set(result.keys()) == BASE_DIMENSION_KEYS
+    assert result["schema_version"] == "1"
+
+
+def test_base_dimensions_fault_isolation_on_single_resolver_failure():
+    """A single failing resolver omits only its own key; the rest still return."""
+    with mock.patch("anaconda_mcp.telemetry.get_or_create_install_id", side_effect=RuntimeError("boom")):
+        result = _base_dimensions()
+
+    assert "install_id" not in result
+    assert set(result.keys()) == BASE_DIMENSION_KEYS - {"install_id"}
+
+
+def test_base_dimensions_keys_do_not_collide_with_reserved_names():
+    """None of the 6 dimension keys collide with cli-base's `source`/`plugin` or `user.id`."""
+    result = _base_dimensions()
+
+    assert not ({"source", "plugin", "user.id"} & set(result.keys()))

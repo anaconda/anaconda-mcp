@@ -48,6 +48,12 @@ if (process.platform !== "win32") {
 }
 
 const childEnv = { ...process.env };
+
+// Env var (not a baked constant) is the only reliable surface signal here: the
+// bundle runs `ana`'s managed runtime, not the pip/conda artifact. Read by
+// resolve_distribution_surface() in telemetry.py.
+childEnv.ANACONDA_MCP_DISTRIBUTION_SURFACE = "mcpb";
+
 const apiKey = process.env.ANACONDA_MCPB_ANACONDA_API_KEY;
 
 if (apiKey && !apiKey.startsWith("${user_config.")) {

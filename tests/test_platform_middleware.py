@@ -9,7 +9,7 @@ import pytest
 from anaconda_mcp import composition
 from anaconda_mcp.auth import AuthenticationError
 from anaconda_mcp.composition import PlatformMiddleware
-from conftest import TEST_USER_ID
+from conftest import BASE_DIMENSION_KEYS, TEST_USER_ID
 
 
 @pytest.fixture(autouse=True)
@@ -181,3 +181,27 @@ async def test_otel_span_backstop_when_resolve_user_id_raises(captured_events):
     assert attrs["tool"] == "conda_list_environments"
     assert "user.id" not in attrs
     assert "user.id.status" not in attrs
+
+
+async def test_platform_middleware_span_asymmetry_no_base_dimensions(captured_events):
+    """SPAN half of the accepted signal-type asymmetry (see the comment above
+    _base_dimensions() in telemetry.py): the _otel_traced span opened by
+    on_call_tool carries ONLY {tool, user.id} (per _otel_user_attrs), never any
+    of the 6 _base_dimensions() keys that OTel events carry via emit_event().
+    """
+    captured_kwargs: dict = {}
+
+    @contextlib.contextmanager
+    def _capturing(*args, **kwargs):
+        captured_kwargs.update(kwargs)
+        yield types.SimpleNamespace(add_exception=lambda exc: None)
+
+    with mock.patch.object(composition, "_otel_traced", _capturing):
+        mw = PlatformMiddleware()
+        result = await mw.on_call_tool(_ctx("conda_list_environments"), _recording_call_next([]))
+
+    assert result == "RESULT"
+    attrs = captured_kwargs["attributes"]
+    assert attrs == {"tool": "conda_list_environments", "user.id": TEST_USER_ID}
+    for key in BASE_DIMENSION_KEYS:
+        assert key not in attrs

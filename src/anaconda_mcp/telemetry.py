@@ -1,7 +1,11 @@
 import enum
+import functools
 import importlib.metadata
+import json
 import logging
+import os
 import platform
+import sys
 import threading
 from typing import Any
 
@@ -13,8 +17,144 @@ from pydantic import BaseModel
 
 from anaconda_mcp.auth import get_auth_token, resolve_user_id
 from anaconda_mcp.config import settings
+from anaconda_mcp.mcp_state import get_or_create_install_id
 
 logger = logging.getLogger(__name__)
+
+
+KNOWN_DISTRIBUTION_SURFACES = frozenset({"pip", "uvx", "conda", "ana", "mcpb", "unknown"})
+
+
+def _read_installer(package_name: str) -> str | None:
+    """Read the dist-info INSTALLER file for `package_name`. Total: never raises."""
+    try:
+        text = importlib.metadata.distribution(package_name).read_text("INSTALLER")
+    except Exception:
+        return None
+    if not text:
+        return None
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped:
+            return stripped.lower()
+    return None
+
+
+def _has_conda_meta_record(package_name: str) -> bool:
+    """True iff a conda-meta record in sys.prefix has this exact package name.
+
+    Uses the filename as a cheap pre-filter only; the actual match is against
+    the record's own JSON "name" field (conda-authoritative), so a package like
+    "anaconda-mcp-extras" never false-matches "anaconda-mcp" regardless of
+    hyphens in versions/builds. Never raises.
+    """
+    conda_meta_dir = os.path.join(sys.prefix, "conda-meta")
+    try:
+        entries = os.listdir(conda_meta_dir)
+    except OSError:
+        return False
+    prefix = f"{package_name}-"
+    for entry in entries:
+        if not (entry.startswith(prefix) and entry.endswith(".json")):
+            continue
+        try:
+            with open(os.path.join(conda_meta_dir, entry), encoding="utf-8") as f:
+                record = json.load(f)
+        except (OSError, ValueError):
+            continue
+        if isinstance(record, dict) and record.get("name") == package_name:
+            return True
+    return False
+
+
+@functools.cache
+def _detect_distribution_surface() -> str:
+    """Auto-detect the surface when ANACONDA_MCP_DISTRIBUTION_SURFACE is unset.
+
+    Precedence: conda-meta record first (this package's conda recipe installs
+    via pip internally, so a conda install ALSO carries INSTALLER="pip" -
+    conda-meta must win or conda installs get misreported as pip), then the
+    dist-info INSTALLER file (pip->pip, uv->uvx), else "unknown". Memoized -
+    this is called on every tool invocation via _emit_tool_metrics, so it must
+    not repeat filesystem/metadata I/O per call. Never raises (each branch is
+    already total; this function itself doesn't need its own try/except).
+    """
+    if _has_conda_meta_record("anaconda-mcp"):
+        logger.debug("Detected distribution surface 'conda' via conda-meta record")
+        return "conda"
+    installer = _read_installer("anaconda-mcp")
+    if installer == "pip":
+        logger.debug("Detected distribution surface 'pip' via INSTALLER=%r", installer)
+        return "pip"
+    if installer == "uv":
+        logger.debug("Detected distribution surface 'uvx' via INSTALLER=%r", installer)
+        return "uvx"
+    logger.debug("Could not detect distribution surface (installer=%r); defaulting to 'unknown'", installer)
+    return "unknown"
+
+
+def resolve_distribution_surface() -> str:
+    """Return which distribution surface this server is running through.
+
+    Read from the ``ANACONDA_MCP_DISTRIBUTION_SURFACE`` environment variable
+    (set by launchers such as the MCPB bundle). A recognized value wins
+    outright; a set-but-unrecognized value coerces to ``"unknown"``; an
+    unset/empty value falls through to runtime auto-detection via
+    ``_detect_distribution_surface()``. Total: never raises.
+    """
+    try:
+        candidate = os.environ.get("ANACONDA_MCP_DISTRIBUTION_SURFACE", "")
+        if candidate:
+            if candidate in KNOWN_DISTRIBUTION_SURFACES:
+                return candidate
+            logger.debug("Unrecognized distribution surface %r; coercing to 'unknown'", candidate)
+            return "unknown"
+        return _detect_distribution_surface()
+    except Exception:
+        return "unknown"
+
+
+SCHEMA_VERSION = "1"
+
+
+# Ride OTel *events* only, never spans or log records. Keys must not collide
+# with `source`/`plugin` (added by anaconda-cli-base) or `user.id`.
+@functools.cache
+def _base_dimensions() -> dict[str, str]:
+    """Foundation telemetry dimensions stamped on every OTel event.
+
+    Cached once per process (dims are process-stable; ``cache_clear()`` to reset,
+    test-only). Each dimension resolves under its own try/except, so a single
+    failure omits only that key and never raises — never drops the whole event.
+    """
+    dims: dict[str, str] = {"schema_version": SCHEMA_VERSION}
+
+    try:
+        dims["install_id"] = get_or_create_install_id()
+    except Exception:
+        logger.debug("Failed to resolve install_id dimension", exc_info=True)
+
+    try:
+        dims["distribution_surface"] = resolve_distribution_surface()
+    except Exception:
+        logger.debug("Failed to resolve distribution_surface dimension", exc_info=True)
+
+    try:
+        dims["python_version"] = platform.python_version()
+    except Exception:
+        logger.debug("Failed to resolve python_version dimension", exc_info=True)
+
+    try:
+        dims["package_version"] = _get_package_version()
+    except Exception:
+        logger.debug("Failed to resolve package_version dimension", exc_info=True)
+
+    try:
+        dims["user_environment"] = settings.environment
+    except Exception:
+        logger.debug("Failed to resolve user_environment dimension", exc_info=True)
+
+    return dims
 
 
 class MetricNames(enum.Enum):
@@ -86,6 +226,10 @@ def emit_event(
 
     try:
         otel_attrs = {k: v for k, v in params.items() if k not in _PII_KEYS}
+        # _base_dimensions() fills in default telemetry context but never overrides
+        # a caller-supplied event param with the same name.
+        for key, value in _base_dimensions().items():
+            otel_attrs.setdefault(key, value)
         # user.id is merged AFTER the PII filter so it always survives, and is
         # OTel-only — the snake-eyes params/MetricData path above is untouched.
         otel_attrs.update(_otel_user_attrs())
@@ -227,6 +371,10 @@ class _UserContextLogFilter(logging.Filter):
     identifier for setattr. When unauthenticated, ``_otel_user_attrs()``
     returns ``{}`` and the merge is a no-op (schema-conforming: user.id is
     omitted, never a sentinel).
+
+    Keep this user.id-only: adding install_id/base dims would recurse (resolving
+    install_id logs, which re-enters this filter) and get_or_create_install_id
+    has no re-entrancy guard.
     """
 
     def filter(self, record: logging.LogRecord) -> bool:
@@ -234,6 +382,9 @@ class _UserContextLogFilter(logging.Filter):
         return True
 
 
+# Metric labels must stay low-cardinality: only `tool`, `is_error`, and
+# `distribution_surface` (a closed enum). Never add user.id/install_id or other
+# per-account/install/package values — they'd explode the metric series.
 def _emit_tool_metrics(tool_name: str, duration_ms: float, *, is_error: bool) -> None:
     try:
         attrs: dict[str, object] = {"tool": tool_name}
@@ -241,6 +392,7 @@ def _emit_tool_metrics(tool_name: str, duration_ms: float, *, is_error: bool) ->
         # series per tool; dashboards derive success as total minus is_error=true.
         if is_error:
             attrs["is_error"] = True
+        attrs["distribution_surface"] = resolve_distribution_surface()
         _otel_count("mcp_tool_invoked", plugin_name="mcp", attributes=attrs)
         _otel_histogram(
             "mcp_tool_duration_ms",
