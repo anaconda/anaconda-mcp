@@ -40,19 +40,22 @@ def _read_installer(package_name: str) -> str | None:
     return None
 
 
-def _has_conda_meta_record(package_name: str) -> bool:
-    """True iff a conda-meta record in sys.prefix has this exact package name.
+def _get_conda_meta_version(package_name: str) -> str | None:
+    """Return the version recorded in this package's conda-meta record in
+    sys.prefix, or None if no record with this exact name exists.
 
     Uses the filename as a cheap pre-filter only; the actual match is against
     the record's own JSON "name" field (conda-authoritative), so a package like
     "anaconda-mcp-extras" never false-matches "anaconda-mcp" regardless of
-    hyphens in versions/builds. Never raises.
+    hyphens in versions/builds. An empty string means a matching record exists
+    but its "version" field is missing/malformed - distinguish this from None
+    (no record at all) via `is not None`. Never raises.
     """
     conda_meta_dir = os.path.join(sys.prefix, "conda-meta")
     try:
         entries = os.listdir(conda_meta_dir)
     except OSError:
-        return False
+        return None
     prefix = f"{package_name}-"
     for entry in entries:
         if not (entry.startswith(prefix) and entry.endswith(".json")):
@@ -63,25 +66,44 @@ def _has_conda_meta_record(package_name: str) -> bool:
         except (OSError, ValueError):
             continue
         if isinstance(record, dict) and record.get("name") == package_name:
-            return True
-    return False
+            version = record.get("version")
+            return version if isinstance(version, str) else ""
+    return None
 
 
 @functools.cache
 def _detect_distribution_surface() -> str:
     """Auto-detect the surface when ANACONDA_MCP_DISTRIBUTION_SURFACE is unset.
 
-    Precedence: conda-meta record first (this package's conda recipe installs
-    via pip internally, so a conda install ALSO carries INSTALLER="pip" -
-    conda-meta must win or conda installs get misreported as pip), then the
-    dist-info INSTALLER file (pip->pip, uv->uvx), else "unknown". Memoized -
+    Precedence: a conda-meta record wins UNLESS its recorded version disagrees
+    with the actually-installed version - that mismatch means the record is
+    stale (a later pip/uv install overwrote the conda-managed files in the same
+    environment; conda never cleans up its own metadata when a foreign
+    installer replaces its files). In the drift case, fall through to the
+    dist-info INSTALLER file (pip->pip, uv->uvx), else "unknown". This design
+    also correctly keeps "conda" for this package's own conda recipe, which
+    pip-installs internally at build time (baking INSTALLER="pip" into a
+    genuinely-conda-managed install) - that case's recorded version DOES match
+    what's installed, so it's never treated as drift. When the conda-meta
+    record has no verifiable version (missing field) or the installed version
+    can't be determined, we cannot disprove freshness, so we lean toward
+    trusting conda-meta (unchanged behavior for that ambiguous case). Memoized -
     this is called on every tool invocation via _emit_tool_metrics, so it must
     not repeat filesystem/metadata I/O per call. Never raises (each branch is
     already total; this function itself doesn't need its own try/except).
     """
-    if _has_conda_meta_record("anaconda-mcp"):
-        logger.debug("Detected distribution surface 'conda' via conda-meta record")
-        return "conda"
+    conda_version = _get_conda_meta_version("anaconda-mcp")
+    if conda_version is not None:
+        installed_version = _get_package_version()
+        if not conda_version or installed_version == "unknown" or conda_version == installed_version:
+            logger.debug("Detected distribution surface 'conda' via conda-meta record")
+            return "conda"
+        logger.debug(
+            "conda-meta record version %r does not match installed version %r; "
+            "treating conda-meta as stale, falling through to INSTALLER",
+            conda_version,
+            installed_version,
+        )
     installer = _read_installer("anaconda-mcp")
     if installer == "pip":
         logger.debug("Detected distribution surface 'pip' via INSTALLER=%r", installer)

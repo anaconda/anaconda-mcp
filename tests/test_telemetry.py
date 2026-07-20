@@ -15,7 +15,7 @@ from anaconda_mcp.telemetry import (
     _base_dimensions,
     _detect_distribution_surface,
     _emit_tool_metrics,
-    _has_conda_meta_record,
+    _get_conda_meta_version,
     _otel_user_attrs,
     _read_installer,
     emit_event,
@@ -288,40 +288,42 @@ def test_surface_env_isolation_fixture_clears_ambient_env():
         assert resolve_distribution_surface() == "conda"
 
 
-def test_has_conda_meta_record_true_when_record_present(monkeypatch, tmp_path):
+def test_get_conda_meta_version_returns_version_when_record_present(monkeypatch, tmp_path):
     conda_meta = tmp_path / "conda-meta"
     conda_meta.mkdir()
-    (conda_meta / "anaconda-mcp-1.0-0.json").write_text(_json.dumps({"name": "anaconda-mcp"}))
+    (conda_meta / "anaconda-mcp-1.0-0.json").write_text(_json.dumps({"name": "anaconda-mcp", "version": "1.0"}))
     monkeypatch.setattr("sys.prefix", str(tmp_path))
-    assert _has_conda_meta_record("anaconda-mcp") is True
+    assert _get_conda_meta_version("anaconda-mcp") == "1.0"
 
 
-def test_has_conda_meta_record_false_when_dir_absent(monkeypatch, tmp_path):
+def test_get_conda_meta_version_returns_none_when_dir_absent(monkeypatch, tmp_path):
     monkeypatch.setattr("sys.prefix", str(tmp_path))
-    assert _has_conda_meta_record("anaconda-mcp") is False
+    assert _get_conda_meta_version("anaconda-mcp") is None
 
 
-def test_has_conda_meta_record_exact_name_rejects_extras_and_matches_real(monkeypatch, tmp_path):
+def test_get_conda_meta_version_exact_name_rejects_extras_and_matches_real(monkeypatch, tmp_path):
     """conda-meta filename prefix match alone is NOT enough - the record's own
     JSON "name" field must equal the target exactly. A hyphen-ambiguous sibling
     package (anaconda-mcp-extras) must not false-match "anaconda-mcp"."""
     conda_meta = tmp_path / "conda-meta"
     conda_meta.mkdir()
-    (conda_meta / "anaconda-mcp-extras-1.0-0.json").write_text(_json.dumps({"name": "anaconda-mcp-extras"}))
+    (conda_meta / "anaconda-mcp-extras-1.0-0.json").write_text(
+        _json.dumps({"name": "anaconda-mcp-extras", "version": "1.0"})
+    )
     monkeypatch.setattr("sys.prefix", str(tmp_path))
-    assert _has_conda_meta_record("anaconda-mcp") is False
+    assert _get_conda_meta_version("anaconda-mcp") is None
 
-    (conda_meta / "anaconda-mcp-9.9-0.json").write_text(_json.dumps({"name": "anaconda-mcp"}))
-    assert _has_conda_meta_record("anaconda-mcp") is True
+    (conda_meta / "anaconda-mcp-9.9-0.json").write_text(_json.dumps({"name": "anaconda-mcp", "version": "9.9"}))
+    assert _get_conda_meta_version("anaconda-mcp") == "9.9"
 
 
-def test_has_conda_meta_record_false_on_non_dict_json(monkeypatch, tmp_path):
+def test_get_conda_meta_version_returns_none_on_non_dict_json(monkeypatch, tmp_path):
     """A valid-but-non-dict JSON payload (e.g. a JSON array) is a miss, not a crash."""
     conda_meta = tmp_path / "conda-meta"
     conda_meta.mkdir()
     (conda_meta / "anaconda-mcp-1.0-0.json").write_text(_json.dumps(["not", "a", "dict"]))
     monkeypatch.setattr("sys.prefix", str(tmp_path))
-    assert _has_conda_meta_record("anaconda-mcp") is False
+    assert _get_conda_meta_version("anaconda-mcp") is None
 
 
 def test_read_installer_pip():
@@ -359,7 +361,7 @@ def test_detect_distribution_surface_unknown_when_installer_metadata_raises():
     isolation but not proven through the full detection chain."""
     _detect_distribution_surface.cache_clear()
     with (
-        mock.patch("anaconda_mcp.telemetry._has_conda_meta_record", return_value=False),
+        mock.patch("anaconda_mcp.telemetry._get_conda_meta_version", return_value=None),
         mock.patch("importlib.metadata.distribution", side_effect=RuntimeError("boom")),
     ):
         assert _detect_distribution_surface() == "unknown"
@@ -368,12 +370,13 @@ def test_detect_distribution_surface_unknown_when_installer_metadata_raises():
 
 def test_detect_distribution_surface_conda_precedence_over_pip_installer(monkeypatch):
     """The critical precedence test: when BOTH a conda-meta record AND a pip
-    INSTALLER are present (this repo's own conda recipe pip-installs internally,
-    see conda-build/meta.yaml), conda-meta MUST win or conda installs get
-    misreported as pip."""
+    INSTALLER are present with MATCHING versions (this repo's own conda recipe
+    pip-installs internally, see conda-build/meta.yaml), conda-meta MUST win -
+    confirmed-fresh conda-meta beats a coexisting pip INSTALLER."""
     _detect_distribution_surface.cache_clear()
     with (
-        mock.patch("anaconda_mcp.telemetry._has_conda_meta_record", return_value=True),
+        mock.patch("anaconda_mcp.telemetry._get_conda_meta_version", return_value="1.2.3"),
+        mock.patch("anaconda_mcp.telemetry._get_package_version", return_value="1.2.3"),
         mock.patch("anaconda_mcp.telemetry._read_installer", return_value="pip"),
     ):
         assert _detect_distribution_surface() == "conda"
@@ -383,7 +386,7 @@ def test_detect_distribution_surface_conda_precedence_over_pip_installer(monkeyp
 def test_detect_distribution_surface_falls_back_to_unknown(monkeypatch):
     _detect_distribution_surface.cache_clear()
     with (
-        mock.patch("anaconda_mcp.telemetry._has_conda_meta_record", return_value=False),
+        mock.patch("anaconda_mcp.telemetry._get_conda_meta_version", return_value=None),
         mock.patch("anaconda_mcp.telemetry._read_installer", return_value=None),
     ):
         assert _detect_distribution_surface() == "unknown"
@@ -393,7 +396,7 @@ def test_detect_distribution_surface_falls_back_to_unknown(monkeypatch):
 def test_detect_distribution_surface_pip_installer_maps_to_pip():
     _detect_distribution_surface.cache_clear()
     with (
-        mock.patch("anaconda_mcp.telemetry._has_conda_meta_record", return_value=False),
+        mock.patch("anaconda_mcp.telemetry._get_conda_meta_version", return_value=None),
         mock.patch("anaconda_mcp.telemetry._read_installer", return_value="pip"),
     ):
         assert _detect_distribution_surface() == "pip"
@@ -403,22 +406,78 @@ def test_detect_distribution_surface_pip_installer_maps_to_pip():
 def test_detect_distribution_surface_uv_installer_maps_to_uvx():
     _detect_distribution_surface.cache_clear()
     with (
-        mock.patch("anaconda_mcp.telemetry._has_conda_meta_record", return_value=False),
+        mock.patch("anaconda_mcp.telemetry._get_conda_meta_version", return_value=None),
         mock.patch("anaconda_mcp.telemetry._read_installer", return_value="uv"),
     ):
         assert _detect_distribution_surface() == "uvx"
     _detect_distribution_surface.cache_clear()
 
 
+def test_detect_distribution_surface_conda_meta_version_match_confirms_fresh():
+    """conda-meta version matches the installed version -> confirmed fresh, "conda" wins."""
+    _detect_distribution_surface.cache_clear()
+    with (
+        mock.patch("anaconda_mcp.telemetry._get_conda_meta_version", return_value="2.0.0"),
+        mock.patch("anaconda_mcp.telemetry._get_package_version", return_value="2.0.0"),
+    ):
+        assert _detect_distribution_surface() == "conda"
+    _detect_distribution_surface.cache_clear()
+
+
+def test_detect_distribution_surface_conda_meta_version_mismatch_falls_through_to_installer():
+    """conda-meta version DISAGREES with the installed version -> treated as
+    stale/drifted (a later pip install overwrote conda-managed files); falls
+    through to the real INSTALLER-based detection instead of trusting conda-meta."""
+    _detect_distribution_surface.cache_clear()
+    with (
+        mock.patch("anaconda_mcp.telemetry._get_conda_meta_version", return_value="1.0.0"),
+        mock.patch("anaconda_mcp.telemetry._get_package_version", return_value="2.0.0"),
+        mock.patch("anaconda_mcp.telemetry._read_installer", return_value="pip"),
+    ):
+        assert _detect_distribution_surface() == "pip"
+    _detect_distribution_surface.cache_clear()
+
+
+def test_detect_distribution_surface_conda_meta_missing_version_field_still_trusts_conda():
+    """A matching conda-meta record with no verifiable version (empty string
+    sentinel) cannot be proven stale, so we still trust it - unchanged lenient
+    behavior for this unusual/corrupted-record case."""
+    _detect_distribution_surface.cache_clear()
+    with (
+        mock.patch("anaconda_mcp.telemetry._get_conda_meta_version", return_value=""),
+        mock.patch("anaconda_mcp.telemetry._get_package_version", return_value="2.0.0"),
+    ):
+        assert _detect_distribution_surface() == "conda"
+    _detect_distribution_surface.cache_clear()
+
+
+def test_detect_distribution_surface_conda_meta_present_but_installed_version_unknown_still_trusts_conda():
+    """conda-meta has a real version, but the installed version can't be
+    determined ("unknown" sentinel from _get_package_version) - can't disprove
+    freshness, so we still trust conda-meta."""
+    _detect_distribution_surface.cache_clear()
+    with (
+        mock.patch("anaconda_mcp.telemetry._get_conda_meta_version", return_value="1.0.0"),
+        mock.patch("anaconda_mcp.telemetry._get_package_version", return_value="unknown"),
+    ):
+        assert _detect_distribution_surface() == "conda"
+    _detect_distribution_surface.cache_clear()
+
+
 @pytest.fixture
 def fake_conda_environment(monkeypatch, tmp_path):
     """Fakes a real conda install of anaconda-mcp: creates a conda-meta record
-    under a fresh sys.prefix so the REAL detection chain (_has_conda_meta_record
-    -> _detect_distribution_surface -> resolve_distribution_surface) resolves to
-    "conda" without mocking any detection internals directly."""
+    (with a version matching the REAL installed version, so the drift check in
+    _detect_distribution_surface confirms freshness) under a fresh sys.prefix so
+    the REAL detection chain (_get_conda_meta_version -> _detect_distribution_surface
+    -> resolve_distribution_surface) resolves to "conda" without mocking any
+    detection internals directly."""
+    installed_version = importlib.metadata.version("anaconda-mcp")
     conda_meta = tmp_path / "conda-meta"
     conda_meta.mkdir()
-    (conda_meta / "anaconda-mcp-9.9.9-0.json").write_text(_json.dumps({"name": "anaconda-mcp", "version": "9.9.9"}))
+    (conda_meta / f"anaconda-mcp-{installed_version}-0.json").write_text(
+        _json.dumps({"name": "anaconda-mcp", "version": installed_version})
+    )
     monkeypatch.setattr("sys.prefix", str(tmp_path))
     _detect_distribution_surface.cache_clear()
     yield
