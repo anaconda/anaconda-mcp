@@ -103,13 +103,10 @@ def resolve_distribution_surface() -> str:
         return "unknown"
 
 
-SCHEMA_VERSION = "1"
-
-
 @functools.cache
 def _base_dimensions() -> dict[str, str]:
     """Foundation telemetry dimensions stamped on every OTel event."""
-    dims: dict[str, str] = {"schema_version": SCHEMA_VERSION}
+    dims: dict[str, str] = {}
 
     try:
         dims["install.id"] = get_or_create_install_id()

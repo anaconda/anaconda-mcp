@@ -20,7 +20,6 @@ VALID_TEST_JWT = f"h.{_payload}.s"
 
 BASE_DIMENSION_KEYS = frozenset(
     {
-        "schema_version",
         "install.id",
         "distribution.surface",
         "package.version",
