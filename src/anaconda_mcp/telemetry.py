@@ -122,11 +122,6 @@ def _base_dimensions() -> dict[str, str]:
         logger.debug("Failed to resolve distribution_surface dimension", exc_info=True)
 
     try:
-        dims["python_version"] = platform.python_version()
-    except Exception:
-        logger.debug("Failed to resolve python_version dimension", exc_info=True)
-
-    try:
         dims["package.version"] = _get_package_version()
     except Exception:
         logger.debug("Failed to resolve package_version dimension", exc_info=True)

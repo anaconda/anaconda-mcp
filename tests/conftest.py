@@ -23,7 +23,6 @@ BASE_DIMENSION_KEYS = frozenset(
         "schema_version",
         "install.id",
         "distribution.surface",
-        "python_version",
         "package.version",
         "user.environment",
     }

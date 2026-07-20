@@ -550,8 +550,8 @@ def test_smoke_emit_tool_metrics_workflow_with_conda_surface(fake_conda_environm
         assert attrs["tool"] == "smoke_tool"
 
 
-def test_base_dimensions_happy_path_has_exactly_six_keys():
-    """On the happy path, exactly the 6 documented keys are present."""
+def test_base_dimensions_happy_path_has_exactly_five_keys():
+    """On the happy path, exactly the 5 documented keys are present."""
     result = _base_dimensions()
 
     assert set(result.keys()) == BASE_DIMENSION_KEYS
@@ -568,7 +568,7 @@ def test_base_dimensions_fault_isolation_on_single_resolver_failure():
 
 
 def test_base_dimensions_keys_do_not_collide_with_reserved_names():
-    """None of the 6 dimension keys collide with cli-base's `source`/`plugin` or `user.id`."""
+    """None of the 5 dimension keys collide with cli-base's `source`/`plugin` or `user.id`."""
     result = _base_dimensions()
 
     assert not ({"source", "plugin", "user.id"} & set(result.keys()))
