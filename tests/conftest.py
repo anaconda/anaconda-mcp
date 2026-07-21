@@ -8,6 +8,8 @@ import pytest
 
 import anaconda_mcp._shutdown as _mcp_shutdown
 import anaconda_mcp.auth as _mcp_auth
+import anaconda_mcp.mcp_state as _mcp_state
+import anaconda_mcp.telemetry as _mcp_telemetry
 from anaconda_mcp.terms import CURRENT_TOS_VERSION
 
 MOCKED_TOKEN = "mocked_token"
@@ -15,6 +17,14 @@ MOCKED_TOKEN = "mocked_token"
 TEST_USER_ID = "00000000-0000-0000-0000-000000000001"
 _payload = base64.urlsafe_b64encode(json.dumps({"sub": TEST_USER_ID}).encode()).rstrip(b"=").decode()
 VALID_TEST_JWT = f"h.{_payload}.s"
+
+BASE_DIMENSION_KEYS = frozenset(
+    {
+        "distribution.surface",
+        "package.version",
+        "user.environment",
+    }
+)
 
 
 def _reset_shutdown_globals() -> None:
@@ -66,3 +76,36 @@ def mock_token_info_load():
     ):
         yield m
     _mcp_auth._reset_user_id_cache()
+
+
+@pytest.fixture(autouse=True)
+def _isolate_mcp_state(tmp_path, monkeypatch):
+    """Redirect MCP state to a temp file and reset telemetry caches for every test.
+
+    mark_installed()/is_new_install() read/write the on-disk state via MCPState
+    unless _STATE_PATH is patched, so any install-tracking test would otherwise
+    mutate the real ~/.anaconda/mcp_state.json. _base_dimensions() is itself cached
+    per process, so its result is cleared too — otherwise a test that monkeypatches
+    a dimension resolver would see a dict cached by an earlier test. Tests that need
+    their own state path (test_install_state.py) re-patch _STATE_PATH after this
+    fixture; last-applied wins, so they compose cleanly.
+    """
+    _mcp_telemetry._base_dimensions.cache_clear()
+    monkeypatch.setattr(_mcp_state, "_STATE_PATH", tmp_path / "mcp_state.json")
+    yield
+    _mcp_telemetry._base_dimensions.cache_clear()
+
+
+@pytest.fixture(autouse=True)
+def _isolate_distribution_surface(monkeypatch):
+    """Clear the surface env var and the detector's memoized cache around every test.
+
+    Without this, a host/CI-exported ANACONDA_MCP_DISTRIBUTION_SURFACE would leak
+    into every test (short-circuiting the resolver), and a cached
+    _detect_distribution_surface() result from an earlier test would leak into a
+    later one that expects fresh auto-detection.
+    """
+    monkeypatch.delenv("ANACONDA_MCP_DISTRIBUTION_SURFACE", raising=False)
+    _mcp_telemetry._detect_distribution_surface.cache_clear()
+    yield
+    _mcp_telemetry._detect_distribution_surface.cache_clear()

@@ -7,8 +7,12 @@ from unittest.mock import patch
 
 import pytest
 
-from anaconda_mcp.telemetry import MetricData, _UserContextLogFilter, emit_event
-from conftest import TEST_USER_ID
+from anaconda_mcp.telemetry import (
+    MetricData,
+    _UserContextLogFilter,
+    emit_event,
+)
+from conftest import BASE_DIMENSION_KEYS, TEST_USER_ID
 
 MOCKED_TOKEN = "mocked_token"
 
@@ -47,6 +51,38 @@ def test_emit_event_calls_log_event():
     assert attributes["x"] == 1
     assert attributes["user.id"] == TEST_USER_ID
     assert "user.id.status" not in attributes
+
+
+def test_emit_event_log_event_includes_base_dimensions():
+    """Every OTel log_event call carries the 6 _base_dimensions() keys plus user.id."""
+    with patch("anaconda_mcp.telemetry.log_event") as mock_log_event:
+        emit_event("some_event", {})
+
+    attributes = mock_log_event.call_args.kwargs["attributes"]
+    for key in BASE_DIMENSION_KEYS:
+        assert key in attributes
+    assert attributes["user.id"] == TEST_USER_ID
+
+
+def test_emit_event_snake_eyes_payload_excludes_base_dimensions():
+    """Base dimensions are OTel-only; snake-eyes event_params stays byte-identical to the caller's input."""
+    with patch("anaconda_mcp.telemetry.SnakeEyes.send") as mock_send:
+        emit_event("some_event", {"x": 1})
+
+    metric_data = mock_send.call_args[0][0]
+    assert metric_data.event_params == {"x": 1}
+
+
+def test_emit_event_base_dimensions_win_over_event_param_collision():
+    """Base dimensions are authoritative: a caller-supplied event param with
+    the same name as a base dimension is overridden, not the other way around
+    (closes a footgun where a future caller forwarding untrusted keys could
+    bypass a trusted dimension's value on the OTel path)."""
+    with patch("anaconda_mcp.telemetry.log_event") as mock_log_event:
+        emit_event("some_event", {"user.environment": "caller-supplied-value"})
+
+    attributes = mock_log_event.call_args.kwargs["attributes"]
+    assert attributes["user.environment"] != "caller-supplied-value"
 
 
 def test_emit_event_filters_pii_for_otel_only():
@@ -187,3 +223,22 @@ def test_user_context_log_filter_backstops_on_resolve_user_id_failure():
     assert result is True
     assert "user.id" not in record.__dict__
     assert "user.id.status" not in record.__dict__
+
+
+def test_user_context_log_filter_asymmetry_no_base_dimensions():
+    """LOG half of the accepted signal-type asymmetry (see the comment above
+    _base_dimensions() in telemetry.py): _UserContextLogFilter.filter() gains ONLY
+    user.id on the record, never any of the 6 _base_dimensions() keys that OTel
+    events carry via emit_event(). Authenticated by default via the autouse
+    conftest fixture (mirrors test_user_context_log_filter_stamps_user_id_when_authed).
+    """
+    record = _make_record()
+    before_keys = set(record.__dict__.keys())
+
+    result = _UserContextLogFilter().filter(record)
+
+    assert result is True
+    assert record.__dict__["user.id"] == TEST_USER_ID
+    assert set(record.__dict__.keys()) - before_keys == {"user.id"}
+    for key in BASE_DIMENSION_KEYS:
+        assert key not in record.__dict__

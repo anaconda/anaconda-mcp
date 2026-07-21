@@ -1,7 +1,11 @@
 import enum
+import functools
 import importlib.metadata
+import json
 import logging
+import os
 import platform
+import sys
 import threading
 from typing import Any
 
@@ -15,6 +19,110 @@ from anaconda_mcp.auth import get_auth_token, resolve_user_id
 from anaconda_mcp.config import settings
 
 logger = logging.getLogger(__name__)
+
+
+KNOWN_DISTRIBUTION_SURFACES = frozenset({"pip", "uvx", "conda", "ana", "mcpb", "unknown"})
+
+
+def _read_installer(package_name: str) -> str | None:
+    """Read the dist-info INSTALLER file for `package_name`. Total: never raises."""
+    try:
+        text = importlib.metadata.distribution(package_name).read_text("INSTALLER")
+    except Exception:
+        return None
+    if not text:
+        return None
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped:
+            return stripped.lower()
+    return None
+
+
+def _get_conda_meta_version(package_name: str) -> str | None:
+    """Return the version recorded in this package's conda-meta record in
+    sys.prefix, or None if no record with this exact name exists."""
+    conda_meta_dir = os.path.join(sys.prefix, "conda-meta")
+    try:
+        entries = os.listdir(conda_meta_dir)
+    except OSError:
+        return None
+    prefix = f"{package_name}-"
+    for entry in sorted(entries):
+        if not (entry.startswith(prefix) and entry.endswith(".json")):
+            continue
+        try:
+            with open(os.path.join(conda_meta_dir, entry), encoding="utf-8") as f:
+                record = json.load(f)
+        except (OSError, ValueError):
+            continue
+        if isinstance(record, dict) and record.get("name") == package_name:
+            version = record.get("version")
+            return version if isinstance(version, str) else ""
+    return None
+
+
+@functools.cache
+def _detect_distribution_surface() -> str:
+    """Auto-detect the surface when ANACONDA_MCP_DISTRIBUTION_SURFACE is unset."""
+    conda_version = _get_conda_meta_version("anaconda-mcp")
+    if conda_version is not None:
+        installed_version = _get_package_version()
+        if not conda_version or installed_version == "unknown" or conda_version == installed_version:
+            logger.debug("Detected distribution surface 'conda' via conda-meta record")
+            return "conda"
+        logger.debug(
+            "conda-meta record version %r does not match installed version %r; "
+            "treating conda-meta as stale, falling through to INSTALLER",
+            conda_version,
+            installed_version,
+        )
+    installer = _read_installer("anaconda-mcp")
+    if installer == "pip":
+        logger.debug("Detected distribution surface 'pip' via INSTALLER=%r", installer)
+        return "pip"
+    if installer == "uv":
+        logger.debug("Detected distribution surface 'uvx' via INSTALLER=%r", installer)
+        return "uvx"
+    logger.debug("Could not detect distribution surface (installer=%r); defaulting to 'unknown'", installer)
+    return "unknown"
+
+
+def resolve_distribution_surface() -> str:
+    """Return which distribution surface this server is running through."""
+    try:
+        candidate = os.environ.get("ANACONDA_MCP_DISTRIBUTION_SURFACE", "")
+        if candidate:
+            if candidate in KNOWN_DISTRIBUTION_SURFACES:
+                return candidate
+            logger.debug("Unrecognized distribution surface %r; coercing to 'unknown'", candidate)
+            return "unknown"
+        return _detect_distribution_surface()
+    except Exception:
+        return "unknown"
+
+
+@functools.cache
+def _base_dimensions() -> dict[str, str]:
+    """Foundation telemetry dimensions stamped on every OTel event."""
+    dims: dict[str, str] = {}
+
+    try:
+        dims["distribution.surface"] = resolve_distribution_surface()
+    except Exception:
+        logger.debug("Failed to resolve distribution_surface dimension", exc_info=True)
+
+    try:
+        dims["package.version"] = _get_package_version()
+    except Exception:
+        logger.debug("Failed to resolve package_version dimension", exc_info=True)
+
+    try:
+        dims["user.environment"] = settings.environment
+    except Exception:
+        logger.debug("Failed to resolve user_environment dimension", exc_info=True)
+
+    return dims
 
 
 class MetricNames(enum.Enum):
@@ -86,6 +194,7 @@ def emit_event(
 
     try:
         otel_attrs = {k: v for k, v in params.items() if k not in _PII_KEYS}
+        otel_attrs.update(_base_dimensions())
         # user.id is merged AFTER the PII filter so it always survives, and is
         # OTel-only — the snake-eyes params/MetricData path above is untouched.
         otel_attrs.update(_otel_user_attrs())
@@ -103,7 +212,7 @@ def emit_event(
 def _get_package_version() -> str:
     try:
         return importlib.metadata.version("anaconda-mcp")
-    except importlib.metadata.PackageNotFoundError:
+    except Exception:
         return "unknown"
 
 
@@ -227,6 +336,9 @@ class _UserContextLogFilter(logging.Filter):
     identifier for setattr. When unauthenticated, ``_otel_user_attrs()``
     returns ``{}`` and the merge is a no-op (schema-conforming: user.id is
     omitted, never a sentinel).
+
+    Keep this user.id-only: adding other base dimensions would recurse
+    (resolving them logs, which re-enters this filter).
     """
 
     def filter(self, record: logging.LogRecord) -> bool:
@@ -234,6 +346,9 @@ class _UserContextLogFilter(logging.Filter):
         return True
 
 
+# Metric labels must stay low-cardinality: only `tool`, `is_error`, and
+# `distribution_surface` (a closed enum). Never add user.id or other
+# per-account/install/package values — they'd explode the metric series.
 def _emit_tool_metrics(tool_name: str, duration_ms: float, *, is_error: bool) -> None:
     try:
         attrs: dict[str, object] = {"tool": tool_name}
@@ -241,6 +356,7 @@ def _emit_tool_metrics(tool_name: str, duration_ms: float, *, is_error: bool) ->
         # series per tool; dashboards derive success as total minus is_error=true.
         if is_error:
             attrs["is_error"] = True
+        attrs["distribution_surface"] = resolve_distribution_surface()
         _otel_count("mcp_tool_invoked", plugin_name="mcp", attributes=attrs)
         _otel_histogram(
             "mcp_tool_duration_ms",
