@@ -28,7 +28,7 @@ def test_get_or_create_install_id_memo_avoids_extra_reads(temp_state_path):
     get_or_create_install_id()
 
     # When - calling it several more times with _read spied on
-    with mock.patch.object(MCPState, "_read", autospec=True, wraps=MCPState._read) as read_spy:
+    with mock.patch.object(MCPState, "_read", autospec=True, side_effect=MCPState._read) as read_spy:
         for _ in range(5):
             get_or_create_install_id()
 
@@ -44,8 +44,8 @@ def test_get_or_create_install_id_warm_path_reads_once_no_write(temp_state_path)
 
     # When - resolving with read/write spied on
     with (
-        mock.patch.object(MCPState, "_read", autospec=True, wraps=MCPState._read) as read_spy,
-        mock.patch.object(MCPState, "_write", autospec=True, wraps=MCPState._write) as write_spy,
+        mock.patch.object(MCPState, "_read", autospec=True, side_effect=MCPState._read) as read_spy,
+        mock.patch.object(MCPState, "_write", autospec=True, side_effect=MCPState._write) as write_spy,
     ):
         result = get_or_create_install_id()
 
