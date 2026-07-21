@@ -204,7 +204,7 @@ def test_emit_tool_metrics_omits_user_id_when_anonymous():
 def test_emit_tool_metrics_includes_distribution_surface():
     """distribution_surface is present on both metrics and is always a member of the
     closed KNOWN_DISTRIBUTION_SURFACES enum (never an arbitrary/un-coerced string).
-    install_id/user_id remain absent - the metric label set stays limited to
+    user_id remains absent - the metric label set stays limited to
     tool/is_error/distribution_surface."""
     with (
         mock.patch("anaconda_mcp.telemetry._otel_count") as mock_count,
@@ -217,7 +217,6 @@ def test_emit_tool_metrics_includes_distribution_surface():
 
     for attrs in (count_attrs, hist_attrs):
         assert attrs["distribution_surface"] in KNOWN_DISTRIBUTION_SURFACES
-        assert "install_id" not in attrs
         assert "user_id" not in attrs
         assert "user.id" not in attrs
 
@@ -549,24 +548,25 @@ def test_smoke_emit_tool_metrics_workflow_with_conda_surface(fake_conda_environm
         assert attrs["tool"] == "smoke_tool"
 
 
-def test_base_dimensions_happy_path_has_exactly_four_keys():
-    """On the happy path, exactly the 4 documented keys are present."""
+def test_base_dimensions_happy_path_has_exactly_three_keys():
+    """On the happy path, exactly the 3 documented keys are present."""
     result = _base_dimensions()
 
     assert set(result.keys()) == BASE_DIMENSION_KEYS
 
 
 def test_base_dimensions_fault_isolation_on_single_resolver_failure():
-    """A single failing resolver omits only its own key; the rest still return."""
-    with mock.patch("anaconda_mcp.telemetry.get_or_create_install_id", side_effect=RuntimeError("boom")):
+    """A single failing resolver (distribution.surface) omits only its own key;
+    the rest still return."""
+    with mock.patch("anaconda_mcp.telemetry.resolve_distribution_surface", side_effect=RuntimeError("boom")):
         result = _base_dimensions()
 
-    assert "install.id" not in result
-    assert set(result.keys()) == BASE_DIMENSION_KEYS - {"install.id"}
+    assert "distribution.surface" not in result
+    assert set(result.keys()) == BASE_DIMENSION_KEYS - {"distribution.surface"}
 
 
 def test_base_dimensions_keys_do_not_collide_with_reserved_names():
-    """None of the 4 dimension keys collide with cli-base's `source`/`plugin` or `user.id`."""
+    """None of the 3 dimension keys collide with cli-base's `source`/`plugin` or `user.id`."""
     result = _base_dimensions()
 
     assert not ({"source", "plugin", "user.id"} & set(result.keys()))

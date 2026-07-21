@@ -76,39 +76,3 @@ def test_setup_emits_install_completed_event():
                 found = True
                 break
         assert found, f"INSTALL_COMPLETED event not found in calls: {send_mock.call_args_list}"
-
-
-def test_setup_establishes_install_id_even_when_telemetry_disabled(tmp_path):
-    """anaconda mcp setup must establish install_id even with metrics off -
-    install_id should not be contingent on settings.send_metrics, since
-    emit_event() short-circuits before ever calling _base_dimensions() when
-    metrics are disabled."""
-    from anaconda_mcp.cli import cli
-    from anaconda_mcp.mcp_state import _reset_install_id_cache
-
-    fake_state = tmp_path / "mcp_state.json"
-    _reset_install_id_cache()
-    runner = CliRunner()
-    with (
-        mock.patch("anaconda_mcp.cli.configure_client") as mock_configure,
-        mock.patch("anaconda_mcp.cli.is_new_install", return_value=True),
-        mock.patch("anaconda_mcp.cli.mark_installed"),
-        mock.patch("anaconda_mcp.telemetry.settings.send_metrics", False),
-        mock.patch("anaconda_mcp.mcp_state._STATE_PATH", fake_state),
-        mock.patch("anaconda_mcp.cli.get_auth_token", return_value="fake-token"),
-    ):
-        mock_configure.return_value = {
-            "config_path": "/tmp/test",
-            "backup_path": None,
-            "server_name": "anaconda-mcp",
-            "scope": "global",
-            "created": True,
-            "updated": False,
-        }
-        result = runner.invoke(cli, ["setup", "--client", "claude-desktop"])
-        assert result.exit_code == 0, f"CLI failed: {result.output}"
-
-    assert fake_state.exists(), "install_id state file was not created despite telemetry being disabled"
-    data = json.loads(fake_state.read_text())
-    assert "install_id" in data
-    _reset_install_id_cache()

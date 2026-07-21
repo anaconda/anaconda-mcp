@@ -1,6 +1,5 @@
 import json
 import logging
-import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -12,7 +11,6 @@ _STATE_PATH = Path("~/.anaconda/mcp_state.json").expanduser()
 
 class StateKeys:
     FIRST_INSTALL_AT = "first_install_at"
-    INSTALL_ID = "install_id"
 
 
 class MCPState:
@@ -53,38 +51,3 @@ def mark_installed() -> None:
     state = MCPState()
     if state.get(StateKeys.FIRST_INSTALL_AT) is None:
         state.set(StateKeys.FIRST_INSTALL_AT, datetime.now(timezone.utc).isoformat())
-
-
-_install_id: str | None = None
-
-
-def _reset_install_id_cache() -> None:
-    """Test hook: clear the memoized install id."""
-    global _install_id
-    _install_id = None
-
-
-def get_or_create_install_id() -> str:
-    """Return a stable per-install UUID, read once per process then cached.
-
-    Best-effort telemetry join key: no locking, so racing cold starts may pick
-    different ids (last write wins) - accepted, since `anaconda mcp setup`
-    establishes this id first in the common (non-concurrent) case. Never
-    raises. No re-entrancy guard needed — _UserContextLogFilter carries only
-    user.id, so nothing re-enters this.
-    """
-    global _install_id
-    if _install_id is not None:
-        return _install_id
-    new_id = str(uuid.uuid4())
-    try:
-        state = MCPState()
-        existing = state.get(StateKeys.INSTALL_ID)
-        if isinstance(existing, str) and existing:
-            new_id = existing
-        else:
-            state.set(StateKeys.INSTALL_ID, new_id)
-    except Exception as e:
-        logger.debug(f"Failed to resolve/persist install id, using ephemeral value: {e}")
-    _install_id = new_id
-    return _install_id

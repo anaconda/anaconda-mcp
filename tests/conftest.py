@@ -20,7 +20,6 @@ VALID_TEST_JWT = f"h.{_payload}.s"
 
 BASE_DIMENSION_KEYS = frozenset(
     {
-        "install.id",
         "distribution.surface",
         "package.version",
         "user.environment",
@@ -83,21 +82,18 @@ def mock_token_info_load():
 def _isolate_mcp_state(tmp_path, monkeypatch):
     """Redirect MCP state to a temp file and reset telemetry caches for every test.
 
-    emit_event() -> _base_dimensions() -> get_or_create_install_id() reads/writes the
-    state file unless _STATE_PATH is patched, so any event-emitting test would otherwise
-    mutate the real ~/.anaconda/mcp_state.json (and leave the module-level install_id memo
-    populated across tests). _base_dimensions() is itself cached per process, so its result
-    is cleared too — otherwise a test that monkeypatches a dimension resolver would see a
-    dict cached by an earlier test. Tests that need their own state path (test_mcp_state.py,
-    test_install_state.py) re-patch _STATE_PATH after this fixture; last-applied wins, so
-    they compose cleanly.
+    mark_installed()/is_new_install() read/write the on-disk state via MCPState
+    unless _STATE_PATH is patched, so any install-tracking test would otherwise
+    mutate the real ~/.anaconda/mcp_state.json. _base_dimensions() is itself cached
+    per process, so its result is cleared too — otherwise a test that monkeypatches
+    a dimension resolver would see a dict cached by an earlier test. Tests that need
+    their own state path (test_install_state.py) re-patch _STATE_PATH after this
+    fixture; last-applied wins, so they compose cleanly.
     """
     _mcp_telemetry._base_dimensions.cache_clear()
-    _mcp_state._reset_install_id_cache()
     monkeypatch.setattr(_mcp_state, "_STATE_PATH", tmp_path / "mcp_state.json")
     yield
     _mcp_telemetry._base_dimensions.cache_clear()
-    _mcp_state._reset_install_id_cache()
 
 
 @pytest.fixture(autouse=True)

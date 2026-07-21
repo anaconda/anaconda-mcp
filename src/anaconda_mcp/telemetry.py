@@ -17,7 +17,6 @@ from pydantic import BaseModel
 
 from anaconda_mcp.auth import get_auth_token, resolve_user_id
 from anaconda_mcp.config import settings
-from anaconda_mcp.mcp_state import get_or_create_install_id
 
 logger = logging.getLogger(__name__)
 
@@ -107,11 +106,6 @@ def resolve_distribution_surface() -> str:
 def _base_dimensions() -> dict[str, str]:
     """Foundation telemetry dimensions stamped on every OTel event."""
     dims: dict[str, str] = {}
-
-    try:
-        dims["install.id"] = get_or_create_install_id()
-    except Exception:
-        logger.debug("Failed to resolve install_id dimension", exc_info=True)
 
     try:
         dims["distribution.surface"] = resolve_distribution_surface()
@@ -343,9 +337,8 @@ class _UserContextLogFilter(logging.Filter):
     returns ``{}`` and the merge is a no-op (schema-conforming: user.id is
     omitted, never a sentinel).
 
-    Keep this user.id-only: adding install_id/base dims would recurse (resolving
-    install_id logs, which re-enters this filter) and get_or_create_install_id
-    has no re-entrancy guard.
+    Keep this user.id-only: adding other base dimensions would recurse
+    (resolving them logs, which re-enters this filter).
     """
 
     def filter(self, record: logging.LogRecord) -> bool:
@@ -354,7 +347,7 @@ class _UserContextLogFilter(logging.Filter):
 
 
 # Metric labels must stay low-cardinality: only `tool`, `is_error`, and
-# `distribution_surface` (a closed enum). Never add user.id/install_id or other
+# `distribution_surface` (a closed enum). Never add user.id or other
 # per-account/install/package values — they'd explode the metric series.
 def _emit_tool_metrics(tool_name: str, duration_ms: float, *, is_error: bool) -> None:
     try:
