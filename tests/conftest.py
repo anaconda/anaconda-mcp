@@ -4,6 +4,8 @@ import signal as _signal
 from unittest import mock
 
 import anaconda_cli_base.lifecycle as _lifecycle
+import anaconda_cli_base.telemetry as _cli_base_telemetry
+import httpx
 import pytest
 
 import anaconda_mcp._shutdown as _mcp_shutdown
@@ -55,6 +57,25 @@ def _isolate_shutdown_state():
 @pytest.fixture
 def mocked_token():
     return MOCKED_TOKEN
+
+
+@pytest.fixture(autouse=True)
+def _disable_telemetry_network(monkeypatch):
+    """Never let telemetry make a real network call during tests.
+
+    Forces cli-base's already-constructed config.enabled to False (disables the
+    OTel sink) and makes SnakeEyes._make_request a no-op (disables the snake-eyes
+    sink). Both are direct attribute/method overrides on live objects, so - unlike
+    the OTEL_SDK_DISABLED env var, which only works if set before
+    anaconda_cli_base.telemetry's module-level TelemetryConfig() is constructed -
+    this works regardless of fixture ordering or when it runs relative to imports.
+    """
+    monkeypatch.setattr(_cli_base_telemetry.config, "enabled", False)
+    monkeypatch.setattr(
+        _mcp_telemetry.SnakeEyes,
+        "_make_request",
+        lambda self, *args, **kwargs: httpx.Response(status_code=200),
+    )
 
 
 @pytest.fixture(autouse=True)
