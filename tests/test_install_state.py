@@ -58,7 +58,7 @@ def test_setup_emits_install_completed_event():
             "config_path": "/tmp/test",
             "backup_path": None,
             "server_name": "anaconda-mcp",
-            "scope": "global",
+            "transport": "stdio",
             "created": True,
             "updated": False,
         }

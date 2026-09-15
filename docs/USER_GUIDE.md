@@ -82,13 +82,13 @@ Tool calls fail until authentication and Terms acceptance are both valid.
 anaconda mcp setup
 ```
 
-The setup wizard writes a stdio MCP configuration for supported clients. Supported clients include Claude Desktop, Claude Code, Cursor, Windsurf, VS Code, and OpenCode.
+The setup wizard adds the remote Anaconda MCP service (`https://anaconda.com/api/mcp`) to the MCP config of each selected client. Supported clients include Claude Desktop, Claude Code, Cursor, Windsurf, VS Code, OpenCode, Kilo Code, and Codex.
 
 To configure one client non-interactively:
 
 ```bash
 anaconda mcp setup --client claude-desktop
-anaconda mcp setup --client cursor --scope project
+anaconda mcp setup --client cursor
 ```
 
 ### 2. Start the MCP server manually, if needed
@@ -119,7 +119,7 @@ These commands are separate from the stdio runtime used by `serve`.
 | Command | Description |
 |---------|-------------|
 | `serve` | Run the native Anaconda MCP FastMCP server over stdio |
-| `setup` | Configure a supported MCP client with stdio transport |
+| `setup` | Configure a supported MCP client to use the remote Anaconda MCP service |
 | `compose` | Compose MCP servers from project dependencies |
 | `discover` | Discover MCP servers available in project dependencies |
 | `terms` | View or accept the Anaconda MCP Terms of Service |
@@ -165,7 +165,7 @@ anaconda mcp -v serve
 
 ### `setup`
 
-Configure a supported MCP client to launch Anaconda MCP over stdio.
+Configure a supported MCP client to use the remote Anaconda MCP service at `https://anaconda.com/api/mcp`.
 
 ```bash
 anaconda mcp setup [OPTIONS]
@@ -173,12 +173,12 @@ anaconda mcp setup [OPTIONS]
 
 | Option | Description | Default |
 |--------|-------------|---------|
-| `--client CLIENT` | Configure one supported client | Interactive selection |
-| `--scope SCOPE` | Client-specific config scope, such as `global` or `project` | Client default |
+| `--client CLIENT` | Configure one supported client (repeatable) | Interactive selection |
 | `--name NAME` | Server entry name in the client config | `anaconda-mcp` |
-| `--force` | Overwrite an existing entry | `false` |
+| `--no-backup` | Don't create a backup of the existing config file | `false` |
+| `--json` | Output result as JSON | `false` |
 
-The generated config is stdio-only and launches `anaconda mcp serve` or `python -m anaconda_mcp serve`, depending on the client and installation path.
+The generated config points at the remote service over HTTP with your current login token as a bearer header. An existing `anaconda-mcp` entry is overwritten (with a backup by default), migrating legacy stdio entries. Claude Desktop is the exception: its config file only supports stdio, so it keeps the local `anaconda mcp serve` entry.
 
 ---
 
@@ -283,7 +283,7 @@ For full details on Claude Desktop integration, including how to remove the conf
 
 ## Configuration
 
-`anaconda mcp serve` uses native FastMCP composition. There is no runtime composition file to edit for the default server, and client setup is stdio-only.
+`anaconda mcp serve` uses native FastMCP composition. There is no runtime composition file to edit for the default server. Client setup points at the remote Anaconda MCP service; only Claude Desktop still uses a local stdio entry.
 
 Configuration that still matters at runtime is supplied through Anaconda authentication, Terms acceptance, and environment variables:
 
@@ -318,7 +318,23 @@ anaconda mcp claude-desktop setup-config
 
 ### Manual client configuration
 
-Add a stdio MCP server entry to your client config:
+Add a remote HTTP entry pointing at the Anaconda MCP service to your client config:
+
+```json
+{
+  "mcpServers": {
+    "anaconda-mcp": {
+      "type": "http",
+      "url": "https://anaconda.com/api/mcp",
+      "headers": {
+        "Authorization": "Bearer <your-api-key>"
+      }
+    }
+  }
+}
+```
+
+For Claude Desktop (stdio-only config), keep the local server entry instead:
 
 ```json
 {

@@ -35,9 +35,8 @@ from anaconda_mcp.claude_desktop import (
     show_claude_desktop_config,
 )
 from anaconda_mcp.client_config import (
-    SCOPE_GLOBAL,
-    SCOPE_PROJECT,
     SUPPORTED_CLIENTS,
+    client_needs_update,
     configure_client,
     is_client_installed,
     remove_client,
@@ -60,7 +59,7 @@ from anaconda_mcp.terms import (
     persist_acceptance,
     send_contact_consent_event,
 )
-from anaconda_mcp.wizard import setup_wizard_page
+from anaconda_mcp.wizard import multiselect_checkbox
 
 logger = logging.getLogger(__name__)
 
@@ -264,63 +263,50 @@ def discover(ctx, pyproject, output_format):
 # ============================================================================
 
 
-def _build_clients_data(project_dir: Path | None = None) -> dict:
+def _build_clients_data(server_name: str = "anaconda-mcp") -> dict:
     result = {}
     for client in sorted(SUPPORTED_CLIENTS):
-        supports_project = SUPPORTED_CLIENTS[client]["supports_project_scope"]
-        status = is_client_installed(client, project_dir=project_dir)
         result[client] = {
-            "transports": ["stdio"],
-            "supports_global_scope": True,
-            "supports_project_scope": supports_project,
+            "transport": SUPPORTED_CLIENTS[client]["transport"],
             "config_key": SUPPORTED_CLIENTS[client]["config_key"],
-            "installed_global": status["global"],
-            "installed_project": status.get("project", None),
+            "installed": is_client_installed(client, server_name=server_name),
         }
     return result
 
 
-def _print_clients_table(project_dir: Path | None = None) -> None:
-    data = _build_clients_data(project_dir=project_dir)
+def _print_clients_table() -> None:
+    data = _build_clients_data()
     console = Console()
     table = Table(show_header=True, header_style="bold")
     table.add_column("CLIENT", style="cyan", no_wrap=True)
-    table.add_column("TRANSPORTS")
-    table.add_column("SCOPE")
+    table.add_column("TRANSPORT")
     table.add_column("INSTALLED")
 
     for client, info in data.items():
-        scope_str = "global, project" if info["supports_project_scope"] else "global"
-        parts = []
-        if info["installed_global"]:
-            parts.append("global")
-        if info["installed_project"]:
-            parts.append("project")
-        installed_str = ", ".join(parts) if parts else "—"
-        table.add_row(client, "stdio", scope_str, installed_str)
+        table.add_row(client, info["transport"], "yes" if info["installed"] else "—")
 
     console.print(table)
 
 
 @cli.command(help="List supported AI clients and their configuration options.")
-@click.option(
-    "--project-dir",
-    type=click.Path(file_okay=False, path_type=Path),
-    default=None,
-    help="Project directory to check for project-scoped installs (defaults to CWD).",
-)
 @click.option("--json", "output_json", is_flag=True, help="Output as JSON.")
-def clients(project_dir, output_json):
-    data = _build_clients_data(project_dir=project_dir)
+def clients(output_json):
+    data = _build_clients_data()
     if output_json:
         rich_print_json(json.dumps(data))
     else:
-        _print_clients_table(project_dir=project_dir)
+        _print_clients_table()
 
 
 # ============================================================================
 # Setup Command
 # ============================================================================
+
+
+_CLAUDE_DESKTOP_STDIO_NOTE = (
+    "Note: Claude Desktop does not support remote MCP servers in its config file; "
+    "the local stdio server was configured instead. Restart Claude Desktop to apply changes."
+)
 
 
 @cli.command(help="Configure AI clients to use Anaconda MCP.")
@@ -339,50 +325,31 @@ def clients(project_dir, output_json):
     show_default=True,
     help="Name for the MCP server entry.",
 )
-@click.option(
-    "--scope",
-    type=click.Choice([SCOPE_GLOBAL, SCOPE_PROJECT]),
-    default=SCOPE_GLOBAL,
-    show_default=True,
-    help="Install globally or in the current project.",
-)
-@click.option(
-    "--project-dir",
-    type=click.Path(file_okay=False, path_type=Path),
-    default=None,
-    help="Project directory for --scope project (defaults to CWD).",
-)
 @click.option("--no-backup", is_flag=True, help="Don't create a backup of the existing config file.")
-@click.option("-f", "--force", is_flag=True, help="Overwrite existing server configuration if present.")
 @click.option("--json", "output_json", is_flag=True, help="Output result as JSON.")
-def setup(clients, server_name, scope, project_dir, no_backup, force, output_json):
-    if project_dir is not None and scope != SCOPE_PROJECT:
-        raise click.UsageError("--project-dir requires --scope project.")
+def setup(clients, server_name, no_backup, output_json):
+    token = get_auth_token()
 
     if not clients:
         if not sys.stdin.isatty():
             raise click.UsageError("Missing option '--client'. Run 'anaconda-mcp clients' to see available clients.")
         try:
             all_clients = sorted(SUPPORTED_CLIENTS)
-            supports_project = [SUPPORTED_CLIENTS[c]["supports_project_scope"] for c in all_clients]
-            installed_map = {c: is_client_installed(c, project_dir=project_dir) for c in all_clients}
+            installed = {c: is_client_installed(c, server_name=server_name) for c in all_clients}
 
-            initial: set[tuple[int, int]] = set()
-            for i, c in enumerate(all_clients):
-                if installed_map[c].get("global"):
-                    initial.add((i, 0))
-                if installed_map[c].get("project"):
-                    initial.add((i, 1))
+            selected = multiselect_checkbox(
+                "Select agents to configure with the Anaconda MCP service",
+                all_clients,
+                checked=[c for c in all_clients if installed[c]],
+            )
 
-            page = setup_wizard_page(all_clients, supports_project, initial)
-
-            col_for_scope = {"global": 0, "project": 1}
+            selected_set = set(selected)
             adds = [
-                (c, s) for c, s, checked in page if checked and (all_clients.index(c), col_for_scope[s]) not in initial
+                c
+                for c in all_clients
+                if c in selected_set and (not installed[c] or client_needs_update(c, server_name=server_name))
             ]
-            removes = [
-                (c, s) for c, s, checked in page if not checked and (all_clients.index(c), col_for_scope[s]) in initial
-            ]
+            removes = [c for c in all_clients if c not in selected_set and installed[c]]
 
             if not adds and not removes:
                 click.echo("No changes.")
@@ -394,58 +361,52 @@ def setup(clients, server_name, scope, project_dir, no_backup, force, output_jso
         results = {}
         exit_code = 0
 
-        for client, run_scope in adds:
-            key = f"{client}:{run_scope}"
+        for client in adds:
             try:
                 result = configure_client(
                     client=client,
-                    scope=run_scope,
-                    project_dir=project_dir,
                     server_name=server_name,
                     backup=not no_backup,
-                    force=force,
+                    token=token,
                 )
-                results[key] = {
+                results[client] = {
                     "config_path": str(result["config_path"]),
                     "backup_path": str(result["backup_path"]) if result["backup_path"] else None,
                     "server_name": result["server_name"],
-                    "transport": "stdio",
-                    "scope": result["scope"],
+                    "transport": result["transport"],
                     "action": "configured",
                 }
-            except (FileExistsError, ValueError) as e:
-                click.echo(f"[Error] {key}: {e}", err=True)
+            except ValueError as e:
+                click.echo(f"[Error] {client}: {e}", err=True)
                 exit_code = 1
 
-        for client, run_scope in removes:
-            key = f"{client}:{run_scope}"
+        for client in removes:
             try:
                 result = remove_client(
                     client=client,
-                    scope=run_scope,
-                    project_dir=project_dir,
                     server_name=server_name,
                     backup=not no_backup,
                 )
-                results[key] = {
+                results[client] = {
                     "config_path": str(result["config_path"]),
                     "backup_path": str(result["backup_path"]) if result["backup_path"] else None,
                     "server_name": result["server_name"],
-                    "scope": result["scope"],
                     "action": "removed",
                 }
             except (FileNotFoundError, KeyError, ValueError) as e:
-                click.echo(f"[Error] {key}: {e}", err=True)
+                click.echo(f"[Error] {client}: {e}", err=True)
                 exit_code = 1
 
         if output_json:
             click.echo(json.dumps(results, indent=2))
         else:
-            for key, info in results.items():
+            for client, info in results.items():
                 verb = "Removed" if info["action"] == "removed" else "Configured"
-                click.echo(f"[OK] {verb} {key} ({info['scope']}): {info['config_path']}")
+                click.echo(f"[OK] {verb} {client} ({info.get('transport', 'stdio')}): {info['config_path']}")
                 if info["backup_path"]:
                     click.echo(f"[Backup] {info['backup_path']}")
+            if "claude-desktop" in adds:
+                click.echo(_CLAUDE_DESKTOP_STDIO_NOTE)
 
         if exit_code != 0:
             raise SystemExit(exit_code)
@@ -458,41 +419,36 @@ def setup(clients, server_name, scope, project_dir, no_backup, force, output_jso
     results = {}
     exit_code = 0
 
-    scopes_to_run = [SCOPE_GLOBAL, SCOPE_PROJECT] if scope == "both" else [scope]
-
     for client in clients:
-        for run_scope in scopes_to_run:
-            key = f"{client}:{run_scope}" if scope == "both" else client
-            try:
-                result = configure_client(
-                    client=client,
-                    scope=run_scope,
-                    project_dir=project_dir,
-                    server_name=server_name,
-                    backup=not no_backup,
-                    force=force,
-                )
-                results[key] = {
-                    "config_path": str(result["config_path"]),
-                    "backup_path": str(result["backup_path"]) if result["backup_path"] else None,
-                    "server_name": result["server_name"],
-                    "transport": "stdio",
-                    "scope": result["scope"],
-                    "created": result["created"],
-                    "updated": result["updated"],
-                }
-            except (FileExistsError, ValueError) as e:
-                click.echo(f"[Error] {key}: {e}", err=True)
-                exit_code = 1
+        try:
+            result = configure_client(
+                client=client,
+                server_name=server_name,
+                backup=not no_backup,
+                token=token,
+            )
+            results[client] = {
+                "config_path": str(result["config_path"]),
+                "backup_path": str(result["backup_path"]) if result["backup_path"] else None,
+                "server_name": result["server_name"],
+                "transport": result["transport"],
+                "created": result["created"],
+                "updated": result["updated"],
+            }
+        except ValueError as e:
+            click.echo(f"[Error] {client}: {e}", err=True)
+            exit_code = 1
 
     if output_json:
         click.echo(json.dumps(results, indent=2))
     else:
         for client, info in results.items():
             action = "Created" if info["created"] else ("Updated" if info["updated"] else "Added")
-            click.echo(f"[OK] {action} {client} config ({info['scope']}): {info['config_path']}")
+            click.echo(f"[OK] {action} {client} config ({info['transport']}): {info['config_path']}")
             if info["backup_path"]:
                 click.echo(f"[Backup] {info['backup_path']}")
+        if "claude-desktop" in results:
+            click.echo(_CLAUDE_DESKTOP_STDIO_NOTE)
 
     if exit_code != 0:
         raise SystemExit(exit_code)
@@ -512,7 +468,7 @@ def setup(clients, server_name, scope, project_dir, no_backup, force, output_jso
     "clients",
     multiple=True,
     type=click.Choice(sorted(SUPPORTED_CLIENTS)),
-    help="Client to remove from (repeatable). Required unless --list is used.",
+    help="Client to remove from (repeatable).",
 )
 @click.option(
     "-n",
@@ -522,25 +478,9 @@ def setup(clients, server_name, scope, project_dir, no_backup, force, output_jso
     show_default=True,
     help="Name of the MCP server entry to remove.",
 )
-@click.option(
-    "--scope",
-    type=click.Choice([SCOPE_GLOBAL, SCOPE_PROJECT]),
-    default=SCOPE_GLOBAL,
-    show_default=True,
-    help="Remove from global or project config.",
-)
-@click.option(
-    "--project-dir",
-    type=click.Path(file_okay=False, path_type=Path),
-    default=None,
-    help="Project directory for --scope project (defaults to CWD).",
-)
 @click.option("--no-backup", is_flag=True, help="Don't create a backup of the existing config file.")
 @click.option("--json", "output_json", is_flag=True, help="Output result as JSON.")
-def remove(clients, server_name, scope, project_dir, no_backup, output_json):
-    if project_dir is not None and scope != SCOPE_PROJECT:
-        raise click.UsageError("--project-dir requires --scope project.")
-
+def remove(clients, server_name, no_backup, output_json):
     if not clients:
         raise click.UsageError("Missing option '--client'. Use 'anaconda-mcp setup' for the interactive wizard.")
 
@@ -551,8 +491,6 @@ def remove(clients, server_name, scope, project_dir, no_backup, output_json):
         try:
             result = remove_client(
                 client=client,
-                scope=scope,
-                project_dir=project_dir,
                 server_name=server_name,
                 backup=not no_backup,
             )
@@ -560,7 +498,6 @@ def remove(clients, server_name, scope, project_dir, no_backup, output_json):
                 "config_path": str(result["config_path"]),
                 "backup_path": str(result["backup_path"]) if result["backup_path"] else None,
                 "server_name": result["server_name"],
-                "scope": result["scope"],
                 "removed": result["removed"],
             }
         except (FileNotFoundError, KeyError, ValueError) as e:
@@ -571,9 +508,7 @@ def remove(clients, server_name, scope, project_dir, no_backup, output_json):
         click.echo(json.dumps(results, indent=2))
     else:
         for client, info in results.items():
-            click.echo(
-                f"[OK] Removed '{info['server_name']}' from {client} config ({info['scope']}): {info['config_path']}"
-            )
+            click.echo(f"[OK] Removed '{info['server_name']}' from {client} config: {info['config_path']}")
             if info["backup_path"]:
                 click.echo(f"[Backup] {info['backup_path']}")
 

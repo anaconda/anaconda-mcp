@@ -78,27 +78,56 @@ Configure your AI client to use Anaconda MCP:
 anaconda mcp setup
 ```
 
-This launches an interactive wizard that detects supported clients and writes the appropriate config. Supported clients: Claude Desktop, Claude Code, Cursor, Windsurf, VS Code, OpenCode, and Kilo Code.
+This launches an interactive wizard that detects supported clients and adds the remote Anaconda MCP service (`https://anaconda.com/api/mcp`) to each selected client's MCP config. Supported clients: Claude Desktop, Claude Code, Cursor, Windsurf, VS Code, OpenCode, Kilo Code, and Codex.
 
 To configure a specific client non-interactively:
 
 ```bash
 anaconda mcp setup --client claude-code
-anaconda mcp setup --client cursor --scope project
+anaconda mcp setup --client cursor
 anaconda mcp setup --client kilo
+anaconda mcp setup --client codex
 ```
+
+Re-running `setup` overwrites an existing `anaconda-mcp` entry (a backup is created by default), so it also migrates legacy stdio entries to the remote service.
+
+> **Note:** Claude Desktop does not support remote MCP servers in its config file, so `setup` keeps configuring the local stdio server for it.
 
 ### Kilo Code Configuration
 
-Anaconda MCP writes a plain `kilo.json` file (global `~/.config/kilo/kilo.json` or project `.kilo/kilo.json`) which Kilo Code deep-merges with any existing `kilo.jsonc`. This means hand-written comments in `kilo.jsonc` are preserved across `anaconda mcp setup` runs. **Important:** if you hand-edit `kilo.json` itself with comments, `anaconda mcp setup` cannot parse it — it treats the file as empty and silently overwrites it, discarding your changes. Keep comments in `kilo.jsonc` instead.
+Anaconda MCP writes a plain `kilo.json` file (`~/.config/kilo/kilo.json`) which Kilo Code deep-merges with any existing `kilo.jsonc`. This means hand-written comments in `kilo.jsonc` are preserved across `anaconda mcp setup` runs. **Important:** if you hand-edit `kilo.json` itself with comments, `anaconda mcp setup` cannot parse it — it treats the file as empty and silently overwrites it, discarding your changes. Keep comments in `kilo.jsonc` instead.
 
 ---
 
 ## Manual Client Configuration
 
-If you prefer to configure your AI client manually, add an entry to your client's MCP config JSON. The `anaconda mcp setup` command resolves the Python path for you, but if writing by hand you'll need the full path to the environment's Python.
+If you prefer to configure your AI client manually, point it at the remote Anaconda MCP service with your API key as a bearer token. Example for Claude Code (`~/.claude.json`):
 
-Example for Claude Code (`.mcp.json`):
+```json
+{
+  "mcpServers": {
+    "anaconda-mcp": {
+      "type": "http",
+      "url": "https://anaconda.com/api/mcp",
+      "headers": {
+        "Authorization": "Bearer <your-api-key>"
+      }
+    }
+  }
+}
+```
+
+Example for Codex (`~/.codex/config.toml`):
+
+```toml
+[mcp_servers.anaconda-mcp]
+url = "https://anaconda.com/api/mcp"
+http_headers = { Authorization = "Bearer <your-api-key>" }
+```
+
+API keys can be obtained from your [Anaconda account settings](https://anaconda.com/app).
+
+Claude Desktop is the exception: its config file only supports stdio servers, so keep the local server entry there:
 
 ```json
 {
@@ -113,7 +142,7 @@ Example for Claude Code (`.mcp.json`):
 }
 ```
 
-Optionally, you can pass authentication and TOS acceptance via the `env` dict instead of running `anaconda login` and `anaconda mcp terms accept`:
+Optionally, you can pass authentication and TOS acceptance via the stdio `env` dict instead of running `anaconda login` and `anaconda mcp terms accept`:
 
 ```json
 "env": {
@@ -122,8 +151,6 @@ Optionally, you can pass authentication and TOS acceptance via the `env` dict in
   "ANACONDA_MCP_ACCEPTED_TERMS_VERSION": "2026-05-27"
 }
 ```
-
-API keys can be obtained from your [Anaconda account settings](https://anaconda.com/app).
 
 ⚠️ **Each client has a different JSON schema.** Check your client's MCP documentation carefully when writing configuration manually — field names and structure vary between Claude Code, Cursor, VS Code, and others.
 

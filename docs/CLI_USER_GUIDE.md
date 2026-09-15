@@ -34,7 +34,7 @@ anaconda mcp terms accept
 anaconda mcp setup
 ```
 
-The setup wizard writes a stdio MCP configuration for supported clients.
+The setup wizard adds the remote Anaconda MCP service (`https://anaconda.com/api/mcp`) to the MCP config of each supported client you select.
 
 ### 3. Start the MCP server manually, if needed
 
@@ -59,7 +59,7 @@ No host, port, or external runtime config is required for `serve`.
 | Command | Description |
 |---------|-------------|
 | `serve` | Run the native Anaconda MCP FastMCP server over stdio |
-| `setup` | Configure supported MCP clients with stdio transport |
+| `setup` | Configure supported MCP clients to use the remote Anaconda MCP service |
 | `compose` | Compose MCP servers from project dependencies |
 | `discover` | Discover MCP servers available in project dependencies |
 | `terms` | Show or accept Anaconda MCP Terms of Service |
@@ -122,7 +122,7 @@ anaconda mcp -v serve
 
 ### `setup` Command
 
-Configure supported MCP clients to launch Anaconda MCP over stdio.
+Configure supported MCP clients to use the remote Anaconda MCP service at `https://anaconda.com/api/mcp`.
 
 #### Syntax
 
@@ -134,20 +134,20 @@ anaconda mcp setup [OPTIONS]
 
 | Option | Description |
 |--------|-------------|
-| `--client CLIENT` | Configure one supported client instead of using the wizard |
-| `--scope SCOPE` | Choose a client-specific config scope, such as `global` or `project` |
+| `--client CLIENT` | Configure one supported client instead of using the wizard (repeatable) |
 | `--name NAME` | Server entry name in the client config |
-| `--force` | Replace an existing entry |
+| `--no-backup` | Don't create a backup of the existing config file |
+| `--json` | Output result as JSON |
 
 #### Examples
 
 ```bash
 anaconda mcp setup
 anaconda mcp setup --client claude-code
-anaconda mcp setup --client cursor --scope project
+anaconda mcp setup --client codex
 ```
 
-Generated client entries use stdio and launch `anaconda mcp serve` or `python -m anaconda_mcp serve` directly.
+Generated client entries point at the remote service over HTTP and carry your current login token as a bearer header. An existing `anaconda-mcp` entry is overwritten (with a backup by default), which migrates legacy stdio entries to the remote service. Claude Desktop is the exception: its config file only supports stdio servers, so `setup` keeps configuring the local `anaconda mcp serve` entry for it.
 
 ---
 
@@ -273,10 +273,10 @@ anaconda mcp -v serve
 
 ### Client Setup
 
-Configure a project-scoped client entry when supported:
+Configure a client to use the remote Anaconda MCP service:
 
 ```bash
-anaconda mcp setup --client cursor --scope project
+anaconda mcp setup --client cursor
 ```
 
 ### Dependency Discovery
