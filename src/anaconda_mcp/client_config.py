@@ -1,7 +1,8 @@
-import sys
+import os
 from pathlib import Path
 from typing import Any, cast
 
+import tomlkit
 from platformdirs import user_data_dir
 
 from anaconda_mcp.claude_desktop import (
@@ -12,60 +13,28 @@ from anaconda_mcp.claude_desktop import (
     remove_claude_desktop_config,
     save_config,
 )
-from anaconda_mcp.claude_desktop import (
-    build_stdio_config as _claude_build_stdio_config,
-)
+from anaconda_mcp.config import settings
 
-SCOPE_GLOBAL = "global"
-SCOPE_PROJECT = "project"
+REMOTE_MCP_URL = f"https://{settings.anaconda_domain or 'anaconda.com'}/api/mcp"
+
+TRANSPORT_STDIO = "stdio"
+TRANSPORT_HTTP = "http"
 
 SUPPORTED_CLIENTS: dict[str, dict[str, Any]] = {
-    "claude-desktop": {"config_key": "mcpServers", "supports_project_scope": False},
-    "claude-code": {"config_key": "mcpServers", "supports_project_scope": True},
-    "cursor": {"config_key": "mcpServers", "supports_project_scope": True},
-    "windsurf": {"config_key": "mcpServers", "supports_project_scope": False},
-    "vscode": {"config_key": "servers", "supports_project_scope": True},
-    "opencode": {"config_key": "mcp", "supports_project_scope": True},
-    "kilo": {"config_key": "mcp", "supports_project_scope": True},
+    "claude-desktop": {"config_key": "mcpServers", "transport": TRANSPORT_STDIO},
+    "claude-code": {"config_key": "mcpServers", "transport": TRANSPORT_HTTP},
+    "cursor": {"config_key": "mcpServers", "transport": TRANSPORT_HTTP},
+    "windsurf": {"config_key": "mcpServers", "transport": TRANSPORT_HTTP},
+    "vscode": {"config_key": "servers", "transport": TRANSPORT_HTTP},
+    "opencode": {"config_key": "mcp", "transport": TRANSPORT_HTTP},
+    "kilo": {"config_key": "mcp", "transport": TRANSPORT_HTTP},
+    "codex": {"config_key": "mcp_servers", "transport": TRANSPORT_HTTP, "config_format": "toml"},
 }
 
 
-def get_client_project_config_path(client: str, project_dir: Path) -> Path:
+def get_client_config_path(client: str) -> Path:
     if client not in SUPPORTED_CLIENTS:
         raise ValueError(f"Unsupported client: '{client}'. Must be one of {sorted(SUPPORTED_CLIENTS)}")
-
-    if not SUPPORTED_CLIENTS[client]["supports_project_scope"]:
-        raise ValueError(f"'{client}' does not support project scope.")
-
-    if client == "cursor":
-        return project_dir / ".cursor" / "mcp.json"
-
-    if client == "vscode":
-        return project_dir / ".vscode" / "mcp.json"
-
-    if client == "opencode":
-        return project_dir / "opencode.json"
-
-    if client == "kilo":
-        return project_dir / ".kilo" / "kilo.json"
-
-    if client == "claude-code":
-        return project_dir / ".mcp.json"
-
-    raise ValueError(f"Unsupported client: '{client}'")
-
-
-def get_client_config_path(
-    client: str,
-    scope: str = SCOPE_GLOBAL,
-    project_dir: Path | None = None,
-) -> Path:
-    if client not in SUPPORTED_CLIENTS:
-        raise ValueError(f"Unsupported client: '{client}'. Must be one of {sorted(SUPPORTED_CLIENTS)}")
-
-    if scope == SCOPE_PROJECT:
-        resolved_dir = project_dir if project_dir is not None else Path.cwd()
-        return get_client_project_config_path(client, resolved_dir)
 
     if client == "claude-desktop":
         return Path(get_claude_desktop_config_path())
@@ -86,87 +55,161 @@ def get_client_config_path(
         return Path.home() / ".config" / "opencode" / "opencode.json"
 
     if client == "kilo":
+        # Kilo deep-merges kilo.json over kilo.jsonc; always write the plain
+        # JSON file so hand-written comments in kilo.jsonc are preserved.
         return Path.home() / ".config" / "kilo" / "kilo.json"
+
+    if client == "codex":
+        codex_home = os.environ.get("CODEX_HOME")
+        return (Path(codex_home) if codex_home else Path.home() / ".codex") / "config.toml"
 
     raise ValueError(f"Unsupported client: '{client}'")
 
 
-def build_client_stdio_config(client: str) -> dict[str, Any]:
+def _auth_headers(token: str) -> dict[str, str]:
+    # TODO: drop the embedded token once anaconda.com/api/mcp advertises OAuth
+    # protected-resource metadata and agents can run the OAuth flow themselves.
+    return {"Authorization": f"Bearer {token}"}
+
+
+def build_client_remote_config(client: str, url: str, token: str) -> dict[str, Any]:
     if client not in SUPPORTED_CLIENTS:
         raise ValueError(f"Unsupported client: '{client}'")
 
-    if client == "claude-desktop":
-        return dict(_claude_build_stdio_config())
+    if SUPPORTED_CLIENTS[client]["transport"] != TRANSPORT_HTTP:
+        raise ValueError(f"'{client}' does not support remote MCP servers in its config file.")
 
-    executable = sys.executable
+    if client == "codex":
+        raise ValueError("'codex' uses TOML configuration; build its entry with tomlkit in configure_client.")
+
+    headers = _auth_headers(token)
 
     if client == "claude-code":
-        return {
-            "type": "stdio",
-            "command": executable,
-            "args": ["-m", "anaconda_mcp", "serve"],
-            "env": {},
-        }
-
-    if client in ("opencode", "kilo"):
-        return {
-            "type": "local",
-            "command": [executable, "-m", "anaconda_mcp", "serve"],
-            "enabled": True,
-            "environment": {},
-        }
+        return {"type": "http", "url": url, "headers": headers}
 
     if client == "cursor":
-        return {
-            "type": "stdio",
-            "command": executable,
-            "args": ["-m", "anaconda_mcp", "serve"],
-        }
+        return {"url": url, "headers": headers}
+
+    if client == "windsurf":
+        return {"serverUrl": url, "headers": headers}
+
+    if client == "vscode":
+        return {"type": "http", "url": url, "headers": headers}
 
     return {
-        "command": executable,
-        "args": ["-m", "anaconda_mcp", "serve"],
+        "type": "remote",
+        "url": url,
+        "enabled": True,
+        "headers": headers,
     }
+
+
+def _load_toml_config(config_path: Path) -> Any:
+    if not config_path.exists():
+        return tomlkit.document()
+    try:
+        return tomlkit.parse(config_path.read_text(encoding="utf-8"))
+    except Exception:
+        return tomlkit.document()
+
+
+def _save_toml_config(config_path: Path, doc: Any) -> None:
+    config_path.parent.mkdir(parents=True, exist_ok=True)
+    config_path.write_text(tomlkit.dumps(doc), encoding="utf-8")
+
+
+def _build_codex_remote_entry(url: str, token: str) -> Any:
+    entry = tomlkit.table()
+    entry["url"] = url
+    headers = tomlkit.table()
+    for key, value in _auth_headers(token).items():
+        headers[key] = value
+    entry["http_headers"] = headers
+    return entry
+
+
+def get_client_entry(
+    client: str,
+    server_name: str = "anaconda-mcp",
+    config_path: Path | None = None,
+) -> dict[str, Any] | None:
+    if client not in SUPPORTED_CLIENTS:
+        raise ValueError(f"Unsupported client: '{client}'. Must be one of {sorted(SUPPORTED_CLIENTS)}")
+
+    if config_path is None:
+        config_path = get_client_config_path(client)
+
+    if not config_path.exists():
+        return None
+
+    config_key = SUPPORTED_CLIENTS[client]["config_key"]
+
+    if client == "codex":
+        servers = _load_toml_config(config_path).get(config_key, {})
+        entry = servers.get(server_name)
+        return dict(entry) if entry is not None else None
+
+    config = load_config(config_path)
+    entry = config.get(config_key, {}).get(server_name)
+    return dict(entry) if isinstance(entry, dict) else None
+
+
+def is_client_installed(
+    client: str,
+    server_name: str = "anaconda-mcp",
+    config_path: Path | None = None,
+) -> bool:
+    return get_client_entry(client, server_name=server_name, config_path=config_path) is not None
+
+
+def client_needs_update(
+    client: str,
+    server_name: str = "anaconda-mcp",
+    config_path: Path | None = None,
+) -> bool:
+    """True when an entry exists but is not the desired configuration (e.g. legacy stdio)."""
+    entry = get_client_entry(client, server_name=server_name, config_path=config_path)
+    if entry is None:
+        return False
+    if SUPPORTED_CLIENTS[client]["transport"] == TRANSPORT_STDIO:
+        return False
+    return "url" not in entry and "serverUrl" not in entry
 
 
 def configure_client(
     client: str,
-    scope: str = SCOPE_GLOBAL,
-    project_dir: Path | None = None,
     config_path: Path | None = None,
     server_name: str = "anaconda-mcp",
     backup: bool = True,
-    force: bool = False,
+    token: str | None = None,
 ) -> dict[str, Any]:
     if client not in SUPPORTED_CLIENTS:
         raise ValueError(f"Unsupported client: '{client}'")
-
-    if scope == SCOPE_PROJECT and not SUPPORTED_CLIENTS[client]["supports_project_scope"]:
-        raise ValueError(f"'{client}' does not support project scope.")
 
     if client == "claude-desktop":
         claude_result: dict[str, Any] = configure_claude_desktop(
             config_path=config_path,
             server_name=server_name,
             backup=backup,
-            force=force,
+            force=True,
         )
         claude_result["client"] = client
-        claude_result["scope"] = scope
         return claude_result
 
+    if not token:
+        raise ValueError(f"An authentication token is required to configure '{client}'.")
+
     if config_path is None:
-        config_path = get_client_config_path(client, scope=scope, project_dir=project_dir)
+        config_path = get_client_config_path(client)
 
     config_key = SUPPORTED_CLIENTS[client]["config_key"]
 
     result: dict[str, Any] = {
         "client": client,
-        "scope": scope,
         "config_path": config_path,
         "backup_path": None,
         "server_name": server_name,
-        "transport": "stdio",
+        "transport": TRANSPORT_HTTP,
         "created": not config_path.exists(),
         "updated": False,
     }
@@ -174,68 +217,40 @@ def configure_client(
     if backup:
         result["backup_path"] = backup_config_file(config_path)
 
+    if client == "codex":
+        doc = _load_toml_config(config_path)
+        if config_key not in doc:
+            doc[config_key] = tomlkit.table()
+        servers = doc[config_key]
+        if server_name in servers:
+            result["updated"] = True
+        servers[server_name] = _build_codex_remote_entry(REMOTE_MCP_URL, token)
+        _save_toml_config(config_path, doc)
+        return result
+
     config = load_config(config_path)
 
     if config_key not in config:
         config[config_key] = {}
 
-    if server_name in config[config_key] and not force:
-        raise FileExistsError(f"Server '{server_name}' already exists in {client} config. Use --force to overwrite.")
-
     if server_name in config[config_key]:
         result["updated"] = True
 
-    server_config = build_client_stdio_config(client)
-
-    config[config_key][server_name] = server_config
+    config[config_key][server_name] = build_client_remote_config(client, REMOTE_MCP_URL, token)
 
     save_config(config_path, config)
 
     return cast(dict[str, Any], result)
 
 
-def is_client_installed(
-    client: str,
-    server_name: str = "anaconda-mcp",
-    config_path: Path | None = None,
-    project_dir: Path | None = None,
-) -> dict[str, bool]:
-    if client not in SUPPORTED_CLIENTS:
-        raise ValueError(f"Unsupported client: '{client}'. Must be one of {sorted(SUPPORTED_CLIENTS)}")
-
-    config_key = SUPPORTED_CLIENTS[client]["config_key"]
-    supports_project = SUPPORTED_CLIENTS[client]["supports_project_scope"]
-
-    def _check(path: Path) -> bool:
-        if not path.exists():
-            return False
-        config = load_config(path)
-        return server_name in config.get(config_key, {})
-
-    global_path = config_path if config_path is not None else get_client_config_path(client, scope=SCOPE_GLOBAL)
-    result: dict[str, bool] = {"global": _check(global_path)}
-
-    if supports_project:
-        resolved_dir = project_dir if project_dir is not None else Path.cwd()
-        project_path = get_client_project_config_path(client, resolved_dir)
-        result["project"] = _check(project_path)
-
-    return result
-
-
 def remove_client(
     client: str,
-    scope: str = SCOPE_GLOBAL,
-    project_dir: Path | None = None,
     config_path: Path | None = None,
     server_name: str = "anaconda-mcp",
     backup: bool = True,
 ) -> dict[str, Any]:
     if client not in SUPPORTED_CLIENTS:
-        raise ValueError(f"Unsupported client: '{client}'. Must be one of {sorted(SUPPORTED_CLIENTS)}")
-
-    if scope == SCOPE_PROJECT and not SUPPORTED_CLIENTS[client]["supports_project_scope"]:
-        raise ValueError(f"'{client}' does not support project scope.")
+        raise ValueError(f"Unsupported client: '{client}'")
 
     if client == "claude-desktop":
         claude_result: dict[str, Any] = remove_claude_desktop_config(
@@ -244,11 +259,10 @@ def remove_client(
             backup=backup,
         )
         claude_result["client"] = client
-        claude_result["scope"] = scope
         return claude_result
 
     if config_path is None:
-        config_path = get_client_config_path(client, scope=scope, project_dir=project_dir)
+        config_path = get_client_config_path(client)
 
     if not config_path.exists():
         raise FileNotFoundError(f"Config file not found: {config_path}")
@@ -257,7 +271,6 @@ def remove_client(
 
     result: dict[str, Any] = {
         "client": client,
-        "scope": scope,
         "config_path": config_path,
         "backup_path": None,
         "server_name": server_name,
@@ -266,6 +279,16 @@ def remove_client(
 
     if backup:
         result["backup_path"] = backup_config_file(config_path)
+
+    if client == "codex":
+        doc = _load_toml_config(config_path)
+        servers = doc.get(config_key, {})
+        if server_name not in servers:
+            raise KeyError(f"Server '{server_name}' not found in {client} config.")
+        del servers[server_name]
+        _save_toml_config(config_path, doc)
+        result["removed"] = True
+        return result
 
     config = load_config(config_path)
 
