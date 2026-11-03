@@ -29,7 +29,7 @@ def _render_config_template(config_path: str) -> str:
     if not source_path.exists():
         return config_path
 
-    content = source_path.read_text()
+    content = source_path.read_text(encoding="utf-8")
 
     # Determine which Python executable to use
     # Priority: 1. Environment variable, 2. sys.executable
@@ -50,7 +50,7 @@ def _render_config_template(config_path: str) -> str:
 
     rendered_fd, rendered_path = tempfile.mkstemp(suffix=".toml", prefix="mcp_compose_")
     try:
-        with open(rendered_fd, "w") as f:
+        with open(rendered_fd, "w", encoding="utf-8") as f:
             f.write(content)
     except:
         os.close(rendered_fd)

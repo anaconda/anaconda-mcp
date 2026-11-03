@@ -19,7 +19,7 @@ class MCPState:
 
     def _read(self) -> dict[str, Any]:
         try:
-            data = json.loads(self._path.read_text())
+            data = json.loads(self._path.read_text(encoding="utf-8"))
             if isinstance(data, dict):
                 return data
             return {}
@@ -30,7 +30,7 @@ class MCPState:
     def _write(self, data: dict[str, Any]) -> None:
         try:
             self._path.parent.mkdir(parents=True, exist_ok=True)
-            self._path.write_text(json.dumps(data))
+            self._path.write_text(json.dumps(data), encoding="utf-8")
         except OSError as e:
             logger.warning(f"Failed to write MCP state: {e}")
 

@@ -1,3 +1,5 @@
+import builtins
+import io
 import sys
 import tempfile
 from pathlib import Path
@@ -164,5 +166,40 @@ def test_render_template_preserves_structure(sample_template):
         assert "name = " in content
         assert "[[servers.proxied.streamable-http]]" in content
         assert "command = [" in content
+    finally:
+        Path(rendered_path).unlink(missing_ok=True)
+
+
+@pytest.fixture
+def gbk_locale(monkeypatch):
+    """Make text-mode file I/O default to cp936, like Windows with a Chinese locale."""
+    real_open = io.open
+
+    def open_with_gbk_default(file, mode="r", buffering=-1, encoding=None, *args, **kwargs):
+        if "b" not in mode and encoding in (None, "locale"):
+            encoding = "cp936"
+        return real_open(file, mode, buffering, encoding, *args, **kwargs)
+
+    monkeypatch.setattr(io, "open", open_with_gbk_default)
+    monkeypatch.setattr(builtins, "open", open_with_gbk_default)
+    # pathlib resolves a missing encoding through io.text_encoding(), which
+    # returns "utf-8" instead of "locale" when Python's UTF-8 mode is on.
+    monkeypatch.setattr(io, "text_encoding", lambda encoding, stacklevel=2: encoding or "locale")
+
+
+def test_render_template_is_utf8_regardless_of_locale(temp_config_dir, gbk_locale):
+    """The shipped template has non-ASCII characters; reading and writing it must not use the locale encoding."""
+    template_path = temp_config_dir / "config.toml.template"
+    template_path.write_bytes(
+        '# \u2705 PRIMARY configuration file\ncommand = ["{{PYTHON_EXECUTABLE}}"]\n'.encode("utf-8")
+    )
+
+    with patch("anaconda_mcp.utils.get_auth_token", return_value="fake-token"):
+        rendered_path = _render_config_template(str(temp_config_dir / "config.toml"))
+
+    try:
+        content = Path(rendered_path).read_bytes().decode("utf-8")
+        assert "\u2705 PRIMARY" in content
+        assert "{{PYTHON_EXECUTABLE}}" not in content
     finally:
         Path(rendered_path).unlink(missing_ok=True)
